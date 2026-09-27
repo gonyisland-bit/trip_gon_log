@@ -173,7 +173,7 @@ export function ConfirmModal({
         {/* Header: Swiss Minimal Black/White Icon & Clean Uppercase Title */}
         <div className="flex items-center gap-2 pr-6 text-black dark:text-white">
           {renderIcon()}
-          <h3 className="text-xs sm:text-sm font-mono font-black uppercase tracking-widest">
+          <h3 className="text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest">
             {title}
           </h3>
         </div>
@@ -184,7 +184,7 @@ export function ConfirmModal({
         </p>
 
         {/* Action Buttons: Clean 1-Row Grid with Short Labels */}
-        <div className={`grid ${gridColsClass} gap-1.5 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider`}>
+        <div className={`grid ${gridColsClass} gap-1.5 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs font-extrabold uppercase tracking-wider`}>
           {!singleButton && (
             <button
               type="button"

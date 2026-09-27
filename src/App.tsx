@@ -3598,19 +3598,19 @@ function App() {
             {nightModeHud.mode === 'auto' && (
               <>
                 <Compass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
-                <span className="font-mono text-xs font-black tracking-wider uppercase">AUTO (18:00 - 06:00)</span>
+                <span className="font-mono text-xs font-extrabold tracking-wider uppercase">AUTO (18:00 - 06:00)</span>
               </>
             )}
             {nightModeHud.mode === 'light' && (
               <>
                 <Sun className="w-3.5 h-3.5 text-amber-500 stroke-[2.5]" />
-                <span className="font-mono text-xs font-black tracking-wider uppercase">DAY MODE</span>
+                <span className="font-mono text-xs font-extrabold tracking-wider uppercase">DAY MODE</span>
               </>
             )}
             {nightModeHud.mode === 'dark' && (
               <>
                 <Moon className="w-3.5 h-3.5 text-indigo-400 stroke-[2.5]" />
-                <span className="font-mono text-xs font-black tracking-wider uppercase">NIGHT MODE</span>
+                <span className="font-mono text-xs font-extrabold tracking-wider uppercase">NIGHT MODE</span>
               </>
             )}
           </div>

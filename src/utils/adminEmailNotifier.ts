@@ -72,7 +72,7 @@ ${approveUrl}
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #ffffff; color: #111827;">
   <div style="border-bottom: 2px solid #dc2626; padding-bottom: 12px; margin-bottom: 20px;">
     <span style="font-size: 11px; font-weight: 700; color: #dc2626; letter-spacing: 2px; text-transform: uppercase;">TRIPGON LOG MEMBERSHIP</span>
-    <h2 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0; color: #000000; text-transform: uppercase;">신규 회원 가입 승인 요청</h2>
+    <h2 style="font-size: 20px; font-weight: 800; margin: 4px 0 0 0; color: #000000; text-transform: uppercase;">신규 회원 가입 승인 요청</h2>
   </div>
 
   <p style="font-size: 14px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">

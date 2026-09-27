@@ -524,7 +524,7 @@ export function MapArea({
 
           <!-- Clean Swiss Minimal Gray Label (Hidden by default, shown on hover/click) -->
           <div class="pocket-pin-label" style="position: absolute; top: 25px; left: 50%; z-index: 10; background: rgba(244, 244, 246, 0.96); backdrop-filter: blur(8px); border: 1px solid rgba(212, 212, 216, 0.95); border-radius: 4px; color: #18181b; font-size: 10px; font-weight: 700; padding: 2.5px 7px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center;">
-            <span style="background: #e4e4e7; color: #52525b; font-size: 7.5px; font-weight: 900; padding: 1px 4px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em; border: 0.5px solid rgba(82,82,91,0.25);">POCKET</span>
+            <span style="background: #e4e4e7; color: #52525b; font-size: 7.5px; font-weight: 800; padding: 1px 4px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em; border: 0.5px solid rgba(82,82,91,0.25);">POCKET</span>
             <span style="color: #18181b; font-weight: 700;">${spot.title}</span>
           </div>
         </div>
@@ -541,7 +541,7 @@ export function MapArea({
 
       const popupHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 190px; padding: 4px;">
-          <div style="font-size: 9px; font-weight: 900; color: #52525b; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+          <div style="font-size: 9px; font-weight: 800; color: #52525b; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
             ${(spot.category || 'SPOT').toUpperCase()} · POCKET SPOT
           </div>
           <div style="font-size: 13px; font-weight: 800; color: #111; margin-bottom: 4px; line-height: 1.2;">
@@ -1097,7 +1097,7 @@ export function MapArea({
       if (isSummaryMode) {
         htmlContent = `
           <div class="pin-wrapper" style="transition: opacity 0.3s;">
-            <div class="pin-label pin-label-active font-black tracking-tight" style="background-color: rgba(217, 119, 6, 0.15); border: 1.5px solid #d97706; color: #d97706; padding: 4px 8px; border-radius: 9999px; white-space: nowrap; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2); font-size: 11px;">
+            <div class="pin-label pin-label-active font-extrabold tracking-tight" style="background-color: rgba(217, 119, 6, 0.15); border: 1.5px solid #d97706; color: #d97706; padding: 4px 8px; border-radius: 9999px; white-space: nowrap; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2); font-size: 11px;">
               ✨ ${item.place}
             </div>
           </div>

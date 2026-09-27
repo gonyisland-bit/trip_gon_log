@@ -591,7 +591,7 @@ export function EditTripModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/10 dark:border-white/10 shrink-0">
           <div className="flex items-center gap-2.5">
             <Edit2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-            <h2 className="text-sm font-black uppercase tracking-widest text-black dark:text-white">
+            <h2 className="text-sm font-extrabold uppercase tracking-widest text-black dark:text-white">
               Edit Journey Cover Info
             </h2>
           </div>
@@ -611,7 +611,7 @@ export function EditTripModal({
           {/* Journey Type (LOG vs PLAN) */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+              <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
                 Type (여정 유형 구분)
               </label>
               <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40">
@@ -630,7 +630,7 @@ export function EditTripModal({
                   }
                 }}
                 disabled={!isPlanJourney || !onMoveToArchive}
-                className={`py-2 px-3 border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-3 border text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   !isPlanJourney
                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                     : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
@@ -650,7 +650,7 @@ export function EditTripModal({
                   }
                 }}
                 disabled={isPlanJourney || !onMoveToPlans}
-                className={`py-2 px-3 border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-3 border text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   isPlanJourney
                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                     : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
@@ -664,7 +664,7 @@ export function EditTripModal({
 
           {/* Title */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+            <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
               Journey Title
             </label>
             <input
@@ -679,7 +679,7 @@ export function EditTripModal({
 
           {/* Country */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+            <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
               대표 국가명 (Country)
             </label>
             <input
@@ -693,7 +693,7 @@ export function EditTripModal({
 
           {/* Date */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+            <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
               Journey Dates
             </label>
             <div className="flex items-center gap-2">
@@ -717,7 +717,7 @@ export function EditTripModal({
 
           {/* Location Name (복수 장소 등록 및 수정) */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+            <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
               Locations (방문 장소 복수 지정 가능)
             </label>
 
@@ -727,7 +727,7 @@ export function EditTripModal({
                 {locations.map((loc, idx) => (
                   <span 
                     key={idx} 
-                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
                   >
                     {loc.name}
                     <button 
@@ -777,7 +777,7 @@ export function EditTripModal({
                     setLocationInput('');
                   }
                 }}
-                className="px-3 py-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-85 transition-opacity shrink-0"
+                className="px-3 py-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity shrink-0"
               >
                 추가
               </button>
@@ -786,7 +786,7 @@ export function EditTripModal({
 
           {/* Tags Pill Input */}
           <div className="flex flex-col gap-1.5 relative">
-            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+            <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
               Tags (comma or enter to separate)
             </label>
             
@@ -796,7 +796,7 @@ export function EditTripModal({
                 {tags.map(tag => (
                   <span 
                     key={tag} 
-                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
                   >
                     {tag}
                     <button 
@@ -841,7 +841,7 @@ export function EditTripModal({
 
           {/* Members (참석 인원) */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+            <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
               Trip Members (참석 인원)
             </label>
             <div className="flex flex-wrap gap-1.5 mb-1.5">
@@ -913,7 +913,7 @@ export function EditTripModal({
                     }
                   }
                 }}
-                className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity shrink-0"
+                className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest hover:opacity-80 transition-opacity shrink-0"
               >
                 추가
               </button>
@@ -925,7 +925,7 @@ export function EditTripModal({
               <button
                 type="button"
                 onClick={() => setCoverTab('main')}
-                className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 text-xs font-extrabold uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
                   coverTab === 'main'
                     ? 'border-black dark:border-white text-black dark:text-white'
                     : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
@@ -939,7 +939,7 @@ export function EditTripModal({
               <button
                 type="button"
                 onClick={() => setCoverTab('hero')}
-                className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 text-xs font-extrabold uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
                   coverTab === 'hero'
                     ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400'
                     : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
@@ -957,7 +957,7 @@ export function EditTripModal({
                 {/* Unified Media URL Input */}
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between items-center">
-                    <label className="text-[9.5px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white font-sans">
+                    <label className="text-[9.5px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white font-sans">
                       Main Media (Image or Video)
                     </label>
                     {(uploading || videoUploading) && (
@@ -1005,7 +1005,7 @@ export function EditTripModal({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading || videoUploading}
-                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
                     >
                       {uploading || videoUploading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1017,7 +1017,7 @@ export function EditTripModal({
                     <button
                       type="button"
                       onClick={() => handleCopyMedia(videoUrl || imgUrl, 'MAIN')}
-                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                       title="현재 MAIN 미디어 URL 복사"
                     >
                       <Copy className="w-3 h-3" />
@@ -1027,7 +1027,7 @@ export function EditTripModal({
                       type="button"
                       onClick={() => handlePasteImage('main')}
                       disabled={uploading || videoUploading}
-                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
                       title="클립보드에 복사된 이미지 또는 URL 붙여넣기 (Ctrl+V)"
                     >
                       <ClipboardPaste className="w-3 h-3" />
@@ -1046,7 +1046,7 @@ export function EditTripModal({
                         }
                         alert('MAIN 미디어가 HERO로 복사되었습니다.');
                       }}
-                      className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                       title="MAIN 미디어를 HERO로 복사"
                     >
                       <span>TO HERO</span>
@@ -1097,7 +1097,7 @@ export function EditTripModal({
                           setVideoUrl('');
                           setImgUrl('');
                         }}
-                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                       >
                         Delete Video
                       </button>
@@ -1111,7 +1111,7 @@ export function EditTripModal({
                           setImgUrl('');
                           setVideoUrl('');
                         }}
-                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                       >
                         Delete Image
                       </button>
@@ -1139,7 +1139,7 @@ export function EditTripModal({
                 {/* Unified Hero Media URL Input */}
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between items-center">
-                    <label className="text-[9.5px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white font-sans">
+                    <label className="text-[9.5px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white font-sans">
                       Hero Media (Image or Video)
                     </label>
                     {(heroUploading || heroVideoUploading) && (
@@ -1187,7 +1187,7 @@ export function EditTripModal({
                       type="button"
                       onClick={() => heroFileInputRef.current?.click()}
                       disabled={heroUploading || heroVideoUploading}
-                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
                     >
                       {heroUploading || heroVideoUploading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1199,7 +1199,7 @@ export function EditTripModal({
                     <button
                       type="button"
                       onClick={() => handleCopyMedia(heroVideoUrl || heroImgUrl, 'HERO')}
-                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                       title="현재 HERO 미디어 URL 복사"
                     >
                       <Copy className="w-3 h-3" />
@@ -1209,7 +1209,7 @@ export function EditTripModal({
                       type="button"
                       onClick={() => handlePasteImage('hero')}
                       disabled={heroUploading || heroVideoUploading}
-                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
                       title="클립보드에 복사된 이미지 또는 URL 붙여넣기 (Ctrl+V)"
                     >
                       <ClipboardPaste className="w-3 h-3" />
@@ -1228,7 +1228,7 @@ export function EditTripModal({
                         }
                         alert('HERO 미디어가 MAIN으로 복사되었습니다.');
                       }}
-                      className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                       title="HERO 미디어를 MAIN으로 복사"
                     >
                       <span>TO MAIN</span>
@@ -1279,7 +1279,7 @@ export function EditTripModal({
                           setHeroVideoUrl('');
                           setHeroImgUrl('');
                         }}
-                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                       >
                         Delete Video
                       </button>
@@ -1293,7 +1293,7 @@ export function EditTripModal({
                           setHeroImgUrl('');
                           setHeroVideoUrl('');
                         }}
-                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                       >
                         Delete Image
                       </button>
@@ -1318,7 +1318,7 @@ export function EditTripModal({
           {/* Status Badge Option */}
           <div className="flex flex-col gap-1.5 mt-4">
             <div className="flex items-center justify-between">
-              <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+              <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
                 Status Badge (상태 뱃지: NEW · EDITING · PLAN)
               </label>
               <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
@@ -1337,9 +1337,9 @@ export function EditTripModal({
                     key={badgeOpt.id}
                     type="button"
                     onClick={() => setStatusBadge(isActive ? '' : badgeOpt.id)}
-                    className={`py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
+                    className={`py-2 text-[9px] font-extrabold uppercase tracking-widest border transition-all ${
                       isActive
-                        ? `${badgeOpt.activeBg} shadow-xs font-black`
+                        ? `${badgeOpt.activeBg} shadow-xs font-extrabold`
                         : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/30 dark:hover:border-white/30'
                     }`}
                   >
@@ -1363,7 +1363,7 @@ export function EditTripModal({
             <button
               type="submit"
               disabled={saving || !title.trim() || uploading || videoUploading || heroUploading || heroVideoUploading}
-              className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-md"
+              className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-extrabold uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-md"
             >
               {saving ? (
                 <>

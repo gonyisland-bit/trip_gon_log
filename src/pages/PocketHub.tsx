@@ -1162,7 +1162,7 @@ export function PocketHubPage({
         {/* Top Metadata Barcode & Category Tag */}
         <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
+            <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-[10px]">
               POCKET
             </span>
             <span className="font-bold text-red-600 dark:text-red-400">
@@ -1177,7 +1177,7 @@ export function PocketHubPage({
 
         {/* Large Editorial Title & Description */}
         <div className="flex flex-col gap-2 sm:gap-4 max-w-5xl">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-black uppercase tracking-tight leading-[0.98] text-black dark:text-white">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-extrabold uppercase tracking-tight leading-[0.98] text-black dark:text-white">
             POCKET
           </h1>
           <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
@@ -1271,7 +1271,7 @@ export function PocketHubPage({
               <select
                 value={sortMode}
                 onChange={(e) => setSortMode(e.target.value as any)}
-                className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans text-black dark:text-white"
+                className="bg-transparent text-[10px] sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans text-black dark:text-white"
               >
                 <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
                 <option value="city" className="bg-[#F9F8F6] dark:bg-[#111111]">CITY</option>
@@ -1633,7 +1633,7 @@ export function PocketHubPage({
                         </div>
 
                         {/* Main Spot Title (Hero Headline, Full Width, Wrap without truncation) */}
-                        <h3 className="text-sm sm:text-base font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 sm:line-clamp-3 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                        <h3 className="text-sm sm:text-base font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 sm:line-clamp-3 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                           {spot.title}
                         </h3>
 
@@ -1735,7 +1735,7 @@ export function PocketHubPage({
                                 {group.subBadge}
                               </span>
                             )}
-                            <span className="text-[11px] font-mono font-black tracking-widest uppercase text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                            <span className="text-[11px] font-mono font-extrabold tracking-widest uppercase text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                               {group.label}
                             </span>
                             <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
@@ -1791,7 +1791,7 @@ export function PocketHubPage({
                       <button
                         type="button"
                         onClick={() => setVisibleCount(prev => prev + 40)}
-                        className="h-10 px-6 border border-black dark:border-white text-xs font-mono font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-2"
+                        className="h-10 px-6 border border-black dark:border-white text-xs font-mono font-extrabold uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-2"
                       >
                         <span>LOAD MORE (+40)</span>
                         <span className="text-black/40 dark:text-white/40 font-normal">
@@ -1814,7 +1814,7 @@ export function PocketHubPage({
             <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-4">
               <div>
                 <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase">ADD TO TIMELINE</span>
-                <h3 className="text-lg font-black uppercase tracking-tight truncate max-w-[280px]">
+                <h3 className="text-lg font-extrabold uppercase tracking-tight truncate max-w-[280px]">
                   {spotToUseInTrip.title}
                 </h3>
               </div>
@@ -1905,7 +1905,7 @@ export function PocketHubPage({
                 <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase">
                   {editingSpot ? 'EDIT SPOT' : 'KEEP SPOT'}
                 </span>
-                <h3 className="text-xl font-black uppercase tracking-tight">
+                <h3 className="text-xl font-extrabold uppercase tracking-tight">
                   {editingSpot ? 'EDIT SAVED SPOT' : 'KEEP NEW SPOT'}
                 </h3>
               </div>

@@ -2975,15 +2975,6 @@ export function JourneyDetailPage({
     }
   }, [selectedDate]);
 
-  // Early Return (conditional render)
-  if (!trip) {
-    return (
-      <div className="flex-grow flex items-center justify-center bg-transparent h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
-        Loading Journey Details...
-      </div>
-    );
-  }
-
   const handleItemToggle = (id: number) => {
     let targetId = id;
     if (activeTab === 'flights' || activeTab === 'transit') {
@@ -3031,6 +3022,7 @@ export function JourneyDetailPage({
   };
 
   const handleAddTimelineItemRelativeTo = (relativeId: number, position: 'above' | 'below') => {
+    if (!trip) return;
     const sorted = [...currentTimeline];
     const targetIdx = sorted.findIndex(item => item.id === relativeId);
     if (targetIdx === -1) return;
@@ -3182,6 +3174,16 @@ export function JourneyDetailPage({
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, [isEditing, activeTab, expandedItemId]);
+
+  // Early Return (conditional render)
+  if (!trip) {
+    return (
+      <div className="flex-grow flex items-center justify-center bg-transparent h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+        Loading Journey Details...
+      </div>
+    );
+  }
+
 
   // Frequent places helpers
   const toggleFrequentPlace = (item: TimelineItem) => {
@@ -3861,7 +3863,7 @@ export function JourneyDetailPage({
           <span className="text-black/20 dark:text-white/20 shrink-0">|</span>
 
           {/* Issue # badge (minimalist) */}
-          <span className="hidden md:inline-block bg-black/10 dark:bg-white/15 px-1.5 py-0.5 rounded-[2px] font-mono text-[8.5px] font-black text-black dark:text-white shrink-0">
+          <span className="hidden md:inline-block bg-black/10 dark:bg-white/15 px-1.5 py-0.5 rounded-[2px] font-mono text-[8.5px] font-extrabold text-black dark:text-white shrink-0">
             #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
           </span>
 
@@ -3872,7 +3874,7 @@ export function JourneyDetailPage({
                 setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
                 setExpandedItemId(null);
               }}
-              className="text-xs sm:text-sm md:text-[15px] font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
+              className="text-xs sm:text-sm md:text-[15px] font-extrabold uppercase tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
               title="클릭하여 여정 요약(Summary) 보기"
             >
               {(trip.title || '').replace(' (Plan)', '')}
@@ -4032,7 +4034,7 @@ export function JourneyDetailPage({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-sm sm:text-base font-black uppercase text-black dark:text-white font-sans">
+                <span className="text-sm sm:text-base font-extrabold uppercase text-black dark:text-white font-sans">
                   {trip.title}
                 </span>
               </div>
@@ -4371,10 +4373,10 @@ export function JourneyDetailPage({
             
             return (
               <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white animate-in fade-in duration-300">
-                <span className="text-[13px] sm:text-sm md:text-base font-black tracking-[0.25em] uppercase text-red-600 dark:text-red-500 mb-1 leading-none font-sans">
+                <span className="text-[13px] sm:text-sm md:text-base font-extrabold tracking-[0.25em] uppercase text-red-600 dark:text-red-500 mb-1 leading-none font-sans">
                   {detectedCountry || country}
                 </span>
-                <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.95] border-b-2 sm:border-b-4 border-black dark:border-white pb-2 max-w-[340px] sm:max-w-[480px] break-words font-sans text-black dark:text-white">
+                <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold uppercase tracking-tighter leading-[0.95] border-b-2 sm:border-b-4 border-black dark:border-white pb-2 max-w-[340px] sm:max-w-[480px] break-words font-sans text-black dark:text-white">
                   {city}
                 </h2>
               </div>
@@ -4647,7 +4649,7 @@ export function JourneyDetailPage({
                       <div className="bg-white text-black rounded-full h-7 sm:h-8 px-2 sm:px-2.5 flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
                         <button
                           onClick={() => setCinematicSpeed(s => s === 3600 ? 1800 : (s === 1800 ? 7200 : 3600))}
-                          className="px-1 py-0.5 text-xs sm:text-[13px] font-mono font-black text-black hover:text-blue-600 transition-colors cursor-pointer select-none leading-none tracking-tight"
+                          className="px-1 py-0.5 text-xs sm:text-[13px] font-mono font-extrabold text-black hover:text-blue-600 transition-colors cursor-pointer select-none leading-none tracking-tight"
                           title="재생 속도 (1X / 2X / 0.5X)"
                         >
                           {cinematicSpeed === 1800 ? '2X' : (cinematicSpeed === 7200 ? '0.5X' : '1X')}
@@ -4816,11 +4818,11 @@ export function JourneyDetailPage({
                         }} 
                         className={`flex-1 min-w-[58px] sm:min-w-[72px] md:min-w-[85px] h-full px-3 flex items-center justify-center border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all whitespace-nowrap cursor-pointer font-['Inter',sans-serif] ${
                           selectedDate === d.date 
-                            ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-xs' 
+                            ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-xs' 
                             : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white font-extrabold'
                         }`}
                       >
-                        <span className="text-xs sm:text-[13px] font-black tracking-tight font-['Inter',sans-serif]">
+                        <span className="text-xs sm:text-[13px] font-extrabold tracking-tight font-['Inter',sans-serif]">
                           {displayDate}
                         </span>
                       </button>
@@ -4855,7 +4857,7 @@ export function JourneyDetailPage({
                           setCollapsedDays([...allTripDates]);
                         }
                       }}
-                      className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                      className="text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
                       {collapsedDays.length === allTripDates.length ? '▼ EXPAND ALL DAYS' : '▲ COLLAPSE ALL DAYS'}
                     </button>
@@ -4866,7 +4868,7 @@ export function JourneyDetailPage({
                     <div className="flex justify-between items-center py-3 px-4 md:px-6 flex-wrap gap-2">
                       <button
                         onClick={handleGenerateDefaultTemplate}
-                        className="text-[10px] font-black uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 transition-colors flex items-center gap-1.5"
+                        className="text-[10px] font-extrabold uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 transition-colors flex items-center gap-1.5"
                       >
                         Generate Default Template
                       </button>
@@ -4959,11 +4961,11 @@ export function JourneyDetailPage({
                             }`}
                           >
                             <div className="flex items-baseline gap-2.5 sm:gap-3.5">
-                              <span className="text-3xl sm:text-4xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
+                              <span className="text-3xl sm:text-4xl font-extrabold font-satoshi tracking-tighter text-black dark:text-white leading-none">
                                 {dayIndex < 10 ? `0${dayIndex}` : dayIndex}
                               </span>
                               <div className="flex flex-col text-left font-satoshi leading-tight">
-                                <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-black dark:text-white font-satoshi">
+                                <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-black dark:text-white font-satoshi">
                                   DAY {dayIndex}
                                 </span>
                                 <span className="text-[11px] sm:text-xs font-mono font-bold text-black/65 dark:text-white/65 mt-0.5 tracking-wider">
@@ -5098,7 +5100,7 @@ export function JourneyDetailPage({
                                 )
                               )}
                             </div>
-                            <span className="text-[10px] md:text-[11px] font-black font-mono text-black/45 dark:text-white/45 flex items-center gap-1 shrink-0">
+                            <span className="text-[10px] md:text-[11px] font-extrabold font-mono text-black/45 dark:text-white/45 flex items-center gap-1 shrink-0">
                               {collapsedDays.includes(item.date || '') ? '▼ EXPAND' : '▲ COLLAPSE'}
                             </span>
                           </div>
@@ -5279,7 +5281,7 @@ export function JourneyDetailPage({
                                     if (match) {
                                       return (
                                         <div className="flex items-baseline gap-1 leading-none">
-                                          <span className="text-base sm:text-lg md:text-xl font-black font-satoshi tracking-tight leading-none text-black dark:text-white">
+                                          <span className="text-base sm:text-lg md:text-xl font-extrabold font-satoshi tracking-tight leading-none text-black dark:text-white">
                                             {match[1]}
                                           </span>
                                           {match[2] && (
@@ -5291,7 +5293,7 @@ export function JourneyDetailPage({
                                       );
                                     }
                                     return (
-                                      <span className="text-base sm:text-lg md:text-xl font-black font-satoshi tracking-tight leading-none text-black dark:text-white">
+                                      <span className="text-base sm:text-lg md:text-xl font-extrabold font-satoshi tracking-tight leading-none text-black dark:text-white">
                                         {item.time}
                                       </span>
                                     );
@@ -5704,7 +5706,7 @@ export function JourneyDetailPage({
                     return (
                       <div className="w-full flex flex-col">
                         <div className="flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15">
-                          <span className="text-[10px] md:text-xs uppercase font-black tracking-widest text-red-600 dark:text-red-400 font-mono">
+                          <span className="text-[10px] md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
                             {groupLabel}
                           </span>
                           <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
@@ -5908,7 +5910,7 @@ export function JourneyDetailPage({
                       <div className="flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15">
                         <div className="flex items-center gap-2">
                           <IconComponent className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                          <span className="text-[10px] md:text-xs uppercase font-black tracking-widest text-red-600 dark:text-red-400 font-mono">
+                          <span className="text-[10px] md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
                             {label}
                           </span>
                         </div>
@@ -5985,7 +5987,7 @@ export function JourneyDetailPage({
               {/* Add Transit control */}
               {isEditing && (
                 <div className="flex flex-col items-center py-6 gap-2">
-                  <span className="text-[10px] md:text-[11px] text-black/50 dark:text-white/50 uppercase font-black tracking-widest font-sans break-keep">Add Transit Ticket (교통 티켓 추가)</span>
+                  <span className="text-[10px] md:text-[11px] text-black/50 dark:text-white/50 uppercase font-extrabold tracking-widest font-sans break-keep">Add Transit Ticket (교통 티켓 추가)</span>
                   <div className="flex flex-wrap justify-center gap-2">
                     <button 
                       onClick={() => handleAddTransit('train')} 
@@ -6083,7 +6085,7 @@ export function JourneyDetailPage({
                             setExpandedItemId(imgItem.id);
                           }
                         }}
-                        className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-none ${!imgItem.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
+                        className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-none ${!imgItem.excludeFromMap ? 'bg-red-500 hover:bg-red-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
                         title={imgItem.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
                       >
                         <MapPin className="w-3.5 h-3.5" />
@@ -6207,7 +6209,7 @@ export function JourneyDetailPage({
                   <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center border-4 border-dashed border-red-600 m-2 transition-all">
                     <div className="text-white flex flex-col items-center gap-3">
                       <Plus className="w-12 h-12 animate-bounce text-red-500" />
-                      <p className="text-sm md:text-base font-black tracking-widest uppercase text-center">
+                      <p className="text-sm md:text-base font-extrabold tracking-widest uppercase text-center">
                         Drop images here to add to gallery
                       </p>
                       <p className="text-xs text-white/60">
@@ -6239,7 +6241,7 @@ export function JourneyDetailPage({
                       <div className="flex border border-black/15 dark:border-white/15 p-0.5 bg-black/5 dark:bg-white/5 rounded-none">
                         <button
                           onClick={() => setGalleryColumns(4)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                          className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
                             galleryColumns === 4
                               ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                               : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -6251,7 +6253,7 @@ export function JourneyDetailPage({
                         </button>
                         <button
                           onClick={() => setGalleryColumns(2)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                          className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
                             galleryColumns === 2
                               ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                               : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -6312,10 +6314,10 @@ export function JourneyDetailPage({
                                 setCollapsedGalleryDays(prev => [...prev, date]);
                               }
                             }}
-                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                           >
                             <div className="flex items-center gap-2">
-                              <span className="font-black">DAY {idx + 1}</span>
+                              <span className="font-extrabold">DAY {idx + 1}</span>
                               <span className="text-black/30 dark:text-white/30">·</span>
                               <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
                             </div>
@@ -6346,9 +6348,9 @@ export function JourneyDetailPage({
                                 setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
                               }
                             }}
-                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                           >
-                            <span className="font-black">NO DATE</span>
+                            <span className="font-extrabold">NO DATE</span>
                             <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
                               {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
                             </span>
@@ -6463,7 +6465,7 @@ export function JourneyDetailPage({
                   setIsQuickJumpExpanded(true);
                   resetQuickJumpCollapseTimer();
                 }}
-                className="w-10 h-10 rounded-full bg-[#18181B]/95 text-white backdrop-blur-md border border-white/20 shadow-xl flex items-center justify-center cursor-pointer hover:bg-black active:scale-95 transition-all text-xs font-mono font-black"
+                className="w-10 h-10 rounded-full bg-[#18181B]/95 text-white backdrop-blur-md border border-white/20 shadow-xl flex items-center justify-center cursor-pointer hover:bg-black active:scale-95 transition-all text-xs font-mono font-extrabold"
                 title="날짜 빠른 이동 (클릭하여 일차 펼치기)"
                 aria-label="Expand day quick jump bar"
               >
@@ -6504,7 +6506,7 @@ export function JourneyDetailPage({
                       handleQuickJumpToDate('ALL');
                       setTimeout(() => setIsQuickJumpExpanded(false), 500);
                     }}
-                    className={`px-2 py-1 rounded-full text-[10px] sm:text-[10.5px] font-black tracking-wider transition-all cursor-pointer shrink-0 ${
+                    className={`px-2 py-1 rounded-full text-[10px] sm:text-[10.5px] font-extrabold tracking-wider transition-all cursor-pointer shrink-0 ${
                       activeSpyDate === 'ALL'
                         ? 'bg-red-600 text-white shadow-sm scale-105'
                         : 'text-white/70 hover:text-white hover:bg-white/15'
@@ -6525,7 +6527,7 @@ export function JourneyDetailPage({
                           handleQuickJumpToDate(d);
                           setTimeout(() => setIsQuickJumpExpanded(false), 500);
                         }}
-                        className={`min-w-[26px] h-6 sm:min-w-[28px] sm:h-7 px-1.5 rounded-full flex items-center justify-center text-[10.5px] font-mono font-black transition-all cursor-pointer shrink-0 ${
+                        className={`min-w-[26px] h-6 sm:min-w-[28px] sm:h-7 px-1.5 rounded-full flex items-center justify-center text-[10.5px] font-mono font-extrabold transition-all cursor-pointer shrink-0 ${
                           isActive
                             ? 'bg-red-600 text-white shadow-md scale-105'
                             : 'text-white/70 hover:text-white hover:bg-white/15'
@@ -6573,7 +6575,7 @@ export function JourneyDetailPage({
             <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-3">
               <MapPin className="w-5 h-5" />
             </div>
-            <h3 className="text-[11px] font-black uppercase tracking-wider text-black/50 dark:text-white/50 mb-1.5">구글 지도 이동</h3>
+            <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50 mb-1.5">구글 지도 이동</h3>
             <p className="text-xs font-bold tracking-tight mb-5 leading-relaxed break-keep" style={{ wordBreak: 'keep-all' }}>
               '<span className="text-red-600 dark:text-red-400">{mapConfirm.placeName}</span>' 위치를 구글 지도에서 확인하시겠습니까?
             </p>
@@ -6581,7 +6583,7 @@ export function JourneyDetailPage({
               <button
                 type="button"
                 onClick={() => setMapConfirm(null)}
-                className="flex-1 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer"
+                className="flex-1 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all cursor-pointer"
               >
                 취소 (N)
               </button>
@@ -6590,7 +6592,7 @@ export function JourneyDetailPage({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMapConfirm(null)}
-                className="flex-1 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-sm"
+                className="flex-1 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-sm"
               >
                 이동 (Y)
               </a>
@@ -6612,7 +6614,7 @@ export function JourneyDetailPage({
             <div className="p-4 border-b border-black/15 dark:border-white/15 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ArrowRightLeft className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <span className="text-xs sm:text-sm font-black uppercase tracking-widest font-sans">
+                <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest font-sans">
                   SWITCH JOURNEY
                 </span>
               </div>
@@ -6681,7 +6683,7 @@ export function JourneyDetailPage({
                       {/* Content */}
                       <div className="flex-1 p-2.5 sm:p-3 flex flex-col justify-center min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs sm:text-sm font-black truncate font-sans ${isCurrent ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
+                          <span className={`text-xs sm:text-sm font-extrabold truncate font-sans ${isCurrent ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
                             {item.title}
                           </span>
                           {isCurrent && (
@@ -6759,7 +6761,7 @@ export function JourneyDetailPage({
                 <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/50 dark:text-white/50">
                   EXPENSE DETAIL · 비용 상세
                 </span>
-                <h3 className="text-base sm:text-lg font-black font-sans tracking-tight break-keep mt-0.5">
+                <h3 className="text-base sm:text-lg font-extrabold font-sans tracking-tight break-keep mt-0.5">
                   {costModalItem.place}
                 </h3>
               </div>
@@ -6779,7 +6781,7 @@ export function JourneyDetailPage({
                 AMOUNT (금액)
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">
+                <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-red-600 dark:text-red-400">
                   {costModalItem.currency || 'KRW'} {costModalItem.cost}
                 </span>
               </div>
@@ -6811,7 +6813,7 @@ export function JourneyDetailPage({
             <button
               type="button"
               onClick={() => setCostModalItem(null)}
-              className="mt-2 w-full py-2.5 bg-black hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-mono font-black text-xs uppercase tracking-widest transition-colors cursor-pointer"
+              className="mt-2 w-full py-2.5 bg-black hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-mono font-extrabold text-xs uppercase tracking-widest transition-colors cursor-pointer"
             >
               CLOSE [ESC]
             </button>
@@ -6832,7 +6834,7 @@ export function JourneyDetailPage({
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <span className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                <span className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-mono">
                   CHANGE CARD COVER
                 </span>
               </div>
@@ -7052,7 +7054,7 @@ function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputPro
       onCompositionEnd={handleCompositionEnd}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
-      className="text-base sm:text-lg md:text-xl font-black uppercase bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
+      className="text-base sm:text-lg md:text-xl font-extrabold uppercase bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
       placeholder="JOURNEY TITLE"
     />
   );

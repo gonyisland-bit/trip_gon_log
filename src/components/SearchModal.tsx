@@ -270,7 +270,7 @@ export function SearchModal({
           <button
             type="button"
             onClick={() => setSearchCategory('journeys')}
-            className={`py-2 px-3 text-[11px] font-black uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
+            className={`py-2 px-3 text-[11px] font-extrabold uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
               searchCategory === 'journeys'
                 ? 'border-black dark:border-white text-black dark:text-white'
                 : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
@@ -282,7 +282,7 @@ export function SearchModal({
           <button
             type="button"
             onClick={() => setSearchCategory('timeline')}
-            className={`py-2 px-3 text-[11px] font-black uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
+            className={`py-2 px-3 text-[11px] font-extrabold uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
               searchCategory === 'timeline'
                 ? 'border-black dark:border-white text-black dark:text-white'
                 : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'

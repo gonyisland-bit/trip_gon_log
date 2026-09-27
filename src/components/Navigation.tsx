@@ -158,7 +158,7 @@ export function Navigation({
           <div className="hidden md:flex items-center gap-6 lg:gap-8 border-l border-black/15 dark:border-white/15 pl-6 lg:pl-8 font-['Inter',sans-serif]">
             <button 
               onClick={() => navigateTo('home')} 
-              className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'home' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
                   : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
@@ -168,7 +168,7 @@ export function Navigation({
             </button>
             <button 
               onClick={() => navigateTo('archive')} 
-              className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'archive' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
                   : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
@@ -184,7 +184,7 @@ export function Navigation({
                 window.dispatchEvent(new CustomEvent('resetMagazineHub'));
                 navigateTo('magazine');
               }} 
-              className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'magazine' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
                   : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
@@ -194,7 +194,7 @@ export function Navigation({
             </button>
             <button 
               onClick={() => navigateTo('map')} 
-              className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'map' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
                   : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
@@ -204,7 +204,7 @@ export function Navigation({
             </button>
             <button 
               onClick={() => navigateTo('calendar')} 
-              className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'calendar' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
                   : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
@@ -214,7 +214,7 @@ export function Navigation({
             </button>
             <button 
               onClick={() => navigateTo('pocket')} 
-              className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'pocket' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
                   : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
@@ -510,7 +510,7 @@ export function Navigation({
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="font-black text-red-600 dark:text-red-400 hover:underline cursor-pointer tracking-widest uppercase"
+                  className="font-extrabold text-red-600 dark:text-red-400 hover:underline cursor-pointer tracking-widest uppercase"
                 >
                   LOGOUT
                 </button>
@@ -519,14 +519,14 @@ export function Navigation({
               <div className="flex items-center gap-6">
                 <button
                   onClick={() => { setShowSettings(false); openAuthModal('login'); }}
-                  className="font-black uppercase tracking-widest hover:underline cursor-pointer text-black dark:text-white"
+                  className="font-extrabold uppercase tracking-widest hover:underline cursor-pointer text-black dark:text-white"
                 >
                   LOGIN
                 </button>
                 <span className="text-black/30 dark:text-white/30">/</span>
                 <button
                   onClick={() => { setShowSettings(false); openAuthModal('signup'); }}
-                  className="font-black uppercase tracking-widest hover:underline cursor-pointer text-black dark:text-white"
+                  className="font-extrabold uppercase tracking-widest hover:underline cursor-pointer text-black dark:text-white"
                 >
                   SIGN UP
                 </button>

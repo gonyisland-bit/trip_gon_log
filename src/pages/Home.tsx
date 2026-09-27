@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, MapPin, ArrowUpRight, Coins, Clock, Sliders } from 'lucide-react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
@@ -616,7 +616,7 @@ export function JourneyCardMenu({
             {onEdit && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-extrabold uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <Edit2 className="w-3.5 h-3.5 text-white/80" />
@@ -628,7 +628,7 @@ export function JourneyCardMenu({
             {onClone && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); onClone(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-extrabold uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <Copy className="w-3.5 h-3.5 text-white/80" />
@@ -640,7 +640,7 @@ export function JourneyCardMenu({
             {onMove && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); onMove(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-extrabold uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <ArrowUp className="w-3.5 h-3.5 text-white/80" />
@@ -652,7 +652,7 @@ export function JourneyCardMenu({
             {onDelete && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); setShowDeleteConfirm(true); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-red-400 hover:bg-red-950/50 hover:text-red-300 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-extrabold uppercase tracking-widest text-red-400 hover:bg-red-950/50 hover:text-red-300 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -928,7 +928,7 @@ export function HomePage({
         } catch (_) {}
       } else {
         // Fallback for backward compatibility
-        onSnapshot(doc(db, 'app_settings', 'home_widgets'), (legacySnap) => {
+        getDoc(doc(db, 'app_settings', 'home_widgets')).then((legacySnap) => {
           if (legacySnap.exists()) {
             const legacyData = legacySnap.data() as HomeWidgetConfig;
             setWidgetConfig(legacyData);
@@ -936,7 +936,7 @@ export function HomePage({
               localStorage.setItem('cached_home_widget_config', JSON.stringify(legacyData));
             } catch (_) {}
           }
-        }, () => {});
+        }).catch(() => {});
       }
     }, (err) => {
       console.warn("Home widgets firestore listen notice:", err);
@@ -965,7 +965,7 @@ export function HomePage({
         }
       } else {
         // Fallback for legacy path
-        onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (legacySnap) => {
+        getDoc(doc(db, 'settings', 'calendar_weather_cities')).then((legacySnap) => {
           if (legacySnap.exists()) {
             const data = legacySnap.data();
             if (Array.isArray(data?.cities)) {
@@ -975,7 +975,7 @@ export function HomePage({
               } catch (_) {}
             }
           }
-        }, () => {});
+        }).catch(() => {});
       }
     }, (err) => {
       console.warn("Calendar weather cities listen notice:", err);
@@ -1367,7 +1367,7 @@ export function HomePage({
                       </span>
                       {heroJourneys.length > 1 && (
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-black tracking-wider text-black dark:text-white">
+                          <span className="text-[11px] font-extrabold tracking-wider text-black dark:text-white">
                             {String(heroSlide + 1).padStart(2, '0')} / {String(heroJourneys.length).padStart(2, '0')}
                           </span>
                           <div className="flex items-center gap-0.5">
@@ -1545,7 +1545,7 @@ export function HomePage({
             >
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-red-600 dark:bg-red-500 animate-live-pulse shrink-0" />
-                <span className="text-[10.5px] sm:text-xs font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-400 shrink-0">
+                <span className="text-[10.5px] sm:text-xs font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-400 shrink-0">
                   LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}
                 </span>
                 <span className="text-xs sm:text-sm font-sans font-bold text-black dark:text-white truncate">
@@ -1569,7 +1569,7 @@ export function HomePage({
           <div className="w-full max-w-[1920px] mx-auto p-6 md:px-12 flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
             {/* Left: Pure Minimal Title */}
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                 TRIP
               </h2>
             </div>
@@ -1762,7 +1762,7 @@ export function HomePage({
                       {/* Top Row: Year/Month & Status Badge */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 font-mono text-[11px] sm:text-xs">
-                          <span className="font-black text-black dark:text-white tracking-tight">{year || '2024'}</span>
+                          <span className="font-extrabold text-black dark:text-white tracking-tight">{year || '2024'}</span>
                           {month && <span className="opacity-30">/</span>}
                           {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
                         </div>
@@ -1770,7 +1770,7 @@ export function HomePage({
                           const liveStatus = getLiveTripStatus(trip.date);
                           if (liveStatus.isLive) {
                             return (
-                              <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-red-500/50 flex items-center gap-1.5 leading-none">
+                              <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-red-500/50 flex items-center gap-1.5 leading-none">
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
                                 <span>LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}</span>
                               </span>
@@ -1778,14 +1778,14 @@ export function HomePage({
                           }
                           if (isItemPlan || trip.statusBadge === 'PLAN') {
                             return (
-                              <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
+                              <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
                                 PLAN
                               </span>
                             );
                           }
                           if (trip.statusBadge) {
                             return (
-                              <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono rounded-none leading-none ${
+                              <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono rounded-none leading-none ${
                                 trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                               }`}>
                                 {trip.statusBadge}
@@ -1797,7 +1797,7 @@ export function HomePage({
                       </div>
 
                       {/* Prominent Title */}
-                      <h3 className="font-black text-base sm:text-lg md:text-xl text-black dark:text-white uppercase font-sans tracking-tight truncate group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                      <h3 className="font-extrabold text-base sm:text-lg md:text-xl text-black dark:text-white uppercase font-sans tracking-tight truncate group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                         {trip.title}
                       </h3>
 
@@ -1920,7 +1920,7 @@ export function HomePage({
                       const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
                       return (
                         <div 
-                          className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-black tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
+                          className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-extrabold tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
                           title={`${tripYear}년 여정`}
                         >
                           <span>{tripYear}</span>
@@ -1942,7 +1942,7 @@ export function HomePage({
                       </div>
 
                       {/* 메인 타이틀: 2줄로 다 보이게 표기 (line-clamp-2) */}
-                      <h3 className={`font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors ${
+                      <h3 className={`font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors ${
                         isItemPlan ? 'group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'group-hover:text-red-600 dark:group-hover:text-red-400'
                       } ${isWide ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'}`}>
                         {trip.title}
@@ -1998,7 +1998,7 @@ export function HomePage({
             <button
               type="button"
               onClick={() => onNavigate('archive')}
-              className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md"
+              className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md"
             >
               <span>ALL TRIPS ({filteredTrips.length})</span>
               <ArrowRight className="w-4 h-4" />
@@ -2059,7 +2059,7 @@ export function HomePage({
               {/* Section Header: Pure Swiss Minimal Magazine Header */}
               <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-4 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-baseline gap-4 flex-wrap">
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                     MAGAZINE
                   </h2>
                   {selectedSection && (
@@ -2265,7 +2265,7 @@ export function HomePage({
                 <button
                   type="button"
                   onClick={() => handleGoToMagazineSection()}
-                  className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md font-sans"
+                  className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md font-sans"
                 >
                   <span>EXPLORE MAGAZINE HUB</span>
                   <ArrowRight className="w-4 h-4" />
@@ -2483,7 +2483,7 @@ export function HomePage({
             {/* Minimal Section Sub-Header */}
             <div className="flex items-center justify-between pb-4 sm:pb-5 border-b border-black/10 dark:border-white/10 mb-6 sm:mb-8">
               <div className="flex items-center gap-2.5">
-                <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[10px] px-2 py-0.5 uppercase tracking-widest">
+                <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-[10px] px-2 py-0.5 uppercase tracking-widest">
                   CALENDAR ARCHIVE
                 </span>
                 <span className="text-xs font-mono font-bold tracking-widest uppercase text-black/60 dark:text-white/60">
@@ -2509,11 +2509,11 @@ export function HomePage({
                   className="cursor-pointer group flex flex-row items-baseline gap-4 sm:gap-6 lg:flex-col lg:items-start select-none"
                   title="달력 허브로 이동"
                 >
-                  <span className="text-6xl sm:text-7xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0">
+                  <span className="text-6xl sm:text-7xl lg:text-9xl font-extrabold font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0">
                     {String(month + 1).padStart(2, '0')}
                   </span>
                   <div className="mt-0 lg:mt-3 flex flex-col">
-                    <span className="text-xl sm:text-2xl lg:text-3xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
+                    <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
                       {MONTH_NAMES_EN[month]}
                     </span>
                     <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
@@ -2543,7 +2543,7 @@ export function HomePage({
               {/* 2. Monthly Schedules Feed Column (lg:col-span-5 xl:col-span-5) */}
               <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:px-7">
                 <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-3">
-                  <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">
                     MONTHLY SCHEDULES ({monthSchedules.length})
                   </span>
                   <button
@@ -2594,7 +2594,7 @@ export function HomePage({
               <div className="lg:col-span-4 xl:col-span-4 flex flex-col items-center lg:items-end justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-7 lg:pr-0">
                 <div className="w-full max-w-[380px] lg:max-w-full mx-auto lg:mr-0 lg:ml-auto">
                   {/* Weekday Headers: SUN ~ SAT */}
-                  <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-black font-mono select-none text-black/40 dark:text-white/40">
+                  <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-extrabold font-mono select-none text-black/40 dark:text-white/40">
                     <div className="text-red-500">S</div>
                     <div>M</div>
                     <div>T</div>
@@ -2621,13 +2621,13 @@ export function HomePage({
                       const isSat = !isSun && new Date(cell.dateStr).getDay() === 6;
 
                       let btnStyle = 'w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex flex-col items-center justify-center font-mono transition-all duration-150 cursor-pointer relative mx-auto ';
-                      let numStyle = 'text-xs sm:text-sm md:text-base font-black leading-none ';
+                      let numStyle = 'text-xs sm:text-sm md:text-base font-extrabold leading-none ';
 
                       if (cell.isToday) {
-                        btnStyle += 'bg-black text-white dark:bg-white dark:text-black font-black shadow-xs scale-105';
+                        btnStyle += 'bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-xs scale-105';
                         numStyle += 'text-white dark:text-black';
                       } else if (cell.hasTrip) {
-                        btnStyle += 'bg-[#FF4500] hover:bg-[#E03E00] text-white font-black shadow-xs';
+                        btnStyle += 'bg-[#FF4500] hover:bg-[#E03E00] text-white font-extrabold shadow-xs';
                         numStyle += 'text-white';
                       } else {
                         btnStyle += 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20';
@@ -2703,7 +2703,7 @@ export function HomePage({
                   className="p-3 sm:p-4 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="px-2 py-0.5 bg-red-600 text-white font-mono font-black text-xs uppercase tracking-wider">
+                    <span className="px-2 py-0.5 bg-red-600 text-white font-mono font-extrabold text-xs uppercase tracking-wider">
                       {dDayStr}
                     </span>
                     <span className="font-mono font-bold text-xs uppercase tracking-wider text-black dark:text-white group-hover:text-red-600 transition-colors">
@@ -2729,7 +2729,7 @@ export function HomePage({
                 {/* Left: Swiss Minimal Icon & Label */}
                 <div className="flex items-center gap-1.5 shrink-0 pr-2 sm:pr-3 border-r border-black/10 dark:border-white/10">
                   <Coins className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
-                  <span className="font-black text-[10px] sm:text-[11px] uppercase tracking-wider text-black/70 dark:text-white/70 hidden xs:inline">
+                  <span className="font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider text-black/70 dark:text-white/70 hidden xs:inline">
                     EXCHANGE
                   </span>
                 </div>
@@ -2742,10 +2742,10 @@ export function HomePage({
                     { code: 'EUR', rate: '1,512.20', diff: '+3.0', isUp: true },
                   ].map((cur, idx) => (
                     <div key={cur.code} className="flex items-center gap-1 sm:gap-1.5">
-                      <span className="font-black text-[10px] sm:text-xs text-black/60 dark:text-white/60 tracking-wider">
+                      <span className="font-extrabold text-[10px] sm:text-xs text-black/60 dark:text-white/60 tracking-wider">
                         {cur.code}
                       </span>
-                      <span className="font-black text-xs sm:text-sm text-black dark:text-white tracking-tight">
+                      <span className="font-extrabold text-xs sm:text-sm text-black dark:text-white tracking-tight">
                         {cur.rate}
                       </span>
                       <span className={`text-[8.5px] sm:text-[9.5px] font-bold hidden sm:inline ${

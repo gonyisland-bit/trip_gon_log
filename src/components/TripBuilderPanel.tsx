@@ -1787,9 +1787,9 @@ export function TripBuilderPanel({
 
     const badgeLabel = isWarn ? '주의 시즌' : isBest ? '최적 시즌' : '시즌 참고';
     const badgeCls = isWarn
-      ? 'bg-red-600 text-white font-black'
+      ? 'bg-red-600 text-white font-extrabold'
       : isBest
-        ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-black font-black'
+        ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-black font-extrabold'
         : 'bg-black/10 dark:bg-white/10 text-black/70 dark:text-white/70 font-bold';
 
     const containerCls = isWarn
@@ -1901,7 +1901,7 @@ export function TripBuilderPanel({
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+              <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                 {presets.length} PRESETS
               </span>
             </div>
@@ -1927,10 +1927,10 @@ export function TripBuilderPanel({
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-mono font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase">
+                        <span className="text-[10px] font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase">
                           {preset.country}
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-orange-600 dark:text-orange-400">
+                        <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400">
                           {preset.durationDays}D
                         </span>
                       </div>
@@ -1953,7 +1953,7 @@ export function TripBuilderPanel({
                 <div className="flex items-center justify-between pb-2 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-red-600 dark:bg-red-500"></span>
-                    <span className="text-[11px] font-mono font-black uppercase tracking-widest text-black dark:text-white">
+                    <span className="text-[11px] font-mono font-extrabold uppercase tracking-widest text-black dark:text-white">
                       PRESET SUMMARY
                     </span>
                   </div>
@@ -1970,7 +1970,7 @@ export function TripBuilderPanel({
                       DESTINATION
                     </span>
                     <div className="text-right flex items-center gap-1.5">
-                      <span className="font-mono font-black text-black dark:text-white uppercase px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-[10.5px]">
+                      <span className="font-mono font-extrabold text-black dark:text-white uppercase px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-[10.5px]">
                         {selectedPresetObj.country}
                       </span>
                       <span className="font-bold text-black dark:text-white">
@@ -2008,7 +2008,7 @@ export function TripBuilderPanel({
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="font-mono font-black text-black dark:text-white text-xs">
+                      <span className="font-mono font-extrabold text-black dark:text-white text-xs">
                         {presetDateCalc.nightsDays}
                       </span>
                       <span className="text-[10.5px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
@@ -2059,7 +2059,7 @@ export function TripBuilderPanel({
                 <button
                   type="button"
                   onClick={() => handleConfirmPresetGeneration(selectedPresetObj)}
-                  className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer mt-3"
+                  className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer mt-3"
                 >
                   <Check className="w-4 h-4" />
                   <span>CREATE TRIP</span>
@@ -2080,7 +2080,7 @@ export function TripBuilderPanel({
                     <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
                       {smartCountry ? `${smartCountry.nameKo} · ${smartCountry.nameEn}` : 'GLOBAL TRIP'}
                     </span>
-                    <span className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 bg-white dark:bg-[#1f1f1f] px-2.5 py-0.5 rounded-full shadow-2xs">
+                    <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400 bg-white dark:bg-[#1f1f1f] px-2.5 py-0.5 rounded-full shadow-2xs">
                       {smartDurationDays}박 {smartDurationDays + 1}일
                     </span>
                   </div>
@@ -2415,7 +2415,7 @@ export function TripBuilderPanel({
                             isSelected
                               ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-xs'
                               : isAutoBest
-                                ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400 ring-1.5 ring-orange-500 font-bold'
+                                ? 'bg-red-500/20 text-red-600 dark:text-red-400 ring-1.5 ring-red-500 font-bold'
                                 : isBestSeason
                                   ? 'bg-neutral-200 dark:bg-neutral-700 text-black dark:text-white font-bold'
                                   : 'text-black/50 dark:text-white/50 hover:bg-neutral-100 dark:hover:bg-neutral-800'
@@ -2424,7 +2424,7 @@ export function TripBuilderPanel({
                         >
                           <span>{m}</span>
                           {isAutoBest && (
-                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-orange-500 rounded-full ring-1 ring-white dark:ring-black" />
+                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full ring-1 ring-white dark:ring-black" />
                           )}
                         </button>
                       );
@@ -2467,12 +2467,12 @@ export function TripBuilderPanel({
                             )}
                           </div>
                           {isWarning ? (
-                            <span className="text-[10.5px] font-black text-white bg-red-600 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="text-[10.5px] font-extrabold text-white bg-red-600 px-2 py-0.5 rounded-md flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 stroke-[2.5]" />
                               주의 시즌
                             </span>
                           ) : isBest ? (
-                            <span className="text-[10.5px] font-black text-white bg-emerald-600 dark:bg-emerald-500 dark:text-black px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="text-[10.5px] font-extrabold text-white bg-emerald-600 dark:bg-emerald-500 dark:text-black px-2 py-0.5 rounded-md flex items-center gap-1">
                               <Check className="w-3 h-3 stroke-[2.5]" />
                               최적 시즌
                             </span>
@@ -2599,7 +2599,7 @@ export function TripBuilderPanel({
                     onClick={() => handleProposeTrips()}
                     className="w-full py-3.5 bg-neutral-900 hover:bg-black dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black rounded-xl font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4 text-orange-400" />
+                    <Sparkles className="w-4 h-4 text-red-400" />
                     <span>CREATE TRIP</span>
                   </button>
                 </div>
@@ -2616,13 +2616,13 @@ export function TripBuilderPanel({
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>CRITERIA</span>
                   </button>
-                  <span className="text-[11px] font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                  <span className="text-[11px] font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
                     3 CURATED PROPOSALS
                   </span>
                   <button
                     type="button"
                     onClick={handleShuffleProposals}
-                    className="flex items-center gap-1 text-[11px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 hover:opacity-80 cursor-pointer transition-opacity"
+                    className="flex items-center gap-1 text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:opacity-80 cursor-pointer transition-opacity"
                     title="다른 추천 조합 보기"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -2657,17 +2657,17 @@ export function TripBuilderPanel({
                         {/* Card Top: Number, Region, Theme Badge */}
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-black">
+                            <span className="w-5 h-5 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-extrabold">
                               0{idx + 1}
                             </span>
-                            <span className="text-xs font-mono font-black uppercase text-black dark:text-white">
+                            <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
                               {prop.cityName} ({prop.countryKo})
                             </span>
                             <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">
                               {prop.themeLabel}
                             </span>
                           </div>
-                          <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 bg-orange-600 text-white uppercase tracking-wider">
+                          <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 bg-red-600 text-white uppercase tracking-wider">
                             {prop.seasonBadge}
                           </span>
                         </div>
@@ -2688,7 +2688,7 @@ export function TripBuilderPanel({
                             <Calendar className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
                             <span>{prop.startDate.replace(/-/g, '.')} - {prop.endDate.replace(/-/g, '.')}</span>
                           </div>
-                          <span className="text-red-600 dark:text-red-400 font-black">{prop.nightsDays}</span>
+                          <span className="text-red-600 dark:text-red-400 font-extrabold">{prop.nightsDays}</span>
                         </div>
 
                         {/* Highlights Chips */}
@@ -2745,7 +2745,7 @@ export function TripBuilderPanel({
                               e.stopPropagation();
                               handleConfirmProposalGeneration(prop);
                             }}
-                            className="py-2 px-2 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-black uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                            className="py-2 px-2 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-extrabold uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                           >
                             <Check className="w-3.5 h-3.5" />
                             <span>CREATE TRIP</span>
@@ -3184,7 +3184,7 @@ export function TripBuilderPanel({
             <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-black dark:text-white" />
-                <span className="text-sm font-black uppercase font-mono tracking-wider">
+                <span className="text-sm font-extrabold uppercase font-mono tracking-wider">
                   TEMPLATES LIBRARY
                 </span>
               </div>
@@ -3202,7 +3202,7 @@ export function TripBuilderPanel({
               {/* 1. Rough Quick Templates */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
                     대중적 러프 템플릿 (QUICK START)
                   </span>
                   <span className="text-[10px] font-mono text-black/40 dark:text-white/40">4 PRESETS</span>
@@ -3215,7 +3215,7 @@ export function TripBuilderPanel({
                       className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase font-sans tracking-tight">
+                        <span className="text-xs font-extrabold uppercase font-sans tracking-tight">
                           {tpl.name}
                         </span>
                         <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black">
@@ -3239,7 +3239,7 @@ export function TripBuilderPanel({
               {presets.some(p => p.isCustom) && (
                 <div className="pt-4 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
                       나만의 맞춤 템플릿 (SAVED TEMPLATES)
                     </span>
                     <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
@@ -3260,7 +3260,7 @@ export function TripBuilderPanel({
                             <span className="text-xs font-bold font-sans text-black dark:text-white truncate">
                               {cp.title}
                             </span>
-                            <span className="text-[10px] font-mono font-bold text-orange-600 dark:text-orange-400 shrink-0">
+                            <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
                               {cp.durationDays}D
                             </span>
                           </div>
@@ -3291,7 +3291,7 @@ export function TripBuilderPanel({
               {/* 3. Global Curated Presets */}
               <div className="pt-4 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
                     전 세계 추천 여정 (WORLD PRESETS)
                   </span>
                   <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
@@ -3318,7 +3318,7 @@ export function TripBuilderPanel({
                           {wp.highlights?.[0] || wp.subtitle}
                         </p>
                       </div>
-                      <span className="text-[10.5px] font-mono font-bold text-orange-600 dark:text-orange-400 shrink-0">
+                      <span className="text-[10.5px] font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
                         {wp.durationDays}D
                       </span>
                     </div>

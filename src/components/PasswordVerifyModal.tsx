@@ -62,7 +62,7 @@ export function PasswordVerifyModal({
         <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
           <div className="flex items-center gap-2">
             <KeyRound className="w-4 h-4 text-black dark:text-white" />
-            <h3 className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
+            <h3 className="text-xs font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
               VERIFY PASSWORD
             </h3>
           </div>
@@ -113,7 +113,7 @@ export function PasswordVerifyModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 h-9 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase hover:opacity-85 disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 h-9 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase hover:opacity-85 disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {loading ? (
                 <>

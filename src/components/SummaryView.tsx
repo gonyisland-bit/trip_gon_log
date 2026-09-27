@@ -646,12 +646,12 @@ export function SummaryView({
       >
         {/* 1. Masthead & Inverted Tag Pill */}
         <div className="flex flex-col items-start gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-black text-white dark:bg-white dark:text-black rounded-xs text-[10px] font-black uppercase tracking-widest font-mono">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-black text-white dark:bg-white dark:text-black rounded-xs text-[10px] font-extrabold uppercase tracking-widest font-mono">
             <span>MEMORANDUM OF TRAVEL</span>
             <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-sans uppercase tracking-tight leading-[1.05] text-black dark:text-white mt-1">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold font-sans uppercase tracking-tight leading-[1.05] text-black dark:text-white mt-1">
             {trip.title ? trip.title.replace(' (Plan)', '') : 'UNTITLED JOURNEY'}
           </h1>
 
@@ -663,7 +663,7 @@ export function SummaryView({
             <div className="flex items-center gap-2 text-xs font-mono font-bold text-black/60 dark:text-white/60 flex-wrap">
               <span>{formattedDateRange}</span>
               <span>·</span>
-              <span className="text-black dark:text-white font-black">{totalDays} DAYS</span>
+              <span className="text-black dark:text-white font-extrabold">{totalDays} DAYS</span>
               <span>·</span>
               <span className="text-black/80 dark:text-white/80">{formatDestinations(trip.locationStr)}</span>
             </div>
@@ -681,7 +681,7 @@ export function SummaryView({
                 <button
                   id="capture-exclude-btn"
                   onClick={handleCapture}
-                  className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black dark:text-white hover:opacity-60 transition-opacity cursor-pointer active:scale-95 shrink-0"
+                  className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-black dark:text-white hover:opacity-60 transition-opacity cursor-pointer active:scale-95 shrink-0"
                 >
                   <span className="w-4 h-4 rounded-xs bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
                     <ArrowDownRight className="w-3 h-3" />
@@ -697,7 +697,7 @@ export function SummaryView({
         <div className="py-6 border-y border-black dark:border-white grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6 w-full font-sans">
           {/* Metric 1: Total Days */}
           <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
-            <span className="text-3xl sm:text-4xl md:text-5xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+            <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {totalDays < 10 ? `0${totalDays}` : totalDays}
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
@@ -707,7 +707,7 @@ export function SummaryView({
 
           {/* Metric 2: Recorded Spots */}
           <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
-            <span className="text-3xl sm:text-4xl md:text-5xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+            <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {recordedSpotsCount < 10 ? `0${recordedSpotsCount}` : recordedSpotsCount}
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
@@ -717,7 +717,7 @@ export function SummaryView({
 
           {/* Metric 3: Flight Legs */}
           <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
-            <span className="text-3xl sm:text-4xl md:text-5xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+            <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {flights.length < 10 ? `0${flights.length}` : flights.length}
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
@@ -727,7 +727,7 @@ export function SummaryView({
 
           {/* Metric 4: Total Estimated Budget ('240,-' European/Swiss editorial format) */}
           <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
-            <span className="text-3xl sm:text-4xl md:text-5xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+            <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {Math.round(totalInBaseCurrency / 1000).toLocaleString()},-
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
@@ -742,7 +742,7 @@ export function SummaryView({
             <button
               type="button"
               onClick={() => onSelectTab && onSelectTab('stays')}
-              className="flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
+              className="flex items-center gap-2 text-sm sm:text-base font-extrabold uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
               title="숙박 탭으로 이동"
             >
               <span>STAYS</span>
@@ -823,7 +823,7 @@ export function SummaryView({
             <button
               type="button"
               onClick={() => onSelectTab && onSelectTab('flights')}
-              className="flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
+              className="flex items-center gap-2 text-sm sm:text-base font-extrabold uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
               title="항공 탭으로 이동"
             >
               <span>FLIGHTS</span>
@@ -843,7 +843,7 @@ export function SummaryView({
                       className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-base sm:text-lg font-black font-sans tracking-tight text-black dark:text-white">
+                        <span className="text-base sm:text-lg font-extrabold font-sans tracking-tight text-black dark:text-white">
                           {f.fromCode || 'DEP'} ➔ {f.toCode || 'ARR'}
                         </span>
                         <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 rounded-xs">
@@ -898,7 +898,7 @@ export function SummaryView({
               <button
                 type="button"
                 onClick={() => onSelectTab && onSelectTab('transit')}
-                className="flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
+                className="flex items-center gap-2 text-sm sm:text-base font-extrabold uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
                 title="교통 탭으로 이동"
               >
                 <span>TRANSIT</span>
@@ -1008,7 +1008,7 @@ export function SummaryView({
             <button
               type="button"
               onClick={() => onSelectTab && onSelectTab('settlement')}
-              className="flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
+              className="flex items-center gap-2 text-sm sm:text-base font-extrabold uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
               title="비용/정산 탭으로 이동"
             >
               <span>COST</span>
@@ -1048,14 +1048,14 @@ export function SummaryView({
               {/* Total Converted (Point Clean Accent Box) */}
               <div className="p-4 sm:p-5 border border-black/15 dark:border-white/15 flex flex-col justify-between gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
                 <div className="flex justify-between items-start">
-                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest font-sans text-black/60 dark:text-white/60">
+                  <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest font-sans text-black/60 dark:text-white/60">
                     TOTAL ESTIMATED
                   </span>
                   <span className="text-[9px] font-sans text-black/40 dark:text-white/40 uppercase font-bold">
                     KRW BASE
                   </span>
                 </div>
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-black font-sans text-black dark:text-white leading-none">
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-sans text-black dark:text-white leading-none">
                   ₩{Math.round(totalInBaseCurrency).toLocaleString()}
                 </div>
               </div>
@@ -1076,7 +1076,7 @@ export function SummaryView({
           >
             {/* Modal Header */}
             <div className="flex justify-between items-center px-4 sm:px-6 py-3.5 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
-              <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-black dark:text-white font-sans">
+              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-black dark:text-white font-sans">
                 MEMORANDUM SUMMARY
               </span>
               <button 
@@ -1101,14 +1101,14 @@ export function SummaryView({
             <div className="flex items-stretch divide-x divide-black/15 dark:divide-white/15 bg-white dark:bg-[#0E0E0E] shrink-0">
               <button
                 onClick={handleSaveImage}
-                className="flex-1 py-3.5 sm:py-4 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-black uppercase tracking-widest font-sans hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer rounded-none"
+                className="flex-1 py-3.5 sm:py-4 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-extrabold uppercase tracking-widest font-sans hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer rounded-none"
               >
                 <Download className="w-4 h-4" />
                 <span>SAVE</span>
               </button>
               <button
                 onClick={handleShareImage}
-                className="flex-1 py-3.5 sm:py-4 bg-transparent text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 text-xs sm:text-sm font-black uppercase tracking-widest font-sans transition-colors flex items-center justify-center gap-2 cursor-pointer rounded-none"
+                className="flex-1 py-3.5 sm:py-4 bg-transparent text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 text-xs sm:text-sm font-extrabold uppercase tracking-widest font-sans transition-colors flex items-center justify-center gap-2 cursor-pointer rounded-none"
               >
                 <Share2 className="w-4 h-4" />
                 <span>SHARE</span>

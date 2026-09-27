@@ -147,7 +147,7 @@ export function LandingGuestView({
             </span>
           </div>
 
-          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[130px] xl:text-[150px] font-black tracking-tight leading-none font-['Inter',sans-serif] drop-shadow-2xl text-white">
+          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[130px] xl:text-[150px] font-extrabold tracking-tight leading-none font-['Inter',sans-serif] drop-shadow-2xl text-white">
             Tripgon log
           </h1>
 
@@ -162,14 +162,14 @@ export function LandingGuestView({
               <button
                 type="button"
                 onClick={() => onOpenAuthModal('login')}
-                className="px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer shadow-xl rounded-none"
+                className="px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition-all cursor-pointer shadow-xl rounded-none"
               >
                 SIGN IN
               </button>
               <button
                 type="button"
                 onClick={() => onOpenAuthModal('signup')}
-                className="px-7 sm:px-8 py-3.5 sm:py-4 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs rounded-none"
+                className="px-7 sm:px-8 py-3.5 sm:py-4 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs rounded-none"
               >
                 JOIN
               </button>

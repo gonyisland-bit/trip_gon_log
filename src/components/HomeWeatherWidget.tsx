@@ -192,7 +192,7 @@ export function HomeWeatherWidget({
       {/* Sub-Header */}
       <div className="flex items-center justify-between pb-3.5 border-b border-black/10 dark:border-white/10 mb-0">
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[10px] px-2 py-0.5 uppercase tracking-widest">
+          <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-[10px] px-2 py-0.5 uppercase tracking-widest">
             LIVE WEATHER
           </span>
           <span className="text-[11px] sm:text-xs font-mono font-bold tracking-widest uppercase text-black/60 dark:text-white/60">
@@ -251,7 +251,7 @@ export function HomeWeatherWidget({
               >
                 {/* 1. Header: City Name & Country Pill Badge */}
                 <div className="flex items-center justify-between gap-2 w-full">
-                  <span className="text-xs sm:text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white leading-tight">
+                  <span className="text-xs sm:text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white leading-tight">
                     {city.nameEn}
                   </span>
                   <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
@@ -263,7 +263,7 @@ export function HomeWeatherWidget({
                 <div className="flex items-center justify-between gap-2 my-0.5 w-full">
                   {/* Left: Large Temperature + High/Low */}
                   <div className="flex flex-col">
-                    <span className="text-3xl sm:text-4xl lg:text-[40px] font-black font-mono tracking-tighter text-black dark:text-white leading-none">
+                    <span className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold font-mono tracking-tighter text-black dark:text-white leading-none">
                       {temp}°
                     </span>
                     <span className="text-[10.5px] sm:text-[11px] font-mono font-bold text-black/50 dark:text-white/50 mt-1.5">
@@ -334,7 +334,7 @@ export function HomeWeatherWidget({
           <div className="flex items-center justify-between pb-2.5 border-b border-black/10 dark:border-white/10 mb-2 font-mono">
             <div className="flex items-center gap-2">
               <Calendar className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
-              <span className="text-xs font-black uppercase tracking-wider text-black dark:text-white">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-black dark:text-white">
                 {activeForecastCity.cityEn} · 7-DAY FORECAST
               </span>
               <span className="text-[10px] text-black/40 dark:text-white/40 hidden sm:inline">
@@ -364,7 +364,7 @@ export function HomeWeatherWidget({
                 >
                   {/* Left: 요일 및 날짜 */}
                   <div className="flex items-center gap-2 w-24 shrink-0">
-                    <span className={`text-xs ${isToday ? 'font-black text-red-600 dark:text-red-500' : 'font-bold text-black/70 dark:text-white/70'}`}>
+                    <span className={`text-xs ${isToday ? 'font-extrabold text-red-600 dark:text-red-500' : 'font-bold text-black/70 dark:text-white/70'}`}>
                       {isToday ? 'TODAY' : fItem.dayOfWeek}
                     </span>
                     <span className="text-[10px] text-black/40 dark:text-white/40">
@@ -408,7 +408,7 @@ export function HomeWeatherWidget({
                 >
                   {/* 요일 & 날짜 */}
                   <div className="flex flex-col items-center leading-tight">
-                    <span className={`text-[11px] font-mono ${isToday ? 'font-black text-red-600 dark:text-red-500' : 'font-bold text-black/60 dark:text-white/60'}`}>
+                    <span className={`text-[11px] font-mono ${isToday ? 'font-extrabold text-red-600 dark:text-red-500' : 'font-bold text-black/60 dark:text-white/60'}`}>
                       {isToday ? 'TODAY' : fItem.dayOfWeek}
                     </span>
                     <span className="text-[10px] font-mono text-black/40 dark:text-white/40 mt-0.5">

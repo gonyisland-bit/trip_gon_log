@@ -234,7 +234,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
               <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
               <span>{locationLabel}</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black text-black dark:text-white leading-tight break-words font-sans">
+            <h2 className="text-lg sm:text-xl font-extrabold text-black dark:text-white leading-tight break-words font-sans">
               {spot.title}
             </h2>
           </div>

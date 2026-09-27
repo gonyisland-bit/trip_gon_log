@@ -364,7 +364,7 @@ export function FlightCard({
                     setTimeout(() => setActiveSearchField(null), 250);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-black text-base sm:text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 uppercase"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-extrabold text-base sm:text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 uppercase"
                   placeholder="DEP"
                 />
                 
@@ -386,7 +386,7 @@ export function FlightCard({
                         className="w-full px-3 py-2 text-xs sm:text-sm hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white cursor-pointer"
                       >
                         <div className="flex justify-between items-center w-full">
-                          <span className="font-black text-red-600 dark:text-red-400 font-mono text-xs sm:text-sm">{s.code}</span>
+                          <span className="font-extrabold text-red-600 dark:text-red-400 font-mono text-xs sm:text-sm">{s.code}</span>
                           <span className="font-bold opacity-90 text-xs sm:text-sm">{s.city}</span>
                         </div>
                         <span className="text-[10px] sm:text-xs opacity-60 truncate mt-0.5">{s.name}</span>
@@ -408,7 +408,7 @@ export function FlightCard({
                     window.open(url, '_blank');
                   }
                 }}
-                className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white font-mono"
+                className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white font-mono"
               >
                 {flight.fromCode}
               </button>
@@ -553,7 +553,7 @@ export function FlightCard({
                     setTimeout(() => setActiveSearchField(null), 250);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-black text-base sm:text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 uppercase"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-extrabold text-base sm:text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 uppercase"
                   placeholder="ARR"
                 />
                 
@@ -575,7 +575,7 @@ export function FlightCard({
                         className="w-full px-3 py-2 text-xs sm:text-sm hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white cursor-pointer"
                       >
                         <div className="flex justify-between items-center w-full">
-                          <span className="font-black text-red-600 dark:text-red-400 font-mono text-xs sm:text-sm">{s.code}</span>
+                          <span className="font-extrabold text-red-600 dark:text-red-400 font-mono text-xs sm:text-sm">{s.code}</span>
                           <span className="font-bold opacity-90 text-xs sm:text-sm">{s.city}</span>
                         </div>
                         <span className="text-[10px] sm:text-xs opacity-60 truncate mt-0.5">{s.name}</span>
@@ -597,7 +597,7 @@ export function FlightCard({
                     window.open(url, '_blank');
                   }
                 }}
-                className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white font-mono"
+                className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white font-mono"
               >
                 {flight.toCode}
               </button>
@@ -689,7 +689,7 @@ export function FlightCard({
                 placeholder="00A"
               />
             ) : (
-              <span className="text-xs sm:text-sm font-black text-black/85 dark:text-white/85 block uppercase font-mono tracking-tight">
+              <span className="text-xs sm:text-sm font-extrabold text-black/85 dark:text-white/85 block uppercase font-mono tracking-tight">
                 {flight.seat || 'N/A'}
               </span>
             )}

@@ -4331,7 +4331,7 @@ export function ManageHubPage({
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="text-base sm:text-lg font-black uppercase tracking-tight font-sans">
+          <h1 className="text-base sm:text-lg font-extrabold uppercase tracking-tight font-sans">
             MANAGEMENT HUB
           </h1>
         </div>
@@ -4398,10 +4398,10 @@ export function ManageHubPage({
             <div className="flex flex-col gap-8">
               {/* Header Title */}
               <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   APP & HOMEPAGE CONFIGURATION
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                   HOME SETTING
                 </h2>
                 <p className="text-xs text-black/60 dark:text-white/60 font-mono">
@@ -4414,7 +4414,7 @@ export function ManageHubPage({
               {/* ═══════════════════════════════════════════════════════════════ */}
               <section className="flex flex-col gap-6 pt-2">
                   <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
-                    <h3 className="text-lg font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                    <h3 className="text-lg font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                       MAIN
                     </h3>
                   </div>
@@ -4439,7 +4439,7 @@ export function ManageHubPage({
                 {/* ═══════════════════════════════════════════════════════════════ */}
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
-                    <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                    <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                       HERO
                     </h3>
                   </div>
@@ -4811,7 +4811,7 @@ export function ManageHubPage({
                                     {/* Action Buttons Overlay: Replace & Delete */}
                                     <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
                                       <label
-                                        className="p-1 bg-black/80 hover:bg-black text-white hover:text-orange-400 transition-colors cursor-pointer flex items-center"
+                                        className="p-1 bg-black/80 hover:bg-black text-white hover:text-red-400 transition-colors cursor-pointer flex items-center"
                                         title="이 슬롯의 미디어 교체"
                                       >
                                         <RefreshCw className="w-3 h-3" />
@@ -4945,7 +4945,7 @@ export function ManageHubPage({
                 {/* ═══════════════════════════════════════════════════════════════ */}
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
-                    <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                    <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                       TRIP
                     </h3>
                   </div>
@@ -4980,7 +4980,7 @@ export function ManageHubPage({
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
                     <div className="flex items-baseline gap-3">
-                      <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                      <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                         MAGAZINE
                       </h3>
                       <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
@@ -5096,7 +5096,7 @@ export function ManageHubPage({
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
                     <div className="flex items-baseline gap-3">
-                      <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                      <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                         BOTTOM WIDGETS
                       </h3>
                       <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
@@ -5372,10 +5372,10 @@ export function ManageHubPage({
             
             {/* Top Bar with Header */}
             <div className="w-full px-4 sm:px-8 pt-6 pb-4 border-b border-black/15 dark:border-white/15 shrink-0">
-              <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+              <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                 JOURNEY LOGS & PLANNER MANAGEMENT
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+              <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                 TRIP SETTING
               </h2>
               <p className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
@@ -5493,7 +5493,7 @@ export function ManageHubPage({
                 <button
                   type="button"
                   onClick={() => setMobileArchiveTab('LIST')}
-                  className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider font-sans border-r border-black/15 dark:border-white/15 cursor-pointer ${
+                  className={`flex-1 py-2.5 text-xs font-extrabold uppercase tracking-wider font-sans border-r border-black/15 dark:border-white/15 cursor-pointer ${
                     mobileArchiveTab === 'LIST'
                       ? 'bg-black text-white dark:bg-white dark:text-black'
                       : 'text-black/60 dark:text-white/60'
@@ -5504,7 +5504,7 @@ export function ManageHubPage({
                 <button
                   type="button"
                   onClick={() => setMobileArchiveTab('EDIT')}
-                  className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider font-sans cursor-pointer ${
+                  className={`flex-1 py-2.5 text-xs font-extrabold uppercase tracking-wider font-sans cursor-pointer ${
                     mobileArchiveTab === 'EDIT'
                       ? 'bg-black text-white dark:bg-white dark:text-black'
                       : 'text-black/60 dark:text-white/60'
@@ -5527,10 +5527,10 @@ export function ManageHubPage({
                   {/* Top Bar for Selected Journey with Direct View Link */}
                   <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-4">
                     <div className="min-w-0 pr-2">
-                      <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                      <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                         EDITING ID #{selectedJourney.id}
                       </span>
-                      <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white truncate">
+                      <h2 className="text-xl sm:text-2xl font-extrabold uppercase tracking-tight text-black dark:text-white truncate">
                         {editTitle || 'Untitled Journey'}
                       </h2>
                     </div>
@@ -5540,7 +5540,7 @@ export function ManageHubPage({
                       <button
                         type="button"
                         onClick={() => onNavigate('detail', selectedJourney.id)}
-                        className="px-3 py-2 border border-black/30 dark:border-white/30 text-xs font-black uppercase tracking-wider font-sans flex items-center gap-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                        className="px-3 py-2 border border-black/30 dark:border-white/30 text-xs font-extrabold uppercase tracking-wider font-sans flex items-center gap-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
                         title="이 여정의 상세 페이지로 바로 이동"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -5552,7 +5552,7 @@ export function ManageHubPage({
                         type="button"
                         onClick={() => handleSaveJourney()}
                         disabled={isSavingTrip}
-                        className={`px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity ${
+                        className={`px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-extrabold uppercase tracking-widest font-sans flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity ${
                           tripSaveSuccess ? '!bg-green-600 !text-white' : ''
                         }`}
                       >
@@ -5566,7 +5566,7 @@ export function ManageHubPage({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Row 1: Title (여정 제목 - 전체 폭) */}
                     <div className="sm:col-span-2 flex flex-col gap-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                         Title (여정 제목)
                       </label>
                       <input
@@ -5580,7 +5580,7 @@ export function ManageHubPage({
                     {/* Row 2 - Left: Date Range with Calendar Pickers */}
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-black/50 dark:text-white/50" />
                           <span>Date Range (일정 기간 - 달력)</span>
                         </label>
@@ -5610,7 +5610,7 @@ export function ManageHubPage({
                     {/* Row 2 - Right: Status Badge (NEW, EDITING, PLAN 3-toggle) */}
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                           Status Badge (상태 뱃지)
                         </label>
                         <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
@@ -5658,9 +5658,9 @@ export function ManageHubPage({
                                   }
                                 }
                               }}
-                              className={`h-full text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border flex items-center justify-center cursor-pointer ${
+                              className={`h-full text-[10px] sm:text-xs font-extrabold uppercase tracking-wider transition-all border flex items-center justify-center cursor-pointer ${
                                 isActive
-                                  ? `${opt.activeBg} shadow-xs font-black`
+                                  ? `${opt.activeBg} shadow-xs font-extrabold`
                                   : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white hover:border-black/40 dark:hover:border-white/40'
                               }`}
                             >
@@ -5673,7 +5673,7 @@ export function ManageHubPage({
 
                     {/* Row 3 - Left: Country (국가명 자동검색) */}
                     <div ref={countryDropdownRef} className="relative flex flex-col gap-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
                         <Globe className="w-3 h-3 text-black/50 dark:text-white/50" />
                         <span>Country (국가명 - 자동검색)</span>
                       </label>
@@ -5712,7 +5712,7 @@ export function ManageHubPage({
 
                     {/* Row 3 - Right: Location / Cities (Google Places 자동검색) */}
                     <div className="relative flex flex-col gap-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-black/50 dark:text-white/50" />
                         <span>Location / Cities (장소 / 도시 - 자동검색)</span>
                       </label>
@@ -5732,7 +5732,7 @@ export function ManageHubPage({
 
                     {/* Tags */}
                     <div className="sm:col-span-2 flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                         Tags (태그 관리)
                       </label>
                       <div className="flex items-center gap-2">
@@ -5774,7 +5774,7 @@ export function ManageHubPage({
                         <button
                           type="button"
                           onClick={() => setArchiveMediaTab('main')}
-                          className={`flex-1 py-1.5 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
+                          className={`flex-1 py-1.5 text-xs font-extrabold uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
                             archiveMediaTab === 'main'
                               ? 'border-black dark:border-white text-black dark:text-white'
                               : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
@@ -5788,7 +5788,7 @@ export function ManageHubPage({
                         <button
                           type="button"
                           onClick={() => setArchiveMediaTab('hero')}
-                          className={`flex-1 py-1.5 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
+                          className={`flex-1 py-1.5 text-xs font-extrabold uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
                             archiveMediaTab === 'hero'
                               ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400'
                               : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
@@ -5804,7 +5804,7 @@ export function ManageHubPage({
                       {archiveMediaTab === 'main' ? (
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-center">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                            <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                               MAIN MEDIA (이미지 또는 비디오)
                             </label>
                             {isUploading && (
@@ -5833,7 +5833,7 @@ export function ManageHubPage({
                               placeholder="이미지 또는 영상 URL 입력 / 파일 드롭"
                               className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none flex-1"
                             />
-                            <label className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 cursor-pointer shrink-0">
+                            <label className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 cursor-pointer shrink-0">
                               <Upload className="w-3 h-3" />
                               <span>UPLOAD</span>
                               <input
@@ -5873,7 +5873,7 @@ export function ManageHubPage({
                                   alert('클립보드 복사 실패');
                                 }
                               }}
-                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                               title="현재 MAIN 미디어 URL 복사"
                             >
                               <Copy className="w-3 h-3" />
@@ -5924,7 +5924,7 @@ export function ManageHubPage({
                                   alert('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
                                 }
                               }}
-                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                               title="클립보드 미디어 붙여넣기"
                             >
                               <ClipboardPaste className="w-3 h-3" />
@@ -5944,7 +5944,7 @@ export function ManageHubPage({
                                 }
                                 alert('MAIN 미디어가 HERO로 복사되었습니다.');
                               }}
-                              className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                               title="MAIN 미디어를 HERO로 복사"
                             >
                               <span>TO HERO</span>
@@ -6001,7 +6001,7 @@ export function ManageHubPage({
                                     setEditVideoUrl('');
                                     setEditImg('');
                                   }}
-                                  className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                                  className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                                 >
                                   Delete Video
                                 </button>
@@ -6015,7 +6015,7 @@ export function ManageHubPage({
                                     setEditImg('');
                                     setEditVideoUrl('');
                                   }}
-                                  className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                                  className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                                 >
                                   Delete Image
                                 </button>
@@ -6040,7 +6040,7 @@ export function ManageHubPage({
                             홈 상단 히어로 슬라이더에 우선 노출할 미디어입니다. (미등록 시 MAIN 미디어 사용)
                           </p>
                           <div className="flex justify-between items-center">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                            <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                               HERO MEDIA (이미지 또는 비디오)
                             </label>
                             {isUploading && (
@@ -6069,7 +6069,7 @@ export function ManageHubPage({
                               placeholder="히어로 이미지 또는 영상 URL 입력 / 파일 드롭"
                               className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none flex-1"
                             />
-                            <label className="px-3 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 cursor-pointer shrink-0">
+                            <label className="px-3 bg-red-600 hover:bg-red-700 text-white text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1.5 cursor-pointer shrink-0">
                               <Upload className="w-3 h-3" />
                               <span>UPLOAD</span>
                               <input
@@ -6113,7 +6113,7 @@ export function ManageHubPage({
                                   alert('클립보드 복사 실패');
                                 }
                               }}
-                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                               title="현재 HERO 미디어 URL 복사"
                             >
                               <Copy className="w-3 h-3" />
@@ -6164,7 +6164,7 @@ export function ManageHubPage({
                                   alert('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
                                 }
                               }}
-                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                               title="클립보드 미디어 붙여넣기"
                             >
                               <ClipboardPaste className="w-3 h-3" />
@@ -6184,7 +6184,7 @@ export function ManageHubPage({
                                 }
                                 alert('HERO 미디어가 MAIN으로 복사되었습니다.');
                               }}
-                              className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                               title="HERO 미디어를 MAIN으로 복사"
                             >
                               <span>TO MAIN</span>
@@ -6245,7 +6245,7 @@ export function ManageHubPage({
                                     setEditHeroVideoUrl('');
                                     setEditHeroImg('');
                                   }}
-                                  className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                                  className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                                 >
                                   Delete Video
                                 </button>
@@ -6259,7 +6259,7 @@ export function ManageHubPage({
                                     setEditHeroImg('');
                                     setEditHeroVideoUrl('');
                                   }}
-                                  className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                                  className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                                 >
                                   Delete Image
                                 </button>
@@ -6288,7 +6288,7 @@ export function ManageHubPage({
                       <button
                         type="button"
                         onClick={() => onCloneTrip(selectedJourney.id)}
-                        className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                        className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-extrabold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
                       >
                         <Copy className="w-3.5 h-3.5" />
                         <span>복제 (CLONE)</span>
@@ -6310,7 +6310,7 @@ export function ManageHubPage({
                             setEditTitle(prev => prev.endsWith(' (Plan)') ? prev : `${prev} (Plan)`);
                           }
                         }}
-                        className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                        className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-extrabold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
                       >
                         <ArrowRightLeft className="w-3.5 h-3.5" />
                         <span>{isSelectedPlan ? 'LOG(여정)로 전환' : 'PLAN(계획)으로 전환'}</span>
@@ -6320,7 +6320,7 @@ export function ManageHubPage({
                     <button
                       type="button"
                       onClick={() => onDeleteTrip(selectedJourney.id)}
-                      className="px-3 py-2 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-black uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                      className="px-3 py-2 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-extrabold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>휴지통으로 이동</span>
@@ -6342,7 +6342,7 @@ export function ManageHubPage({
               }`}
             >
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-black/15 dark:border-white/15">
-                <span className="text-xs font-black uppercase tracking-wider font-sans">
+                <span className="text-xs font-extrabold uppercase tracking-wider font-sans">
                   JOURNEYS ORDER & SELECTION ({localJourneys.length})
                 </span>
                 <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
@@ -6403,7 +6403,7 @@ export function ManageHubPage({
                       </div>
 
                       {/* Number Badge */}
-                      <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 w-5 text-center shrink-0">
+                      <span className="font-mono text-xs font-extrabold text-black/40 dark:text-white/40 w-5 text-center shrink-0">
                         {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                       </span>
 
@@ -6419,19 +6419,19 @@ export function ManageHubPage({
                       {/* Metadata */}
                       <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <h4 className="text-xs font-black font-sans uppercase tracking-tight text-black dark:text-white truncate">
+                          <h4 className="text-xs font-extrabold font-sans uppercase tracking-tight text-black dark:text-white truncate">
                             {journey.title.replace(' (Plan)', '')}
                           </h4>
                           {journey.statusBadge === 'NEW' ? (
-                            <span className="px-1.5 py-0.5 bg-red-600 text-white font-mono text-[8px] font-black uppercase shrink-0">
+                            <span className="px-1.5 py-0.5 bg-red-600 text-white font-mono text-[8px] font-extrabold uppercase shrink-0">
                               NEW
                             </span>
                           ) : journey.statusBadge === 'EDITING' ? (
-                            <span className="px-1.5 py-0.5 bg-amber-600 text-white font-mono text-[8px] font-black uppercase shrink-0">
+                            <span className="px-1.5 py-0.5 bg-amber-600 text-white font-mono text-[8px] font-extrabold uppercase shrink-0">
                               EDITING
                             </span>
                           ) : (journey.statusBadge === 'PLAN' || isPlan) ? (
-                            <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-[8px] font-black uppercase shrink-0">
+                            <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-[8px] font-extrabold uppercase shrink-0">
                               PLAN
                             </span>
                           ) : null}
@@ -6473,17 +6473,17 @@ export function ManageHubPage({
             {/* Header Title */}
             <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
               <div className="flex items-center justify-between">
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   CALENDAR & WEATHER CONFIGURATION
                 </span>
                 {isCalendarDirty && (
-                  <span className="px-2 py-0.5 bg-red-600 text-white font-mono text-[9px] font-black uppercase tracking-wider animate-pulse">
+                  <span className="px-2 py-0.5 bg-red-600 text-white font-mono text-[9px] font-extrabold uppercase tracking-wider animate-pulse">
                     UNSAVED CHANGES
                   </span>
                 )}
               </div>
               <div className="flex items-center justify-between gap-4 flex-wrap">
-                <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                   CALENDAR SETTING
                 </h2>
                 <button
@@ -6513,7 +6513,7 @@ export function ManageHubPage({
               <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-red-600 dark:text-red-500" />
-                  <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  <h3 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                     WEATHER CITIES MANAGEMENT
                   </h3>
                 </div>
@@ -6552,18 +6552,18 @@ export function ManageHubPage({
                       key={`${c.nameEn}-${idx}`}
                       className={`p-3 sm:px-4 sm:py-3 flex items-center justify-between gap-3 text-xs font-mono transition-all duration-300 ${
                         isMoved
-                          ? 'bg-orange-500/15 border-l-4 border-l-orange-500 text-orange-700 dark:text-orange-400 font-bold'
+                          ? 'bg-red-500/15 border-l-4 border-l-red-500 text-red-700 dark:text-red-400 font-bold'
                           : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                       }`}
                     >
                       {/* Left: Index + Home Badge + City Info */}
                       <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-                        <span className={`text-[11px] font-bold w-4 text-center shrink-0 ${isMoved ? 'text-orange-600 dark:text-orange-400' : 'text-black/40 dark:text-white/40'}`}>
+                        <span className={`text-[11px] font-bold w-4 text-center shrink-0 ${isMoved ? 'text-red-600 dark:text-red-400' : 'text-black/40 dark:text-white/40'}`}>
                           {idx + 1}
                         </span>
 
                         {isHomeTarget ? (
-                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-black tracking-wider uppercase shrink-0">
+                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-extrabold tracking-wider uppercase shrink-0">
                             HOME 4
                           </span>
                         ) : (
@@ -6573,7 +6573,7 @@ export function ManageHubPage({
                         )}
 
                         <div className="flex items-baseline gap-2 min-w-0 truncate">
-                          <span className="font-sans font-black text-sm text-black dark:text-white truncate">
+                          <span className="font-sans font-extrabold text-sm text-black dark:text-white truncate">
                             {c.name}
                           </span>
                           <span className="text-[11px] font-mono font-bold text-black/50 dark:text-white/50 shrink-0">
@@ -6645,10 +6645,10 @@ export function ManageHubPage({
             {/* Top Bar with Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-black dark:border-white pb-4">
               <div>
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   EDITORIAL MAGAZINE CURATION
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                   MAGAZINE SETTING
                 </h2>
                 <p className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
@@ -6952,7 +6952,7 @@ export function ManageHubPage({
                     <div className="w-full flex-1 min-h-[340px] sm:min-h-[360px] p-3.5 bg-white dark:bg-[#141414] border border-black/15 dark:border-white/15 shadow-sm flex flex-col items-center justify-between">
                       {/* MOUTHWASH Card Top Bold Title */}
                       <div className="min-h-[2.8rem] flex items-center justify-center mb-1 px-1 w-full">
-                        <h4 className="text-sm sm:text-base font-satoshi font-black uppercase tracking-tight text-center leading-[1.12] text-black dark:text-white line-clamp-2">
+                        <h4 className="text-sm sm:text-base font-satoshi font-extrabold uppercase tracking-tight text-center leading-[1.12] text-black dark:text-white line-clamp-2">
                           {currentMagSection.heroTitle || currentMagSection.title || 'UNTITLED ISSUE'}
                         </h4>
                       </div>
@@ -6975,7 +6975,7 @@ export function ManageHubPage({
                       {/* Bottom Meta */}
                       <div className="pt-2.5 flex flex-col items-center justify-center text-center font-['Inter',sans-serif] gap-0.5 w-full">
                         <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center justify-center gap-1">
-                          <span className="text-red-600 dark:text-red-400 font-black">
+                          <span className="text-red-600 dark:text-red-400 font-extrabold">
                             ISSUE {String(sectionsList.findIndex(s => s.id === currentMagSection.id) + 1).padStart(2, '0')}
                           </span>
                           {currentMagSection.heroDate && (
@@ -7589,7 +7589,7 @@ export function ManageHubPage({
                   selectedTripForMoments === null && !momentSearchQuery.trim() ? (
                     <div className="py-10 px-4 text-center flex flex-col items-center justify-center gap-2 border border-dashed border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02]">
                       <ImageIcon className="w-6 h-6 text-black/30 dark:text-white/30" />
-                      <span className="text-xs font-mono font-black text-black/70 dark:text-white/70 tracking-wider uppercase">
+                      <span className="text-xs font-mono font-extrabold text-black/70 dark:text-white/70 tracking-wider uppercase">
                         SELECT A JOURNEY TO VIEW CANDIDATE PHOTOS
                       </span>
                       <span className="text-[11px] text-black/40 dark:text-white/40 max-w-sm leading-relaxed">
@@ -7644,12 +7644,12 @@ export function ManageHubPage({
                           
                           {/* Attached Minimal Badge */}
                           {isAttached ? (
-                            <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-[9px] font-mono font-black tracking-wider uppercase shadow-md">
+                            <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-[9px] font-mono font-extrabold tracking-wider uppercase shadow-md">
                               <Check className="w-2.5 h-2.5 stroke-[3]" />
                               <span>ATTACHED</span>
                             </div>
                           ) : (
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-extrabold p-2 text-center z-10">
                               + ADD TO {currentMagSection?.title}
                             </div>
                           )}
@@ -7931,7 +7931,7 @@ export function ManageHubPage({
             {/* Header Title */}
             <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
               <div className="flex items-center justify-between">
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-orange-600 dark:text-orange-500 block mb-0.5">
+                <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   SYSTEM UTILITIES & GLOBAL CONFIGURATION
                 </span>
                 {(trashedJourneys.length + trashedSections.length) > 0 && (
@@ -7940,7 +7940,7 @@ export function ManageHubPage({
                   </span>
                 )}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+              <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                 UTILITIES
               </h2>
               <p className="text-xs text-black/60 dark:text-white/60 font-mono truncate">
@@ -7970,7 +7970,7 @@ export function ManageHubPage({
                     <span>{tab.label}</span>
                     {'count' in tab && typeof tab.count === 'number' && (
                       <span className={`text-[8.5px] sm:text-[9px] px-1 py-0.2 font-mono font-bold shrink-0 ${
-                        'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-orange-600 text-white'
+                        'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-black text-white dark:bg-white dark:text-black'
                       }`}>
                         {tab.count}
                       </span>
@@ -7988,8 +7988,8 @@ export function ManageHubPage({
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
+                    <Sliders className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
                       UI (홈 비주얼 & 마퀴 설정)
                     </h3>
                   </div>
@@ -8058,7 +8058,7 @@ export function ManageHubPage({
                                   )}
                                 </div>
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className={`text-[10px] truncate ${isSelected ? 'font-black text-black dark:text-white' : 'font-bold text-black/80 dark:text-white/80'}`}>
+                                  <span className={`text-[10px] truncate ${isSelected ? 'font-extrabold text-black dark:text-white' : 'font-bold text-black/80 dark:text-white/80'}`}>
                                     {p.name}
                                   </span>
                                   {isSelected && (
@@ -8125,7 +8125,7 @@ export function ManageHubPage({
                           className="w-full h-12 border border-black/15 dark:border-white/15 flex items-center justify-center p-3 shadow-inner"
                           style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
                         >
-                          <span className="text-xs font-mono font-black text-black/80 tracking-widest uppercase">
+                          <span className="text-xs font-mono font-extrabold text-black/80 tracking-widest uppercase">
                             PREVIEW: {gradientFrom} &rarr; {gradientTo}
                           </span>
                         </div>
@@ -8178,7 +8178,7 @@ export function ManageHubPage({
                           <span className="font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                             MARQUEE SPEED (흐르는 속도)
                           </span>
-                          <span className="font-black text-black dark:text-white">
+                          <span className="font-extrabold text-black dark:text-white">
                             {homeSpeed}s
                           </span>
                         </div>
@@ -8207,8 +8207,8 @@ export function ManageHubPage({
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
-                    <Music className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans truncate">
+                    <Music className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans truncate">
                       BACKGROUND MUSIC (배경음)
                     </h3>
                   </div>
@@ -8222,7 +8222,7 @@ export function ManageHubPage({
                       <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
                         BGM 기본 볼륨
                       </span>
-                      <span className="font-mono text-xs font-black text-orange-500">
+                      <span className="font-mono text-xs font-extrabold text-red-500">
                         {bgmDefaultVolume}%
                       </span>
                     </div>
@@ -8234,7 +8234,7 @@ export function ManageHubPage({
                         step="1"
                         value={bgmDefaultVolume}
                         onChange={(e) => setBgmDefaultVolume(Number(e.target.value))}
-                        className="w-full accent-orange-500 cursor-pointer h-1.5 bg-black/20 dark:bg-white/20 rounded-lg appearance-none"
+                        className="w-full accent-red-500 cursor-pointer h-1.5 bg-black/20 dark:bg-white/20 rounded-lg appearance-none"
                       />
                       <div className="flex items-center gap-1 shrink-0">
                         {[30, 50, 70, 100].map((preset) => (
@@ -8244,7 +8244,7 @@ export function ManageHubPage({
                             onClick={() => setBgmDefaultVolume(preset)}
                             className={`px-1.5 py-0.5 text-[9px] font-mono border transition-colors cursor-pointer ${
                               bgmDefaultVolume === preset
-                                ? 'bg-orange-500 text-white border-orange-500 font-bold'
+                                ? 'bg-red-500 text-white border-red-500 font-bold'
                                 : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5'
                             }`}
                           >
@@ -8324,7 +8324,7 @@ export function ManageHubPage({
                     onClick={() => bgmFileInputRef.current?.click()}
                     className={`border-2 border-dashed p-6 sm:p-8 text-center cursor-pointer transition-colors ${
                       isDraggingBgmFile
-                        ? 'border-orange-500 bg-orange-500/10'
+                        ? 'border-red-500 bg-red-500/10'
                         : 'border-black/20 dark:border-white/20 hover:border-black/40 dark:hover:border-white/40 bg-black/[0.01] dark:bg-white/[0.01]'
                     }`}
                   >
@@ -8339,7 +8339,7 @@ export function ManageHubPage({
                     <div className="flex flex-col items-center gap-2">
                       {isUploadingBgm ? (
                         <>
-                          <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                          <Loader2 className="w-6 h-6 animate-spin text-red-500" />
                           <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                             음원 파일 업로드 중...
                           </span>
@@ -8363,8 +8363,8 @@ export function ManageHubPage({
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                     <div className="flex items-center gap-2">
-                      <Music className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
-                      <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white font-sans">
+                      <Music className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
                         PLAYLIST ({bgmTracks.length})
                       </h3>
                     </div>
@@ -8398,7 +8398,7 @@ export function ManageHubPage({
                               type="checkbox"
                               checked={track.enabled}
                               onChange={() => handleToggleBgmTrack(track.id)}
-                              className="w-4 h-4 accent-orange-500 cursor-pointer rounded-none"
+                              className="w-4 h-4 accent-red-500 cursor-pointer rounded-none"
                               title="재생 목록 포함 여부"
                             />
                             <div className="flex flex-col min-w-0">
@@ -8419,7 +8419,7 @@ export function ManageHubPage({
                               onClick={() => handleTogglePreviewTrack(track)}
                               className={`p-1.5 border transition-colors cursor-pointer ${
                                 previewTrackId === track.id
-                                  ? 'bg-orange-500 text-white border-orange-500'
+                                  ? 'bg-red-500 text-white border-red-500'
                                   : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
                               }`}
                               title={previewTrackId === track.id ? '정지' : '미리듣기'}
@@ -8469,8 +8469,8 @@ export function ManageHubPage({
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
+                    <MapPin className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
                       MAP TILESET (지도 그래픽 타일 설정)
                     </h3>
                   </div>
@@ -8489,7 +8489,7 @@ export function ManageHubPage({
                         : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
                     }`}
                   >
-                    <span className="text-xs font-black uppercase tracking-wider block mb-1">
+                    <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
                       ESRI WORLD GRAY CANVAS
                     </span>
                     <p className="text-[11px] opacity-70 leading-relaxed">
@@ -8509,7 +8509,7 @@ export function ManageHubPage({
                         : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
                     }`}
                   >
-                    <span className="text-xs font-black uppercase tracking-wider block mb-1">
+                    <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
                       GOOGLE MAPS TILES
                     </span>
                     <p className="text-[11px] opacity-70 leading-relaxed">
@@ -8525,11 +8525,11 @@ export function ManageHubPage({
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
+                    <Globe className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
                       TRIP PRESETS (여정 추천 템플릿 관리)
                     </h3>
-                    <span className="text-[9px] px-1.5 py-0.2 bg-orange-600 text-white font-mono font-bold">
+                    <span className="text-[9px] px-1.5 py-0.2 bg-red-600 text-white font-mono font-bold">
                       {presetsList.length}
                     </span>
                   </div>
@@ -8606,7 +8606,7 @@ export function ManageHubPage({
                     }).length} PRESETS
                   </span>
                   {isPresetsDirty && (
-                    <span className="text-orange-600 dark:text-orange-400 font-bold">
+                    <span className="text-red-600 dark:text-red-400 font-bold">
                       * 변경사항 있음 (저장 필요)
                     </span>
                   )}
@@ -8642,7 +8642,7 @@ export function ManageHubPage({
                           <div>
                             <div className="flex items-center justify-between gap-1 mb-1">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[8px] font-mono font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
+                                <span className="text-[8px] font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
                                   {preset.country}
                                 </span>
                                 <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60">
@@ -8651,7 +8651,7 @@ export function ManageHubPage({
                                 <span className="text-[9px] font-mono px-1 border border-black/20 dark:border-white/20 text-black/50 dark:text-white/50">
                                   {preset.durationDays}D
                                 </span>
-                                <span className="text-[8px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400">
+                                <span className="text-[8px] font-mono font-bold uppercase text-red-600 dark:text-red-400">
                                   {preset.theme}
                                 </span>
                               </div>
@@ -8706,7 +8706,7 @@ export function ManageHubPage({
                 <div className="flex items-baseline justify-between flex-wrap gap-2 border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
                     <Database className="w-4 h-4 text-red-600 dark:text-red-400" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans truncate">
+                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans truncate">
                       SYSTEM (데이터베이스 진단 & 휴지통) ({trashedJourneys.length + trashedSections.length})
                     </h3>
                   </div>
@@ -8832,7 +8832,7 @@ export function ManageHubPage({
                 {/* Trashed Sections List */}
                 {trashedSections.length > 0 && (
                   <div className="flex flex-col gap-3">
-                    <span className="text-xs font-mono font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
                       삭제된 매거진 섹션 ({trashedSections.length})
                     </span>
                     <div className="grid grid-cols-1 gap-2.5">
@@ -8859,7 +8859,7 @@ export function ManageHubPage({
                                 className="w-4 h-4 rounded border-black/30 dark:border-white/30 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600 shrink-0"
                               />
                               <div className="min-w-0">
-                                <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
+                                <h4 className="text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
                                   {sec.title}
                                 </h4>
                                 <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
@@ -8899,7 +8899,7 @@ export function ManageHubPage({
                 {/* Trashed Journeys List */}
                 {trashedJourneys.length > 0 && (
                   <div className="flex flex-col gap-3">
-                    <span className="text-xs font-mono font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
                       삭제된 여정 ({trashedJourneys.length})
                     </span>
                     <div className="grid grid-cols-1 gap-2.5">
@@ -8933,7 +8933,7 @@ export function ManageHubPage({
                                 />
                               </div>
                               <div className="min-w-0">
-                                <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
+                                <h4 className="text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
                                   {journey.title}
                                 </h4>
                                 <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
@@ -8984,14 +8984,14 @@ export function ManageHubPage({
             {/* Header */}
             <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
               <div className="flex items-center justify-between">
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   REGISTERED USERS & PERMISSIONS MANAGEMENT
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
                   TOTAL: {usersList.length}
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+              <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                 USERS
               </h2>
               <p className="text-xs text-black/60 dark:text-white/60 font-mono">
@@ -9012,7 +9012,7 @@ export function ManageHubPage({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-black dark:text-white" />
-                  <span className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
                     SUPER ADMIN ACCOUNT CONFIG
                   </span>
                 </div>
@@ -9056,7 +9056,7 @@ export function ManageHubPage({
                   <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2.5">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-red-600 dark:text-red-400" />
-                      <span className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                      <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
                         ADMINISTRATORS ({adminsList.length})
                       </span>
                     </div>
@@ -9086,7 +9086,7 @@ export function ManageHubPage({
                             </div>
                             <div className="flex flex-col gap-0.5 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                                <span className="text-sm font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                                   {fullName}
                                 </span>
                                 {adminUser.username && (
@@ -9098,11 +9098,11 @@ export function ManageHubPage({
                                   ({adminUser.email})
                                 </span>
                                 {isSuper ? (
-                                  <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white leading-none">
+                                  <span className="px-2 py-0.5 text-[9px] font-mono font-extrabold uppercase tracking-wider bg-red-600 text-white leading-none">
                                     SUPER ADMIN
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
+                                  <span className="px-2 py-0.5 text-[9px] font-mono font-extrabold uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
                                     ADMIN
                                   </span>
                                 )}
@@ -9129,7 +9129,7 @@ export function ManageHubPage({
                                 onClick={() => handleToggleUserPermission(adminUser, 'canCreate')}
                                 className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
                                   adminUser.permissions?.canCreate
-                                    ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
                                     : 'text-black/40 dark:text-white/40 hover:text-black'
                                 }`}
                                 title="여정 생성(추가) 권한 토글"
@@ -9143,7 +9143,7 @@ export function ManageHubPage({
                                 onClick={() => handleToggleUserPermission(adminUser, 'canEdit')}
                                 className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
                                   adminUser.permissions?.canEdit
-                                    ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
                                     : 'text-black/40 dark:text-white/40 hover:text-black'
                                 }`}
                                 title="전체 여정 편집 권한 토글"
@@ -9157,7 +9157,7 @@ export function ManageHubPage({
                                 onClick={() => handleToggleUserPermission(adminUser, 'canDelete')}
                                 className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
                                   adminUser.permissions?.canDelete
-                                    ? 'bg-red-600 text-white font-black'
+                                    ? 'bg-red-600 text-white font-extrabold'
                                     : 'text-black/40 dark:text-white/40 hover:text-black'
                                 }`}
                                 title="여정 삭제 권한 토글"
@@ -9298,7 +9298,7 @@ export function ManageHubPage({
                             </div>
                             <div className="flex flex-col gap-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                                <span className="text-sm sm:text-base font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                                   {fullName}
                                 </span>
                                 {user.username && (
@@ -9310,7 +9310,7 @@ export function ManageHubPage({
                                   ({user.email})
                                 </span>
                                 {user.status === 'rejected' ? (
-                                  <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 leading-none">
+                                  <span className="px-2 py-0.5 text-[9px] font-mono font-extrabold uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 leading-none">
                                     REJECTED
                                   </span>
                                 ) : isPending ? (
@@ -9367,7 +9367,7 @@ export function ManageHubPage({
                                 onClick={() => handleToggleUserPermission(user, 'canCreate')}
                                 className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                                   user.permissions?.canCreate
-                                    ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
                                     : 'text-black/40 dark:text-white/40 hover:text-black'
                                 }`}
                                 title="여정 생성(추가) 권한 토글"
@@ -9381,7 +9381,7 @@ export function ManageHubPage({
                                 onClick={() => handleToggleUserPermission(user, 'canEdit')}
                                 className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                                   user.permissions?.canEdit
-                                    ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
                                     : 'text-black/40 dark:text-white/40 hover:text-black'
                                 }`}
                                 title="전체 여정 편집 권한 토글"
@@ -9395,7 +9395,7 @@ export function ManageHubPage({
                                 onClick={() => handleToggleUserPermission(user, 'canDelete')}
                                 className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                                   user.permissions?.canDelete
-                                    ? 'bg-red-600 text-white font-black'
+                                    ? 'bg-red-600 text-white font-extrabold'
                                     : 'text-black/40 dark:text-white/40 hover:text-black'
                                 }`}
                                 title="여정 삭제 권한 토글"
@@ -9475,7 +9475,7 @@ export function ManageHubPage({
                             onClick={() => setUserCurrentPage(pageNum)}
                             className={`w-7 h-7 text-xs font-mono font-bold transition-colors cursor-pointer flex items-center justify-center border ${
                               pageNum === safePage
-                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-black'
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-extrabold'
                                 : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white'
                             }`}
                           >
@@ -9529,7 +9529,7 @@ export function ManageHubPage({
           >
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <div>
-                <span className="text-[9px] font-mono font-black uppercase text-red-600 dark:text-red-500">
+                <span className="text-[9px] font-mono font-extrabold uppercase text-red-600 dark:text-red-500">
                   DELEGATE TRIP EDIT ACCESS
                 </span>
                 <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
@@ -9565,14 +9565,14 @@ export function ManageHubPage({
                     }`}
                   >
                     <div className="min-w-0 pr-3">
-                      <div className="text-xs font-black uppercase text-black dark:text-white truncate">
+                      <div className="text-xs font-extrabold uppercase text-black dark:text-white truncate">
                         {trip.title}
                       </div>
                       <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
                         {trip.date} · {trip.locationStr || trip.country}
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-[10px] font-mono font-black uppercase shrink-0 ${
+                    <span className={`px-2 py-1 text-[10px] font-mono font-extrabold uppercase shrink-0 ${
                       hasAccess
                         ? 'bg-black text-white dark:bg-white dark:text-black'
                         : 'border border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
@@ -9740,7 +9740,7 @@ export function ManageHubPage({
             <div className="flex items-center justify-between p-4 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <h3 className="text-xs sm:text-sm font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                <h3 className="text-xs sm:text-sm font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
                   QUICK PHOTO PICKER (+ INSERT AFTER SELECTED CARD)
                 </h3>
               </div>
@@ -9828,12 +9828,12 @@ export function ManageHubPage({
                           }`}
                         />
                         {isAttached ? (
-                          <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-[9px] font-mono font-black uppercase">
+                          <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-[9px] font-mono font-extrabold uppercase">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                             <span>ATTACHED</span>
                           </div>
                         ) : (
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-extrabold p-2 text-center z-10">
                             + INSERT HERE
                           </div>
                         )}
@@ -10087,7 +10087,7 @@ export function ManageHubPage({
             {/* Option 1: Restore Default Magazine Home */}
             <div className="p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-black uppercase text-black dark:text-white">
+                <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
                   1. 기본 매거진 홈 & 누락 섹션 복구
                 </span>
                 <button
@@ -10105,7 +10105,7 @@ export function ManageHubPage({
 
             {/* Option 2: Local Backups */}
             <div className="flex flex-col gap-2 pt-2">
-              <span className="text-xs font-mono font-black uppercase text-black dark:text-white">
+              <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
                 2. 로컬 백업 스냅샷에서 불러오기 ({availableBackups.length}개 발견)
               </span>
               {availableBackups.length === 0 ? (
@@ -10140,7 +10140,7 @@ export function ManageHubPage({
             {/* Option 3: Firestore Data Restore */}
             <div className="p-3.5 border border-blue-500/20 bg-blue-500/5 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-black uppercase text-blue-700 dark:text-blue-300">
+                <span className="text-xs font-mono font-extrabold uppercase text-blue-700 dark:text-blue-300">
                   3. 서버(Firestore) 저장본 확인 및 복원
                 </span>
                 <button

@@ -1018,7 +1018,7 @@ export function Lightbox({
                 {currentIndex + 1} / {images.length}
               </span>
               {isPaused && (
-                <span className="text-orange-400 text-[9px] font-black uppercase tracking-widest animate-pulse ml-2">
+                <span className="text-red-400 text-[9px] font-extrabold uppercase tracking-widest animate-pulse ml-2">
                   ● PAUSED
                 </span>
               )}
@@ -1057,16 +1057,16 @@ export function Lightbox({
                 <button
                   onClick={handleToggleMute}
                   className={`p-1 text-[9px] transition-all cursor-pointer ${
-                    volume > 0 ? 'text-orange-400 font-black' : 'text-white/50 hover:text-white'
+                    volume > 0 ? 'text-red-400 font-extrabold' : 'text-white/50 hover:text-white'
                   }`}
                   title={volume === 0 ? '음소거 해제 (M)' : '음소거 (M)'}
                 >
                   {volume === 0 ? (
                     <VolumeX className="w-3.5 h-3.5 opacity-60" />
                   ) : volume < 50 ? (
-                    <Volume1 className="w-3.5 h-3.5 text-orange-400" />
+                    <Volume1 className="w-3.5 h-3.5 text-red-400" />
                   ) : (
-                    <Volume2 className="w-3.5 h-3.5 text-orange-400" />
+                    <Volume2 className="w-3.5 h-3.5 text-red-400" />
                   )}
                 </button>
 
@@ -1074,7 +1074,7 @@ export function Lightbox({
                 <button
                   type="button"
                   onClick={showVolumeHud}
-                  className="px-1 py-0.5 font-mono text-[9px] font-bold text-white/80 hover:text-orange-400 transition-colors cursor-pointer border-r border-white/15 pr-1.5"
+                  className="px-1 py-0.5 font-mono text-[9px] font-bold text-white/80 hover:text-red-400 transition-colors cursor-pointer border-r border-white/15 pr-1.5"
                   title="볼륨 조절 (방향키 ↑/↓, 마우스 휠)"
                 >
                   {volume}%
@@ -1083,8 +1083,8 @@ export function Lightbox({
                 {/* Track Title Button: Click to open track list selector */}
                 <button
                   onClick={() => setIsTrackListOpen(prev => !prev)}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer max-w-[120px] truncate ${
-                    isBgmPlaying ? 'text-orange-400' : 'text-white/70 hover:text-white'
+                  className={`flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider transition-all cursor-pointer max-w-[120px] truncate ${
+                    isBgmPlaying ? 'text-red-400' : 'text-white/70 hover:text-white'
                   }`}
                   title="클릭하여 음원 선택"
                 >
@@ -1096,7 +1096,7 @@ export function Lightbox({
                   type="button"
                   onClick={handleToggleShuffle}
                   className={`p-1 transition-colors cursor-pointer border-l border-white/15 ${
-                    isBgmShuffle ? 'text-orange-400 bg-white/10' : 'text-white/60 hover:text-white'
+                    isBgmShuffle ? 'text-red-400 bg-white/10' : 'text-white/60 hover:text-white'
                   }`}
                   title={isBgmShuffle ? '셔플 재생 중 (클릭 시 순차 재생)' : '순차 재생 중 (클릭 시 셔플 재생)'}
                 >
@@ -1117,7 +1117,7 @@ export function Lightbox({
                   <div className="absolute top-full right-0 mt-2 w-64 max-h-64 overflow-y-auto bg-black/95 backdrop-blur-md border border-white/20 rounded-sm shadow-2xl p-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="px-2 py-1.5 border-b border-white/10 flex items-center justify-between text-[10px] font-mono text-white/50 uppercase tracking-widest">
                       <span>BGM PLAYLIST</span>
-                      <span className="text-orange-400 font-bold">{bgmPlayer.getPlayableTracks().length} TRACKS</span>
+                      <span className="text-red-400 font-bold">{bgmPlayer.getPlayableTracks().length} TRACKS</span>
                     </div>
                     <div className="flex flex-col gap-0.5 mt-1">
                       {bgmPlayer.getPlayableTracks().length === 0 ? (
@@ -1137,7 +1137,7 @@ export function Lightbox({
                               }}
                               className={`w-full text-left px-2.5 py-1.5 rounded-xs flex items-center justify-between transition-colors text-xs font-mono cursor-pointer ${
                                 isSelected
-                                  ? 'bg-orange-500/20 text-orange-400 font-bold'
+                                  ? 'bg-red-500/20 text-red-400 font-bold'
                                   : 'text-white/80 hover:bg-white/10 hover:text-white'
                               }`}
                             >
@@ -1145,7 +1145,7 @@ export function Lightbox({
                                 <span className="text-[10px] opacity-40 shrink-0">#{idx + 1}</span>
                                 <span className="truncate">{track.title}</span>
                               </div>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-orange-400 shrink-0" />}
+                              {isSelected && <Check className="w-3.5 h-3.5 text-red-400 shrink-0" />}
                             </button>
                           );
                         })
@@ -1169,7 +1169,7 @@ export function Lightbox({
                     onClick={() => handleChangeInterval(item.val)}
                     className={`px-1.5 py-0.5 font-mono text-[9px] uppercase transition-all rounded-xs cursor-pointer ${
                       slideshowInterval === item.val
-                        ? 'bg-orange-500 text-white font-bold shadow-xs'
+                        ? 'bg-red-500 text-white font-bold shadow-xs'
                         : 'text-white/60 hover:text-white'
                     }`}
                     title={`슬라이드 전환 속도 ${item.label}`}
@@ -1184,7 +1184,7 @@ export function Lightbox({
                 type="button"
                 onClick={() => setIsCleanView((prev) => !prev)}
                 className={`p-2 rounded-full transition-all cursor-pointer ${
-                  isCleanView ? 'bg-orange-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
+                  isCleanView ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
                 }`}
                 title={isCleanView ? '자막 보이기 (C)' : '자막 숨기기 (C)'}
               >
@@ -1195,7 +1195,7 @@ export function Lightbox({
               {/* Stop slideshow */}
               <button
                 onClick={handleStopSlideshow}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 text-white text-[9px] font-black uppercase tracking-widest transition-all border border-white/20 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 text-white text-[9px] font-extrabold uppercase tracking-widest transition-all border border-white/20 cursor-pointer"
                 title="슬라이드쇼 종료 (ESC)"
               >
                 <SkipBack className="w-3.5 h-3.5" />
@@ -1254,7 +1254,7 @@ export function Lightbox({
                   )}
                   {secondaryLoc ? (
                     <div className="text-white/90 text-xs mt-1 max-w-lg truncate flex items-center justify-center gap-1 font-sans drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
-                      <MapPin className="w-3 h-3 text-orange-400 shrink-0 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]" />
+                      <MapPin className="w-3 h-3 text-red-400 shrink-0 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]" />
                       <span>{secondaryLoc}</span>
                     </div>
                   ) : extraNote ? (
@@ -1275,7 +1275,7 @@ export function Lightbox({
               {/* Progress bar */}
               <div className="w-full max-w-xs h-[2px] bg-white/20 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-orange-500 rounded-full transition-none"
+                  className="h-full bg-red-500 rounded-full transition-none"
                   style={{ width: `${isPaused ? slideProgress : slideProgress}%` }}
                 />
               </div>
@@ -1292,7 +1292,7 @@ export function Lightbox({
                       }}
                       className={`rounded-full transition-all duration-200 cursor-pointer ${
                         idx === currentIndex
-                          ? 'w-4 h-1.5 bg-orange-500'
+                          ? 'w-4 h-1.5 bg-red-500'
                           : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/70'
                       }`}
                     />
@@ -1340,7 +1340,7 @@ export function Lightbox({
               title={`볼륨: ${volume}%`}
             >
               <div
-                className="w-full bg-orange-500 transition-all duration-75 rounded-full"
+                className="w-full bg-red-500 transition-all duration-75 rounded-full"
                 style={{ height: `${volume}%` }}
               />
             </div>
@@ -1359,15 +1359,15 @@ export function Lightbox({
             <button
               type="button"
               onClick={handleToggleMute}
-              className="flex flex-col items-center gap-0.5 mt-0.5 text-white/80 hover:text-orange-400 transition-colors cursor-pointer"
+              className="flex flex-col items-center gap-0.5 mt-0.5 text-white/80 hover:text-red-400 transition-colors cursor-pointer"
               title={volume === 0 ? '음소거 해제 (M)' : '음소거 (M)'}
             >
               {volume === 0 ? (
                 <VolumeX className="w-3.5 h-3.5 opacity-60 text-red-400" />
               ) : volume < 50 ? (
-                <Volume1 className="w-3.5 h-3.5 text-orange-400" />
+                <Volume1 className="w-3.5 h-3.5 text-red-400" />
               ) : (
-                <Volume2 className="w-3.5 h-3.5 text-orange-400" />
+                <Volume2 className="w-3.5 h-3.5 text-red-400" />
               )}
               <span className="font-mono text-[9px] font-bold text-white tracking-tighter">
                 {volume}%
@@ -1382,7 +1382,7 @@ export function Lightbox({
         <div className="pointer-events-none fixed inset-0 flex items-center justify-center z-40 transition-opacity duration-200">
           <div className="w-16 h-16 rounded-full bg-black/70 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl animate-in zoom-in-75 fade-in duration-150">
             {pulseAction === 'play' ? (
-              <Play className="w-7 h-7 text-orange-400 fill-orange-400/20 translate-x-0.5" />
+              <Play className="w-7 h-7 text-red-400 fill-red-400/20 translate-x-0.5" />
             ) : (
               <Pause className="w-7 h-7 text-white" />
             )}
@@ -1401,9 +1401,9 @@ export function Lightbox({
             {/* Log toggle */}
             <button
               onClick={() => setShowLog(v => !v)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-widest border transition-all ${
                 showLog
-                  ? 'bg-white/10 border-white/20 text-white font-black'
+                  ? 'bg-white/10 border-white/20 text-white font-extrabold'
                   : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/20'
               }`}
               title="Toggle log info"
@@ -1418,7 +1418,7 @@ export function Lightbox({
             {images.length > 1 && (
               <button
                 onClick={handleStartSlideshow}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest border border-white/20 hover:bg-white/10 text-white/70 hover:text-white transition-all"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-widest border border-white/20 hover:bg-white/10 text-white/70 hover:text-white transition-all"
                 title="슬라이드쇼 시작"
               >
                 <Play className="w-3 h-3" />
@@ -1429,14 +1429,14 @@ export function Lightbox({
             {/* BGM Toggle in Normal Mode */}
             <button
               onClick={() => bgmPlayer.toggle()}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-widest border transition-all ${
                 isBgmPlaying
-                  ? 'border-orange-500/80 bg-orange-500/10 text-orange-400 font-black'
+                  ? 'border-red-500/80 bg-red-500/10 text-red-400 font-extrabold'
                   : 'border-white/20 hover:bg-white/10 text-white/60 hover:text-white'
               }`}
               title={isBgmPlaying ? `배경음악 끄기 (${currentBgmTrack?.title || 'BGM'})` : '배경음악 켜기'}
             >
-              {isBgmPlaying ? <Volume2 className="w-3 h-3 text-orange-400 animate-pulse" /> : <VolumeX className="w-3 h-3 opacity-60" />}
+              {isBgmPlaying ? <Volume2 className="w-3 h-3 text-red-400 animate-pulse" /> : <VolumeX className="w-3 h-3 opacity-60" />}
               BGM
             </button>
 
@@ -1671,7 +1671,7 @@ export function Lightbox({
                   }}
                   className={`relative overflow-hidden transition-all duration-150 focus:outline-none shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-[2px] cursor-pointer ${
                     isActive 
-                      ? 'border-2 border-orange-500 ring-2 ring-orange-500/50 opacity-100 scale-105 z-10 shadow-xl' 
+                      ? 'border-2 border-red-500 ring-2 ring-red-500/50 opacity-100 scale-105 z-10 shadow-xl' 
                       : 'border border-white/20 opacity-45 hover:opacity-85 scale-95 hover:scale-100'
                   }`}
                 >
@@ -1709,8 +1709,8 @@ export function Lightbox({
 
                   {/* Place Info: 구글 자동완성으로 입력된 위치명 (location) */}
                   {secondaryLoc ? (
-                    <div className="text-orange-400 dark:text-orange-300 font-semibold text-[11px] md:text-xs tracking-tight flex items-center justify-center gap-1 text-center w-full">
-                      <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+                    <div className="text-red-400 dark:text-red-300 font-semibold text-[11px] md:text-xs tracking-tight flex items-center justify-center gap-1 text-center w-full">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-red-500" />
                       <span className="text-center">{secondaryLoc}</span>
                     </div>
                   ) : !primaryTitle ? (

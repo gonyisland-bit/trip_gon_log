@@ -684,7 +684,7 @@ export function ArchiveHubPage({
           {/* Top Barcode & Category Tag */}
           <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
+              <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-[10px]">
                 JOURNEY DIRECTORY
               </span>
               <span className="font-bold text-red-600 dark:text-red-400">
@@ -699,7 +699,7 @@ export function ArchiveHubPage({
 
           {/* Large Editorial Typography Title */}
           <div className="flex flex-col gap-2 sm:gap-4 max-w-5xl">
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-black uppercase tracking-tight leading-[0.98] text-black dark:text-white">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-extrabold uppercase tracking-tight leading-[0.98] text-black dark:text-white">
               {headerMainTitle}
             </h1>
             <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
@@ -834,7 +834,7 @@ export function ArchiveHubPage({
                     {/* 1. Year Filter Section */}
                     {availableYears.length > 0 && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-black/50 dark:text-white/50">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50">
                           YEAR (연도)
                         </span>
                         <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
@@ -866,7 +866,7 @@ export function ArchiveHubPage({
                     {/* 2. Location Section */}
                     {availableLocations.length > 0 && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-black/50 dark:text-white/50">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50">
                           LOCATION (장소 / 국가)
                         </span>
                         <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
@@ -897,7 +897,7 @@ export function ArchiveHubPage({
 
                     {/* 3. Tags Section */}
                     <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-black uppercase tracking-wider text-black/50 dark:text-white/50">
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50">
                         TAGS (태그)
                       </span>
                       <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto pt-0.5">
@@ -975,7 +975,7 @@ export function ArchiveHubPage({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
+                  className="bg-transparent text-[10px] sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
                 >
                   <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
                   <option value="date" className="bg-[#F9F8F6] dark:bg-[#111111]">TIME</option>
@@ -986,7 +986,7 @@ export function ArchiveHubPage({
             </div>
             </div>
             {isLoggedIn && (
-              <button onClick={onAddArchive} className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer">
+              <button onClick={onAddArchive} className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-extrabold uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer">
                 <Plus className="w-3.5 h-3.5" /> <span>ADD TRIP</span>
               </button>
             )}
@@ -1009,7 +1009,7 @@ export function ArchiveHubPage({
                 >
                   <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-3.5 sm:py-4 flex items-center justify-between">
                     <div className="flex items-baseline gap-3">
-                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase font-sans tracking-tight text-black dark:text-white">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold uppercase font-sans tracking-tight text-black dark:text-white">
                         {group.title}
                       </h2>
                       <span className="font-mono text-xs font-bold text-black/40 dark:text-white/40 tracking-wider">
@@ -1087,16 +1087,16 @@ export function ArchiveHubPage({
                               {/* Top Row: Year/Month & Status Badge */}
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 font-mono text-[11px] sm:text-xs">
-                                  <span className="font-black text-black dark:text-white tracking-tight">{year || '2024'}</span>
+                                  <span className="font-extrabold text-black dark:text-white tracking-tight">{year || '2024'}</span>
                                   {month && <span className="opacity-30">/</span>}
                                   {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
                                 </div>
                                 {isPlanOrFuture || trip.statusBadge === 'PLAN' ? (
-                                  <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
+                                  <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
                                     PLAN
                                   </span>
                                 ) : trip.statusBadge ? (
-                                  <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono rounded-none leading-none ${
+                                  <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono rounded-none leading-none ${
                                     trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                                   }`}>
                                     {trip.statusBadge}
@@ -1105,7 +1105,7 @@ export function ArchiveHubPage({
                               </div>
 
                               {/* Prominent Title */}
-                              <h3 className="font-black text-base sm:text-lg md:text-xl text-black dark:text-white uppercase font-sans tracking-tight truncate group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                              <h3 className="font-extrabold text-base sm:text-lg md:text-xl text-black dark:text-white uppercase font-sans tracking-tight truncate group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                                 {trip.title}
                               </h3>
 
@@ -1222,7 +1222,7 @@ export function ArchiveHubPage({
                                 const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
                                 return (
                                   <div 
-                                    className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-black tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
+                                    className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-extrabold tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
                                     title={`${tripYear}년 여정`}
                                   >
                                     <span>{tripYear}</span>
@@ -1244,7 +1244,7 @@ export function ArchiveHubPage({
                               </div>
 
                               {/* 메인 타이틀: 2줄로 다 보이게 표기 (line-clamp-2) */}
-                              <h3 className={`font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors ${
+                              <h3 className={`font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors ${
                                 (trip.statusBadge === 'PLAN' || isPlanOrFuture) ? 'group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'group-hover:text-red-600 dark:group-hover:text-red-500'
                               } ${isWide ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'}`}>
                                 {trip.title}
@@ -1303,10 +1303,10 @@ export function ArchiveHubPage({
       {/* ===== Bottom Bold Typography Statistics Banner (Seamlessly attached without white gap) ===== */}
       <footer className="w-full border-t border-black/15 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] py-8 sm:py-12 md:py-16 px-6 sm:px-12 md:px-16 mt-0 transition-colors">
         <div className="max-w-[1920px] mx-auto flex flex-col gap-2.5 sm:gap-3 font-['Inter',sans-serif]">
-          <span className="text-xs font-black text-black/40 dark:text-white/40 tracking-[0.25em] uppercase">
+          <span className="text-xs font-extrabold text-black/40 dark:text-white/40 tracking-[0.25em] uppercase">
             TOTAL TRAVEL RECORD
           </span>
-          <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black uppercase tracking-tighter leading-[1.1] text-black dark:text-white flex flex-col sm:flex-row sm:items-center sm:flex-nowrap whitespace-nowrap gap-1 sm:gap-0">
+          <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold uppercase tracking-tighter leading-[1.1] text-black dark:text-white flex flex-col sm:flex-row sm:items-center sm:flex-nowrap whitespace-nowrap gap-1 sm:gap-0">
             {/* Mobile Row 1 / Desktop Left Half: TRIPS · COUNTRIES */}
             <div className="flex items-center">
               <span>{tripStats.totalTrips} {tripStats.totalTrips === 1 ? 'TRIP' : 'TRIPS'}</span>

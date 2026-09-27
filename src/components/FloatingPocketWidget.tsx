@@ -144,7 +144,7 @@ export function FloatingPocketWidget({
         <div className="absolute bottom-12 left-0 mb-1 w-[290px] sm:w-[330px] max-h-[420px] bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden rounded-xl z-50">
           {/* Widget Header */}
           <div className="px-3.5 py-2.5 bg-black text-white dark:bg-white dark:text-black flex items-center justify-between border-b border-black/10">
-            <div className="flex items-center gap-1.5 text-xs font-mono font-black tracking-widest uppercase">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-extrabold tracking-widest uppercase">
               <Bookmark className="w-3.5 h-3.5 text-red-500 fill-red-500" />
               <span>POCKET WIDGET</span>
               <span className="text-[10px] opacity-60">({displayList.length})</span>

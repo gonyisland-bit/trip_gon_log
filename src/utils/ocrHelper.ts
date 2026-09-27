@@ -23,7 +23,7 @@ export async function extractTextFromImageUrl(
   try {
     const encodedUrl = encodeURIComponent(imageUrl.trim());
     // OCR.space free API endpoint with standard demo key
-    const apiUrl = `https://api.ocr.space/parse/imageurl?apikey=helloworld&url=${encodedUrl}&language=${language}&isOverlayRequired=false&detectOrientation=true&scale=true`;
+    const apiUrl = `https://api.ocr.space/parse/imageurl?apikey=${encodeURIComponent(import.meta.env.VITE_OCR_SPACE_KEY || 'helloworld')}&url=${encodedUrl}&language=${language}&isOverlayRequired=false&detectOrientation=true&scale=true`;
 
     const res = await fetch(apiUrl, {
       method: 'GET',

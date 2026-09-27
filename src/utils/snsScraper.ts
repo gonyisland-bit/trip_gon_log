@@ -309,8 +309,8 @@ export function extractKeywordCandidates(text: string): string[] {
 
   const add = (candidate: string) => {
     const cleaned = candidate
-      .replace(/^[#@📍🏷️▫️✔️📌▪️\*\s"\'「」『』\[\]]+/, '')
-      .replace(/[#@📍🏷️▫️✔️📌▪️\*\s"\'「」『』\[\]]+$/, '')
+      .replace(/^[\uFE0F#@\u{1F4CD}\u{1F3F7}\u25AB\u2714\u{1F4CC}\u25AA*\s"'「」『』[\]]+/u, '')
+      .replace(/[\uFE0F#@\u{1F4CD}\u{1F3F7}\u25AB\u2714\u{1F4CC}\u25AA*\s"'「」『』[\]]+$/u, '')
       .trim();
     if (
       cleaned.length >= 2 &&

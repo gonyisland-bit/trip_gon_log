@@ -395,7 +395,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
         {/* Modal Header */}
         <div className="px-5 py-3.5 border-b border-black/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="font-mono text-xs font-black tracking-widest uppercase text-black dark:text-white flex items-center gap-1.5">
+            <span className="font-mono text-xs font-extrabold tracking-widest uppercase text-black dark:text-white flex items-center gap-1.5">
               <Bookmark className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
               POCKET SCRAP
             </span>

@@ -52,10 +52,6 @@ export function PocketScheduleModal({
   const [selectedDate, setSelectedDate] = useState<string>(() => dates[0] || '2025.04.12');
   const [selectedSlotId, setSelectedSlotId] = useState<string>('afternoon');
 
-  if (!isOpen || !spot) return null;
-
-  const currentSlot = QUICK_TIME_SLOTS.find(s => s.id === selectedSlotId) || QUICK_TIME_SLOTS[2];
-
   // Global ESC key listener to safely close modal
   React.useEffect(() => {
     if (!isOpen) return;
@@ -68,6 +64,11 @@ export function PocketScheduleModal({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  if (!isOpen || !spot) return null;
+
+  const currentSlot = QUICK_TIME_SLOTS.find(s => s.id === selectedSlotId) || QUICK_TIME_SLOTS[2];
+
 
   const handleApply = () => {
     onConfirm(selectedDate, currentSlot.time);
@@ -90,7 +91,7 @@ export function PocketScheduleModal({
               <Clock className="w-3 h-3" />
               <span>SCHEDULE SLOT PICKER</span>
             </div>
-            <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-black dark:text-white truncate max-w-[280px]">
+            <h3 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-black dark:text-white truncate max-w-[280px]">
               {spot.title}
             </h3>
           </div>
@@ -183,7 +184,7 @@ export function PocketScheduleModal({
           <button
             type="button"
             onClick={handleApply}
-            className="h-8 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="h-8 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <Check className="w-3.5 h-3.5" />
             <span>ADD TO TIMELINE</span>

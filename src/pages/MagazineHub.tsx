@@ -678,7 +678,7 @@ export function MagazineHubPage({
           <div className="flex flex-col">
             <h3
               onClick={openLightbox}
-              className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors cursor-pointer"
+              className="text-base sm:text-lg md:text-xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors cursor-pointer"
             >
               {displayTitle}
             </h3>
@@ -725,7 +725,7 @@ export function MagazineHubPage({
             {/* Top Barcode & Category Tag */}
             <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
               <div className="flex items-center gap-2.5 sm:gap-3">
-                <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
+                <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-[10px]">
                   MAGAZINE DIRECTORY
                 </span>
                 <span className="font-bold text-red-600 dark:text-red-400">
@@ -740,7 +740,7 @@ export function MagazineHubPage({
 
             {/* MOUTHWASH Style Large Editorial Typography Title */}
             <div className="flex flex-col gap-2 sm:gap-4 max-w-5xl">
-              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-black uppercase tracking-tight leading-[0.98] text-black dark:text-white">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-extrabold uppercase tracking-tight leading-[0.98] text-black dark:text-white">
                 {headerMainTitle}
               </h1>
               <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
@@ -859,7 +859,7 @@ export function MagazineHubPage({
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
                       <div className="absolute left-0 mt-1.5 w-64 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 shadow-2xl z-20 rounded-none p-3 flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-1 duration-150 text-black dark:text-white">
-                        <span className="text-[9px] font-mono font-black uppercase tracking-wider text-black/50 dark:text-white/50">
+                        <span className="text-[9px] font-mono font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50">
                           LOCATION (지역)
                         </span>
                         <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
@@ -899,7 +899,7 @@ export function MagazineHubPage({
                   <select
                     value={magSortBy}
                     onChange={(e) => setMagSortBy(e.target.value as any)}
-                    className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
+                    className="bg-transparent text-[10px] sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
                   >
                     <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
                     <option value="newest" className="bg-[#F9F8F6] dark:bg-[#111111]">NEWEST</option>
@@ -970,7 +970,7 @@ export function MagazineHubPage({
 
                       {/* Top Right Circular Badge (Nike Circular Emblem Style) */}
                       <div 
-                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-[10px] font-mono font-black text-black dark:text-white shadow-xs"
+                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-[10px] font-mono font-extrabold text-black dark:text-white shadow-xs"
                         title={`${itemCount} Stories`}
                       >
                         <span>{itemCount}</span>
@@ -988,7 +988,7 @@ export function MagazineHubPage({
                         </div>
 
                         {/* Main Headline Title */}
-                        <h3 className="text-sm sm:text-base font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                        <h3 className="text-sm sm:text-base font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                           {displayHeroTitle}
                         </h3>
 
@@ -1055,7 +1055,7 @@ export function MagazineHubPage({
                       <span className="text-xs sm:text-[13px] font-bold tracking-tight text-red-600 dark:text-red-400 font-['Inter',sans-serif]">
                         Magazine preview
                       </span>
-                      <h2 className="text-2xl sm:text-3xl font-black uppercase font-['Noto_Sans_KR',sans-serif] tracking-tight text-black dark:text-white">
+                      <h2 className="text-2xl sm:text-3xl font-extrabold uppercase font-['Noto_Sans_KR',sans-serif] tracking-tight text-black dark:text-white">
                         {currentPreviewSection?.title || 'FEATURED STORIES'}
                       </h2>
                     </div>
@@ -1302,7 +1302,7 @@ export function MagazineHubPage({
               {/* Hero Top Bar */}
               <div className="absolute top-4 sm:top-6 left-4 sm:left-10 right-4 sm:right-10 z-20 flex items-center justify-between text-white/90 border-b border-white/20 pb-2.5">
                 <div className="flex items-center gap-2.5 sm:gap-3">
-                  <span className="text-[9px] sm:text-[10px] font-mono font-black tracking-widest uppercase bg-white text-black px-2 py-0.5 shadow-sm">
+                  <span className="text-[9px] sm:text-[10px] font-mono font-extrabold tracking-widest uppercase bg-white text-black px-2 py-0.5 shadow-sm">
                     ISSUE N°{String(effectiveSections.findIndex(s => s.id === currentSection.id) + 1).padStart(2, '0')}
                   </span>
                   <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest uppercase text-white/90">
@@ -1508,7 +1508,7 @@ export function MagazineHubPage({
 
                           <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-col gap-1.5 z-10 text-white">
                             <div className="flex items-center justify-between">
-                              <div className="bg-black/85 backdrop-blur-xs text-white font-mono text-[9px] font-black px-1.5 py-0.5 border border-white/20 uppercase tracking-widest shadow-xs">
+                              <div className="bg-black/85 backdrop-blur-xs text-white font-mono text-[9px] font-extrabold px-1.5 py-0.5 border border-white/20 uppercase tracking-widest shadow-xs">
                                 ISSUE #{String(idx + 1).padStart(2, '0')}
                               </div>
                               {isActive && (
@@ -1555,7 +1555,7 @@ export function MagazineHubPage({
                 <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
                   CURATED STORIES
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black uppercase font-['Inter',sans-serif] tracking-tight text-black dark:text-white">
+                <h2 className="text-2xl sm:text-3xl font-extrabold uppercase font-['Inter',sans-serif] tracking-tight text-black dark:text-white">
                   {currentSection?.title || 'EDITORIAL MOMENTS'}
                 </h2>
               </div>

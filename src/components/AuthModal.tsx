@@ -364,7 +364,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
             <span className="text-[10px] font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
               APPLICATION SUBMITTED
             </span>
-            <h3 className="text-xl sm:text-2xl font-inter font-black uppercase tracking-tight text-black dark:text-white mb-3">
+            <h3 className="text-xl sm:text-2xl font-inter font-extrabold uppercase tracking-tight text-black dark:text-white mb-3">
               APPROVAL PENDING
             </h3>
             <p className="text-xs font-mono text-black/70 dark:text-white/70 leading-relaxed max-w-sm mb-5">
@@ -440,7 +440,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
               <span className="text-[10px] font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
                 {isSignUp ? 'USER REGISTRATION' : 'AUTHENTICATION'}
               </span>
-              <h2 className="text-2xl sm:text-3xl font-inter font-black uppercase tracking-tight text-black dark:text-white">
+              <h2 className="text-2xl sm:text-3xl font-inter font-extrabold uppercase tracking-tight text-black dark:text-white">
                 {isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
               </h2>
               <p className="text-xs font-mono text-black/50 dark:text-white/50 mt-1">

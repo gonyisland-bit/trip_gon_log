@@ -280,7 +280,7 @@ export function ProfileEditModal({
           {/* Header */}
           <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-mono font-black uppercase tracking-wider text-black dark:text-white">
+              <span className="text-sm font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
                 {title}
               </span>
               {isAdminEditing && (
@@ -457,7 +457,7 @@ export function ProfileEditModal({
               <button 
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {isSaving ? (
                   <>
@@ -529,7 +529,7 @@ export function ProfileEditModal({
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2.5">
               <div className="flex items-center gap-2">
                 <Smile className="w-4 h-4 text-black dark:text-white" />
-                <span className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
                   CHANGE AVATAR · 프로필 선택
                 </span>
               </div>
@@ -549,7 +549,7 @@ export function ProfileEditModal({
                 onClick={() => setActiveTab('icon')}
                 className={`flex-1 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-center transition-colors cursor-pointer ${
                   activeTab === 'icon'
-                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
+                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-extrabold'
                     : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                 }`}
               >
@@ -560,7 +560,7 @@ export function ProfileEditModal({
                 onClick={() => setActiveTab('image')}
                 className={`flex-1 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-center transition-colors cursor-pointer ${
                   activeTab === 'image'
-                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
+                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-extrabold'
                     : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                 }`}
               >

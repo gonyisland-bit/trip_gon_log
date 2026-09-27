@@ -11,7 +11,7 @@ import { Trip, Plan, TimelineData, TimelineItem, CalendarCustomEvent } from '../
 import { getKoreanHolidays, getHolidayInfo, KoreanHoliday } from '../utils/koreanHolidays';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { db, auth } from '../firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem, cleanCityDisplayName } from '../utils/weatherApi';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -425,7 +425,7 @@ export function CalendarHubPage({
         }
       } else {
         // Fallback for legacy path
-        onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (legacySnap) => {
+        getDoc(doc(db, 'settings', 'calendar_weather_cities')).then((legacySnap) => {
           if (legacySnap.exists()) {
             const data = legacySnap.data();
             if (Array.isArray(data?.cities) && data.cities.length > 0) {
@@ -435,7 +435,7 @@ export function CalendarHubPage({
               } catch (_) {}
             }
           }
-        }, () => {});
+        }).catch(() => {});
       }
     }, (err) => {
       console.warn("Calendar weather cities sync notice:", err);
@@ -1775,7 +1775,7 @@ export function CalendarHubPage({
         {/* Top Metadata Bar & Pure Typography Year */}
         <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
-            <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px] tracking-widest font-mono">
+            <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-[10px] tracking-widest font-mono">
               CALENDAR
             </span>
 
@@ -1811,7 +1811,7 @@ export function CalendarHubPage({
                         }}
                         className={`w-full px-3 py-2 text-left font-bold transition-colors flex items-center justify-between cursor-pointer ${
                           isSelected
-                            ? 'bg-red-600 text-white font-black'
+                            ? 'bg-red-600 text-white font-extrabold'
                             : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
                         }`}
                       >
@@ -1845,7 +1845,7 @@ export function CalendarHubPage({
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 group-hover:bg-white animate-pulse shrink-0" />
                 <span className="max-w-[100px] sm:max-w-[150px] truncate">{nextUpcomingTrip.title}</span>
-                <span className="font-black">D-{nextUpcomingTrip.daysLeft === 0 ? 'DAY' : nextUpcomingTrip.daysLeft}</span>
+                <span className="font-extrabold">D-{nextUpcomingTrip.daysLeft === 0 ? 'DAY' : nextUpcomingTrip.daysLeft}</span>
               </button>
             )}
           </div>
@@ -1868,7 +1868,7 @@ export function CalendarHubPage({
                 title="클릭하여 1~12월 선택 탭 열기"
               >
                 {/* Giant Month Number */}
-                <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                <span className="text-7xl sm:text-8xl lg:text-9xl font-extrabold font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                   {String(currentMonth + 1).padStart(2, '0')}
                 </span>
                 {/* English Month Name */}
@@ -1916,14 +1916,14 @@ export function CalendarHubPage({
                           {isBest && (
                             <span className="absolute top-0.5 right-0.5 sm:right-1 w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500 ring-2 ring-white dark:ring-zinc-900" />
                           )}
-                          <span className="text-sm sm:text-lg md:text-xl font-black font-['Inter',sans-serif] leading-none tracking-tight">
+                          <span className="text-sm sm:text-lg md:text-xl font-extrabold font-['Inter',sans-serif] leading-none tracking-tight">
                             {mTab.num}
                           </span>
                           <span className={`text-[8px] sm:text-[9.5px] md:text-[10.5px] font-bold tracking-wider uppercase leading-tight mt-0.5 font-['Inter',sans-serif] ${
                             isActive 
                               ? 'text-white dark:text-black' 
                               : isBest
-                              ? 'text-red-600 dark:text-red-400 font-black'
+                              ? 'text-red-600 dark:text-red-400 font-extrabold'
                               : 'text-black/40 dark:text-white/40'
                           }`}>
                             {mTab.short}
@@ -1961,7 +1961,7 @@ export function CalendarHubPage({
             </>
           ) : (
             <div className="flex flex-col items-center py-2 sm:py-4">
-              <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
+              <span className="text-4xl sm:text-6xl lg:text-7xl font-extrabold font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
                 {currentYear}
               </span>
               <span className="text-xs sm:text-sm font-mono tracking-widest text-black/40 dark:text-white/40 mt-1 uppercase">
@@ -2125,7 +2125,7 @@ export function CalendarHubPage({
         {isWeatherMode && (
           <div className="w-full flex items-center gap-1.5 sm:gap-2 py-2 border-b border-black/10 dark:border-white/10 select-none animate-in fade-in duration-150">
             {/* Left Location Indicator with Live Weather Motion */}
-            <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-black/15 dark:border-white/15 text-[11px] font-mono font-black text-black dark:text-white uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-black/15 dark:border-white/15 text-[11px] font-mono font-extrabold text-black dark:text-white uppercase tracking-wider">
               {cityWeatherData ? (() => {
                 const todayPop = cityWeatherData.forecast?.[0]?.precipitationProb ?? 0;
                 const meta = getWeatherMeta(cityWeatherData.weatherCode, todayPop);
@@ -2176,7 +2176,7 @@ export function CalendarHubPage({
                     onClick={() => handleSelectCity(c)}
                     className={`h-6 px-2.5 rounded-full text-[10px] sm:text-[10.5px] font-mono font-bold transition-all cursor-pointer shrink-0 flex items-center shadow-2xs ${
                       isSelected
-                        ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                        ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
                         : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-black/70 dark:text-white/70'
                     }`}
                     title={`${displayName} (${c.nameEn})`}
@@ -2246,7 +2246,7 @@ export function CalendarHubPage({
             )}
 
             {/* Weekday Header Row: SUN MON TUE WED THU FRI SAT */}
-            <div className="grid grid-cols-7 border-b border-black/15 dark:border-white/15 pb-2.5 sm:pb-3 text-center text-xs sm:text-sm font-black tracking-widest font-mono select-none">
+            <div className="grid grid-cols-7 border-b border-black/15 dark:border-white/15 pb-2.5 sm:pb-3 text-center text-xs sm:text-sm font-extrabold tracking-widest font-mono select-none">
               {WEEKDAYS.map((day, idx) => {
                 const isSunday = idx === 0;
                 const isSaturday = idx === 6;
@@ -2255,7 +2255,7 @@ export function CalendarHubPage({
                     key={day} 
                     className={`py-0.5 ${
                       isSunday 
-                        ? 'text-red-600 dark:text-red-500 font-black' 
+                        ? 'text-red-600 dark:text-red-500 font-extrabold' 
                         : isSaturday 
                           ? 'text-blue-600 dark:text-blue-400' 
                           : 'text-black/60 dark:text-white/60'
@@ -2299,7 +2299,7 @@ export function CalendarHubPage({
 
                 // Circular badge styling based on Concept B & Swiss Minimal (웹 반응형 대형 스케일업)
                 let circleClasses = 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer';
-                let textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none';
+                let textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none';
 
                 const isSelectedDate = !!(selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr);
                 const isSelectedWeather = isWeatherMode && selectedWeatherDay?.dateStr === cell.dateStr;
@@ -2312,24 +2312,24 @@ export function CalendarHubPage({
                   }
                 } else if (cell.isToday) {
                   // 오늘 날짜: 스위스 미니멀 반전 상태 (블랙/화이트) + 선택 시 선명한 듀얼 링 인디케이터
-                  circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-sm';
+                  circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-sm';
                   if (isSelected) {
                     circleClasses += ' ring-[2.5px] ring-black dark:ring-white ring-offset-2 ring-offset-[#fcfbf9] dark:ring-offset-[#121316] scale-105 shadow-md z-20';
                   }
-                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none';
+                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none';
                 } else if (hasTrip) {
                   // 여정 날짜: 오렌지 알약 위 텍스트 + 선택 시 여백 없이 핏되는 인셋 링
-                  circleClasses += ' text-white font-black hover:opacity-95';
+                  circleClasses += ' text-white font-extrabold hover:opacity-95';
                   if (isSelected) {
                     circleClasses += ' ring-[2.5px] ring-inset ring-white shadow-md z-20';
                   }
-                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-white';
+                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none text-white';
                 } else if (isSelected) {
                   // 선택 날짜: 테두리 진하고 약간 더 두껍게 (ring-[2.5px]) + 내부 은은한 모노크롬 색상
-                  circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-black ring-[2.5px] ring-black dark:ring-white scale-105 shadow-md z-20';
-                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-black dark:text-white';
+                  circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-extrabold ring-[2.5px] ring-black dark:ring-white scale-105 shadow-md z-20';
+                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none text-black dark:text-white';
                 } else if (isInRange) {
-                  circleClasses += ' bg-red-600/20 ring-2 ring-red-600 text-red-600 dark:text-red-400 font-black';
+                  circleClasses += ' bg-red-600/20 ring-2 ring-red-600 text-red-600 dark:text-red-400 font-extrabold';
                 } else if (hasEvent) {
                   circleClasses += ' bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-black dark:text-white';
                 } else {
@@ -2407,11 +2407,11 @@ export function CalendarHubPage({
                             {/* 1. 상단: 날짜 일자 숫자 */}
                             <span className={`text-[9px] sm:text-[10px] md:text-[11px] font-mono leading-none ${
                               isOrangeBg 
-                                ? 'text-white font-black' 
+                                ? 'text-white font-extrabold' 
                                 : cell.isToday
-                                  ? 'text-white dark:text-black font-black'
+                                  ? 'text-white dark:text-black font-extrabold'
                                   : isSelected 
-                                    ? 'text-black dark:text-white font-black' 
+                                    ? 'text-black dark:text-white font-extrabold' 
                                     : 'text-black/70 dark:text-white/70 font-bold'
                             }`}>
                               {cell.dayNum}
@@ -2431,11 +2431,11 @@ export function CalendarHubPage({
                             {/* 3. 하단: 최저/최고 기온 */}
                             <span className={`text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-mono tracking-tighter leading-none ${
                               isOrangeBg 
-                                ? 'text-white font-black' 
+                                ? 'text-white font-extrabold' 
                                 : cell.isToday
-                                  ? 'text-white dark:text-black font-black'
+                                  ? 'text-white dark:text-black font-extrabold'
                                   : isSelected 
-                                    ? 'text-black dark:text-white font-black' 
+                                    ? 'text-black dark:text-white font-extrabold' 
                                     : 'text-black/75 dark:text-white/75 font-bold'
                             }`}>
                               {weatherItem.tempMin}°/{weatherItem.tempMax}°
@@ -2499,7 +2499,7 @@ export function CalendarHubPage({
                     </div>
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-baseline gap-2 truncate">
-                        <span className="text-xs sm:text-sm font-black text-black dark:text-white">
+                        <span className="text-xs sm:text-sm font-extrabold text-black dark:text-white">
                           {selectedWeatherDay.dateStr.replace(/-/g, '.')} ({selectedWeatherDay.weather.dayOfWeek})
                         </span>
                         <span className="text-[10.5px] font-bold text-red-600 dark:text-red-400 uppercase truncate">
@@ -2706,7 +2706,7 @@ export function CalendarHubPage({
                             <span className="text-black/30 dark:text-white/30 shrink-0">|</span>
                             <span className={`font-sans truncate block whitespace-nowrap text-xs sm:text-sm ${
                               isHighlighted 
-                                ? 'font-black text-red-600 dark:text-red-400' 
+                                ? 'font-extrabold text-red-600 dark:text-red-400' 
                                 : 'font-bold text-black dark:text-white group-hover:text-red-600 transition-colors'
                             }`}>
                               {item.displayTitle}
@@ -2830,7 +2830,7 @@ export function CalendarHubPage({
                       title={`${m.monthTab.full} 월별 보기로 확대 이동`}
                     >
                       <div className="flex items-baseline gap-1.5 sm:gap-2 text-black dark:text-white group-hover:text-red-600 transition-colors">
-                        <span className="text-base sm:text-lg md:text-xl font-black font-mono tracking-tight">
+                        <span className="text-base sm:text-lg md:text-xl font-extrabold font-mono tracking-tight">
                           {m.monthTab.num < 10 ? `0${m.monthTab.num}` : m.monthTab.num}
                         </span>
                         <span className="text-xs sm:text-sm font-semibold font-['Inter',sans-serif] tracking-wider uppercase opacity-75">
@@ -2842,7 +2842,7 @@ export function CalendarHubPage({
                     <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-end">
                       {isBestMonth && (
                         <span 
-                          className="text-[8px] sm:text-[9px] font-mono font-black px-1.5 py-0.5 rounded-full bg-red-600 text-white tracking-wider shadow-2xs"
+                          className="text-[8px] sm:text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-full bg-red-600 text-white tracking-wider shadow-2xs"
                           title={`${destinationCityData?.nameKo || selectedWeatherCity.nameEn} 최적 여행 시기`}
                         >
                           BEST
@@ -2909,13 +2909,13 @@ export function CalendarHubPage({
                       const isYearSelected = selectedYearDate === day.dateStr;
 
                       if (isYearSelected) {
-                        circleClasses += ' ring-2 ring-red-600 ring-offset-1 dark:ring-offset-black scale-105 z-20 font-black shadow-md';
+                        circleClasses += ' ring-2 ring-red-600 ring-offset-1 dark:ring-offset-black scale-105 z-20 font-extrabold shadow-md';
                       }
 
                       if (day.isToday) {
-                        circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-xs';
+                        circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-xs';
                       } else if (day.hasTrip) {
-                        circleClasses += ' text-white font-black hover:opacity-90';
+                        circleClasses += ' text-white font-extrabold hover:opacity-90';
                         textClasses += ' text-white';
                       } else if (day.hasEvent) {
                         circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-bold';
@@ -3041,7 +3041,7 @@ export function CalendarHubPage({
             <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="w-5 h-5 text-red-600" />
-                <h3 className="text-base sm:text-lg font-black font-satoshi tracking-tight uppercase text-black dark:text-white">
+                <h3 className="text-base sm:text-lg font-extrabold font-satoshi tracking-tight uppercase text-black dark:text-white">
                   {editingEvent ? 'EDIT SCHEDULE' : 'NEW SCHEDULE'}
                 </h3>
               </div>
@@ -3295,7 +3295,7 @@ export function CalendarHubPage({
                 <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block mb-1">
                   SCHEDULE TITLE
                 </span>
-                <h2 className="text-xl sm:text-2xl font-black text-black dark:text-white font-satoshi tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-black dark:text-white font-satoshi tracking-tight">
                   {viewingEvent.title}
                 </h2>
               </div>
@@ -3374,7 +3374,7 @@ export function CalendarHubPage({
                 <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block mb-0.5">
                   TITLE
                 </span>
-                <h3 className="text-xl font-black text-black dark:text-white font-satoshi tracking-tight leading-tight">
+                <h3 className="text-xl font-extrabold text-black dark:text-white font-satoshi tracking-tight leading-tight">
                   {viewingTrip.trip.title}
                 </h3>
               </div>
@@ -3393,7 +3393,7 @@ export function CalendarHubPage({
                   if (range) {
                     const days = getDaysDifference(range.start, range.end);
                     return (
-                      <span className="font-mono text-xs font-black text-red-600 dark:text-red-400">
+                      <span className="font-mono text-xs font-extrabold text-red-600 dark:text-red-400">
                         {days} DAYS
                       </span>
                     );
@@ -3420,7 +3420,7 @@ export function CalendarHubPage({
                   setViewingTrip(null);
                   executeNavigateToTrip(t, d);
                 }}
-                className="w-full py-2.5 px-4 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 active:scale-[0.99] text-xs font-black font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+                className="w-full py-2.5 px-4 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 active:scale-[0.99] text-xs font-extrabold font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
               >
                 <span>OPEN JOURNEY</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
@@ -3461,7 +3461,7 @@ export function CalendarHubPage({
               style={{ left: hoveredTooltip.x, top: hoveredTooltip.y }}
               title={viewMode === 'year' ? "클릭하여 월달력으로 이동" : undefined}
             >
-              <span className="font-black text-red-500 tracking-wider">
+              <span className="font-extrabold text-red-500 tracking-wider">
                 {hoveredTooltip.dateStr.replace(/-/g, '.')}
               </span>
               <span className="text-white/30">|</span>
@@ -3495,7 +3495,7 @@ export function CalendarHubPage({
             title={viewMode === 'year' ? "클릭하여 월달력으로 이동" : undefined}
           >
             <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-white/15 text-[10px] font-mono">
-              <span className="font-black text-red-500 tracking-wider">
+              <span className="font-extrabold text-red-500 tracking-wider">
                 {hoveredTooltip.dateStr.replace(/-/g, '.')}
               </span>
               <div className="flex items-center gap-1.5">
@@ -3564,7 +3564,7 @@ export function CalendarHubPage({
             {/* Top Bar: Date Header + Holiday Tag + Close */}
             <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="text-base sm:text-lg font-black font-satoshi tracking-tight">
+                <span className="text-base sm:text-lg font-extrabold font-satoshi tracking-tight">
                   {quickViewDate.dateStr.replace(/-/g, '.')}
                 </span>
                 {quickViewDate.holidayName && (
@@ -3681,7 +3681,7 @@ export function CalendarHubPage({
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10 shrink-0">
               <div className="flex items-baseline gap-2.5">
-                <span className="text-xl sm:text-2xl font-black font-satoshi tracking-tight text-black dark:text-white uppercase">
+                <span className="text-xl sm:text-2xl font-extrabold font-satoshi tracking-tight text-black dark:text-white uppercase">
                   {currentYear} JOURNEYS
                 </span>
                 <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">

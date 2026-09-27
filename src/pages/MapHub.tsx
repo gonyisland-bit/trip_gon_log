@@ -2003,7 +2003,7 @@ export function MapHubPage({
           <div class="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow-lg flex items-center justify-center">
             <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
           </div>
-          <div class="mt-1 px-1.5 py-0.5 bg-black text-white text-[9px] font-mono font-black uppercase tracking-wider whitespace-nowrap shadow-md flex items-center">
+          <div class="mt-1 px-1.5 py-0.5 bg-black text-white text-[9px] font-mono font-extrabold uppercase tracking-wider whitespace-nowrap shadow-md flex items-center">
             ${numBadge}${pt.name}
           </div>
         </div>
@@ -3442,7 +3442,7 @@ export function MapHubPage({
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${showPinLabels ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9.5px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
                 ${group.city}
               </span>
             </div>
@@ -3454,7 +3454,7 @@ export function MapHubPage({
               <circle cx="12" cy="11" r="4.5" fill="#FFFFFF"/>
             </svg>
             ${group.journeys.length > 1 ? `
-              <span class="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[9.5px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
+              <span class="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-[9.5px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
                 ${group.journeys.length}
               </span>
             ` : ''}
@@ -3509,7 +3509,7 @@ export function MapHubPage({
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${showPinLabels ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9.5px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
                 ★ ${country.name}
               </span>
             </div>
@@ -3560,7 +3560,7 @@ export function MapHubPage({
         <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 24px; height: 24px;">
           <!-- Hover Tooltip -->
           <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; pointer-events: none; white-space: nowrap; z-index: 1000;" class="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-            <span style="font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block;">
+            <span style="font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block;">
               ${country.name}
             </span>
           </div>
@@ -3843,7 +3843,7 @@ export function MapHubPage({
             className: 'custom-builder-stop-icon',
             html: `
               <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-                <div style="background: #111111; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 900; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
+                <div style="background: #111111; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
                   ${numStr}
                 </div>
                 <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
@@ -3872,7 +3872,7 @@ export function MapHubPage({
           className: 'custom-builder-single-stop',
           html: `
             <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-              <div style="background: #dc2626; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 900; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
+              <div style="background: #dc2626; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
                 01
               </div>
               <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
@@ -4110,7 +4110,7 @@ export function MapHubPage({
           >
             <Star className={`w-3.5 h-3.5 ${favoriteCountries.length > 0 ? 'fill-black text-black dark:fill-white dark:text-white' : ''}`} />
             {favoriteCountries.length > 0 && (
-              <span className="text-[9px] sm:text-[10px] font-mono font-black">{favoriteCountries.length}</span>
+              <span className="text-[9px] sm:text-[10px] font-mono font-extrabold">{favoriteCountries.length}</span>
             )}
           </button>
 
@@ -4155,10 +4155,10 @@ export function MapHubPage({
                       <div className="flex-1 min-w-0">
                         {/* Row 1: Code Badge + English Name + Korean Name */}
                         <div className="flex items-center gap-1.5 flex-nowrap truncate">
-                          <span className="text-[10px] font-mono font-black text-red-600 dark:text-red-500 shrink-0">
+                          <span className="text-[10px] font-mono font-extrabold text-red-600 dark:text-red-500 shrink-0">
                             {c.code}
                           </span>
-                          <span className="text-xs font-black uppercase text-black dark:text-white truncate">
+                          <span className="text-xs font-extrabold uppercase text-black dark:text-white truncate">
                             {c.name}
                           </span>
                           <span className="text-[10.5px] font-sans text-black/50 dark:text-white/50 shrink-0">
@@ -4441,7 +4441,7 @@ export function MapHubPage({
                 handleOpenTripBuilder();
               }
             }}
-            className={`h-full px-2.5 sm:px-3 text-xs font-mono font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
+            className={`h-full px-2.5 sm:px-3 text-xs font-mono font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
               isBuilderOpen
                 ? 'bg-red-600 text-white dark:bg-red-500 dark:text-black'
                 : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
@@ -4471,13 +4471,13 @@ export function MapHubPage({
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse shrink-0" />
           
           {/* Time Display (Mobile: HH:mm, Desktop: HH:mm:ss KST) */}
-          <div className="flex items-baseline gap-1 font-mono tracking-tight font-black">
+          <div className="flex items-baseline gap-1 font-mono tracking-tight font-extrabold">
             {/* Desktop Full Clock */}
-            <span className="hidden sm:inline text-xs font-black tabular-nums">
+            <span className="hidden sm:inline text-xs font-extrabold tabular-nums">
               {formattedClockTime}
             </span>
             {/* Mobile Compact Clock */}
-            <span className="inline sm:hidden text-[11px] font-black tabular-nums">
+            <span className="inline sm:hidden text-[11px] font-extrabold tabular-nums">
               {formattedClockShort}
             </span>
             <span className="text-[8.5px] sm:text-[9.5px] text-black/40 dark:text-white/40 font-bold uppercase hidden sm:inline">
@@ -4540,7 +4540,7 @@ export function MapHubPage({
           <div className="flex items-center justify-between pb-1.5 sm:pb-2.5 border-b border-black/10 dark:border-white/10 mb-2 sm:mb-3">
             <div>
               <div className="flex items-center gap-1.5 mb-0.5 font-['Inter',sans-serif]">
-                <span className="text-[9.5px] font-black uppercase tracking-widest text-red-600 dark:text-red-500">
+                <span className="text-[9.5px] font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500">
                   {selectedCountry.code}
                 </span>
                 <span className="text-[9.5px] font-bold text-black/40 dark:text-white/40">
@@ -4548,7 +4548,7 @@ export function MapHubPage({
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
-                <h3 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-['Inter',sans-serif] leading-tight">
+                <h3 className="text-lg sm:text-2xl font-extrabold uppercase tracking-tight text-black dark:text-white font-['Inter',sans-serif] leading-tight">
                   {selectedCountry.name}
                 </h3>
                 <span className="text-xs font-semibold text-black/50 dark:text-white/50">
@@ -4579,7 +4579,7 @@ export function MapHubPage({
 
               return (
                 <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10">
-                  <div className="text-[9.5px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 mb-1 sm:mb-1.5 flex items-center justify-between">
+                  <div className="text-[9.5px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 mb-1 sm:mb-1.5 flex items-center justify-between">
                     <span>RECORDED JOURNEYS</span>
                     <span className="text-[9px] sm:text-[10px] font-mono font-bold text-black/40 dark:text-white/40">
                       {totalJourneys} TOTAL
@@ -4650,7 +4650,7 @@ export function MapHubPage({
                           <span className="text-base sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
                             {unit.toLocaleString()}
                           </span>
-                          <span className="text-[10px] sm:text-sm font-mono font-black text-black/70 dark:text-white/70 uppercase">
+                          <span className="text-[10px] sm:text-sm font-mono font-extrabold text-black/70 dark:text-white/70 uppercase">
                             {selectedCountry.currency}
                           </span>
                         </div>
@@ -4665,7 +4665,7 @@ export function MapHubPage({
                           <span className="text-base sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
                             {approxKRW.toLocaleString()}
                           </span>
-                          <span className="text-[10px] sm:text-sm font-mono font-black text-black/70 dark:text-white/70 uppercase">
+                          <span className="text-[10px] sm:text-sm font-mono font-extrabold text-black/70 dark:text-white/70 uppercase">
                             원
                           </span>
                         </div>
@@ -4682,7 +4682,7 @@ export function MapHubPage({
                 <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span className="text-[9.5px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-black/60 dark:text-white/60 truncate">
+                    <span className="text-[9.5px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60 truncate">
                       WEATHER · {activeWeatherCity || selectedCountry.name}
                     </span>
                   </div>
@@ -4710,7 +4710,7 @@ export function MapHubPage({
                           onClick={() => setActiveWeatherCity(c)}
                           className={`px-1.5 sm:px-2 py-0.5 whitespace-nowrap transition-colors cursor-pointer border ${
                             isCurCity
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-black shadow-2xs'
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-extrabold shadow-2xs'
                               : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 font-bold'
                           }`}
                         >
@@ -4765,7 +4765,7 @@ export function MapHubPage({
                                   : 'bg-white/40 dark:bg-black/20'
                               }`}
                             >
-                              <span className={`text-[8px] sm:text-[8.5px] font-mono ${isToday ? 'font-black text-red-600 dark:text-red-400' : 'text-black/50 dark:text-white/50'}`}>
+                              <span className={`text-[8px] sm:text-[8.5px] font-mono ${isToday ? 'font-extrabold text-red-600 dark:text-red-400' : 'text-black/50 dark:text-white/50'}`}>
                                 {isToday ? 'TODAY' : item.dayOfWeek}
                               </span>
                               <FIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2] ${colorClass}`} />
@@ -4789,7 +4789,7 @@ export function MapHubPage({
             {/* 3. Major Destinations (Clean Pill Buttons, No Star Icon, Toggle Selection) */}
             <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10">
               <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                <div className="text-[9.5px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
+                <div className="text-[9.5px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">
                   DESTINATIONS ({selectedCountry.cities.length})
                 </div>
                 {selectedDestCities.length > 0 && (
@@ -4837,7 +4837,7 @@ export function MapHubPage({
                     }
                   });
                 }}
-                className={`w-full py-1.5 sm:py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                className={`w-full py-1.5 sm:py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-extrabold uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                   isCurrentCountryFavorite
                     ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
                     : 'bg-white dark:bg-[#161616] text-black dark:text-white border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
@@ -4853,7 +4853,7 @@ export function MapHubPage({
                   const targetCity = selectedDestCities.length > 0 ? selectedDestCities[0] : undefined;
                   handleOpenTripBuilder(selectedCountry.name, targetCity, undefined, selectedCountry.code, selectedDestCities);
                 }}
-                className="w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-black text-white dark:bg-white dark:text-black text-[11px] sm:text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs truncate"
+                className="w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-black text-white dark:bg-white dark:text-black text-[11px] sm:text-xs font-extrabold uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs truncate"
                 title="선택된 장소 또는 국가 기준으로 새로운 트립 생성"
               >
                 <Plus className="w-3.5 h-3.5 shrink-0" />
@@ -4897,7 +4897,7 @@ export function MapHubPage({
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Bookmark className="w-4 h-4 text-amber-500" />
-                <span className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                <span className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-mono">
                   WISHLIST
                 </span>
               </div>
@@ -4917,7 +4917,7 @@ export function MapHubPage({
                 onClick={() => setWishlistTab('countries')}
                 className={`pb-2 px-3 tracking-wider cursor-pointer transition-colors ${
                   wishlistTab === 'countries'
-                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
+                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-extrabold'
                     : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                 }`}
               >
@@ -4928,7 +4928,7 @@ export function MapHubPage({
                 onClick={() => setWishlistTab('cities')}
                 className={`pb-2 px-3 tracking-wider cursor-pointer transition-colors ${
                   wishlistTab === 'cities'
-                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
+                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-extrabold'
                     : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                 }`}
               >
@@ -4958,7 +4958,7 @@ export function MapHubPage({
                           }}
                         >
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-black uppercase truncate text-black dark:text-white">
+                            <span className="text-xs font-extrabold uppercase truncate text-black dark:text-white">
                               {country.name}
                             </span>
                             <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
@@ -4976,7 +4976,7 @@ export function MapHubPage({
                             onClick={() => {
                               handleOpenTripBuilder(country.name, undefined, undefined, country.code);
                             }}
-                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-extrabold uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
                           >
                             <Plus className="w-3 h-3" />
                             <span>TRIP</span>
@@ -5017,7 +5017,7 @@ export function MapHubPage({
                           }}
                         >
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-black uppercase truncate text-black dark:text-white">
+                            <span className="text-xs font-extrabold uppercase truncate text-black dark:text-white">
                               {city}
                             </span>
                             {matchedCountry && (
@@ -5034,7 +5034,7 @@ export function MapHubPage({
                             onClick={() => {
                               handleOpenTripBuilder(matchedCountry?.name || '', city, undefined, matchedCountry?.code);
                             }}
-                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-extrabold uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
                           >
                             <Plus className="w-3 h-3" />
                             <span>TRIP</span>
@@ -5070,10 +5070,10 @@ export function MapHubPage({
           >
             <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
               <div>
-                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   TRIP
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white">
+                <h3 className="text-xl sm:text-2xl font-extrabold uppercase tracking-tight text-black dark:text-white">
                   {selectedPinGroup.city}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 mt-0.5">
@@ -5130,15 +5130,15 @@ export function MapHubPage({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h4 className="text-xs sm:text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                        <h4 className="text-xs sm:text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                           {cleanTitle}
                         </h4>
                         {isPlan ? (
-                          <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-[9.5px] font-black uppercase tracking-widest shrink-0">
+                          <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-[9.5px] font-extrabold uppercase tracking-widest shrink-0">
                             PLAN
                           </span>
                         ) : (
-                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black font-mono text-[9.5px] font-black uppercase tracking-widest shrink-0">
+                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black font-mono text-[9.5px] font-extrabold uppercase tracking-widest shrink-0">
                             LOG
                           </span>
                         )}
@@ -5171,10 +5171,10 @@ export function MapHubPage({
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-black/15 dark:border-white/15">
               <div>
-                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   VISITED LOCATIONS DIRECTORY
                 </span>
-                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                <h3 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                   등록된 여정 장소 목록 ({pinGroups.length}개 도시)
                 </h3>
               </div>
@@ -5236,7 +5236,7 @@ export function MapHubPage({
                         </div>
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-black text-xs sm:text-sm text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors uppercase truncate">
+                            <span className="font-extrabold text-xs sm:text-sm text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors uppercase truncate">
                               {group.city}
                             </span>
                             {group.country && (
@@ -5300,7 +5300,7 @@ export function MapHubPage({
         .swiss-pin-badge, .swiss-wishlist-badge {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
           font-size: 8.5px;
-          font-weight: 900;
+          font-weight: 800;
           letter-spacing: 0.12em;
           text-transform: uppercase;
           color: #000000;

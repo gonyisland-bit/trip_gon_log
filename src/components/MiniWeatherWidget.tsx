@@ -196,7 +196,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
         )}
 
         {weatherData && (
-          <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight shrink-0">
+          <span className="text-[10.5px] sm:text-[11px] font-extrabold tracking-tight shrink-0">
             {weatherData.temp}°
           </span>
         )}
@@ -212,7 +212,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 sm:w-56 py-1.5 bg-white dark:bg-zinc-900 border border-black/15 dark:border-white/15 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
           <div className="px-3 py-1.5 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-            <span className="text-[9px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
+            <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">
               SELECT CITY
             </span>
             <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
@@ -231,7 +231,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
                   onClick={() => handleSelectCity(city)}
                   className={`w-full px-3 py-2 text-left flex items-center justify-between transition-colors cursor-pointer text-xs ${
                     isSelected
-                      ? 'bg-black/5 dark:bg-white/10 font-black text-black dark:text-white'
+                      ? 'bg-black/5 dark:bg-white/10 font-extrabold text-black dark:text-white'
                       : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
                   }`}
                 >

@@ -460,7 +460,7 @@ export function SettlementView({
         <div className="fixed inset-0 z-[100000] bg-black/80 flex flex-col items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1a1a1a] p-5 rounded-lg max-w-2xl w-full flex flex-col gap-4 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center border-b pb-2.5 border-black/5 dark:border-white/10">
-              <span className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
                 <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
                 정산표 이미지 저장 및 공유
               </span>
@@ -482,7 +482,7 @@ export function SettlementView({
             <div className="flex gap-2">
               <button
                 onClick={handleSaveImage}
-                className="flex-1 bg-black text-white dark:bg-white dark:text-black py-2.5 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 bg-black text-white dark:bg-white dark:text-black py-2.5 rounded-sm text-xs font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 저장 (다운로드)
@@ -490,7 +490,7 @@ export function SettlementView({
               {typeof navigator.share !== 'undefined' && (
                 <button
                   onClick={handleShareImage}
-                  className="flex-1 bg-emerald-600 text-white py-2.5 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 bg-emerald-600 text-white py-2.5 rounded-sm text-xs font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   보내기 (공유)
@@ -514,8 +514,8 @@ export function SettlementView({
         {/* Receipt Header shown when capturing */}
         {isCapturing && (
           <div className="text-center pb-4 border-b border-dashed border-black/25 dark:border-white/25 mb-2">
-            <span className="text-[9px] uppercase tracking-widest opacity-60 font-black text-black/60 dark:text-white/60">Receipt / 정산 결과</span>
-            <h1 className="text-base md:text-lg font-black text-black dark:text-white mt-1">{trip.title || '여행'}</h1>
+            <span className="text-[9px] uppercase tracking-widest opacity-60 font-extrabold text-black/60 dark:text-white/60">Receipt / 정산 결과</span>
+            <h1 className="text-base md:text-lg font-extrabold text-black dark:text-white mt-1">{trip.title || '여행'}</h1>
             <p className="text-[9px] text-black/55 dark:text-white/55 mt-1">
               기간: {trip.date || '여정 일정'}
             </p>
@@ -526,12 +526,12 @@ export function SettlementView({
         {/* 2. Total Summary Panel - Receipt Styled */}
         <div className="border-t border-b border-dashed border-black/20 dark:border-white/20 py-4 my-1 grid grid-cols-3 gap-2 text-center">
           <div className="flex flex-col justify-center">
-            <span className="text-[8px] md:text-[9px] uppercase font-black tracking-widest text-black/50 dark:text-white/50 block mb-1">TOTAL PAYMENT</span>
-            <span className="text-sm md:text-base lg:text-lg font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap px-1">₩{totalExpenseKRW.toLocaleString()}</span>
+            <span className="text-[8px] md:text-[9px] uppercase font-extrabold tracking-widest text-black/50 dark:text-white/50 block mb-1">TOTAL PAYMENT</span>
+            <span className="text-sm md:text-base lg:text-lg font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap px-1">₩{totalExpenseKRW.toLocaleString()}</span>
           </div>
           <div className="border-l border-r border-black/10 dark:border-white/10 flex flex-col justify-center">
             <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">1인당 균등</span>
-            <span className="text-sm md:text-base lg:text-lg font-black text-black dark:text-white whitespace-nowrap px-1">₩{sharePerPerson.toLocaleString()}</span>
+            <span className="text-sm md:text-base lg:text-lg font-extrabold text-black dark:text-white whitespace-nowrap px-1">₩{sharePerPerson.toLocaleString()}</span>
           </div>
           <div className="flex flex-col justify-center">
             <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">
@@ -558,7 +558,7 @@ export function SettlementView({
               <div className="flex gap-1.5">
                 <button
                   onClick={handleCapture}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-extrabold uppercase tracking-widest rounded-sm transition-all cursor-pointer"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span>EXPORT</span>
@@ -566,7 +566,7 @@ export function SettlementView({
                 {isEditing && isLoggedIn && (
                   <button
                     onClick={() => setShowAddForm(v => !v)}
-                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity"
+                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white text-[9px] font-extrabold uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity"
                   >
                     <Plus className="w-3 h-3" /> 직접 추가
                   </button>
@@ -580,21 +580,21 @@ export function SettlementView({
         {showAddForm && isEditing && isLoggedIn && !isCapturing && (
           <div className="px-3 py-3 border-b border-black/10 dark:border-white/10 bg-emerald-500/5 flex flex-wrap gap-2 items-end">
             <div className="flex flex-col gap-0.5">
-              <label className="text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">날짜</label>
+              <label className="text-[8px] font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">날짜</label>
               <input type="date" value={newItem.date.replace(/\./g, '-')}
                 onChange={e => setNewItem(v => ({ ...v, date: e.target.value.replace(/-/g, '.') }))}
                 className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1.5 py-1 text-[10px] font-bold text-black dark:text-white outline-none rounded-sm"
               />
             </div>
             <div className="flex flex-col gap-0.5 flex-1 min-w-[100px]">
-              <label className="text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">항목명</label>
+              <label className="text-[8px] font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">항목명</label>
               <input type="text" placeholder="항목명 입력" value={newItem.name}
                 onChange={e => setNewItem(v => ({ ...v, name: e.target.value }))}
                 className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1.5 py-1 text-[10px] font-bold text-black dark:text-white outline-none rounded-sm w-full"
               />
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">금액</label>
+              <label className="text-[8px] font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">금액</label>
               <div className="flex items-center border border-black/10 dark:border-white/10 bg-white dark:bg-[#222] rounded-sm overflow-hidden">
                 <input type="text" placeholder="0" value={newItem.cost}
                   onChange={e => setNewItem(v => ({ ...v, cost: formatNumberWithCommas(e.target.value) }))}
@@ -613,7 +613,7 @@ export function SettlementView({
               </div>
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">결제자</label>
+              <label className="text-[8px] font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">결제자</label>
               <select value={newItem.paidBy || members[0]} onChange={e => setNewItem(v => ({ ...v, paidBy: e.target.value }))}
                 className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1.5 py-1 text-[10px] font-bold text-black dark:text-white outline-none rounded-sm cursor-pointer">
                 {members.map(m => <option key={m} value={m}>{m}</option>)}
@@ -621,11 +621,11 @@ export function SettlementView({
             </div>
             <div className="flex gap-1">
               <button onClick={handleAddCustom}
-                className="px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity">
+                className="px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-extrabold uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity">
                 추가
               </button>
               <button onClick={() => setShowAddForm(false)}
-                className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-[9px] font-black uppercase tracking-widest rounded-sm hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60">
+                className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-[9px] font-extrabold uppercase tracking-widest rounded-sm hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60">
                 취소
               </button>
             </div>
@@ -640,7 +640,7 @@ export function SettlementView({
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 uppercase text-[7px] md:text-[8px] font-black tracking-widest text-black/50 dark:text-white/50">
+                <tr className="bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 uppercase text-[7px] md:text-[8px] font-extrabold tracking-widest text-black/50 dark:text-white/50">
                   <th className="py-2 px-1.5 whitespace-nowrap">DAY</th>
                   <th className="py-2 px-1.5">ITEM</th>
                   <th className="py-2 px-1.5 whitespace-nowrap">결제자</th>
@@ -665,7 +665,7 @@ export function SettlementView({
                       <tr
                         className={`border-b border-dashed border-black/10 dark:border-white/10 transition-colors ${
                           isSelected
-                            ? 'bg-orange-500/15 dark:bg-orange-400/20 text-orange-600 dark:text-orange-400 font-bold border-l-2 border-orange-500'
+                            ? 'bg-red-500/15 dark:bg-red-400/20 text-red-600 dark:text-red-400 font-bold border-l-2 border-red-500'
                             : 'hover:bg-black/2 dark:hover:bg-white/2'
                         }`}
                       >
@@ -682,7 +682,7 @@ export function SettlementView({
                           onClick={() => handleRowClick(rowKey, item)}
                         >
                           <div className="font-bold flex items-center gap-1 min-w-0">
-                            <span className={`text-[7px] md:text-[8px] font-black px-1 py-0.5 rounded-sm shrink-0 ${TYPE_COLORS[item.itemType] || ''}`}>
+                            <span className={`text-[7px] md:text-[8px] font-extrabold px-1 py-0.5 rounded-sm shrink-0 ${TYPE_COLORS[item.itemType] || ''}`}>
                               {TYPE_CODES[item.itemType] || '?'}
                             </span>
                             <span className={`truncate text-[9px] md:text-[10px] transition-colors ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : ''}`} title={item.name}>
@@ -745,7 +745,7 @@ export function SettlementView({
                           )}
                         </td>
                         {/* PAY(₩) */}
-                        <td className="py-2 px-1.5 text-right font-mono font-black text-black dark:text-white whitespace-nowrap text-[9px] md:text-[10px] cursor-pointer" onClick={() => handleRowClick(rowKey, item)}>
+                        <td className="py-2 px-1.5 text-right font-mono font-extrabold text-black dark:text-white whitespace-nowrap text-[9px] md:text-[10px] cursor-pointer" onClick={() => handleRowClick(rowKey, item)}>
                           ₩{krwAmount.toLocaleString()}
                         </td>
                         {/* Accordion toggle (attachment) */}
@@ -778,7 +778,7 @@ export function SettlementView({
                           <td colSpan={6} className="px-3 py-3 bg-black/2 dark:bg-white/2">
                             <div className="flex flex-col gap-2">
                               <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-black/40 dark:text-white/40 flex items-center gap-1">
+                                <span className="text-[9px] font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40 flex items-center gap-1">
                                   <Paperclip className="w-3 h-3" /> 첨부파일 (영수증 / 예약확인서)
                                 </span>
                                 {/* Upload button */}
@@ -795,7 +795,7 @@ export function SettlementView({
                                     <button
                                       onClick={() => { setActiveUploadKey(rowKey); fileInputRef.current?.click(); }}
                                       disabled={uploadingKey === rowKey}
-                                      className="flex items-center gap-1 px-2 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest rounded-sm hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
+                                      className="flex items-center gap-1 px-2 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-extrabold uppercase tracking-widest rounded-sm hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
                                     >
                                       {uploadingKey === rowKey ? (
                                         <Loader2 className="w-3 h-3 animate-spin text-red-600" />

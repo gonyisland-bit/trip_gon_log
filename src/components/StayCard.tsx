@@ -253,7 +253,7 @@ export function StayCard({
         />
 
         {/* Booking tag overlay */}
-        <div className="absolute top-4 left-4 bg-white/95 dark:bg-black/95 text-black dark:text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 flex items-center gap-1.5 shadow-md border border-black/10 z-10">
+        <div className="absolute top-4 left-4 bg-white/95 dark:bg-black/95 text-black dark:text-white text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest px-3 py-1.5 flex items-center gap-1.5 shadow-md border border-black/10 z-10">
           <Bed className="w-3.5 h-3.5 text-black dark:text-white" />
           {isEditMode ? (
             <input
@@ -290,11 +290,11 @@ export function StayCard({
                   onUpdate(stay.id, 'title', e.target.value);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-extrabold text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder="STAY TITLE"
               />
             ) : (
-              <h3 className="text-lg md:text-xl font-black font-satoshi tracking-tight leading-snug uppercase truncate">
+              <h3 className="text-lg md:text-xl font-extrabold font-satoshi tracking-tight leading-snug uppercase truncate">
                 {stay.title}
               </h3>
             )}
@@ -302,7 +302,7 @@ export function StayCard({
             {isEditMode ? (
               <div className="flex flex-col md:flex-row items-start md:items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center gap-1 w-full md:w-auto">
-                  <span className="text-[8px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest min-w-[32px]">Check-In</span>
+                  <span className="text-[8px] text-black/40 dark:text-white/40 uppercase font-extrabold tracking-widest min-w-[32px]">Check-In</span>
                   <input
                     type="date"
                     value={checkIn}
@@ -313,7 +313,7 @@ export function StayCard({
                   />
                 </div>
                 <div className="flex items-center gap-1 w-full md:w-auto">
-                  <span className="text-[8px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest min-w-[32px]">Check-Out</span>
+                  <span className="text-[8px] text-black/40 dark:text-white/40 uppercase font-extrabold tracking-widest min-w-[32px]">Check-Out</span>
                   <input
                     type="date"
                     value={checkOut}

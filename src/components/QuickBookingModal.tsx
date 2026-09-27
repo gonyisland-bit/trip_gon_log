@@ -27,8 +27,13 @@ interface QuickBookingModalProps {
   initialToCode?: string;
 }
 
-export function QuickBookingModal({
-  isOpen,
+export function QuickBookingModal(props: QuickBookingModalProps) {
+  // Mount the content only while open so its hooks always run in the same order
+  if (!props.isOpen) return null;
+  return <QuickBookingModalContent {...props} />;
+}
+
+function QuickBookingModalContent({
   onClose,
   destination,
   startDate = '',
@@ -37,7 +42,6 @@ export function QuickBookingModal({
   initialFromCode = 'ICN',
   initialToCode = '',
 }: QuickBookingModalProps) {
-  if (!isOpen) return null;
 
   // Local editable state for quick fine-tuning (always extract pure city name e.g. "후쿠오카", excluding country prefixes like "JAPAN, ")
   const initialCleanCity = extractCleanCityName(destination) || 'Tokyo';

@@ -357,7 +357,7 @@ export function SettingsModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/10 dark:border-white/10 shrink-0">
           <div className="flex items-center gap-2.5">
             <Settings className="w-5 h-5 text-red-600 dark:text-red-400" />
-            <h2 className="text-lg font-black uppercase tracking-widest text-black dark:text-white">
+            <h2 className="text-lg font-extrabold uppercase tracking-widest text-black dark:text-white">
               App Settings
             </h2>
           </div>
@@ -383,7 +383,7 @@ export function SettingsModal({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
+              className={`flex-1 py-3 text-[10px] font-extrabold uppercase tracking-widest transition-colors ${
                 activeTab === tab.id
                   ? 'bg-black text-white dark:bg-white dark:text-black'
                   : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
@@ -400,7 +400,7 @@ export function SettingsModal({
           {activeTab === 'general' && (
             <form onSubmit={handleSave} className="p-6 md:p-8 space-y-5">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
                   Home Hub Title
                 </label>
                 <input
@@ -417,10 +417,10 @@ export function SettingsModal({
               <div className="flex flex-col gap-2.5 pt-2">
                 <div className="flex items-center gap-2">
                   <Star className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
-                  <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                  <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
                     Hero Featured Journey{selectedHeroIds.length > 1 ? 's' : ''}
                     {selectedHeroIds.length > 0 && (
-                      <span className="ml-2 text-red-500 dark:text-red-400 not-italic normal-case font-black">
+                      <span className="ml-2 text-red-500 dark:text-red-400 not-italic normal-case font-extrabold">
                         ({selectedHeroIds.length} selected)
                       </span>
                     )}
@@ -488,7 +488,7 @@ export function SettingsModal({
 
               {/* Hero Carousel Settings */}
               <div className="border-t border-black/10 dark:border-white/10 pt-4 space-y-4">
-                <h3 className="text-[10px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white flex items-center gap-1.5">
+                <h3 className="text-[10px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white flex items-center gap-1.5">
                   Hero Slideshow Settings
                 </h3>
                 <div className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
@@ -535,13 +535,13 @@ export function SettingsModal({
 
               {/* Marquee Banner Settings */}
               <div className="border-t border-black/10 dark:border-white/10 pt-4 space-y-4">
-                <h3 className="text-[10px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                <h3 className="text-[10px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
                   Marquee Banner Settings
                 </h3>
                 
                 <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm">
                   <div className="flex flex-col">
-                    <span className="text-xs font-black uppercase tracking-wider text-black dark:text-white">마퀴 전광판 배너 (Marquee Banner)</span>
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-black dark:text-white">마퀴 전광판 배너 (Marquee Banner)</span>
                     <span className="text-[9px] text-black/50 dark:text-white/50">홈 화면 상단에 흐르는 전광판 배너 표시 여부</span>
                   </div>
                   <button
@@ -566,7 +566,7 @@ export function SettingsModal({
                 {showMarquee && (
                   <div className="space-y-4 pl-2 border-l border-black/10 dark:border-white/10">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                      <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
                         Marquee Message
                       </label>
                       <input
@@ -580,7 +580,7 @@ export function SettingsModal({
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                      <label className="text-[9px] uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
                         Marquee Speed (Duration in seconds, lower = faster)
                       </label>
                       <input
@@ -602,14 +602,14 @@ export function SettingsModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all text-black/60 dark:text-white/60"
+                  className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-extrabold uppercase tracking-widest rounded-none transition-all text-black/60 dark:text-white/60"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-extrabold uppercase tracking-widest rounded-none transition-all flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {saving ? (
                     <>
@@ -634,12 +634,12 @@ export function SettingsModal({
               <div className="p-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Volume2 className="w-4 h-4 text-orange-500" />
+                    <Volume2 className="w-4 h-4 text-red-500" />
                     <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
                       슬라이드쇼 음악 기본 볼륨
                     </span>
                   </div>
-                  <span className="font-mono text-xs font-black text-orange-500">
+                  <span className="font-mono text-xs font-extrabold text-red-500">
                     {bgmDefaultVolume}%
                   </span>
                 </div>
@@ -654,7 +654,7 @@ export function SettingsModal({
                     step="1"
                     value={bgmDefaultVolume}
                     onChange={(e) => handleDefaultVolumeChange(Number(e.target.value))}
-                    className="w-full accent-orange-500 cursor-pointer h-1.5 bg-black/20 dark:bg-white/20 rounded-lg appearance-none"
+                    className="w-full accent-red-500 cursor-pointer h-1.5 bg-black/20 dark:bg-white/20 rounded-lg appearance-none"
                   />
                   <div className="flex items-center gap-1 shrink-0">
                     {[30, 50, 70, 100].map((preset) => (
@@ -664,7 +664,7 @@ export function SettingsModal({
                         onClick={() => handleDefaultVolumeChange(preset)}
                         className={`px-2 py-0.5 text-[9px] font-mono rounded-xs border transition-colors cursor-pointer ${
                           bgmDefaultVolume === preset
-                            ? 'bg-orange-500 text-white border-orange-500 font-bold'
+                            ? 'bg-red-500 text-white border-red-500 font-bold'
                             : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'
                         }`}
                       >
@@ -691,7 +691,7 @@ export function SettingsModal({
                     type="button"
                     onClick={() => handleToggleAutoplay(!bgmAutoplay)}
                     className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      bgmAutoplay ? 'bg-orange-500' : 'bg-black/20 dark:bg-white/20'
+                      bgmAutoplay ? 'bg-red-500' : 'bg-black/20 dark:bg-white/20'
                     }`}
                   >
                     <span
@@ -716,7 +716,7 @@ export function SettingsModal({
                     type="button"
                     onClick={() => setBgmShuffle((prev) => !prev)}
                     className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      bgmShuffle ? 'bg-orange-500' : 'bg-black/20 dark:bg-white/20'
+                      bgmShuffle ? 'bg-red-500' : 'bg-black/20 dark:bg-white/20'
                     }`}
                   >
                     <span
@@ -754,7 +754,7 @@ export function SettingsModal({
                       onClick={() => setSlideshowInterval(item.val)}
                       className={`px-2.5 py-1 text-xs font-mono rounded-xs border transition-colors cursor-pointer ${
                         slideshowInterval === item.val
-                          ? 'bg-orange-500 text-white border-orange-500 font-bold'
+                          ? 'bg-red-500 text-white border-red-500 font-bold'
                           : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'
                       }`}
                     >
@@ -779,7 +779,7 @@ export function SettingsModal({
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed p-6 text-center cursor-pointer transition-all ${
                   isDraggingFile
-                    ? 'border-orange-500 bg-orange-500/10'
+                    ? 'border-red-500 bg-red-500/10'
                     : 'border-black/15 dark:border-white/15 hover:border-black/30 dark:hover:border-white/30 bg-black/2 dark:bg-white/2'
                 }`}
               >
@@ -794,7 +794,7 @@ export function SettingsModal({
                 <div className="flex flex-col items-center gap-2">
                   {isUploadingBgm ? (
                     <>
-                      <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
+                      <Loader2 className="w-7 h-7 animate-spin text-red-500" />
                       <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
                         음원 업로드 중...
                       </span>
@@ -817,8 +817,8 @@ export function SettingsModal({
               <div className="space-y-3">
                 <div className="flex items-center justify-between pb-1 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-2">
-                    <Music className="w-3.5 h-3.5 text-orange-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-black/70 dark:text-white/70">
+                    <Music className="w-3.5 h-3.5 text-red-500" />
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-black/70 dark:text-white/70">
                       PLAYLIST ({bgmTracks.length})
                     </span>
                   </div>
@@ -852,7 +852,7 @@ export function SettingsModal({
                             type="checkbox"
                             checked={track.enabled}
                             onChange={() => handleToggleBgmTrack(track.id)}
-                            className="w-4 h-4 accent-orange-500 cursor-pointer"
+                            className="w-4 h-4 accent-red-500 cursor-pointer"
                             title="재생 목록 포함 여부"
                           />
                           <div className="flex flex-col min-w-0">
@@ -875,7 +875,7 @@ export function SettingsModal({
                             onClick={() => handleTogglePreviewTrack(track)}
                             className={`p-1.5 rounded-sm border transition-colors cursor-pointer ${
                               previewTrackId === track.id
-                                ? 'bg-orange-500 text-white border-orange-500'
+                                ? 'bg-red-500 text-white border-red-500'
                                 : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
                             }`}
                             title={previewTrackId === track.id ? '정지' : '미리듣기'}
@@ -939,7 +939,7 @@ export function SettingsModal({
                     }
                     onClose();
                   }}
-                  className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-extrabold uppercase tracking-widest rounded-none transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Save className="w-3.5 h-3.5" />
                   Save BGM Settings
@@ -1003,7 +1003,7 @@ export function SettingsModal({
                           <button
                             onClick={() => handleRestore(journey.id)}
                             disabled={loadingId === journey.id}
-                            className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-50 text-black dark:text-white"
+                            className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-50 text-black dark:text-white"
                           >
                             {loadingId === journey.id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -1015,7 +1015,7 @@ export function SettingsModal({
                           <button
                             onClick={() => handlePermanentDelete(journey.id)}
                             disabled={loadingId === journey.id}
-                            className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 border border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1.5 border border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors disabled:opacity-50"
                           >
                             {loadingId === journey.id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />

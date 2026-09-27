@@ -241,7 +241,7 @@ export function TransitCard({
           {transit.transitType === 'car' ? (
             isEditMode ? (
               <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                <span className="text-[8px] uppercase font-black opacity-40">PICKUP</span>
+                <span className="text-[8px] uppercase font-extrabold opacity-40">PICKUP</span>
                 <input
                   type="date"
                   value={transit.date ? transit.date.replace(/\./g, '-') : ''}
@@ -251,7 +251,7 @@ export function TransitCard({
                   className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
                 />
                 <span className="text-black/40 dark:text-white/40">—</span>
-                <span className="text-[8px] uppercase font-black opacity-40">RETURN</span>
+                <span className="text-[8px] uppercase font-extrabold opacity-40">RETURN</span>
                 <input
                   type="date"
                   value={transit.rentalDropoffDate ? transit.rentalDropoffDate.replace(/\./g, '-') : ''}
@@ -336,11 +336,11 @@ export function TransitCard({
                   onUpdate(transit.id, 'title', e.target.value);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-extrabold text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder={transit.transitType === 'car' ? "RENTAL COMPANY / TITLE" : "TRANSIT TITLE"}
               />
             ) : (
-              <h3 className="text-lg md:text-xl font-black tracking-tight leading-snug uppercase truncate">
+              <h3 className="text-lg md:text-xl font-extrabold tracking-tight leading-snug uppercase truncate">
                 {transit.title}
               </h3>
             )}
@@ -473,7 +473,7 @@ export function TransitCard({
                   <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
                     PICKUP:
                   </span>
-                  <span className="text-xs font-mono font-black text-black/80 dark:text-white/80">
+                  <span className="text-xs font-mono font-extrabold text-black/80 dark:text-white/80">
                     {transit.time || '10:00 AM'}
                   </span>
                   {isEditMode && (
@@ -493,7 +493,7 @@ export function TransitCard({
                   <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
                     RETURN:
                   </span>
-                  <span className="text-xs font-mono font-black text-black/80 dark:text-white/80">
+                  <span className="text-xs font-mono font-extrabold text-black/80 dark:text-white/80">
                     {transit.rentalDropoffTime || '06:00 PM'}
                   </span>
                   {isEditMode && (
@@ -513,7 +513,7 @@ export function TransitCard({
                   type="time"
                   value={timeStrTo24h(transit.time)}
                   onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
-                  className="bg-black/5 dark:bg-white/10 px-2 py-0.5 outline-none font-black text-xl md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 md:w-40 text-center [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-2 py-0.5 outline-none font-extrabold text-xl md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 md:w-40 text-center [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -531,7 +531,7 @@ export function TransitCard({
                 </button>
               </div>
             ) : (
-              <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">
+              <div className="text-2xl md:text-4xl font-extrabold mt-4 tracking-tighter leading-none">
                 {transit.time}
               </div>
             )}
@@ -680,7 +680,7 @@ export function TransitCard({
             {/* Transit Type Selector - Only shown in edit mode */}
             {isEditMode && (
               <div>
-                <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block mb-2">Transit Type (교통 종류)</label>
+                <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-extrabold tracking-widest block mb-2">Transit Type (교통 종류)</label>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
