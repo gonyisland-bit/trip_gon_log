@@ -363,7 +363,7 @@ function QuickBookingModalContent({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] text-center text-meta sm:text-[11px] font-mono text-black/60 dark:text-white/60 shrink-0 truncate">
+        <div className="px-4 py-2.5 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] text-center text-meta font-mono text-black/60 dark:text-white/60 shrink-0 truncate">
           각 버튼 클릭 시 새 탭에서 실시간 예약 검색이 열립니다.
         </div>
       </div>

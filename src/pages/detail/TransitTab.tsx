@@ -147,7 +147,7 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
           {/* Add Transit control */}
           {isEditing && (
             <div className="flex flex-col items-center py-6 gap-2">
-              <span className="text-meta md:text-[11px] text-black/60 dark:text-white/60 uppercase font-extrabold tracking-widest font-sans break-keep">Add Transit Ticket (교통 티켓 추가)</span>
+              <span className="text-meta text-black/60 dark:text-white/60 uppercase font-extrabold tracking-widest font-sans break-keep">Add Transit Ticket (교통 티켓 추가)</span>
               <div className="flex flex-wrap justify-center gap-2">
                 <button 
                   onClick={() => handleAddTransit('train')} 

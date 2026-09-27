@@ -4561,7 +4561,7 @@ export function MapHubPage({
                         key={group.city}
                         type="button"
                         onClick={() => setSelectedPinGroup(group)}
-                        className="px-2 py-0.5 text-meta sm:text-[11px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                        className="px-2 py-0.5 text-meta font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <span>{group.city}</span>
                         <span className="text-micro sm:text-micro px-1 py-0.2 bg-black/10 dark:bg-white/20 font-mono font-bold">

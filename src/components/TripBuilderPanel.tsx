@@ -1831,13 +1831,19 @@ export function TripBuilderPanel({
     );
   };
 
+  // Destination shown next to the panel title; changes when the map or search switches the guide
+  const guideDestinationLabel = ((initialCities && initialCities.length > 1 ? initialCities.join(' · ') : initialCity) || initialCountry || '').toUpperCase();
+
   if (!isOpen) return null;
 
   return (
     <aside className="w-full h-full flex flex-col bg-white dark:bg-[#121212] border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 text-black dark:text-white overflow-hidden font-sans select-none z-30 shadow-2xl">
-      {/* Panel Header (Nou producte Reference Style) */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/5 shrink-0 bg-white dark:bg-[#121212]">
-        <div className="flex items-center gap-3">
+      {/* Panel Header (Nou producte Reference Style); re-keyed on destination change to replay the accent */}
+      <div
+        key={`guide-header-${guideDestinationLabel}`}
+        className={`flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/5 shrink-0 bg-white dark:bg-[#121212] ${guideDestinationLabel ? 'tgl-accent-flash' : ''}`}
+      >
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onClose}
@@ -1846,9 +1852,16 @@ export function TripBuilderPanel({
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-xl font-bold tracking-tight text-black dark:text-white font-sans">
+          <h2 className="text-xl font-bold tracking-tight text-black dark:text-white font-sans shrink-0">
             Trip Guide
           </h2>
+          {guideDestinationLabel && (
+            <span className="overflow-hidden min-w-0" aria-live="polite">
+              <span className="tgl-swap-in truncate max-w-full text-meta font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
+                {guideDestinationLabel}
+              </span>
+            </span>
+          )}
         </div>
         <button
           type="button"

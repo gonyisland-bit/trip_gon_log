@@ -24,7 +24,7 @@ import {
 } from 'firebase/firestore';
 import {
   cleanForFirestore, applyJourneyOrder, SUPER_ADMIN_EMAIL, ADMIN_EMAILS, getInitialNavigationState,
-  NightModeSetting, isNightTimeNow
+  NightModeSetting, isNightTimeNow, runViewTransition
 } from './appUtils';
 import { notify } from '../utils/feedback';
 
@@ -1495,10 +1495,16 @@ export function useAppState() {
     }
 
     setIsNavigating(true);
-    startTransition(() => {
+    const applyView = () => {
       setCurrentView(effectiveView);
       setSelectedTagFilter(tagFilter);
-    });
+    };
+    // Hub-to-hub changes cross-fade with a View Transition; same-view updates stay a plain transition
+    if (effectiveView !== currentView) {
+      runViewTransition(applyView, (fn) => startTransition(fn));
+    } else {
+      startTransition(applyView);
+    }
     setTimeout(() => {
       setIsNavigating(false);
     }, 280);

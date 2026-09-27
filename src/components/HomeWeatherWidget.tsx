@@ -200,7 +200,7 @@ export function HomeWeatherWidget({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4 font-mono text-meta sm:text-[11px] text-black/60 dark:text-white/60">
+        <div className="flex items-center gap-2 sm:gap-4 font-mono text-meta text-black/60 dark:text-white/60">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>{lastUpdated} KST</span>
@@ -266,7 +266,7 @@ export function HomeWeatherWidget({
                     <span className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold font-mono tracking-tighter text-black dark:text-white leading-none">
                       {temp}°
                     </span>
-                    <span className="text-meta sm:text-[11px] font-mono font-bold text-black/60 dark:text-white/60 mt-1.5">
+                    <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 mt-1.5">
                       H:{tempMax}° L:{tempMin}°
                     </span>
                   </div>

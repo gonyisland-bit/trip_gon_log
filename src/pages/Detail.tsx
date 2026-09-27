@@ -17,6 +17,15 @@ import { TransitTab } from './detail/TransitTab';
 import { GalleryTab } from './detail/GalleryTab';
 import { DetailOverlays } from './detail/DetailOverlays';
 
+const DETAIL_TABS: { id: TabType; label: string }[] = [
+  { id: 'summary', label: 'SUM' },
+  { id: 'timeline', label: 'TIME' },
+  { id: 'flights', label: 'FLIGHT' },
+  { id: 'stays', label: 'STAY' },
+  { id: 'transit', label: 'TRANS' },
+  { id: 'gallery', label: 'PHOTO' },
+];
+
 export function JourneyDetailPage(props: JourneyDetailPageProps) {
   const s = useJourneyDetailState(props);
   const {
@@ -79,24 +88,30 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
         </div>
         
         {/* Tab Headers - Unified Single-line Sleek Design (SUM, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
-        <div className="flex overflow-x-hidden flex-nowrap border-b border-black/15 dark:border-white/15 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md transition-colors shrink-0 w-full h-9 sm:h-10">
-          {[ 
-            { id: 'summary', label: 'SUM' },
-            { id: 'timeline', label: 'TIME' }, 
-            { id: 'flights', label: 'FLIGHT' }, 
-            { id: 'stays', label: 'STAY' }, 
-            { id: 'transit', label: 'TRANS' }, 
-            { id: 'gallery', label: 'PHOTO' }
-          ].map(tab => (
-            <button 
-              key={tab.id} 
+        <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap border-b border-black/15 dark:border-white/15 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md transition-colors shrink-0 w-full h-9 sm:h-10">
+          {/* Active tab block slides between tabs */}
+          {DETAIL_TABS.some(t => t.id === activeTab) && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-y-0 left-0 bg-black dark:bg-white pointer-events-none transition-transform duration-base ease-standard motion-reduce:transition-none"
+              style={{
+                width: `${100 / DETAIL_TABS.length}%`,
+                transform: `translateX(${DETAIL_TABS.findIndex(t => t.id === activeTab) * 100}%)`,
+              }}
+            />
+          )}
+          {DETAIL_TABS.map(tab => (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={activeTab === tab.id}
               onClick={() => {
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
-              }} 
-              className={`flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-meta sm:text-[11px] md:text-xs font-extrabold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none ${
-                activeTab === tab.id 
-                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+              }}
+              className={`relative z-[1] flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-meta md:text-xs font-extrabold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none ${
+                activeTab === tab.id
+                  ? 'text-white dark:text-black'
                   : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
               }`}
             >

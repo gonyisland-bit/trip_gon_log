@@ -1205,7 +1205,7 @@ export function PocketHubPage({
             <button
               type="button"
               onClick={() => setIsFilterOpen(prev => !prev)}
-              className={`text-meta sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`text-meta px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
                 isFilterOpen || activeFilterCount > 0
                   ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                   : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
@@ -1323,7 +1323,7 @@ export function PocketHubPage({
               {selectedCountry !== 'ALL' && (
                 <button
                   onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
-                  className="h-7 px-2 flex items-center gap-1 text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                  className="h-7 px-2 flex items-center gap-1 text-meta font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
                 >
                   <span>{selectedCountry}</span>
                   <X className="w-2.5 h-2.5" />
@@ -1332,7 +1332,7 @@ export function PocketHubPage({
               {selectedCity !== 'ALL' && (
                 <button
                   onClick={() => setSelectedCity('ALL')}
-                  className="h-7 px-2 flex items-center gap-1 text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-red-600 bg-red-600/10 text-red-600 dark:border-red-400 dark:text-red-400 cursor-pointer hover:bg-red-600 hover:text-white transition-colors shrink-0"
+                  className="h-7 px-2 flex items-center gap-1 text-meta font-mono font-bold tracking-wider uppercase border border-red-600 bg-red-600/10 text-red-600 dark:border-red-400 dark:text-red-400 cursor-pointer hover:bg-red-600 hover:text-white transition-colors shrink-0"
                 >
                   <span>{selectedCity}</span>
                   <X className="w-2.5 h-2.5" />
@@ -1341,7 +1341,7 @@ export function PocketHubPage({
               {selectedCategory !== 'ALL' && (
                 <button
                   onClick={() => setSelectedCategory('ALL')}
-                  className="h-7 px-2 flex items-center gap-1 text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                  className="h-7 px-2 flex items-center gap-1 text-meta font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
                 >
                   <span>{selectedCategory}</span>
                   <X className="w-2.5 h-2.5" />
@@ -1350,7 +1350,7 @@ export function PocketHubPage({
               {isFavoriteFilter && (
                 <button
                   onClick={() => setIsFavoriteFilter(false)}
-                  className="h-7 px-2 flex items-center gap-1 text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                  className="h-7 px-2 flex items-center gap-1 text-meta font-mono font-bold tracking-wider uppercase border border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
                 >
                   <Star className="w-2.5 h-2.5 fill-current" />
                   <span>FAVORITES</span>

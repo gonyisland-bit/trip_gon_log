@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import { lazy } from 'react';
 import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
 
@@ -103,3 +104,15 @@ export const isNightTimeNow = (): boolean => {
   const hour = new Date().getHours();
   return hour >= 18 || hour < 6;
 };
+
+// Run a view change inside a View Transition (hub-to-hub cross-fade) when the browser supports it
+// and the user has not asked for reduced motion; otherwise apply it through `fallback`.
+export function runViewTransition(update: () => void, fallback: (update: () => void) => void = (fn) => fn()) {
+  const doc = document as Document & { startViewTransition?: (callback: () => void) => unknown };
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (typeof doc.startViewTransition !== 'function' || reduced) {
+    fallback(update);
+    return;
+  }
+  doc.startViewTransition(() => flushSync(update));
+}

@@ -767,7 +767,7 @@ export function MagazineHubPage({
                     <button 
                       type="button"
                       onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                      className={`text-meta sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
+                      className={`text-meta px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
                         magLocationFilter !== 'All'
                           ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                           : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
@@ -1184,7 +1184,7 @@ export function MagazineHubPage({
                                             {displayTitle}
                                           </h3>
                                         </div>
-                                        <div className="pt-2 mt-auto flex items-center justify-between text-meta sm:text-[11px] font-mono text-black/60 dark:text-white/60 border-t border-black/10 dark:border-white/10 tracking-wider">
+                                        <div className="pt-2 mt-auto flex items-center justify-between text-meta font-mono text-black/60 dark:text-white/60 border-t border-black/10 dark:border-white/10 tracking-wider">
                                           <span>{dateWithDay}</span>
                                           <span className="font-bold text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                                             <span>VIEW</span>
@@ -1525,7 +1525,7 @@ export function MagazineHubPage({
 
                           <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white z-10 flex flex-col gap-0.5">
                             {showSeparateSectionTitle && (
-                              <div className="text-meta sm:text-[11px] font-satoshi font-bold tracking-wider uppercase text-white/90 drop-shadow-md truncate">
+                              <div className="text-meta font-satoshi font-bold tracking-wider uppercase text-white/90 drop-shadow-md truncate">
                                 {sec.title}
                               </div>
                             )}

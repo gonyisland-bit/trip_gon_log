@@ -752,7 +752,7 @@ export function FlightCard({
           e.stopPropagation();
           setIsExpanded(prev => !prev);
         }}
-        className="px-4 py-2 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-meta sm:text-[11px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
+        className="px-4 py-2 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-meta font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
       >
         <span className="flex items-center gap-2">
           <span>EXPENSE & ATTACHMENTS</span>
@@ -776,7 +776,7 @@ export function FlightCard({
           {(isEditMode || (flight.cost && flight.cost !== '-')) && (
             <div className="px-4 pb-4 md:px-6 md:pb-6">
               <div className={`pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
-                <span className="text-meta md:text-[11px] text-black/60 dark:text-white/60 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+                <span className="text-meta text-black/60 dark:text-white/60 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
                 <SettlementExpenseInput
                   cost={flight.cost}
                   currency={flight.currency}
@@ -798,7 +798,7 @@ export function FlightCard({
           <div className="px-4 pb-4 md:px-6 md:pb-6" onClick={(e) => e.stopPropagation()}>
             <div className="pt-3 border-t border-dashed border-black/10 dark:border-white/10">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-meta md:text-[11px] text-black/60 dark:text-white/60 uppercase font-bold tracking-widest flex items-center gap-1">
+                <span className="text-meta text-black/60 dark:text-white/60 uppercase font-bold tracking-widest flex items-center gap-1">
                   <Paperclip className="w-3 h-3" /> ATTACHMENTS (첨부파일)
                 </span>
                 {isEditMode && (

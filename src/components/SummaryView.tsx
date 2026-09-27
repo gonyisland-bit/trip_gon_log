@@ -8,6 +8,7 @@ import { Trip, TimelineItem, FlightItem, StayItem, TransitItem } from '../types'
 import html2canvas from 'html2canvas';
 import { createPortal } from 'react-dom';
 import { notify } from '../utils/feedback';
+import { CountUp } from './CountUp';
 
 const EXCHANGE_RATES: { [currency: string]: number } = {
   KRW: 1,
@@ -699,7 +700,7 @@ export function SummaryView({
           {/* Metric 1: Total Days */}
           <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
             <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
-              {totalDays < 10 ? `0${totalDays}` : totalDays}
+              <CountUp value={totalDays} format={(n) => (n < 10 ? `0${n}` : String(n))} />
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
               days
@@ -709,7 +710,7 @@ export function SummaryView({
           {/* Metric 2: Recorded Spots */}
           <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
             <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
-              {recordedSpotsCount < 10 ? `0${recordedSpotsCount}` : recordedSpotsCount}
+              <CountUp value={recordedSpotsCount} format={(n) => (n < 10 ? `0${n}` : String(n))} />
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
               spots
@@ -719,7 +720,7 @@ export function SummaryView({
           {/* Metric 3: Flight Legs */}
           <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
             <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
-              {flights.length < 10 ? `0${flights.length}` : flights.length}
+              <CountUp value={flights.length} format={(n) => (n < 10 ? `0${n}` : String(n))} />
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
               flights
@@ -729,7 +730,7 @@ export function SummaryView({
           {/* Metric 4: Total Estimated Budget ('240,-' European/Swiss editorial format) */}
           <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
             <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
-              {Math.round(totalInBaseCurrency / 1000).toLocaleString()},-
+              <CountUp value={Math.round(totalInBaseCurrency / 1000)} format={(n) => `${n.toLocaleString()},-`} />
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
               cost

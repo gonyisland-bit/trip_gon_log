@@ -499,7 +499,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                 href={spot.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1 cursor-pointer shrink-0"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-meta font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1 cursor-pointer shrink-0"
                 title="출처 원본 게시물 보기"
               >
                 <span className="hidden sm:inline">ORIGINAL</span>

@@ -221,7 +221,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                           }
                         }}
                         className={`bg-white/70 dark:bg-[#0A0A0A]/70 backdrop-blur-xs py-3.5 px-4 md:px-6 border-b border-t border-black/15 dark:border-white/15 flex items-center justify-between cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors select-none ${
-                          highlightedDateSection === item.date ? 'day-section-highlight' : ''
+                          highlightedDateSection === item.date ? 'day-section-highlight' : 'tgl-reveal'
                         }`}
                       >
                         <div className="flex items-baseline gap-2.5 sm:gap-3.5">
@@ -364,7 +364,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             )
                           )}
                         </div>
-                        <span className="text-meta md:text-[11px] font-extrabold font-mono text-black/60 dark:text-white/60 flex items-center gap-1 shrink-0">
+                        <span className="text-meta font-extrabold font-mono text-black/60 dark:text-white/60 flex items-center gap-1 shrink-0">
                           {collapsedDays.includes(item.date || '') ? '▼ EXPAND' : '▲ COLLAPSE'}
                         </span>
                       </div>
@@ -875,7 +875,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                           <button
                             type="button"
                             onClick={() => setIsPocketWidgetOpen(true)}
-                            className="w-full py-2 px-3 border border-dashed border-black/20 dark:border-white/20 hover:border-red-500 hover:text-red-500 hover:bg-red-500/5 transition-all text-meta md:text-[11px] font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 flex items-center justify-center gap-2 cursor-pointer group select-none"
+                            className="w-full py-2 px-3 border border-dashed border-black/20 dark:border-white/20 hover:border-red-500 hover:text-red-500 hover:bg-red-500/5 transition-all text-meta font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 flex items-center justify-center gap-2 cursor-pointer group select-none"
                             title={`${gapHours}시간의 빈틈이 있습니다. 포켓 위젯을 열어 스팟을 채워보세요.`}
                           >
                             <Plus className="w-3 h-3 group-hover:scale-110 transition-transform text-red-500 shrink-0" />

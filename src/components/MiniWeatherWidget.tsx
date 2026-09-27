@@ -196,7 +196,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
         )}
 
         {weatherData && (
-          <span className="text-meta sm:text-[11px] font-extrabold tracking-tight shrink-0">
+          <span className="text-meta font-extrabold tracking-tight shrink-0">
             {weatherData.temp}°
           </span>
         )}

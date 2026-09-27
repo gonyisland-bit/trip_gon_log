@@ -23,6 +23,17 @@ export default {
         micro: '11px', // uppercase mono labels, badges, coordinates
         meta: '12px',  // dates, places, units, helper text
       },
+      // Motion tokens (mirrored as CSS variables in index.css)
+      transitionDuration: {
+        fast: '120ms',  // hover, press, toggles
+        base: '220ms',  // dropdowns, tabs, toasts
+        emph: '420ms',  // modals, panels, view changes
+        hero: '900ms',  // splash, map flights
+      },
+      transitionTimingFunction: {
+        standard: 'cubic-bezier(.2, 0, 0, 1)',
+        emphasized: 'cubic-bezier(.16, 1, .3, 1)',
+      },
     },
   },
   plugins: [],

@@ -422,7 +422,7 @@ export function StayCard({
             e.stopPropagation();
             setIsExpanded(prev => !prev);
           }}
-          className="px-4 py-2 mt-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-meta sm:text-[11px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
+          className="px-4 py-2 mt-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-meta font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
         >
           <span className="flex items-center gap-2">
             <span>EXPENSE, MEMO & PHOTOS</span>

@@ -1425,7 +1425,7 @@ export function HomePage({
                         </div>
                         {/* Auto Journey Message (Fixed 2-line height for layout stability) */}
                         <div className="min-h-[29px] sm:min-h-[31px] mt-0.5 flex items-start">
-                          <p className="text-meta sm:text-[11px] font-medium text-black/60 dark:text-white/60 leading-snug break-keep line-clamp-2">
+                          <p className="text-meta font-medium text-black/60 dark:text-white/60 leading-snug break-keep line-clamp-2">
                             {generateJourneyMessage(currentHero.locationStr, currentHero.date, getHeroDetails(currentHero).daysCount)}
                           </p>
                         </div>
@@ -1581,7 +1581,7 @@ export function HomePage({
                 <button
                   type="button"
                   onClick={() => setIsTagAccordionOpen(prev => !prev)}
-                  className={`text-meta sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`text-meta px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter !== 'All'
                       ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
                       : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
@@ -2235,7 +2235,7 @@ export function HomePage({
                                         {displayTitle}
                                       </h3>
                                       {dateWithDay && (
-                                        <div className="text-meta sm:text-[11px] font-mono font-medium text-black/60 dark:text-white/60 uppercase tracking-wider mt-0.5">
+                                        <div className="text-meta font-mono font-medium text-black/60 dark:text-white/60 uppercase tracking-wider mt-0.5">
                                           {dateWithDay}
                                         </div>
                                       )}
@@ -2729,7 +2729,7 @@ export function HomePage({
                 {/* Left: Swiss Minimal Icon & Label */}
                 <div className="flex items-center gap-1.5 shrink-0 pr-2 sm:pr-3 border-r border-black/10 dark:border-white/10">
                   <Coins className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-                  <span className="font-extrabold text-meta sm:text-[11px] uppercase tracking-wider text-black/70 dark:text-white/70 hidden xs:inline">
+                  <span className="font-extrabold text-meta uppercase tracking-wider text-black/70 dark:text-white/70 hidden xs:inline">
                     EXCHANGE
                   </span>
                 </div>

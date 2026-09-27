@@ -2406,7 +2406,7 @@ export function CalendarHubPage({
                         return (
                           <div className="flex flex-col items-center justify-between h-full w-full py-1 sm:py-1.5 pointer-events-none select-none">
                             {/* 1. 상단: 날짜 일자 숫자 */}
-                            <span className={`text-micro sm:text-meta md:text-[11px] font-mono leading-none ${
+                            <span className={`text-micro sm:text-meta font-mono leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-extrabold' 
                                 : cell.isToday
@@ -2507,7 +2507,7 @@ export function CalendarHubPage({
                           {selectedWeatherDay.city.name} ({selectedWeatherDay.city.nameEn})
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta sm:text-[11px] text-black/60 dark:text-white/60 mt-0.5 truncate">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-black/60 dark:text-white/60 mt-0.5 truncate">
                         <span className="font-bold text-black dark:text-white">{labelKo} ({label})</span>
                         <span>·</span>
                         <span>최고 {selectedWeatherDay.weather.tempMax}°C / 최저 {selectedWeatherDay.weather.tempMin}°C</span>

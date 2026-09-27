@@ -128,7 +128,7 @@ export function LandingGuestView({
       <header className="relative z-20 w-full max-w-[1920px] mx-auto px-6 sm:px-12 md:px-16 pt-8 sm:pt-10 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="w-2 h-2 bg-red-600 rounded-none inline-block shrink-0" />
-          <span className="text-meta sm:text-[11px] font-mono font-bold tracking-[0.3em] uppercase text-white/80">
+          <span className="text-meta font-mono font-bold tracking-[0.3em] uppercase text-white/80">
             TRAVEL LOG & VISUAL JOURNAL
           </span>
         </div>

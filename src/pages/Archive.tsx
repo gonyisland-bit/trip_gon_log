@@ -727,7 +727,7 @@ export function ArchiveHubPage({
                   <button 
                     type="button"
                     onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                    className={`text-meta sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
+                    className={`text-meta px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
                       activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All'
                         ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                         : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
