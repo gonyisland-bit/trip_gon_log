@@ -271,23 +271,36 @@ export function MapArea({
           userLocationMarkerRef.current = null;
         }
 
-        // 빨간색 미니멀 사람 SVG 마커 + 동심원 펄스 애니메이션 (내가 여기 있다)
+        // 빨간색 미니멀 사람 SVG 마커 + 단일 안정 펄스 파동 (위치/파동/아이콘 정중앙 일치)
         const userIcon = L.divIcon({
           className: 'user-current-location-marker',
           html: `
-            <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
-              <div class="pin-radar-ring" style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background-color: rgba(225, 29, 72, 0.25); border: 1.5px solid rgba(225, 29, 72, 0.8);"></div>
-              <div class="pin-radar-ring-2" style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background-color: rgba(225, 29, 72, 0.15); border: 1.5px solid rgba(225, 29, 72, 0.5);"></div>
-              <div style="position: relative; z-index: 10; width: 24px; height: 24px; border-radius: 50%; background: #E11D48; border: 2px solid #FFFFFF; box-shadow: 0 2px 10px rgba(225, 29, 72, 0.5); display: flex; align-items: center; justify-content: center;">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <div style="position: relative; width: 44px; height: 44px; pointer-events: none; overflow: visible;">
+              <style>
+                @keyframes singleUserPulse {
+                  0% {
+                    transform: translate(-50%, -50%) scale(0.65);
+                    opacity: 0.85;
+                  }
+                  100% {
+                    transform: translate(-50%, -50%) scale(2.2);
+                    opacity: 0;
+                  }
+                }
+              </style>
+              <!-- 1. 단일 안정 펄스 파동 -->
+              <div style="position: absolute; top: 50%; left: 50%; width: 32px; height: 32px; border-radius: 50%; background-color: rgba(225, 29, 72, 0.2); border: 1.5px solid rgba(225, 29, 72, 0.75); animation: singleUserPulse 2.2s cubic-bezier(0.2, 0.8, 0.4, 1) infinite; pointer-events: none; will-change: transform, opacity;"></div>
+              <!-- 2. 빨간색 미니멀 사람 핀 (정중앙 완전 일치) -->
+              <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; width: 24px; height: 24px; border-radius: 50%; background: #E11D48; border: 2px solid #FFFFFF; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 10px rgba(225, 29, 72, 0.4); display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
               </div>
             </div>
           `,
-          iconSize: [40, 40],
-          iconAnchor: [20, 20],
+          iconSize: [44, 44],
+          iconAnchor: [22, 22],
         });
 
         const marker = L.marker([userLat, userLng], { icon: userIcon, zIndexOffset: 3000 }).addTo(map);

@@ -112,12 +112,12 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   const [ocrError, setOcrError] = useState<string | null>(null);
 
   // Dedicated OCR runner for any target image URL
-  const runOcrForImage = useCallback(async (targetImg: string, autoApply: boolean = false) => {
+  const runOcrForImage = useCallback(async (targetImg: string, autoApply: boolean = false, bypassCache: boolean = false) => {
     if (!targetImg) return;
 
-    // Check cache first for instant retrieval
+    // Check cache first for instant retrieval unless explicitly bypassed
     const cached = ocrCache[targetImg];
-    if (cached) {
+    if (cached && !bypassCache) {
       setOcrCandidates(cached.candidates);
       setOcrDescription(cached.descriptionText);
       setOcrError(null);
@@ -181,20 +181,24 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     setLng(undefined);
     setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
     setIsUserEditedTitle(false);
-
-    // Initial candidates from scrapedData or extracted from memo/title
-    let initialCandidates = scrapedData.candidates?.map(c => c.title) || [];
-    if (initialCandidates.length === 0 && (scrapedData.memo || scrapedData.title)) {
-      initialCandidates = extractKeywordCandidates(`${scrapedData.title || ''} ${scrapedData.memo || ''}`);
-    }
-    setOcrCandidates(initialCandidates);
     setOcrDescription('');
     setOcrError(null);
     setIsLightboxOpen(false);
 
-    // If title is default generic and no candidates yet, run OCR once
-    if (initialCandidates.length === 0 && scrapedData.thumbnailUrl && (!scrapedData.title || scrapedData.title === '스크린샷 스크랩' || scrapedData.title === '추천 여행 스팟')) {
-      runOcrForImage(scrapedData.thumbnailUrl, true);
+    // Initial candidates from scrapedData
+    let initialCandidates = scrapedData.candidates?.map(c => c.title) || [];
+    setOcrCandidates(initialCandidates);
+
+    // 1. If image exists and title is generic/unspecified, trigger OCR directly as highest priority!
+    const isGenericTitle = !scrapedData.title || scrapedData.title === '스크린샷 스크랩' || scrapedData.title === '추천 여행 스팟';
+    if (scrapedData.thumbnailUrl && (isGenericTitle || initialCandidates.length === 0)) {
+      runOcrForImage(scrapedData.thumbnailUrl, isGenericTitle);
+    } else if (initialCandidates.length === 0 && (scrapedData.memo || scrapedData.title)) {
+      // 2. Only if no image or text-only scrap, extract keyword chips from memo/title as fallback
+      const textKeywords = extractKeywordCandidates(`${scrapedData.title || ''} ${scrapedData.memo || ''}`);
+      if (textKeywords.length > 0) {
+        setOcrCandidates(textKeywords);
+      }
     }
   }, [isOpen, scrapedData.sourceUrl, scrapedData.thumbnailUrl]);
 
@@ -302,7 +306,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       alert('분석할 이미지가 없습니다.');
       return;
     }
-    await runOcrForImage(selectedImage, autoApply);
+    await runOcrForImage(selectedImage, autoApply, true);
   };
 
   // Replace memo with OCR description text

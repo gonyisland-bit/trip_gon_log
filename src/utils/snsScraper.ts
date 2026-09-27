@@ -315,7 +315,7 @@ export function extractKeywordCandidates(text: string): string[] {
     if (
       cleaned.length >= 2 &&
       cleaned.length <= 40 &&
-      !/^(여행|추천|정보|공유|일상|데일리|소통|선팔|맞팔|좋아요|후기|코스|일정|사진|영상|리뷰|블로그|인스타|피드|핫플)$/i.test(cleaned) &&
+      !/^(여행|추천|정보|공유|일상|데일리|소통|선팔|맞팔|좋아요|후기|코스|일정|사진|영상|리뷰|블로그|인스타|피드|핫플|스크린샷|스크랩|스팟|스크린샷\s*스크랩|추천\s*여행\s*스팟)$/i.test(cleaned) &&
       !seen.has(cleaned.toLowerCase())
     ) {
       seen.add(cleaned.toLowerCase());
