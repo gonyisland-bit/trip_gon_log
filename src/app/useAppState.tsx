@@ -519,14 +519,8 @@ export function useAppState() {
     const unsub = onSnapshot(doc(db, 'users', currentUid), (snapshot) => {
       if (snapshot.exists()) {
         const profile = snapshot.data() as UserProfile;
-        // Auto-approve pending applicant so login is never blocked
-        if (profile.status === 'pending') {
-          profile.status = 'approved';
-          Promise.allSettled([
-            updateDoc(doc(db, 'users', currentUid), { status: 'approved', approvedAt: Date.now() }),
-            setDoc(doc(db, 'users', 'public', 'users', currentUid), { ...profile, status: 'approved', approvedAt: Date.now() }, { merge: true })
-          ]);
-        } else if (!isSuperAdmin && profile.status === 'rejected') {
+        // Pending members stay read-only until an admin approves them (enforced by Firestore rules)
+        if (!isSuperAdmin && profile.status === 'rejected') {
           // Explicitly rejected by admin
           auth.signOut();
           setIsLoggedIn(false);
@@ -557,13 +551,7 @@ export function useAppState() {
           unsubPublic = onSnapshot(doc(db, 'users', 'public', 'users', currentUid), (pubSnap) => {
             if (pubSnap.exists()) {
               const pubProfile = pubSnap.data() as UserProfile;
-              if (pubProfile.status === 'pending') {
-                pubProfile.status = 'approved';
-                Promise.allSettled([
-                  updateDoc(doc(db, 'users', currentUid), { status: 'approved', approvedAt: Date.now() }),
-                  setDoc(doc(db, 'users', 'public', 'users', currentUid), { ...pubProfile, status: 'approved', approvedAt: Date.now() }, { merge: true })
-                ]);
-              } else if (!isSuperAdmin && pubProfile.status === 'rejected') {
+              if (!isSuperAdmin && pubProfile.status === 'rejected') {
                 auth.signOut();
                 setIsLoggedIn(false);
                 setCurrentUserProfile(null);
@@ -615,6 +603,7 @@ export function useAppState() {
   const canEditTrip = useCallback((trip?: Trip) => {
     if (!isLoggedIn || !trip) return false;
     if (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail)) return true;
+    if (currentUserProfile?.status === 'pending') return false;
     const uid = auth.currentUser?.uid;
     // Trip creator can edit
     if (trip.ownerId && uid && trip.ownerId === uid) return true;
@@ -627,6 +616,7 @@ export function useAppState() {
   const canDeleteTrip = useCallback((trip?: Trip) => {
     if (!isLoggedIn || !trip) return false;
     if (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail)) return true;
+    if (currentUserProfile?.status === 'pending') return false;
     const uid = auth.currentUser?.uid;
     // Trip creator can delete ONLY IF granted canDelete permission
     if (trip.ownerId && uid && trip.ownerId === uid && currentUserProfile?.permissions?.canDelete) return true;

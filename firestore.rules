@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    function myEmail() {
+      return request.auth.token.get('email', '').lower();
+    }
+
+    function adminConfigPath() {
+      return /databases/$(database)/documents/users/public/settings/admin;
+    }
+
+    function rootProfilePath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function publicProfilePath() {
+      return /databases/$(database)/documents/users/public/users/$(request.auth.uid);
+    }
+
+    // Super admin: the owner account, or the one configured in users/public/settings/admin
+    function isSuperEmail() {
+      return myEmail() == 'gonyisland@naver.com'
+        || (exists(adminConfigPath())
+            && myEmail() == get(adminConfigPath()).data.get('superAdminEmail', '').lower());
+    }
+
+    // Mirrors the client's isAdmin: super admin, configured admins, or role on the user's own root profile
+    function isAdmin() {
+      return signedIn() && (
+        isSuperEmail()
+        || (exists(adminConfigPath())
+            && myEmail() in get(adminConfigPath()).data.get('allowedAdmins', []))
+        || (exists(rootProfilePath())
+            && get(rootProfilePath()).data.get('role', 'user') == 'admin')
+      );
+    }
+
+    // Approval status from the root profile (falls back to the shared copy).
+    // Profiles created before the approval flow have no status and count as approved.
+    function profileStatus() {
+      return exists(rootProfilePath())
+        ? get(rootProfilePath()).data.get('status', 'approved')
+        : exists(publicProfilePath())
+          ? get(publicProfilePath()).data.get('status', 'approved')
+          : 'pending';
+    }
+
+    // Writes to shared content require an admin or an approved member
+    function canWrite() {
+      return signedIn() && (isAdmin() || profileStatus() == 'approved');
+    }
+
+    // Members may never change their own role, permissions or approval status
+    function protectedUnchanged() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['role', 'permissions', 'status']);
+    }
+
+    // New profiles start as a pending member (the super admin initializes itself)
+    function validNewProfile() {
+      return isSuperEmail()
+        || (request.resource.data.get('role', 'user') == 'user'
+            && request.resource.data.get('status', '') == 'pending');
+    }
+
+    // ── Private profile (root) ───────────────────────────────
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if signedIn() && ((request.auth.uid == userId && validNewProfile()) || isAdmin());
+      allow update: if signedIn() && ((request.auth.uid == userId && protectedUnchanged()) || isAdmin());
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == userId);
+    }
+
+    // Private per-user subcollections (never matches the shared 'public' tree)
+    match /users/{userId}/{col}/{rest=**} {
+      allow read, write: if userId != 'public' && signedIn() && request.auth.uid == userId;
+    }
+
+    // ── Shared profiles: owner and admins only ───────────────
+    match /users/public/users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && ((request.auth.uid == uid && validNewProfile()) || isAdmin());
+      allow update: if signedIn() && ((request.auth.uid == uid && protectedUnchanged()) || isAdmin());
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
+    }
+
+    // ── Shared settings ──────────────────────────────────────
+    // admin: signed-in users read it to resolve admin status; only admins change it.
+    // pendingApproval_*: approval tokens, admin only (an applicant may create their own).
+    match /users/public/settings/{docId} {
+      allow read: if docId == 'admin' ? signedIn()
+        : docId.matches('pendingApproval_.*') ? isAdmin()
+        : true;
+      allow create: if docId == 'admin' ? isAdmin()
+        : docId.matches('pendingApproval_.*')
+          ? (isAdmin() || (signedIn() && docId == 'pendingApproval_' + request.auth.uid))
+        : canWrite();
+      allow update, delete: if docId == 'admin' || docId.matches('pendingApproval_.*')
+        ? isAdmin() : canWrite();
+    }
+
+    // ── Personal shared data: signed-in read, approved write ─
+    match /users/public/trash/{rest=**} {
+      allow read: if signedIn();
+      allow write: if canWrite();
+    }
+    match /users/public/calendar_events/{rest=**} {
+      allow read: if signedIn();
+      allow write: if canWrite();
+    }
+
+    // ── Journey content: public read (share links), approved write ──
+    match /users/public/{col}/{rest=**} {
+      allow read: if col in ['trips', 'plans', 'timeline', 'flights', 'stays', 'transits'];
+      allow write: if col in ['trips', 'plans', 'timeline', 'flights', 'stays', 'transits'] && canWrite();
+    }
+
+    // Everything else (including the 'mail' queue) stays closed.
+  }
+}

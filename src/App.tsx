@@ -135,6 +135,14 @@ function App() {
           />
         )}
 
+        {/* Pending approval notice: members are read-only until an admin approves them */}
+        {isLoggedIn && !isAdmin && currentUserProfile?.status === 'pending' && (
+          <div className="w-full border-b border-black/20 dark:border-white/20 px-4 py-2 flex items-center justify-center gap-3 shrink-0 text-black dark:text-white">
+            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-500">Pending</span>
+            <span className="text-xs text-black/60 dark:text-white/60">관리자 승인 후 여정을 추가하거나 수정할 수 있습니다.</span>
+          </div>
+        )}
+
         {/* Marquee Banner - Only on Home View when logged in (Swiss Minimal Journal Ticker) */}
         {currentView === 'home' && isLoggedIn && marqueeShow && (
           <div className="w-full bg-black/[0.025] dark:bg-white/[0.035] border-y border-black/10 dark:border-white/10 backdrop-blur-xs py-1.5 overflow-hidden flex items-center shrink-0 transition-colors duration-300 select-none text-black dark:text-white">

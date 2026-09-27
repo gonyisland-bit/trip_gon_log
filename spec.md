@@ -47,6 +47,14 @@
 - 로컬 개발(`npm run dev`)에서는 `vite.config.ts`의 개발 미들웨어가 같은 핸들러(`api/_r2core.ts`)를 제공하며 `.env.local`의 `R2_*` 값을 사용합니다.
 - 공개 조회 URL은 `VITE_R2_PUBLIC_URL`(r2.dev)입니다.
 
+### 2.4 Firestore 보안 규칙 (`firestore.rules`)
+- 규칙 원본은 저장소의 `firestore.rules`이며, Firebase 콘솔(Firestore → 규칙)에 게시합니다.
+- **관리자**: `gonyisland@naver.com`, `users/public/settings/admin`의 `superAdminEmail`·`allowedAdmins`, 또는 루트 프로필의 `role == 'admin'`.
+- **가입 승인제**: 신규 가입자는 `status: 'pending'`으로 생성되며, 관리자가 승인(`approved`)해야 여정·설정·휴지통·일정에 쓸 수 있습니다. 승인 대기 회원은 읽기만 가능하고 상단에 안내 배너가 표시됩니다. 승인 흐름 도입 전에 만들어진 상태값 없는 프로필은 승인된 것으로 간주합니다.
+- **회원 프로필**(`users/{uid}`, `users/public/users/{uid}`): 본인과 관리자만 읽습니다. 본인은 `role`·`permissions`·`status`를 변경할 수 없습니다.
+- **공개 읽기**: 공유 링크용 여정 콘텐츠(trips, plans, timeline, flights, stays, transits)와 화면 설정 문서. 휴지통·개인 일정은 로그인 사용자만 읽습니다.
+- `pendingApproval_*`와 `settings/admin` 변경은 관리자 전용이며, `mail` 컬렉션과 목록에 없는 경로는 모두 차단합니다. 익명 로그인은 쓰기에서 제외됩니다.
+
 ---
 
 ## 3. 핵심 기능 사양 (Functional Specifications)
@@ -229,7 +237,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 | `username` | `string` | 선택 | 닉네임 |
 | `role` | `'admin' \| 'user'` | 필수 | 계정 역할 |
 | `permissions` | `UserPermissions` | 필수 | `canCreate`, `canEdit`, `canDelete` |
-| `status` | `'pending' \| 'approved' \| 'rejected'` | 선택 | 가입 승인 상태 |
+| `status` | `'pending' \| 'approved' \| 'rejected'` | 선택 | 가입 승인 상태 (신규 가입은 `pending`, 관리자 승인 후 쓰기 가능) |
 
 ---
 

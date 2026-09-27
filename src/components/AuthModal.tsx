@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
@@ -217,7 +217,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           birthdate: birthdate.trim(),
           phone: phone.trim(),
           role: isSuper ? 'admin' : 'user',
-          status: 'approved', // Auto-approved for frictionless immediate access
+          status: isSuper ? 'approved' : 'pending', // Members can write after admin approval
           approvalToken,
           permissions: {
             canCreate: true,
@@ -279,7 +279,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
               birthdate: '',
               phone: '',
               role: isSuper ? 'admin' : 'user',
-              status: 'approved', // Auto-approve on recovery to clear login roadblock
+              status: isSuper ? 'approved' : 'pending', // Recovered profiles also wait for admin approval
               approvalToken: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36)),
               permissions: { canCreate: true, canEdit: isSuper, canDelete: isSuper },
               createdAt: Date.now(),
@@ -291,13 +291,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
             ]);
 
             prof = recoveryProfile;
-          } else if (prof.status === 'pending') {
-            // Existing pending applicant: auto-approve upon successful credential authentication
-            prof.status = 'approved';
-            await Promise.allSettled([
-              updateDoc(doc(db, 'users', user.uid), { status: 'approved', approvedAt: Date.now() }),
-              setDoc(doc(db, 'users', 'public', 'users', user.uid), { ...prof, status: 'approved', approvedAt: Date.now() }, { merge: true }),
-            ]);
           }
 
           // Only block if explicitly rejected by admin

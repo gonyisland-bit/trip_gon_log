@@ -47,7 +47,7 @@ export function applyJourneyOrder<T extends { id: number; displayOrder?: number 
 }
 
 export const SUPER_ADMIN_EMAIL = 'gonyisland@naver.com';
-export const ADMIN_EMAILS = ['gonyisland@naver.com', 'gonyisland@google.com'];
+export const ADMIN_EMAILS = ['gonyisland@naver.com'];
 
 export function getInitialNavigationState(): { view: string; tripId: number | null; isShare: boolean } {
   try {
