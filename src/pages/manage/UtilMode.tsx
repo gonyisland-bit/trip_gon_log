@@ -1,0 +1,1077 @@
+import {
+  Trash2, RotateCcw, ArrowUp, ArrowDown, Upload, MapPin, Check, Sliders, Globe, X, Play, Search,
+  Loader2, Plus, Sparkles, Database, Music, Pause, Edit
+} from 'lucide-react';
+import { getEffectiveImageUrl } from '../../utils/storageHelper';
+import type { ManageHubState } from './useManageHubState';
+
+export function UtilMode({ s }: { s: ManageHubState }) {
+  const {
+    trips, trashedJourneys, trashedSections, onRestoreJourney, onRestoreMagazineSection, utilSubTab,
+    setUtilSubTab, presetsList, presetSearchQuery, setPresetSearchQuery, presetThemeFilter,
+    setPresetThemeFilter, setShowRestorePresetsConfirm, bgmTracks, bgmAutoplay, bgmDefaultVolume,
+    setBgmDefaultVolume, bgmShuffle, setBgmShuffle, isUploadingBgm, previewTrackId,
+    isDraggingBgmFile, setIsDraggingBgmFile, bgmFileInputRef, handleToggleBgmTrack,
+    handleMoveBgmTrack, handleDeleteBgmTrack, handleRestoreDefaultBgm, handleToggleBgmAutoplay,
+    handleTogglePreviewTrack, handleBgmFileUpload, handleOpenNewPreset, handleOpenEditPreset,
+    handleDeletePresetClick, gradientEnabled, setGradientEnabled, gradientFrom, setGradientFrom,
+    gradientTo, setGradientTo, title, showMarquee, setShowMarquee, homeMarquee, setHomeMarquee,
+    homeSpeed, setHomeSpeed, mapTileStyle, setMapTileStyle, handleContainerScroll,
+    selectedTrashJourneyIds, selectedTrashSectionIds, handleToggleSelectAllTrash,
+    handleToggleTrashJourney, handleToggleTrashSection, requestPermanentDeleteSingleJourney,
+    requestPermanentDeleteSingleSection, handleBatchRestoreSelectedTrash, requestBatchDeleteSelected,
+    diagReport, isScanning, isCleaning, cleanLog, setCleanLog, handleOneTouchOptimize,
+    isPresetsDirty
+  } = s;
+
+  return (
+    <div
+      onScroll={handleContainerScroll}
+      className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-6 pb-32 flex flex-col gap-8 overflow-y-auto h-full flex-1 animate-in fade-in duration-200"
+    >
+      {/* Header Title */}
+      <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+            SYSTEM UTILITIES & GLOBAL CONFIGURATION
+          </span>
+          {(trashedJourneys.length + trashedSections.length) > 0 && (
+            <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600 text-white uppercase font-bold">
+              TRASH: {trashedJourneys.length + trashedSections.length}
+            </span>
+          )}
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
+          UTILITIES
+        </h2>
+        <p className="text-xs text-black/60 dark:text-white/60 font-mono truncate">
+          [UI 비주얼, 마퀴 배너, BGM 음원, 지도 타일 및 여정 프리셋, 시스템 진단/휴지통]
+        </p>
+      </div>
+
+      {/* Swiss Minimal Sub-Nav Bar (4-Col Grid: Single row on both Mobile & Desktop) */}
+      <div className="sticky top-0 z-20 bg-[#FAF9F6] dark:bg-[#141414] py-2.5 -mx-4 sm:-mx-8 px-4 sm:px-8 border-b border-black/15 dark:border-white/15">
+        <div className="grid grid-cols-4 gap-1 sm:gap-2 w-full">
+          {([
+            { id: 'ui', label: 'UI' },
+            { id: 'bgm', label: 'BGM' },
+            { id: 'map', label: 'MAP', count: presetsList.length, isDirty: isPresetsDirty },
+            { id: 'system', label: 'SYSTEM', count: trashedJourneys.length + trashedSections.length, alert: (trashedJourneys.length + trashedSections.length) > 0 },
+          ] as const).map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setUtilSubTab(tab.id)}
+              className={`py-2 px-1 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center justify-center gap-1 sm:gap-1.5 shrink-0 ${
+                utilSubTab === tab.id
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                  : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-black/[0.02] dark:bg-white/[0.02]'
+              }`}
+            >
+              <span>{tab.label}</span>
+              {'count' in tab && typeof tab.count === 'number' && (
+                <span className={`text-[8.5px] sm:text-[9px] px-1 py-0.2 font-mono font-bold shrink-0 ${
+                  'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-black text-white dark:bg-white dark:text-black'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
+              {'isDirty' in tab && tab.isDirty && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 1. UI (홈 화면 비주얼 & 마퀴 설정) */}
+      {utilSubTab === 'ui' && (
+        <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
+          <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
+                UI (홈 비주얼 & 마퀴 설정)
+              </h3>
+            </div>
+          </div>
+
+          {/* Background Gradient */}
+          <div className="flex flex-col gap-2.5">
+            <div className="flex justify-between items-center">
+              <div className="flex flex-col">
+                <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
+                  BACKGROUND GRADIENT
+                </span>
+                <span className="text-[10px] text-black/50 dark:text-white/50 font-mono">
+                  홈 메인 배경 은은한 그라데이션 활성화
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGradientEnabled(!gradientEnabled)}
+                className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                  gradientEnabled
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                }`}
+              >
+                {gradientEnabled ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
+            {gradientEnabled && (
+              <div className="flex flex-col gap-4 pt-2 bg-black/[0.02] dark:bg-white/[0.02] p-4 border border-black/10 dark:border-white/10">
+                {/* Presets */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                    SWISS MINIMAL PRESETS (추천 프리셋)
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                    {[
+                      { name: 'Minimal Sand', from: '#F7F2EB', to: '#E7DEC8' },
+                      { name: 'Soft Lavender', from: '#F4F0F9', to: '#DFD5EB' },
+                      { name: 'Misty Sage', from: '#F0F5F1', to: '#D4E3D2' },
+                      { name: 'Slate Cool', from: '#EFF3F8', to: '#D3DFEE' },
+                      { name: 'Warm Sunset', from: '#FBF1E6', to: '#F0D8C3' },
+                    ].map((p, idx) => {
+                      const isSelected = gradientFrom.toLowerCase() === p.from.toLowerCase() && gradientTo.toLowerCase() === p.to.toLowerCase();
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setGradientFrom(p.from);
+                            setGradientTo(p.to);
+                          }}
+                          className={`p-2 border text-left flex flex-col gap-1.5 transition-all cursor-pointer relative ${
+                            isSelected
+                              ? 'border-black dark:border-white ring-2 ring-black dark:ring-white bg-black/5 dark:bg-white/10 shadow-sm'
+                              : 'border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <div
+                            className="w-full h-5 border border-black/10 dark:border-white/10 relative"
+                            style={{ background: `linear-gradient(135deg, ${p.from}, ${p.to})` }}
+                          >
+                            {isSelected && (
+                              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-black dark:bg-white shadow-xs" />
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className={`text-[10px] truncate ${isSelected ? 'font-extrabold text-black dark:text-white' : 'font-bold text-black/80 dark:text-white/80'}`}>
+                              {p.name}
+                            </span>
+                            {isSelected && (
+                              <Check className="w-3 h-3 text-black dark:text-white shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Color Pickers */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                      COLOR 1 (시작 색상)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={gradientFrom}
+                        onChange={e => setGradientFrom(e.target.value)}
+                        className="w-8 h-8 p-0 border border-black/20 dark:border-white/20 rounded-none cursor-pointer bg-transparent"
+                      />
+                      <input
+                        type="text"
+                        value={gradientFrom}
+                        onChange={e => setGradientFrom(e.target.value)}
+                        placeholder="#FAF8F5"
+                        className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                      COLOR 2 (끝 색상)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={gradientTo}
+                        onChange={e => setGradientTo(e.target.value)}
+                        className="w-8 h-8 p-0 border border-black/20 dark:border-white/20 rounded-none cursor-pointer bg-transparent"
+                      />
+                      <input
+                        type="text"
+                        value={gradientTo}
+                        onChange={e => setGradientTo(e.target.value)}
+                        placeholder="#F1ECE1"
+                        className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Preview Strip */}
+                <div className="flex flex-col gap-1 pt-1">
+                  <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                    LIVE PREVIEW (실시간 미리보기)
+                  </label>
+                  <div
+                    className="w-full h-12 border border-black/15 dark:border-white/15 flex items-center justify-center p-3 shadow-inner"
+                    style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+                  >
+                    <span className="text-xs font-mono font-extrabold text-black/80 tracking-widest uppercase">
+                      PREVIEW: {gradientFrom} &rarr; {gradientTo}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Marquee Banner */}
+          <div className="flex flex-col gap-2.5 pt-3 border-t border-black/10 dark:border-white/10">
+            <div className="flex justify-between items-center">
+              <div className="flex flex-col">
+                <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
+                  MARQUEE BANNER
+                </span>
+                <span className="text-[10px] text-black/50 dark:text-white/50 font-mono">
+                  홈 상단 흐르는 텍스트 배너 설정
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMarquee(!showMarquee)}
+                className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                  showMarquee
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                }`}
+              >
+                {showMarquee ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
+            {showMarquee && (
+              <div className="flex flex-col gap-3 pt-1">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                    MARQUEE TEXT (한글/영문 흐르는 문구)
+                  </label>
+                  <input
+                    type="text"
+                    value={homeMarquee}
+                    onChange={e => setHomeMarquee(e.target.value)}
+                    placeholder="예: 2026 TRIP LOG · ALL RIGHTS RESERVED"
+                    className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-mono">
+                    <span className="font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                      MARQUEE SPEED (흐르는 속도)
+                    </span>
+                    <span className="font-extrabold text-black dark:text-white">
+                      {homeSpeed}s
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">FAST (10s)</span>
+                    <input
+                      type="range"
+                      min="10"
+                      max="60"
+                      step="5"
+                      value={homeSpeed}
+                      onChange={e => setHomeSpeed(Number(e.target.value))}
+                      className="flex-1 accent-black dark:accent-white cursor-pointer"
+                    />
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">SLOW (60s)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* 2. BACKGROUND MUSIC (배경음) */}
+      {utilSubTab === 'bgm' && (
+        <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
+          <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+            <div className="flex items-center gap-2">
+              <Music className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans truncate">
+                BACKGROUND MUSIC (배경음)
+              </h3>
+            </div>
+          </div>
+
+          {/* Volume & Options Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Default Volume Option */}
+            <div className="flex flex-col gap-2 p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
+                  BGM 기본 볼륨
+                </span>
+                <span className="font-mono text-xs font-extrabold text-red-500">
+                  {bgmDefaultVolume}%
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={bgmDefaultVolume}
+                  onChange={(e) => setBgmDefaultVolume(Number(e.target.value))}
+                  className="w-full accent-red-500 cursor-pointer h-1.5 bg-black/20 dark:bg-white/20 rounded-lg appearance-none"
+                />
+                <div className="flex items-center gap-1 shrink-0">
+                  {[30, 50, 70, 100].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setBgmDefaultVolume(preset)}
+                      className={`px-1.5 py-0.5 text-[9px] font-mono border transition-colors cursor-pointer ${
+                        bgmDefaultVolume === preset
+                          ? 'bg-red-500 text-white border-red-500 font-bold'
+                          : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5'
+                      }`}
+                    >
+                      {preset}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Autoplay & Shuffle Subgrid */}
+            <div className="flex flex-col gap-2">
+              {/* Autoplay Option */}
+              <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+                <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                  <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
+                    슬라이드쇼 BGM 자동 재생
+                  </span>
+                  <span className="text-[10px] text-black/50 dark:text-white/50 font-mono truncate">
+                    쇼 시작 시 자동 재생
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleBgmAutoplay(!bgmAutoplay)}
+                  className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                    bgmAutoplay
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                  }`}
+                >
+                  {bgmAutoplay ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* Shuffle Option */}
+              <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+                <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                  <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
+                    BGM 셔플(무작위) 재생
+                  </span>
+                  <span className="text-[10px] text-black/50 dark:text-white/50 font-mono truncate">
+                    랜덤 순서 순환
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBgmShuffle((prev) => !prev)}
+                  className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                    bgmShuffle
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                  }`}
+                >
+                  {bgmShuffle ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Add Track */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
+              ADD TRACK
+            </span>
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingBgmFile(true);
+              }}
+              onDragLeave={() => setIsDraggingBgmFile(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingBgmFile(false);
+                handleBgmFileUpload(e.dataTransfer.files);
+              }}
+              onClick={() => bgmFileInputRef.current?.click()}
+              className={`border-2 border-dashed p-6 sm:p-8 text-center cursor-pointer transition-colors ${
+                isDraggingBgmFile
+                  ? 'border-red-500 bg-red-500/10'
+                  : 'border-black/20 dark:border-white/20 hover:border-black/40 dark:hover:border-white/40 bg-black/[0.01] dark:bg-white/[0.01]'
+              }`}
+            >
+              <input
+                ref={bgmFileInputRef}
+                type="file"
+                accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg"
+                multiple
+                onChange={(e) => handleBgmFileUpload(e.target.files)}
+                className="hidden"
+              />
+              <div className="flex flex-col items-center gap-2">
+                {isUploadingBgm ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                      음원 파일 업로드 중...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                      오디오 파일 추가 (클릭 또는 드래그 앤 드롭)
+                    </span>
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                      MP3, M4A, WAV, AAC, OGG 파일 지원
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Playlist Tracks */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+              <div className="flex items-center gap-2">
+                <Music className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
+                  PLAYLIST ({bgmTracks.length})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={handleRestoreDefaultBgm}
+                className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                기본 트랙 복구
+              </button>
+            </div>
+
+            {bgmTracks.length === 0 ? (
+              <div className="p-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/15 dark:border-white/15">
+                등록된 배경음악 트랙이 없습니다.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {bgmTracks.map((track, idx) => (
+                  <div
+                    key={track.id}
+                    className={`flex items-center justify-between p-3 border transition-colors ${
+                      track.enabled
+                        ? 'bg-black/[0.02] dark:bg-white/[0.02] border-black/20 dark:border-white/20'
+                        : 'bg-black/[0.01] dark:bg-white/[0.01] border-black/10 dark:border-white/10 opacity-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                      <input
+                        type="checkbox"
+                        checked={track.enabled}
+                        onChange={() => handleToggleBgmTrack(track.id)}
+                        className="w-4 h-4 accent-red-500 cursor-pointer rounded-none"
+                        title="재생 목록 포함 여부"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40">
+                            #{idx + 1}
+                          </span>
+                          <span className="text-xs font-bold truncate text-black dark:text-white font-sans">
+                            {track.title}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0 font-mono">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePreviewTrack(track)}
+                        className={`p-1.5 border transition-colors cursor-pointer ${
+                          previewTrackId === track.id
+                            ? 'bg-red-500 text-white border-red-500'
+                            : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
+                        }`}
+                        title={previewTrackId === track.id ? '정지' : '미리듣기'}
+                      >
+                        {previewTrackId === track.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMoveBgmTrack(idx, 'up')}
+                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
+                        title="위로 이동"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={idx === bgmTracks.length - 1}
+                        onClick={() => handleMoveBgmTrack(idx, 'down')}
+                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
+                        title="아래로 이동"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBgmTrack(track.id)}
+                        className="p-1.5 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                        title="트랙 삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* 3. MAP TILESET SETTINGS (월드맵 타일 설정) */}
+      {utilSubTab === 'map' && (
+        <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
+          <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
+                MAP TILESET (지도 그래픽 타일 설정)
+              </h3>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              onClick={() => {
+                setMapTileStyle('esri');
+                localStorage.setItem('mapTileStyle', 'esri');
+                window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'esri' }));
+              }}
+              className={`p-4 border cursor-pointer transition-all ${
+                mapTileStyle === 'esri'
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
+                  : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
+              }`}
+            >
+              <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
+                ESRI WORLD GRAY CANVAS
+              </span>
+              <p className="text-[11px] opacity-70 leading-relaxed">
+                완전 무료, 워터마크 일체 없음, 스위스 미니멀 모노톤 스타일에 완벽 최적화
+              </p>
+            </div>
+
+            <div
+              onClick={() => {
+                setMapTileStyle('google');
+                localStorage.setItem('mapTileStyle', 'google');
+                window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'google' }));
+              }}
+              className={`p-4 border cursor-pointer transition-all ${
+                mapTileStyle === 'google'
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
+                  : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
+              }`}
+            >
+              <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
+                GOOGLE MAPS TILES
+              </span>
+              <p className="text-[11px] opacity-70 leading-relaxed">
+                구글 지도 타일, 한국어 지명 상세 표기, 다크모드 필터 지원
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 4. TRIP PRESETS (여정 추천 템플릿 관리 - MAP 탭에 통합) */}
+      {utilSubTab === 'map' && (
+        <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/15 dark:border-white/15 pb-2">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
+                TRIP PRESETS (여정 추천 템플릿 관리)
+              </h3>
+              <span className="text-[9px] px-1.5 py-0.2 bg-red-600 text-white font-mono font-bold">
+                {presetsList.length}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRestorePresetsConfirm(true)}
+                className="flex items-center gap-1 text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/20 dark:border-white/20 px-2.5 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>기본 복구</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenNewPreset}
+                className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 hover:opacity-85 transition-opacity cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>NEW PRESET</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Bar: Search & Theme Chips */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-black/10 dark:border-white/10">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+              <input
+                type="text"
+                value={presetSearchQuery}
+                onChange={e => setPresetSearchQuery(e.target.value)}
+                placeholder="프리셋 검색 (도시, 국가, 제목)..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none font-mono"
+              />
+              {presetSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setPresetSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1 font-mono">
+              {(['all', 'shopping', 'food', 'nature', 'activity', 'art', 'culture'] as const).map(theme => (
+                <button
+                  key={theme}
+                  type="button"
+                  onClick={() => setPresetThemeFilter(theme)}
+                  className={`px-2 py-1 text-[10px] font-bold uppercase border transition-colors cursor-pointer ${
+                    presetThemeFilter === theme
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      : 'border-black/15 dark:border-white/15 text-black/50 dark:text-white/50 hover:border-black/40 dark:hover:border-white/40'
+                  }`}
+                >
+                  {theme}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Presets Count Badge */}
+          <div className="flex items-center justify-between text-[11px] font-mono text-black/50 dark:text-white/50">
+            <span>
+              TOTAL {presetsList.filter(p => {
+                if (presetThemeFilter !== 'all' && p.theme !== presetThemeFilter) return false;
+                if (presetSearchQuery.trim()) {
+                  const q = presetSearchQuery.trim().toLowerCase();
+                  return p.title.toLowerCase().includes(q) || p.country.toLowerCase().includes(q) || p.city.toLowerCase().includes(q) || (p.subtitle && p.subtitle.toLowerCase().includes(q));
+                }
+                return true;
+              }).length} PRESETS
+            </span>
+            {isPresetsDirty && (
+              <span className="text-red-600 dark:text-red-400 font-bold">
+                * 변경사항 있음 (저장 필요)
+              </span>
+            )}
+          </div>
+
+          {/* Presets List Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {presetsList
+              .filter(p => {
+                if (presetThemeFilter !== 'all' && p.theme !== presetThemeFilter) return false;
+                if (presetSearchQuery.trim()) {
+                  const q = presetSearchQuery.trim().toLowerCase();
+                  return (
+                    p.title.toLowerCase().includes(q) ||
+                    p.country.toLowerCase().includes(q) ||
+                    p.city.toLowerCase().includes(q) ||
+                    (p.subtitle && p.subtitle.toLowerCase().includes(q))
+                  );
+                }
+                return true;
+              })
+              .map(preset => (
+                <div
+                  key={preset.id}
+                  className="flex gap-3 p-3 border border-black/15 dark:border-white/15 bg-black/[0.01] dark:bg-white/[0.01] hover:border-black/40 dark:hover:border-white/40 transition-colors group"
+                >
+                  <img
+                    src={preset.coverImg}
+                    alt={preset.title}
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover grayscale group-hover:grayscale-0 transition-all shrink-0 border border-black/10 dark:border-white/10"
+                  />
+                  <div className="flex flex-col justify-between min-w-0 flex-1">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[8px] font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
+                            {preset.country}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60">
+                            {preset.city}
+                          </span>
+                          <span className="text-[9px] font-mono px-1 border border-black/20 dark:border-white/20 text-black/50 dark:text-white/50">
+                            {preset.durationDays}D
+                          </span>
+                          <span className="text-[8px] font-mono font-bold uppercase text-red-600 dark:text-red-400">
+                            {preset.theme}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditPreset(preset)}
+                            className="p-1 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                            title="수정"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePresetClick(preset)}
+                            className="p-1 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                            title="삭제"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-bold truncate text-black dark:text-white font-sans">
+                        {preset.title}
+                      </h4>
+                      {preset.subtitle && (
+                        <p className="text-[10px] text-black/50 dark:text-white/50 truncate font-sans mt-0.5">
+                          {preset.subtitle}
+                        </p>
+                      )}
+                    </div>
+
+                    {preset.highlights && preset.highlights.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {preset.highlights.slice(0, 3).map((h, i) => (
+                          <span key={i} className="text-[9px] font-mono text-black/45 dark:text-white/45 border-l border-black/20 dark:border-white/20 pl-1">
+                            {h}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
+
+      {/* 5. SYSTEM (DB 최적화 및 휴지통) */}
+      {utilSubTab === 'system' && (
+        <section className="flex flex-col gap-6 pt-2 pb-6">
+          <div className="flex items-baseline justify-between flex-wrap gap-2 border-b border-black/15 dark:border-white/15 pb-2">
+            <div className="flex items-center gap-2">
+              <Database className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans truncate">
+                SYSTEM (데이터베이스 진단 & 휴지통) ({trashedJourneys.length + trashedSections.length})
+              </h3>
+            </div>
+            <span className="text-xs font-mono text-black/50 dark:text-white/50 truncate">
+              삭제 여정 보관 및 DB 무결성 진단
+            </span>
+          </div>
+
+          {/* Swiss Minimal One-Touch Optimizer Bar */}
+          <div className="border border-black/15 dark:border-white/15 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-[#141414]">
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-black dark:text-white" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                  DATABASE OPTIMIZER
+                </span>
+                {diagReport?.isClean && (
+                  <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    100% HEALTHY
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] font-mono text-black/50 dark:text-white/50 truncate">
+                {diagReport 
+                  ? `ACTIVE: ${diagReport.activeTripsCount} trips (${diagReport.activeTimelineCount} timelines) | ORPHANED: ${diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length} items`
+                  : '고아 문서, 폐기 필드 및 로컬 캐시를 안전하게 자동 스캔 및 정리합니다.'}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOneTouchOptimize}
+              disabled={isScanning || isCleaning}
+              className="px-3.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-xs font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50 shadow-xs"
+              title="데이터베이스 무결성을 진단하고 불필요한 고아 문서를 원터치로 정리합니다."
+            >
+              {isScanning || isCleaning ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{isScanning ? 'SCANNING...' : 'OPTIMIZING...'}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>ONE-TOUCH OPTIMIZE</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Clean Log Output (if any) */}
+          {cleanLog.length > 0 && (
+            <div className="border border-black/10 dark:border-white/10 p-3 bg-black/[0.02] dark:bg-white/[0.02] text-[11px] font-mono space-y-1">
+              <div className="flex items-center justify-between text-[10px] text-black/40 dark:text-white/40 font-bold uppercase mb-1">
+                <span>OPTIMIZATION REPORT</span>
+                <button type="button" onClick={() => setCleanLog([])} className="hover:text-black dark:hover:text-white cursor-pointer">CLEAR</button>
+              </div>
+              <div className="max-h-32 overflow-y-auto space-y-0.5 text-black/80 dark:text-white/80">
+                {cleanLog.map((log, idx) => (
+                  <div key={idx} className="truncate">{log}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Toolbar: Multi-select & Batch Actions */}
+          {(trashedJourneys.length > 0 || trashedSections.length > 0) && (
+            <div className="flex items-center justify-between gap-3 p-3 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex-wrap">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedTrashJourneyIds.length + selectedTrashSectionIds.length === trashedJourneys.length + trashedSections.length &&
+                      trashedJourneys.length + trashedSections.length > 0
+                    }
+                    onChange={handleToggleSelectAllTrash}
+                    className="w-4 h-4 rounded border-black/30 dark:border-white/30 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
+                  />
+                  <span>
+                    전체 선택 ({selectedTrashJourneyIds.length + selectedTrashSectionIds.length} / {trashedJourneys.length + trashedSections.length})
+                  </span>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={selectedTrashJourneyIds.length === 0 && selectedTrashSectionIds.length === 0}
+                  onClick={handleBatchRestoreSelectedTrash}
+                  className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed rounded-none"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>선택 복구</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={selectedTrashJourneyIds.length === 0 && selectedTrashSectionIds.length === 0}
+                  onClick={requestBatchDeleteSelected}
+                  className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed rounded-none"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>선택 영구 삭제</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Empty Trash State */}
+          {trashedJourneys.length === 0 && trashedSections.length === 0 && (
+            <div className="p-12 text-center border border-dashed border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex flex-col items-center justify-center gap-2">
+              <Trash2 className="w-8 h-8 text-black/20 dark:text-white/20 stroke-[1.5]" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                휴지통이 비어 있습니다
+              </span>
+              <span className="text-[11px] font-mono text-black/30 dark:text-white/30">
+                삭제된 여정이나 매거진 섹션이 여기에 안전하게 보관됩니다.
+              </span>
+            </div>
+          )}
+
+          {/* Trashed Sections List */}
+          {trashedSections.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
+                삭제된 매거진 섹션 ({trashedSections.length})
+              </span>
+              <div className="grid grid-cols-1 gap-2.5">
+                {trashedSections.map((sec) => {
+                  const isSelected = selectedTrashSectionIds.includes(sec.id);
+                  return (
+                    <div
+                      key={sec.id}
+                      onClick={() => handleToggleTrashSection(sec.id)}
+                      className={`p-3.5 border transition-all flex items-center justify-between gap-4 cursor-pointer ${
+                        isSelected
+                          ? 'border-red-600 bg-red-500/10 shadow-xs'
+                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:border-black/30 dark:hover:border-white/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleToggleTrashSection(sec.id);
+                          }}
+                          className="w-4 h-4 rounded border-black/30 dark:border-white/30 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
+                            {sec.title}
+                          </h4>
+                          <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                            {sec.subtitle || '부제목 없음'} · 아이템 {sec.items?.length || 0}개
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => onRestoreMagazineSection && onRestoreMagazineSection(sec.id)}
+                          className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                          title="섹션 복구"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>RESTORE</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => requestPermanentDeleteSingleSection(sec)}
+                          className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                          title="영구 삭제"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>DELETE</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Trashed Journeys List */}
+          {trashedJourneys.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
+                삭제된 여정 ({trashedJourneys.length})
+              </span>
+              <div className="grid grid-cols-1 gap-2.5">
+                {trashedJourneys.map((journey) => {
+                  const isSelected = selectedTrashJourneyIds.includes(journey.id);
+                  return (
+                    <div
+                      key={journey.id}
+                      onClick={() => handleToggleTrashJourney(journey.id)}
+                      className={`p-3.5 border transition-all flex items-center justify-between gap-4 cursor-pointer ${
+                        isSelected
+                          ? 'border-red-600 bg-red-500/10 shadow-xs'
+                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:border-black/30 dark:hover:border-white/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleToggleTrashJourney(journey.id);
+                          }}
+                          className="w-4 h-4 rounded border-black/30 dark:border-white/30 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600 shrink-0"
+                        />
+                        <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10">
+                          <img
+                            src={getEffectiveImageUrl(journey.img)}
+                            alt={journey.title}
+                            className="w-full h-full object-cover grayscale opacity-75"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
+                            {journey.title}
+                          </h4>
+                          <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                            {journey.date} · {journey.locationStr}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => onRestoreJourney(journey.id)}
+                          className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                          title="여정 복구"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>RESTORE</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => requestPermanentDeleteSingleJourney(journey)}
+                          className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                          title="영구 삭제"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>DELETE</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}
