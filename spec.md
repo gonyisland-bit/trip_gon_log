@@ -23,11 +23,11 @@
 | 구분 | 기술 스택 | 버전/특징 |
 | :--- | :--- | :--- |
 | **Core Framework** | React | 19.x (최신 동시성 모드 및 최적화된 훅 활용) |
-| **Language** | TypeScript | 5.9 / 6.0 (Strict 타입 검증, `npx tsc --noEmit` 무결점 유지) |
+| **Language** | TypeScript | 6.0 (`npx tsc --noEmit` 무결점 유지) |
 | **Build Tool** | Vite | 8.x (고속 HMR 및 최적화된 프로덕션 빌드 번들러) |
 | **Styling** | Tailwind CSS | 3.4.x (Utility-First 기반의 스위스 미니멀 디자인 규격화) |
 | **Icons** | Lucide React | 정갈한 라인 기반의 통일된 규격 아이콘 세트 (비규격 이모지 배제) |
-| **Mapping Engine** | Leaflet | 경량 인터랙티브 맵 라이브러리 (커스텀 타일, 고스트 핀, 뷰포트 바운드) |
+| **Mapping Engine** | Leaflet 1.9.4 + Google Maps Places | `index.html`에서 CDN 스크립트로 로드 (npm 의존성 아님). 장소 자동완성·지오코딩은 Google Places |
 | **State Management** | React Hooks + Context API | 단방향 데이터 흐름 및 로컬/세션 캐싱 조합 |
 
 ### 2.2 백엔드 및 클라우드 인프라 (BaaS & External APIs)
@@ -35,9 +35,17 @@
 | :--- | :--- | :--- |
 | **Database** | Firebase Firestore | NoSQL 클라우드 데이터베이스 (여정, 타임라인, 포켓 스팟, 유저 프로필 등 실시간 동기화) |
 | **Authentication** | Firebase Authentication | 이메일/비밀번호 기반 인증, 권한 관리 (Admin, User, Super Admin) |
-| **Object Storage** | Cloudflare R2 (`@aws-sdk/client-s3`) | 고속 S3 호환 글로벌 CDN 스토리지 (커버 이미지, 갤러리 원본, 영수증, OCR 이미지) |
-| **OCR & Processing** | Client-side Canvas + Tesseract/OCR Helper | 캡처 이미지 내 텍스트 인식, 장소명 및 메모 자동 추출 |
-| **Hosting & CI/CD** | Vercel | GitHub main 브랜치 푸시 시 자동 빌드 및 글로벌 Edge 배포 |
+| **Object Storage** | Cloudflare R2 | 커버 이미지, 갤러리 원본, 영수증, 스크랩 이미지. 업로드/삭제는 서버 함수 `/api/r2`를 경유 (2.3 참조) |
+| **OCR** | OCR.space REST API (`src/utils/ocrHelper.ts`) | 스크랩 이미지 내 텍스트 인식, 장소명 후보 추출. 키는 `VITE_OCR_SPACE_KEY` (미설정 시 호출 제한이 있는 공용 데모 키) |
+| **Hosting & CI/CD** | Vercel | GitHub main 브랜치 푸시 시 자동 빌드·배포. `api/` 폴더는 Vercel Serverless Function으로 배포 |
+
+### 2.3 R2 스토리지 보안 구조
+- R2 자격 증명은 **서버 전용 환경변수**(`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`)로만 관리하며 클라이언트 번들에 포함하지 않습니다. `VITE_` 접두사 사용 금지.
+- 업로드: 클라이언트가 Firebase ID 토큰과 함께 `POST /api/r2 {action:'upload'}` 요청 → 서버가 토큰 검증 후 5분 유효 서명 PUT URL 발급 → 클라이언트가 R2에 직접 업로드.
+- 삭제: `POST /api/r2 {action:'delete'}` → 서버가 토큰 검증 후 삭제.
+- 익명 로그인 토큰은 거부하며, 파일 크기 상한은 500MB입니다.
+- 로컬 개발(`npm run dev`)에서는 `vite.config.ts`의 개발 미들웨어가 같은 핸들러(`api/_r2core.ts`)를 제공하며 `.env.local`의 `R2_*` 값을 사용합니다.
+- 공개 조회 URL은 `VITE_R2_PUBLIC_URL`(r2.dev)입니다.
 
 ---
 
@@ -119,9 +127,11 @@
 - **단일 얇은 보더**: 이중 컨테이너 및 무거운 그림자 박스를 지양하고, `border border-black/20 dark:border-white/20`의 단일 헤어라인 보더 적용.
 
 ### 4.2 컬러 팔레트 (Color Palette)
+디자인 기준 문서는 `AGENTS.md`가 유일하며, 포인트 컬러는 레드 계열로 통일합니다. 날씨·기온 등 색 자체가 의미를 갖는 시각화에 한해 앰버/오렌지를 허용합니다.
+
 | 토큰명 | 라이트 모드 (Light) | 다크 모드 (Dark) | 용도 및 의미 |
 | :--- | :--- | :--- | :--- |
-| **Background Base** | `#FFFFFF` | `#121212` | 전체 페이지 및 메인 캔버스 배경 |
+| **Background Base** | `#FFFFFF` | `#141414` | 전체 페이지 및 메인 캔버스 배경 |
 | **Card / Surface** | `#FFFFFF` / `#FAF9F6` | `#181818` / `#1E1E1E` | 모달, 플로팅 패널, 팝오버 표면 |
 | **Text Primary** | `#000000` (`text-black`) | `#FFFFFF` (`text-white`) | 주요 헤드라인, 장소명, 핵심 수치 |
 | **Text Secondary** | `rgba(0,0,0,0.6)` | `rgba(255,255,255,0.6)` | 보조 설명, 날짜, 서브타이틀 |
@@ -132,8 +142,9 @@
 
 ### 4.3 타이포그래피 규칙 (Typography Specs)
 - **폰트 패밀리**:
-  - 기본 본문: `Inter, -apple-system, BlinkMacSystemFont, sans-serif`
-  - 코드 / 데이터 / 라벨: `JetBrains Mono, SF Mono, Menlo, monospace`
+  - 기본 본문: `Inter, Noto Sans KR, -apple-system, sans-serif` (Tailwind `font-sans`는 Satoshi → Inter → Noto Sans KR 순)
+  - 코드 / 데이터 / 라벨: `SF Mono, Consolas, Noto Sans KR, monospace`
+  - 웹폰트는 300~800 굵기만 로드합니다 (900 미사용).
 - **폰트 굵기 규격 (font-black 엄격 금지)**:
   - 과도한 피로감을 주는 `font-black` (weight: 900) 사용을 금지하며, 가장 강조되는 제목도 최대 `font-extrabold` (weight: 800) 이하로 작성.
   - 라벨/메타: `font-bold` (700) 또는 `font-semibold` (600).
@@ -153,7 +164,7 @@
 ## 5. 데이터 모델 (Data Schema)
 
 ### 5.1 Trip & Plan 엔티티 (`Trip`, `Plan`)
-Firestore 컬렉션: `users/public/trips`, `users/public/plans`
+Firestore 컬렉션: `users/public/trips`, `users/public/plans` (연관 컬렉션: `users/public/flights`, `users/public/stays`, `users/public/transits`, `users/public/trash`)
 
 | 필드명 | 타입 | 필수 여부 | 설명 |
 | :--- | :--- | :---: | :--- |
@@ -173,7 +184,7 @@ Firestore 컬렉션: `users/public/trips`, `users/public/plans`
 | `deletedAt` | `number \| null` | 선택 | 소프트 삭제 타임스탬프 (휴지통 복원용) |
 
 ### 5.2 타임라인 엔티티 (`TimelineItem`)
-Firestore 서브컬렉션: `.../days/{dateStr}/items` 또는 통합 컬렉션
+Firestore 컬렉션: `users/public/timeline` (단일 통합 컬렉션, `tripId`로 여정 구분)
 
 | 필드명 | 타입 | 필수 여부 | 설명 |
 | :--- | :--- | :---: | :--- |
@@ -187,9 +198,10 @@ Firestore 서브컬렉션: `.../days/{dateStr}/items` 또는 통합 컬렉션
 | `memo` | `string` | 선택 | 장소 관련 메모 및 꿀팁 |
 | `lat` / `lng` | `number` | 선택 | 좌표 (지도 상 핀 매핑용) |
 | `vehicleType` | `'car' \| 'train' \| 'ship' \| 'flight' \| null` | 선택 | 이동 수단 구분 |
+| `tripId` | `number` | 필수 | 소속 여정 ID |
 
 ### 5.3 포켓 스팟 엔티티 (`SpotPocketItem`)
-Firestore 컬렉션: `users/public/pockets`
+Firestore 문서: `users/public/settings/pockets` (단일 문서의 `items` 배열에 전체 포켓 저장, `onSnapshot`으로 실시간 동기화)
 
 | 필드명 | 타입 | 필수 여부 | 설명 |
 | :--- | :--- | :---: | :--- |
@@ -238,6 +250,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [x] 플로팅 포켓 위젯의 상세 카드 확장 및 원클릭 타임라인 병합.
 - [x] 신규 여정 생성 시 최우선 순위(0번 인덱스) 자동 정렬 및 기존 순서 영속 보존.
 - [x] Vercel 배포 빌드 타입 검사(`npx tsc --noEmit`) 무결점 CI/CD 체계 구축.
+- [x] R2 자격 증명 서버 이전(서명 URL 방식) 및 클라이언트 번들 내 비밀 키 제거.
 
 ### Phase 3: 차세대 확장 (Next Roadmap)
 - [ ] 오프라인 PWA 지원 및 ServiceWorker 기반 캐싱 고도화.

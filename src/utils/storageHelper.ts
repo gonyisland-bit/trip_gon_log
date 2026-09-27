@@ -1,20 +1,26 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { auth } from '../firebase';
 
-const ACCOUNT_ID = import.meta.env.VITE_R2_ACCOUNT_ID || 'bd0c90c36c628664f396ac294fa0e863';
-const ACCESS_KEY_ID = import.meta.env.VITE_R2_ACCESS_KEY_ID || 'bd3036bba21c44bb0a777a530a045598';
-const SECRET_ACCESS_KEY = import.meta.env.VITE_R2_SECRET_ACCESS_KEY || 'f95e72f45df1014a6da96dbbb8cdc2e21c1f91532aef789aa079d94d0e2be76a';
-const BUCKET_NAME = import.meta.env.VITE_R2_BUCKET_NAME || 'tripgon';
 export const R2_PUBLIC_URL = (import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-73f603986a164324a3a48f1c03847cf3.r2.dev').replace(/\/+$/, '');
 
-// Initialize S3 Client for Cloudflare R2
-const s3Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: ACCESS_KEY_ID,
-    secretAccessKey: SECRET_ACCESS_KEY,
-  },
-});
+/**
+ * Calls the server-side R2 endpoint (api/r2.ts). R2 credentials live only on the server;
+ * the request is authorized with the signed-in user's Firebase ID token.
+ */
+async function callR2Api<T>(payload: Record<string, unknown>): Promise<T> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('R2 request requires a signed-in user');
+  const idToken = await user.getIdToken();
+  const response = await fetch('/api/r2', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(`R2 API ${response.status}: ${(data as { error?: string }).error || 'request failed'}`);
+  }
+  return data as T;
+}
 
 /**
  * Deletes a file from Cloudflare R2 using its public URL or key.
@@ -34,11 +40,7 @@ export async function deleteFileFromR2(url: string | undefined | null): Promise<
     const cleanKey = decodeURIComponent(key.split('?')[0]);
     if (!cleanKey) return false;
 
-    const command = new DeleteObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: cleanKey,
-    });
-    await s3Client.send(command);
+    await callR2Api({ action: 'delete', key: cleanKey });
     return true;
   } catch (error) {
     console.warn("R2 file deletion warning (ignoring):", error);
@@ -57,9 +59,6 @@ export async function uploadFileToR2(file: File | Blob, path: string): Promise<s
   const safeFileName = rawFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const cleanPath = [...segments, safeFileName].join('/');
 
-  const arrayBuffer = await file.arrayBuffer();
-  const uint8Array = new Uint8Array(arrayBuffer);
-
   // Enforce proper MIME Content-Type header so iOS Safari and browsers can stream videos & display images
   let contentType = file.type;
   if (!contentType || contentType === 'application/octet-stream') {
@@ -74,14 +73,21 @@ export async function uploadFileToR2(file: File | Blob, path: string): Promise<s
     else contentType = 'application/octet-stream';
   }
 
-  const command = new PutObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: cleanPath,
-    Body: uint8Array,
-    ContentType: contentType,
+  const { url } = await callR2Api<{ url: string }>({
+    action: 'upload',
+    key: cleanPath,
+    contentType,
+    size: file.size,
   });
 
-  await s3Client.send(command);
+  const uploadResponse = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: file,
+  });
+  if (!uploadResponse.ok) {
+    throw new Error(`R2 upload failed: ${uploadResponse.status}`);
+  }
 
   return `${R2_PUBLIC_URL}/${cleanPath}`;
 }
