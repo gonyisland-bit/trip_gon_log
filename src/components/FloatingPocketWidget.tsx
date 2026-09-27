@@ -214,9 +214,9 @@ export function FloatingPocketWidget({
                     >
                       {/* Thumbnail or Category Icon */}
                       <div className="w-8 h-8 rounded overflow-hidden shrink-0 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
-                        {spot.imageUrl ? (
+                        {spot.thumbnailUrl ? (
                           <img
-                            src={spot.imageUrl}
+                            src={spot.thumbnailUrl}
                             alt={spot.title}
                             className="w-full h-full object-cover"
                             onError={(e) => {

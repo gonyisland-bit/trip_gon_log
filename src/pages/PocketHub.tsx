@@ -681,9 +681,9 @@ export function PocketHubPage({
     return () => window.removeEventListener('click', handleDocumentClick);
   }, [isSortOpen]);
 
-  // Auto-exit reorder mode when sort mode changes away from CUSTOM
+  // Auto-exit reorder mode when sort mode changes away from USER
   useEffect(() => {
-    if (sortMode !== 'custom') setIsReorderMode(false);
+    if (sortMode !== 'user') setIsReorderMode(false);
   }, [sortMode]);
 
   const allAvailableTrips = useMemo(() => {
