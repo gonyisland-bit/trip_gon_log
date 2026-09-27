@@ -1,6 +1,7 @@
-import { Save, Trash2, Check, Search, ShieldCheck, Edit, Users, Mail } from 'lucide-react';
+import { Save, Trash2, Check, Search, ShieldCheck, Edit, Users, Mail, KeyRound } from 'lucide-react';
 import { Trip } from '../../types';
 import { UserProfileAvatar } from '../../components/UserProfileAvatar';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import type { ManageHubState } from './useManageHubState';
 
 export function UsersMode({ s }: { s: ManageHubState }) {
@@ -10,7 +11,8 @@ export function UsersMode({ s }: { s: ManageHubState }) {
     newAdminEmailInput, setNewAdminEmailInput, adminEmailSaving, userFilterStatus,
     setUserFilterStatus, userCurrentPage, setUserCurrentPage, USERS_PER_PAGE, isTargetAdminAccount,
     handleUpdateAdminEmail, handleApproveUser, handleRejectUser, handleDeleteUserByAdmin,
-    handleToggleUserPermission, title, handleContainerScroll
+    handleToggleUserPermission, title, handleContainerScroll,
+    passwordResetTarget, setPasswordResetTarget, handleSendPasswordReset
   } = s;
 
   return (
@@ -467,6 +469,18 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                         <Edit className="w-3.5 h-3.5" />
                       </button>
 
+                      {/* Send Password Reset Email */}
+                      <button
+                        type="button"
+                        onClick={() => setPasswordResetTarget(user)}
+                        disabled={!user.email}
+                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="비밀번호 재설정 메일 보내기"
+                        aria-label="비밀번호 재설정 메일 보내기"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                      </button>
+
                       {/* Delete User Account Button (Admin Forced Delete) */}
                       <button
                         type="button"
@@ -534,6 +548,18 @@ export function UsersMode({ s }: { s: ManageHubState }) {
           </div>
         );
       })()}
+
+      <ConfirmModal
+        isOpen={Boolean(passwordResetTarget)}
+        title="SEND PASSWORD RESET"
+        message={`${passwordResetTarget?.email || ''} 주소로 비밀번호 재설정 메일을 보내시겠습니까? 회원이 메일의 링크에서 새 비밀번호를 정합니다.`}
+        confirmLabel="메일 보내기"
+        cancelLabel="취소"
+        iconType="info"
+        confirmVariant="black"
+        onConfirm={handleSendPasswordReset}
+        onCancel={() => setPasswordResetTarget(null)}
+      />
     </div>
   );
 }

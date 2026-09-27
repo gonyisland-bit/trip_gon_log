@@ -4,7 +4,8 @@ import {
   collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc, onSnapshot,
   QuerySnapshot, DocumentData, query
 } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { auth, db } from '../../firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import {
   Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig,
   TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions,
@@ -774,6 +775,24 @@ export function useManageHubState(props: ManageHubPageProps) {
     } catch (err: any) {
       console.error('Failed to delete user:', err);
       alert(`회원 삭제 중 오류가 발생했습니다: ${err?.message || err}`);
+    }
+  };
+
+  // Admins cannot set another member's password from the browser; Firebase emails a reset link instead
+  const [passwordResetTarget, setPasswordResetTarget] = useState<UserProfile | null>(null);
+
+  const handleSendPasswordReset = async () => {
+    const user = passwordResetTarget;
+    setPasswordResetTarget(null);
+    if (!user?.email) return;
+    const fullName = `${user.lastName} ${user.firstName}`.trim() || user.username || user.email;
+    try {
+      await sendPasswordResetEmail(auth, user.email);
+      setUserActionToast(`[${fullName}] 님에게 비밀번호 재설정 메일을 보냈습니다.`);
+      setTimeout(() => setUserActionToast(null), 3000);
+    } catch (err: any) {
+      console.error('Failed to send password reset email:', err);
+      alert(`재설정 메일 발송 중 오류가 발생했습니다: ${err?.message || err}`);
     }
   };
 
@@ -4117,6 +4136,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     setAdminEmailSaving, userFilterStatus, setUserFilterStatus, userCurrentPage, setUserCurrentPage,
     USERS_PER_PAGE, pendingUsersCount, setPendingUsersCount, isTargetAdminAccount,
     handleUpdateAdminEmail, handleApproveUser, handleRejectUser, handleDeleteUserByAdmin,
+    passwordResetTarget, setPasswordResetTarget, handleSendPasswordReset,
     handleToggleUserPermission, handleSaveUserEdit, handleToggleTripAllowedEditor, bgmTracks,
     setBgmTracks, bgmAutoplay, setBgmAutoplay, bgmDefaultVolume, setBgmDefaultVolume, bgmShuffle,
     setBgmShuffle, slideshowInterval, setSlideshowInterval, isUploadingBgm, setIsUploadingBgm,

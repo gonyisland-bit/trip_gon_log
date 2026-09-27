@@ -12,6 +12,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
 import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
 import { sendAdminApprovalNotification, generateAdminApprovalMailtoUrl } from '../utils/adminEmailNotifier';
+import { PasswordInput } from './PasswordInput';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [username, setUsername] = useState('');
   const [profileIcon, setProfileIcon] = useState('user');
   const [lastName, setLastName] = useState('');
@@ -54,6 +56,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
       setIsSignUp(initialMode === 'signup');
       setEmail('');
       setPassword('');
+      setPasswordConfirm('');
       setUsername('');
       setProfileIcon('user');
       setLastName('');
@@ -105,6 +108,13 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
     return '';
   }, [touched.password, password]);
 
+  const passwordConfirmError = useMemo(() => {
+    if (!touched.passwordConfirm && !passwordConfirm) return '';
+    if (!passwordConfirm) return '비밀번호를 한 번 더 입력해 주세요.';
+    if (passwordConfirm !== password) return '비밀번호가 일치하지 않습니다.';
+    return '';
+  }, [touched.passwordConfirm, passwordConfirm, password]);
+
   const isSignUpValid = Boolean(
     lastName.trim() &&
     firstName.trim() &&
@@ -112,7 +122,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
     username.trim().length <= 20 &&
     /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
-    password.length >= 6
+    password.length >= 6 &&
+    passwordConfirm === password
   );
 
   // Auto-close modal and return to landing guest view after notice (generous timeout so applicant can copy link or send mail)
@@ -153,6 +164,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         username: true,
         email: true,
         password: true,
+        passwordConfirm: true,
       });
 
       if (!lastName.trim() || !firstName.trim()) {
@@ -169,6 +181,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
       }
       if (!password.trim() || password.length < 6) {
         setError('비밀번호는 최소 6자 이상이어야 합니다.');
+        return;
+      }
+      if (passwordConfirm !== password) {
+        setError('비밀번호 확인이 일치하지 않습니다.');
         return;
       }
 
@@ -621,22 +637,39 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                       비밀번호 (PASSWORD) *
                     </label>
-                    <input 
-                      type="password"
+                    <PasswordInput
                       required
                       value={password}
                       onBlur={() => markTouched('password')}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={setPassword}
                       placeholder="•••••• (6자 이상)"
-                      className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
-                        passwordError 
-                          ? 'border-red-500 text-red-600 dark:text-red-400' 
-                          : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
-                      }`}
+                      autoComplete="new-password"
+                      hasError={Boolean(passwordError)}
                     />
                     {passwordError && (
                       <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
                         {passwordError}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Password Confirmation */}
+                  <div>
+                    <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                      비밀번호 확인 (CONFIRM) *
+                    </label>
+                    <PasswordInput
+                      required
+                      value={passwordConfirm}
+                      onBlur={() => markTouched('passwordConfirm')}
+                      onChange={setPasswordConfirm}
+                      placeholder="비밀번호를 한 번 더 입력"
+                      autoComplete="new-password"
+                      hasError={Boolean(passwordConfirmError)}
+                    />
+                    {passwordConfirmError && (
+                      <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                        {passwordConfirmError}
                       </p>
                     )}
                   </div>
@@ -681,13 +714,11 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                       비밀번호 (PASSWORD) *
                     </label>
-                    <input 
-                      type="password"
+                    <PasswordInput
                       required
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={setPassword}
                       placeholder="••••••••"
-                      className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                     />
                   </div>
 

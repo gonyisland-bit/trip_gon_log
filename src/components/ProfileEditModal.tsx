@@ -9,7 +9,8 @@ import { ConfirmModal } from './ConfirmModal';
 import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
-import { deleteUser } from 'firebase/auth';
+import { deleteUser, updatePassword } from 'firebase/auth';
+import { PasswordInput } from './PasswordInput';
 import { doc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
@@ -52,6 +53,18 @@ export function ProfileEditModal({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Own password change (profile editing is reached through password re-verification)
+  const [isPasswordSectionOpen, setIsPasswordSectionOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+
+  const newPasswordError = newPassword && newPassword.length < 6 ? '비밀번호는 최소 6자 이상이어야 합니다.' : '';
+  const newPasswordConfirmError = newPasswordConfirm && newPasswordConfirm !== newPassword ? '비밀번호가 일치하지 않습니다.' : '';
+  const canChangePassword = newPassword.length >= 6 && newPasswordConfirm === newPassword && !isChangingPassword;
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -71,8 +84,38 @@ export function ProfileEditModal({
       setIsConfirmOpen(false);
       setIsDeleteConfirmOpen(false);
       setIsDeleting(false);
+      setIsPasswordSectionOpen(false);
+      setNewPassword('');
+      setNewPasswordConfirm('');
+      setIsPasswordConfirmOpen(false);
+      setIsChangingPassword(false);
+      setPasswordMsg(null);
     }
   }, [isOpen, user]);
+
+  const handleChangePassword = async () => {
+    setIsPasswordConfirmOpen(false);
+    if (!auth.currentUser || !canChangePassword) return;
+    setIsChangingPassword(true);
+    setPasswordMsg(null);
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+      setNewPassword('');
+      setNewPasswordConfirm('');
+      setPasswordMsg({ type: 'success', text: '비밀번호가 변경되었습니다. 다음 로그인부터 새 비밀번호를 사용하세요.' });
+    } catch (err: any) {
+      console.error('Password change error:', err);
+      if (err.code === 'auth/requires-recent-login') {
+        setPasswordMsg({ type: 'error', text: '보안을 위해 재로그인이 필요합니다. 로그아웃 후 다시 로그인하여 변경해 주세요.' });
+      } else if (err.code === 'auth/weak-password') {
+        setPasswordMsg({ type: 'error', text: '비밀번호가 너무 약합니다. 6자 이상으로 다시 입력해 주세요.' });
+      } else {
+        setPasswordMsg({ type: 'error', text: `비밀번호 변경에 실패했습니다: ${err?.message || err}` });
+      }
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     if (!auth.currentUser) return;
@@ -470,6 +513,81 @@ export function ProfileEditModal({
               </button>
             </div>
 
+            {/* Password Change (User Only) */}
+            {!isAdminEditing && (
+              <div className="pt-3 border-t border-black/10 dark:border-white/10 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-60">
+                    비밀번호 (PASSWORD)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setIsPasswordSectionOpen(v => !v); setPasswordMsg(null); }}
+                    aria-expanded={isPasswordSectionOpen}
+                    className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                  >
+                    {isPasswordSectionOpen ? 'CLOSE' : 'CHANGE'}
+                  </button>
+                </div>
+                {isPasswordSectionOpen && (
+                  <div className="flex flex-col gap-2">
+                    <div>
+                      <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                        새 비밀번호 (NEW PASSWORD)
+                      </label>
+                      <PasswordInput
+                        variant="box"
+                        value={newPassword}
+                        onChange={setNewPassword}
+                        placeholder="6자 이상"
+                        autoComplete="new-password"
+                        hasError={Boolean(newPasswordError)}
+                      />
+                      {newPasswordError && (
+                        <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">{newPasswordError}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                        새 비밀번호 확인 (CONFIRM)
+                      </label>
+                      <PasswordInput
+                        variant="box"
+                        value={newPasswordConfirm}
+                        onChange={setNewPasswordConfirm}
+                        placeholder="새 비밀번호를 한 번 더 입력"
+                        autoComplete="new-password"
+                        hasError={Boolean(newPasswordConfirmError)}
+                      />
+                      {newPasswordConfirmError && (
+                        <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">{newPasswordConfirmError}</p>
+                      )}
+                    </div>
+                    {passwordMsg && (
+                      <p className={`text-[11px] font-mono ${passwordMsg.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-black/70 dark:text-white/70'}`}>
+                        {passwordMsg.text}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsPasswordConfirmOpen(true)}
+                      disabled={!canChangePassword}
+                      className="h-9 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                    >
+                      {isChangingPassword ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>변경 중...</span>
+                        </>
+                      ) : (
+                        <span>UPDATE PASSWORD</span>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Account Deletion Area (User Only) */}
             {!isAdminEditing && (
               <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
@@ -500,6 +618,19 @@ export function ProfileEditModal({
         confirmVariant="black"
         onConfirm={handleConfirmSave}
         onCancel={() => setIsConfirmOpen(false)}
+      />
+
+      {/* 2-Step Swiss Minimal ConfirmModal before Changing Password */}
+      <ConfirmModal
+        isOpen={isPasswordConfirmOpen}
+        title="CHANGE PASSWORD"
+        message="비밀번호를 변경하시겠습니까? 다음 로그인부터 새 비밀번호를 사용해야 합니다."
+        confirmLabel="변경 확인"
+        cancelLabel="취소"
+        iconType="info"
+        confirmVariant="black"
+        onConfirm={handleChangePassword}
+        onCancel={() => setIsPasswordConfirmOpen(false)}
       />
 
       {/* 2-Step Swiss Minimal ConfirmModal before Deleting Account */}
