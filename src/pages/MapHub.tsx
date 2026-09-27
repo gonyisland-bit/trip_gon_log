@@ -6,7 +6,6 @@ import { Trip, Plan, UserProfile } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { TripBuilderPanel } from '../components/TripBuilderPanel';
-import { ConfirmModal } from '../components/ConfirmModal';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
 import { getNightTerminatorPolygon, shiftPolygonCoordinates, isLocationInNight, getContinuousNightPolygon } from '../utils/solarTerminator';
@@ -1681,12 +1680,6 @@ export function MapHubPage({
   }, [isBuilderOpen, onBuilderStateChange]);
 
   // 도시 변경 확인 모달 상태 (Trip 가이드 생성 중 다른 도시 선택 시 실수 방지)
-  const [confirmChangeCityModal, setConfirmChangeCityModal] = useState<{
-    isOpen: boolean;
-    targetCity: string;
-    targetCountry?: string;
-    targetCountryCode?: string;
-  }>({ isOpen: false, targetCity: '' });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
@@ -1828,25 +1821,16 @@ export function MapHubPage({
     toggleDestCityRef.current = toggleDestCity;
   }, [toggleDestCity]);
 
-  // Trip 가이드 활성화 중 도시 변경 요청 핸들러 (실수 방지 2단계 확인)
+  // Trip 가이드 활성화 중 도시 변경: 지도·검색에서 고른 도시를 가이드 목적지로 즉시 반영
   const requestChangeBuilderCity = useCallback((cityName: string, countryName?: string, countryCode?: string) => {
     if (!cityName) return;
     if (isBuilderOpenRef.current) {
-      if (!builderCity || builderCity === cityName) {
-        // 기존 작성 중인 대상 도시가 없을 때는 불필요한 모달 없이 즉시 세팅
-        setBuilderCity(cityName);
-        setBuilderCities([cityName]);
-        if (countryName || selectedCountry?.name) setBuilderCountry(countryName || selectedCountry?.name || '');
-        if (countryCode || selectedCountry?.code) setBuilderCountryCode(countryCode || selectedCountry?.code || '');
-        setActiveWeatherCity(cityName);
-        return;
-      }
-      setConfirmChangeCityModal({
-        isOpen: true,
-        targetCity: cityName,
-        targetCountry: countryName || selectedCountry?.name,
-        targetCountryCode: countryCode || selectedCountry?.code,
-      });
+      if (builderCity === cityName) return;
+      setBuilderCity(cityName);
+      setBuilderCities([cityName]);
+      if (countryName || selectedCountry?.name) setBuilderCountry(countryName || selectedCountry?.name || '');
+      if (countryCode || selectedCountry?.code) setBuilderCountryCode(countryCode || selectedCountry?.code || '');
+      setActiveWeatherCity(cityName);
     } else {
       toggleDestCity(cityName);
     }
@@ -1856,18 +1840,6 @@ export function MapHubPage({
   useEffect(() => {
     requestChangeBuilderCityRef.current = requestChangeBuilderCity;
   }, [requestChangeBuilderCity]);
-
-  const handleConfirmCityChange = useCallback(() => {
-    const { targetCity, targetCountry, targetCountryCode } = confirmChangeCityModal;
-    if (targetCity) {
-      setBuilderCity(targetCity);
-      setBuilderCities([targetCity]);
-      if (targetCountry) setBuilderCountry(targetCountry);
-      if (targetCountryCode) setBuilderCountryCode(targetCountryCode);
-      setActiveWeatherCity(targetCity);
-    }
-    setConfirmChangeCityModal({ isOpen: false, targetCity: '' });
-  }, [confirmChangeCityModal]);
 
   // Render subtle mini dot pins for all travel destinations in the selected country
   useEffect(() => {
@@ -2901,8 +2873,20 @@ export function MapHubPage({
 
   // Country selection handler: highlights country area and flies airplane from Korea
   const handleSelectCountry = (country: CountryInfo) => {
-    // 트립 가이드 패널이 열려 있을 때 지도 및 핀 클릭을 통한 국가 변경 차단 (요청 2)
-    if (isBuilderOpenRef.current) return;
+    // 트립 가이드가 열려 있으면 선택한 국가(대표 도시)를 가이드 목적지로 즉시 반영.
+    // 이미 가이드 대상인 국가를 다시 고르면 작성 중인 가이드를 초기화하지 않음.
+    if (isBuilderOpenRef.current) {
+      const isSameCountry = (builderCountryCode && builderCountryCode.toUpperCase() === country.code.toUpperCase())
+        || (!builderCountryCode && builderCountry === country.name);
+      if (!isSameCountry) {
+        const targetCity = country.cities?.[0] || '';
+        setBuilderCountry(country.name);
+        setBuilderCountryCode(country.code);
+        setBuilderCity(targetCity);
+        setBuilderCities(targetCity ? [targetCity] : []);
+        if (targetCity) setActiveWeatherCity(targetCity);
+      }
+    }
 
     setIsSearchDropdownOpen(false);
 
@@ -3472,7 +3456,6 @@ export function MapHubPage({
       const addPinMarkerAt = (lat: number, lng: number) => {
         const marker = L.marker([lat, lng], { icon }).addTo(map);
         marker.on('click', () => {
-          if (isBuilderOpenRef.current) return;
           const c = findCountryForGroup(group.country, group.city, { lat: group.lat, lng: group.lng });
           if (c) {
             handleSelectCountryRef.current(c);
@@ -3534,7 +3517,6 @@ export function MapHubPage({
       const addYellowMarkerAt = (lat: number, lng: number) => {
         const marker = L.marker([lat, lng], { icon, zIndexOffset: 600 }).addTo(map);
         marker.on('click', () => {
-          if (isBuilderOpenRef.current) return;
           handleSelectCountryRef.current(country);
         });
         yellowMarkersRef.current.push(marker);
@@ -3579,7 +3561,6 @@ export function MapHubPage({
       const addCountryDotAt = (lat: number, lng: number) => {
         const dotMarker = L.marker([lat, lng], { icon, zIndexOffset: 300 }).addTo(map);
         dotMarker.on('click', (e: any) => {
-          if (isBuilderOpenRef.current) return;
           if (e && e.originalEvent) e.originalEvent.stopPropagation();
           handleSelectCountryRef.current(country);
         });
@@ -4047,12 +4028,6 @@ export function MapHubPage({
                       setIsSearchExpanded(false);
                       setIsSearchDropdownOpen(false);
                       setSearchSelectedIndex(-1);
-                      if (isBuilderOpenRef.current) {
-                        const targetCity = target.cities?.[0] || '';
-                        if (targetCity) {
-                          requestChangeBuilderCityRef.current(targetCity, target.name, target.code);
-                        }
-                      }
                     }
                   } else if (e.key === 'Escape') {
                     e.preventDefault();
@@ -4138,12 +4113,6 @@ export function MapHubPage({
                         setIsSearchExpanded(false);
                         setIsSearchDropdownOpen(false);
                         setSearchSelectedIndex(-1);
-                        if (isBuilderOpenRef.current) {
-                          const targetCity = c.cities?.[0] || '';
-                          if (targetCity) {
-                            requestChangeBuilderCityRef.current(targetCity, c.name, c.code);
-                          }
-                        }
                       }}
                       onMouseEnter={() => setSearchSelectedIndex(idx)}
                       className={`p-2 sm:p-2.5 cursor-pointer flex items-center justify-between gap-2.5 transition-colors ${
@@ -5265,19 +5234,6 @@ export function MapHubPage({
           </div>
         </div>
       )}
-
-      {/* 2단계 확인: 여정 대상 도시 변경 모달 (실수 방지) */}
-      <ConfirmModal
-        isOpen={confirmChangeCityModal.isOpen}
-        title="CHANGE DESTINATION"
-        message={`생성 중인 여정의 대상 도시를 '${builderCity || '현재 도시'}'에서 '${confirmChangeCityModal.targetCity}'(으)로 변경하시겠습니까?\n(선택 시 가이드 일정 조건이 새 도시에 맞게 갱신됩니다)`}
-        confirmLabel="CHANGE"
-        cancelLabel="CANCEL"
-        confirmVariant="primary"
-        iconType="info"
-        onConfirm={handleConfirmCityChange}
-        onCancel={() => setConfirmChangeCityModal({ isOpen: false, targetCity: '' })}
-      />
 
       {/* Marker CSS Overrides, Swiss Minimal Typography & Label Toggle Rules */}
       <style>{`
