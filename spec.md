@@ -174,6 +174,26 @@
   - 딤 배경: `bg-black/60 backdrop-blur-xs`.
   - 상단 헤더: 영문 대문자 모노스페이스 서브 라벨 + 메인 볼드 타이틀 + 우측 `X` 닫기 버튼.
 
+### 4.5 로고 (Brand)
+- 정규 로고는 벡터 로고타입 하나만 사용합니다: `public/tripgon-logotype.svg`(이미지용), `BrandLogo` 컴포넌트(인라인, `currentColor`). 원본은 `Logotype_Tripgon log.svg`입니다.
+- 글꼴로 로고를 다시 조판하지 않습니다. 라이트 모드는 검정, 다크 모드는 반전(흰색)으로만 씁니다. 빨강은 로고 밖 포인트에만 씁니다.
+- 스플래시: 정규 로고 16겹 3D 입체 → 빛 스침 → 빨간 헤어라인 → 헤더 로고(`[data-brand-logo]`) 자리로 이어짐. 세션당 1회, 클릭 시 건너뜀.
+- favicon과 앱 아이콘은 현재 파일을 유지합니다.
+
+### 4.6 시인성 (Legibility)
+- 최소 글씨 크기: `text-micro`(11px, 대문자 모노 라벨·배지), `text-meta`(12px, 날짜·장소·보조 설명). 11px 미만은 쓰지 않습니다.
+- 글씨 투명도 하한: 60%(`text-black/60`, `text-white/60`, 명도 대비 라이트 5.7:1, 다크 7.1:1). 입력칸 안내 문구는 50% 이상. 40% 이하는 비활성 상태와 장식선에만 씁니다.
+
+### 4.7 피드백 (Feedback)
+- 알림은 `notify(message, tone?)`(토스트: NOTICE / DONE / ERROR), 확인은 `await confirmDialog(message)`(ConfirmModal)를 씁니다. `window.alert`, `window.confirm`은 쓰지 않습니다. 단, 페이지 이동 직전 알림은 예외입니다.
+- 삭제처럼 되돌릴 수 없는 동작의 확인 버튼은 빨강입니다.
+- 키보드 포커스는 빨간 2px 링으로 표시합니다. 아이콘만 있는 버튼에는 `tap-target`을 붙여 터치 영역을 넓힙니다.
+
+### 4.8 모션 (Motion)
+- 토큰: `duration-fast`(120ms), `duration-base`(220ms), `duration-emph`(420ms), `duration-hero`(900ms+) / `ease-standard`, `ease-emphasized`.
+- 허브 간 이동은 View Transition으로 교차 전환합니다(헤더 고정). 여정 상세 탭은 활성 블록이 미끄러져 이동합니다. Trip Guide 목적지가 바뀌면 이름이 롤링되고 헤더에 빨간 선이 스칩니다. 타임라인 날짜 헤더는 스크롤에 맞춰 드러나고, 요약 숫자는 0에서 올라갑니다.
+- `prefers-reduced-motion`이면 모든 애니메이션과 전환을 즉시 처리합니다.
+
 ---
 
 ## 5. 데이터 모델 (Data Schema)
