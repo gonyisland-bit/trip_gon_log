@@ -170,7 +170,7 @@ export function SettlementExpenseInput({
     if (vertical) {
       return (
         <div 
-          className={`flex flex-col items-end gap-1 text-[9px] md:text-[10px] font-bold ${className}`}
+          className={`flex flex-col items-end gap-1 text-micro md:text-meta font-bold ${className}`}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -180,12 +180,12 @@ export function SettlementExpenseInput({
               value={cost}
               onChange={handleCostChange}
               placeholder="0"
-              className="w-full bg-transparent outline-none text-[9px] md:text-[10px] font-bold text-right px-0.5 text-black dark:text-white select-text"
+              className="w-full bg-transparent outline-none text-micro md:text-meta font-bold text-right px-0.5 text-black dark:text-white select-text"
             />
             <select
               value={activeCurrency}
               onChange={handleCurrencyChange}
-              className="bg-transparent outline-none text-[8px] md:text-[9px] font-bold text-black/60 dark:text-white/60 border-l border-black/10 dark:border-white/10 pl-0.5 cursor-pointer shrink-0"
+              className="bg-transparent outline-none text-micro md:text-micro font-bold text-black/60 dark:text-white/60 border-l border-black/10 dark:border-white/10 pl-0.5 cursor-pointer shrink-0"
             >
               <option value="KRW">KRW</option>
               <option value="USD">USD</option>
@@ -200,7 +200,7 @@ export function SettlementExpenseInput({
           <select
             value={paidBy || displayMembers[0]}
             onChange={handlePaidByChange}
-            className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-[8px] md:text-[9px] font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer w-20 md:w-24 outline-none"
+            className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-micro md:text-micro font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer w-20 md:w-24 outline-none"
           >
             {displayMembers.map((m) => (
               <option key={m} value={m}>
@@ -214,7 +214,7 @@ export function SettlementExpenseInput({
 
     return (
       <div 
-        className={`flex flex-wrap items-center gap-1.5 text-[10px] md:text-xs font-bold ${className}`}
+        className={`flex flex-wrap items-center gap-1.5 text-meta md:text-xs font-bold ${className}`}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -224,12 +224,12 @@ export function SettlementExpenseInput({
             value={cost}
             onChange={handleCostChange}
             placeholder="0"
-            className="w-16 md:w-20 bg-transparent outline-none text-[10px] md:text-xs font-bold text-right px-1 text-black dark:text-white select-text"
+            className="w-16 md:w-20 bg-transparent outline-none text-meta md:text-xs font-bold text-right px-1 text-black dark:text-white select-text"
           />
           <select
             value={activeCurrency}
             onChange={handleCurrencyChange}
-            className="bg-transparent outline-none text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 border-l border-black/10 dark:border-white/10 pl-1 cursor-pointer"
+            className="bg-transparent outline-none text-micro md:text-meta font-bold text-black/60 dark:text-white/60 border-l border-black/10 dark:border-white/10 pl-1 cursor-pointer"
           >
             <option value="KRW">KRW</option>
             <option value="USD">USD</option>
@@ -244,7 +244,7 @@ export function SettlementExpenseInput({
         <select
           value={paidBy || displayMembers[0]}
           onChange={handlePaidByChange}
-          className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer"
+          className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-micro md:text-meta font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer"
         >
           {displayMembers.map((m) => (
             <option key={m} value={m}>
@@ -260,10 +260,10 @@ export function SettlementExpenseInput({
   if (!cost || cost === '-') return null;
 
   return (
-    <div className={`inline-flex items-center flex-wrap gap-1 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[9px] md:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 normal-case ${className}`}>
+    <div className={`inline-flex items-center flex-wrap gap-1 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 text-micro md:text-meta font-bold text-emerald-600 dark:text-emerald-400 normal-case ${className}`}>
       <CreditCard className="w-3 h-3 shrink-0" />
       <span>{cost} {activeCurrency}</span>
-      {paidBy && <span className="text-black/40 dark:text-white/40 font-normal">({paidBy} 결제)</span>}
+      {paidBy && <span className="text-black/60 dark:text-white/60 font-normal">({paidBy} 결제)</span>}
     </div>
   );
 }

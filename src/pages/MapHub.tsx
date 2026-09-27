@@ -1875,7 +1875,7 @@ export function MapHubPage({
         <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 22px; height: 22px;">
           <!-- Hover Tooltip -->
           <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px; pointer-events: none; white-space: nowrap; z-index: 1500;" class="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
               ${cityName}
             </span>
           </div>
@@ -1975,7 +1975,7 @@ export function MapHubPage({
           <div class="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow-lg flex items-center justify-center">
             <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
           </div>
-          <div class="mt-1 px-1.5 py-0.5 bg-black text-white text-[9px] font-mono font-extrabold uppercase tracking-wider whitespace-nowrap shadow-md flex items-center">
+          <div class="mt-1 px-1.5 py-0.5 bg-black text-white text-micro font-mono font-extrabold uppercase tracking-wider whitespace-nowrap shadow-md flex items-center">
             ${numBadge}${pt.name}
           </div>
         </div>
@@ -3426,7 +3426,7 @@ export function MapHubPage({
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${showPinLabels ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
                 ${group.city}
               </span>
             </div>
@@ -3438,7 +3438,7 @@ export function MapHubPage({
               <circle cx="12" cy="11" r="4.5" fill="#FFFFFF"/>
             </svg>
             ${group.journeys.length > 1 ? `
-              <span class="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-[9.5px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
+              <span class="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-micro w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
                 ${group.journeys.length}
               </span>
             ` : ''}
@@ -3492,7 +3492,7 @@ export function MapHubPage({
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${showPinLabels ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
                 ★ ${country.name}
               </span>
             </div>
@@ -3542,7 +3542,7 @@ export function MapHubPage({
         <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 24px; height: 24px;">
           <!-- Hover Tooltip -->
           <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; pointer-events: none; white-space: nowrap; z-index: 1000;" class="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-            <span style="font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block;">
+            <span style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block;">
               ${country.name}
             </span>
           </div>
@@ -3824,10 +3824,10 @@ export function MapHubPage({
             className: 'custom-builder-stop-icon',
             html: `
               <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-                <div style="background: #111111; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
+                <div style="background: #111111; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
                   ${numStr}
                 </div>
-                <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
+                <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
                   ${loc.name}
                 </div>
               </div>
@@ -3853,10 +3853,10 @@ export function MapHubPage({
           className: 'custom-builder-single-stop',
           html: `
             <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-              <div style="background: #dc2626; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
+              <div style="background: #dc2626; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
                 01
               </div>
-              <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
+              <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
                 ${loc.name}
               </div>
             </div>
@@ -3981,7 +3981,7 @@ export function MapHubPage({
           ) : (
             /* Expanded Search Input Field */
             <div className="flex-1 w-[calc(100vw-150px)] max-w-[240px] xs:max-w-[280px] sm:max-w-none sm:w-72 flex items-center px-2 py-1.5 sm:px-3 sm:py-2 animate-card-entrance">
-              <Search className="w-3.5 h-3.5 text-black/50 dark:text-white/50 shrink-0 mr-1.5 sm:mr-2" />
+              <Search className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0 mr-1.5 sm:mr-2" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -4036,7 +4036,7 @@ export function MapHubPage({
                   }
                 }}
                 placeholder="SEARCH..."
-                className={`w-full bg-transparent text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none truncate ${
+                className={`w-full bg-transparent text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 outline-none truncate ${
                   isMobileControlsOpen ? 'pointer-events-none' : ''
                 }`}
               />
@@ -4053,7 +4053,7 @@ export function MapHubPage({
                     setSearchSelectedIndex(-1);
                   }
                 }}
-                className="p-0.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer mr-0.5"
+                className="p-0.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer mr-0.5"
                 title={searchQuery ? "지우기" : "검색 닫기"}
               >
                 <X className="w-3.5 h-3.5" />
@@ -4079,13 +4079,13 @@ export function MapHubPage({
             className={`p-2 sm:px-3 sm:py-2 border-l border-black/15 dark:border-white/15 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 ${
               favoriteCountries.length > 0
                 ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
-                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
             }`}
             title={`WISHLIST: ${favoriteCountries.length}`}
           >
             <Star className={`w-3.5 h-3.5 ${favoriteCountries.length > 0 ? 'fill-black text-black dark:fill-white dark:text-white' : ''}`} />
             {favoriteCountries.length > 0 && (
-              <span className="text-[9px] sm:text-[10px] font-mono font-extrabold">{favoriteCountries.length}</span>
+              <span className="text-micro sm:text-meta font-mono font-extrabold">{favoriteCountries.length}</span>
             )}
           </button>
 
@@ -4124,19 +4124,19 @@ export function MapHubPage({
                       <div className="flex-1 min-w-0">
                         {/* Row 1: Code Badge + English Name + Korean Name */}
                         <div className="flex items-center gap-1.5 flex-nowrap truncate">
-                          <span className="text-[10px] font-mono font-extrabold text-red-600 dark:text-red-500 shrink-0">
+                          <span className="text-meta font-mono font-extrabold text-red-600 dark:text-red-500 shrink-0">
                             {c.code}
                           </span>
                           <span className="text-xs font-extrabold uppercase text-black dark:text-white truncate">
                             {c.name}
                           </span>
-                          <span className="text-[10.5px] font-sans text-black/50 dark:text-white/50 shrink-0">
+                          <span className="text-meta font-sans text-black/60 dark:text-white/60 shrink-0">
                             ({c.nameKo})
                           </span>
                         </div>
                         {/* Row 2: Continent Pill + Representative Cities */}
-                        <div className="flex items-center gap-1.5 mt-0.5 text-[9.5px] font-mono text-black/40 dark:text-white/40 truncate">
-                          <span className="px-1 py-0.2 text-[8.5px] font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
+                        <div className="flex items-center gap-1.5 mt-0.5 text-micro font-mono text-black/60 dark:text-white/60 truncate">
+                          <span className="px-1 py-0.2 text-micro font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
                             {c.continentKo}
                           </span>
                           <span className="truncate">
@@ -4145,7 +4145,7 @@ export function MapHubPage({
                         </div>
                       </div>
                       {/* Right: Currency Code */}
-                      <span className="text-[10px] font-mono font-bold text-black/70 dark:text-white/70 shrink-0">
+                      <span className="text-meta font-mono font-bold text-black/70 dark:text-white/70 shrink-0">
                         {c.currency}
                       </span>
                     </div>
@@ -4195,7 +4195,7 @@ export function MapHubPage({
               className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showPinLabels
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title="TOGGLE LABELS"
             >
@@ -4209,7 +4209,7 @@ export function MapHubPage({
               className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showVisitedPins
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title="TOGGLE VISITED PINS"
             >
@@ -4223,7 +4223,7 @@ export function MapHubPage({
               className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showWishlistPins
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title="TOGGLE WISHLIST PINS"
             >
@@ -4237,7 +4237,7 @@ export function MapHubPage({
               className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 isPlaneAnimEnabled
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title={isPlaneAnimEnabled ? "비행기 모션 켜짐" : "비행기 모션 꺼짐"}
             >
@@ -4251,7 +4251,7 @@ export function MapHubPage({
               className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 isDayNightEnabled
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title={isDayNightEnabled ? "낮/밤 명암 경계선 켜짐" : "낮/밤 명암 경계선 꺼짐"}
             >
@@ -4265,7 +4265,7 @@ export function MapHubPage({
                 handleResetToDefaultView();
                 setIsMobileControlsOpen(false);
               }}
-              className="h-full px-2.5 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              className="h-full px-2.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title="RESET VIEW (H)"
             >
               <HomeIcon className="w-3.5 h-3.5" />
@@ -4278,7 +4278,7 @@ export function MapHubPage({
                 setIsPlaceListModalOpen(true);
                 setIsMobileControlsOpen(false);
               }}
-              className="h-full px-2.5 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              className="h-full px-2.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title="PLACES LIST"
             >
               <List className="w-3.5 h-3.5" />
@@ -4331,7 +4331,7 @@ export function MapHubPage({
             className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showPinLabels
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
             }`}
             title="TOGGLE LABELS"
           >
@@ -4345,7 +4345,7 @@ export function MapHubPage({
             className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showVisitedPins
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
             }`}
             title="TOGGLE VISITED PINS"
           >
@@ -4359,7 +4359,7 @@ export function MapHubPage({
             className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showWishlistPins
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
             }`}
             title="TOGGLE WISHLIST PINS"
           >
@@ -4373,7 +4373,7 @@ export function MapHubPage({
             className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               isPlaneAnimEnabled
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
             }`}
             title={isPlaneAnimEnabled ? "비행기 비행 모션 켜짐 (클릭 시 끄기)" : "비행기 비행 모션 꺼짐 (즉시 확대 착륙)"}
           >
@@ -4384,7 +4384,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={handleResetToDefaultView}
-            className="h-full px-2.5 sm:px-3 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            className="h-full px-2.5 sm:px-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
             title="RESET VIEW (H)"
           >
             <HomeIcon className="w-3.5 h-3.5" />
@@ -4394,7 +4394,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={() => setIsPlaceListModalOpen(true)}
-            className="h-full px-2.5 sm:px-3 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            className="h-full px-2.5 sm:px-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
             title="PLACES LIST"
           >
             <List className="w-3.5 h-3.5" />
@@ -4449,7 +4449,7 @@ export function MapHubPage({
             <span className="inline sm:hidden text-[11px] font-extrabold tabular-nums">
               {formattedClockShort}
             </span>
-            <span className="text-[8.5px] sm:text-[9.5px] text-black/40 dark:text-white/40 font-bold uppercase hidden sm:inline">
+            <span className="text-micro sm:text-micro text-black/60 dark:text-white/60 font-bold uppercase hidden sm:inline">
               KST
             </span>
           </div>
@@ -4463,7 +4463,7 @@ export function MapHubPage({
             className={`p-1 rounded-full transition-all cursor-pointer flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 ${
               isDayNightEnabled
                 ? 'text-amber-500'
-                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white'
+                : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
             }`}
             title={isDayNightEnabled ? "낮/밤 명암 및 야경 조명 켜짐 (클릭 시 끄기)" : "낮/밤 명암 및 야경 조명 꺼짐 (클릭 시 켜기)"}
           >
@@ -4509,10 +4509,10 @@ export function MapHubPage({
           <div className="flex items-center justify-between pb-1.5 sm:pb-2.5 border-b border-black/10 dark:border-white/10 mb-2 sm:mb-3">
             <div>
               <div className="flex items-center gap-1.5 mb-0.5 font-['Inter',sans-serif]">
-                <span className="text-[9.5px] font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500">
+                <span className="text-micro font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500">
                   {selectedCountry.code}
                 </span>
-                <span className="text-[9.5px] font-bold text-black/40 dark:text-white/40">
+                <span className="text-micro font-bold text-black/60 dark:text-white/60">
                   · {selectedCountry.continentKo}
                 </span>
               </div>
@@ -4520,14 +4520,14 @@ export function MapHubPage({
                 <h3 className="text-lg sm:text-2xl font-extrabold uppercase tracking-tight text-black dark:text-white font-['Inter',sans-serif] leading-tight">
                   {selectedCountry.name}
                 </h3>
-                <span className="text-xs font-semibold text-black/50 dark:text-white/50">
+                <span className="text-xs font-semibold text-black/60 dark:text-white/60">
                   {selectedCountry.nameKo}
                 </span>
               </div>
             </div>
             <button
               onClick={handleCloseCountry}
-              className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer -mr-1"
+              className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer -mr-1"
               title="닫기 (ESC)"
             >
               <X className="w-4 h-4" />
@@ -4548,9 +4548,9 @@ export function MapHubPage({
 
               return (
                 <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10">
-                  <div className="text-[9.5px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 mb-1 sm:mb-1.5 flex items-center justify-between">
+                  <div className="text-micro sm:text-meta font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 mb-1 sm:mb-1.5 flex items-center justify-between">
                     <span>RECORDED JOURNEYS</span>
-                    <span className="text-[9px] sm:text-[10px] font-mono font-bold text-black/40 dark:text-white/40">
+                    <span className="text-micro sm:text-meta font-mono font-bold text-black/60 dark:text-white/60">
                       {totalJourneys} TOTAL
                     </span>
                   </div>
@@ -4560,10 +4560,10 @@ export function MapHubPage({
                         key={group.city}
                         type="button"
                         onClick={() => setSelectedPinGroup(group)}
-                        className="px-2 py-0.5 text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                        className="px-2 py-0.5 text-meta sm:text-[11px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <span>{group.city}</span>
-                        <span className="text-[9px] sm:text-[9.5px] px-1 py-0.2 bg-black/10 dark:bg-white/20 font-mono font-bold">
+                        <span className="text-micro sm:text-micro px-1 py-0.2 bg-black/10 dark:bg-white/20 font-mono font-bold">
                           {group.journeys.length}
                         </span>
                       </button>
@@ -4584,17 +4584,17 @@ export function MapHubPage({
 
                   return (
                     <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-xl sm:rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center text-center shadow-xs border border-black/5 dark:border-white/10 h-full">
-                      <span className="text-[9px] sm:text-[11px] font-bold text-black/60 dark:text-white/60 lowercase tracking-wider">
+                      <span className="text-micro sm:text-[11px] font-bold text-black/60 dark:text-white/60 lowercase tracking-wider">
                         {liveInfo.ampm}
                       </span>
                       <span className="text-xl sm:text-4xl font-extrabold tracking-tight text-black dark:text-white my-0 sm:my-0.5 font-sans leading-none">
                         {liveInfo.dotTime}
                       </span>
                       <div className="mt-1 sm:mt-1.5 rounded-full bg-white/90 dark:bg-white/10 px-2 sm:px-2.5 py-0.5 inline-flex items-center gap-1 shadow-xs border border-black/5 dark:border-white/10">
-                        <span className="text-[9.5px] sm:text-[11px] font-bold text-black dark:text-white truncate max-w-[80px] sm:max-w-none">{mainCity}</span>
-                        <span className="text-[8.5px] sm:text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">{countryCode}</span>
+                        <span className="text-micro sm:text-[11px] font-bold text-black dark:text-white truncate max-w-[80px] sm:max-w-none">{mainCity}</span>
+                        <span className="text-micro sm:text-meta font-mono text-black/60 dark:text-white/60 uppercase">{countryCode}</span>
                       </div>
-                      <div className="text-[8.5px] sm:text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-0.5 sm:mt-1.5">
+                      <div className="text-micro sm:text-micro font-mono text-black/60 dark:text-white/60 mt-0.5 sm:mt-1.5">
                         {liveInfo.diffText} (KST)
                       </div>
                     </div>
@@ -4612,14 +4612,14 @@ export function MapHubPage({
                     <>
                       {/* Top Half (50%): Local Currency (e.g. 100 JPY) */}
                       <div className="flex-1 flex flex-col items-center justify-center pb-1 sm:pb-1.5 border-b border-black/10 dark:border-white/10 text-center">
-                        <span className="text-[8.5px] sm:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">
+                        <span className="text-micro sm:text-meta font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-widest">
                           LOCAL
                         </span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-base sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
                             {unit.toLocaleString()}
                           </span>
-                          <span className="text-[10px] sm:text-sm font-mono font-extrabold text-black/70 dark:text-white/70 uppercase">
+                          <span className="text-meta sm:text-sm font-mono font-extrabold text-black/70 dark:text-white/70 uppercase">
                             {selectedCountry.currency}
                           </span>
                         </div>
@@ -4627,14 +4627,14 @@ export function MapHubPage({
 
                       {/* Bottom Half (50%): Korean Won (e.g. 930 KRW) */}
                       <div className="flex-1 flex flex-col items-center justify-center pt-1 sm:pt-1.5 text-center">
-                        <span className="text-[8.5px] sm:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">
+                        <span className="text-micro sm:text-meta font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-widest">
                           KRW
                         </span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-base sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
                             {approxKRW.toLocaleString()}
                           </span>
-                          <span className="text-[10px] sm:text-sm font-mono font-extrabold text-black/70 dark:text-white/70 uppercase">
+                          <span className="text-meta sm:text-sm font-mono font-extrabold text-black/70 dark:text-white/70 uppercase">
                             원
                           </span>
                         </div>
@@ -4651,7 +4651,7 @@ export function MapHubPage({
                 <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span className="text-[9.5px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60 truncate">
+                    <span className="text-micro sm:text-meta font-mono font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60 truncate">
                       WEATHER · {activeWeatherCity || selectedCountry.name}
                     </span>
                   </div>
@@ -4659,7 +4659,7 @@ export function MapHubPage({
                     <button
                       type="button"
                       onClick={() => setIsCountryForecastOpen(prev => !prev)}
-                      className="text-[9.5px] sm:text-[10px] font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer shrink-0 ml-2"
+                      className="text-micro sm:text-meta font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer shrink-0 ml-2"
                     >
                       <span>7-DAY</span>
                       {isCountryForecastOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -4669,7 +4669,7 @@ export function MapHubPage({
 
                 {/* City Weather Selector Chips (도시별 날씨 전환) */}
                 {selectedCountry.cities && selectedCountry.cities.length > 1 && (
-                  <div className="flex items-center gap-1 pt-1.5 sm:pt-2 overflow-x-auto scrollbar-none text-[9px] sm:text-[9.5px] font-mono select-none">
+                  <div className="flex items-center gap-1 pt-1.5 sm:pt-2 overflow-x-auto scrollbar-none text-micro sm:text-micro font-mono select-none">
                     {selectedCountry.cities.map(c => {
                       const isCurCity = (activeWeatherCity || selectedCountry.cities[0]) === c;
                       return (
@@ -4691,7 +4691,7 @@ export function MapHubPage({
                 )}
 
                 {isCountryWeatherLoading ? (
-                  <div className="py-2.5 sm:py-4 flex items-center justify-center text-[10px] sm:text-xs font-mono text-black/40 dark:text-white/40">
+                  <div className="py-2.5 sm:py-4 flex items-center justify-center text-meta sm:text-xs font-mono text-black/60 dark:text-white/60">
                     LOADING CONDITIONS...
                   </div>
                 ) : countryWeather ? (
@@ -4701,7 +4701,7 @@ export function MapHubPage({
                         <span className="text-2xl sm:text-4xl font-extrabold font-sans tracking-tight text-black dark:text-white leading-none">
                           {countryWeather.temp}°
                         </span>
-                        <span className="text-[10px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase">
+                        <span className="text-meta sm:text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase">
                           {getWeatherMeta(countryWeather.weatherCode, countryWeather.forecast?.[0]?.precipitationProb).label}
                         </span>
                       </div>
@@ -4711,9 +4711,9 @@ export function MapHubPage({
                           const { icon: WeatherIcon, colorClass } = getWeatherMeta(countryWeather.weatherCode, countryWeather.forecast?.[0]?.precipitationProb);
                           return <WeatherIcon className={`w-5 h-5 sm:w-6 sm:h-6 stroke-[2] ${colorClass}`} />;
                         })()}
-                        <div className="text-[9px] sm:text-[10px] font-mono font-bold text-black/50 dark:text-white/50">
+                        <div className="text-micro sm:text-meta font-mono font-bold text-black/60 dark:text-white/60">
                           <div>H:{countryWeather.tempMax}° L:{countryWeather.tempMin}°</div>
-                          <div className="text-[8.5px] sm:text-[9px] text-black/40 dark:text-white/40">{countryWeather.localTime} LOCAL</div>
+                          <div className="text-micro sm:text-micro text-black/60 dark:text-white/60">{countryWeather.localTime} LOCAL</div>
                         </div>
                       </div>
                     </div>
@@ -4734,11 +4734,11 @@ export function MapHubPage({
                                   : 'bg-white/40 dark:bg-black/20'
                               }`}
                             >
-                              <span className={`text-[8px] sm:text-[8.5px] font-mono ${isToday ? 'font-extrabold text-red-600 dark:text-red-400' : 'text-black/50 dark:text-white/50'}`}>
+                              <span className={`text-micro sm:text-micro font-mono ${isToday ? 'font-extrabold text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`}>
                                 {isToday ? 'TODAY' : item.dayOfWeek}
                               </span>
                               <FIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2] ${colorClass}`} />
-                              <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-black/80 dark:text-white/80 leading-none">
+                              <span className="text-micro sm:text-micro font-mono font-bold text-black/80 dark:text-white/80 leading-none">
                                 {item.tempMax}°
                               </span>
                             </div>
@@ -4748,7 +4748,7 @@ export function MapHubPage({
                     )}
                   </>
                 ) : (
-                  <div className="py-2 text-[10px] sm:text-xs font-mono text-black/40 dark:text-white/40 text-center">
+                  <div className="py-2 text-meta sm:text-xs font-mono text-black/60 dark:text-white/60 text-center">
                     WEATHER UNAVAILABLE
                   </div>
                 )}
@@ -4758,14 +4758,14 @@ export function MapHubPage({
             {/* 3. Major Destinations (Clean Pill Buttons, No Star Icon, Toggle Selection) */}
             <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10">
               <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                <div className="text-[9.5px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">
+                <div className="text-micro sm:text-meta font-mono font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60">
                   DESTINATIONS ({selectedCountry.cities.length})
                 </div>
                 {selectedDestCities.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setSelectedDestCities([])}
-                    className="text-[9.5px] sm:text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
+                    className="text-micro sm:text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white underline cursor-pointer"
                   >
                     RESET ({selectedDestCities.length})
                   </button>
@@ -4779,7 +4779,7 @@ export function MapHubPage({
                       key={city}
                       type="button"
                       onClick={() => toggleDestCity(city)}
-                      className={`px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[10.5px] font-mono font-bold uppercase transition-all border cursor-pointer select-none ${
+                      className={`px-2 py-0.5 sm:px-2.5 sm:py-1 text-meta sm:text-meta font-mono font-bold uppercase transition-all border cursor-pointer select-none ${
                         isCitySelected
                           ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
                           : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
@@ -4873,7 +4873,7 @@ export function MapHubPage({
               <button 
                 type="button"
                 onClick={() => setIsWishlistModalOpen(false)}
-                className="p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
+                className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -4887,7 +4887,7 @@ export function MapHubPage({
                 className={`pb-2 px-3 tracking-wider cursor-pointer transition-colors ${
                   wishlistTab === 'countries'
                     ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-extrabold'
-                    : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
               >
                 COUNTRIES ({favoriteCountries.length})
@@ -4898,7 +4898,7 @@ export function MapHubPage({
                 className={`pb-2 px-3 tracking-wider cursor-pointer transition-colors ${
                   wishlistTab === 'cities'
                     ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-extrabold'
-                    : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
               >
                 CITIES ({favoriteCities.length})
@@ -4908,7 +4908,7 @@ export function MapHubPage({
             {/* Modal Body */}
             {wishlistTab === 'countries' ? (
               favoriteCountries.length === 0 ? (
-                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60">
                   즐겨찾기에 등록된 국가가 없습니다. <br />
                   지도에서 국가를 클릭한 후 ★ WISH 버튼을 눌러보세요.
                 </div>
@@ -4930,11 +4930,11 @@ export function MapHubPage({
                             <span className="text-xs font-extrabold uppercase truncate text-black dark:text-white">
                               {country.name}
                             </span>
-                            <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                            <span className="text-meta font-mono text-black/60 dark:text-white/60">
                               ({country.nameKo})
                             </span>
                           </div>
-                          <span className="text-[10px] font-mono text-black/40 dark:text-white/40 truncate block mt-0.5">
+                          <span className="text-meta font-mono text-black/60 dark:text-white/60 truncate block mt-0.5">
                             {country.cities.slice(0, 3).join(', ')}
                           </span>
                         </div>
@@ -4945,7 +4945,7 @@ export function MapHubPage({
                             onClick={() => {
                               handleOpenTripBuilder(country.name, undefined, undefined, country.code);
                             }}
-                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-extrabold uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-meta font-extrabold uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
                           >
                             <Plus className="w-3 h-3" />
                             <span>TRIP</span>
@@ -4953,7 +4953,7 @@ export function MapHubPage({
                           <button
                             type="button"
                             onClick={() => toggleFavoriteCountry(country.code)}
-                            className="p-1 text-black/30 dark:text-white/30 hover:text-red-500 cursor-pointer"
+                            className="p-1 text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer"
                             title="즐겨찾기 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -4966,7 +4966,7 @@ export function MapHubPage({
               )
             ) : (
               favoriteCities.length === 0 ? (
-                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60">
                   즐겨찾기에 등록된 도시가 없습니다. <br />
                   국가 상세 카드에서 원하는 여행 도시의 ★를 눌러 담아보세요.
                 </div>
@@ -4990,7 +4990,7 @@ export function MapHubPage({
                               {city}
                             </span>
                             {matchedCountry && (
-                              <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                              <span className="text-meta font-mono text-black/60 dark:text-white/60">
                                 · {matchedCountry.name} ({matchedCountry.nameKo})
                               </span>
                             )}
@@ -5003,7 +5003,7 @@ export function MapHubPage({
                             onClick={() => {
                               handleOpenTripBuilder(matchedCountry?.name || '', city, undefined, matchedCountry?.code);
                             }}
-                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-extrabold uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-meta font-extrabold uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
                           >
                             <Plus className="w-3 h-3" />
                             <span>TRIP</span>
@@ -5011,7 +5011,7 @@ export function MapHubPage({
                           <button
                             type="button"
                             onClick={() => toggleFavoriteCity(city)}
-                            className="p-1 text-black/30 dark:text-white/30 hover:text-red-500 cursor-pointer"
+                            className="p-1 text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer"
                             title="도시 즐겨찾기 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -5039,14 +5039,14 @@ export function MapHubPage({
           >
             <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
               <div>
-                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-meta font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   TRIP
                 </span>
                 <h3 className="text-xl sm:text-2xl font-extrabold uppercase tracking-tight text-black dark:text-white">
                   {selectedPinGroup.city}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                  <span className="text-xs font-mono text-black/50 dark:text-white/50">
+                  <span className="text-xs font-mono text-black/60 dark:text-white/60">
                     {selectedPinGroup.country} · {selectedPinGroup.journeys.length} JOURNEYS RECORDED
                   </span>
                   {(() => {
@@ -5059,7 +5059,7 @@ export function MapHubPage({
                           setSelectedPinGroup(null);
                           handleSelectCountry(c);
                         }}
-                        className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                        className="text-meta font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                       >
                         [➔ {c.name} 국가 정보 보기]
                       </button>
@@ -5069,7 +5069,7 @@ export function MapHubPage({
               </div>
               <button
                 onClick={() => setSelectedPinGroup(null)}
-                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+                className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -5103,22 +5103,22 @@ export function MapHubPage({
                           {cleanTitle}
                         </h4>
                         {isPlan ? (
-                          <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-[9.5px] font-extrabold uppercase tracking-widest shrink-0">
+                          <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-micro font-extrabold uppercase tracking-widest shrink-0">
                             PLAN
                           </span>
                         ) : (
-                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black font-mono text-[9.5px] font-extrabold uppercase tracking-widest shrink-0">
+                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black font-mono text-micro font-extrabold uppercase tracking-widest shrink-0">
                             LOG
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] font-mono text-black/60 dark:text-white/60 flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3 text-black/40 dark:text-white/40" />
+                      <div className="text-meta font-mono text-black/60 dark:text-white/60 flex items-center gap-1.5">
+                        <Calendar className="w-3 h-3 text-black/60 dark:text-white/60" />
                         <span>{journey.date}</span>
                       </div>
                     </div>
 
-                    <ArrowRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
+                    <ArrowRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
                   </div>
                 );
               })}
@@ -5140,7 +5140,7 @@ export function MapHubPage({
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-black/15 dark:border-white/15">
               <div>
-                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-meta font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   VISITED LOCATIONS DIRECTORY
                 </span>
                 <h3 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
@@ -5150,7 +5150,7 @@ export function MapHubPage({
               <button
                 type="button"
                 onClick={() => setIsPlaceListModalOpen(false)}
-                className="p-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -5159,7 +5159,7 @@ export function MapHubPage({
             {/* Search filter for locations */}
             <div className="pt-3 pb-2">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60" />
                 <input
                   type="text"
                   value={placeSearchQuery}
@@ -5174,7 +5174,7 @@ export function MapHubPage({
             {/* Place list items */}
             <div className="flex-1 overflow-y-auto flex flex-col divide-y divide-black/10 dark:divide-white/10 mt-2 pr-1">
               {filteredPlaceGroups.length === 0 ? (
-                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60">
                   검색된 등록 장소가 없습니다.
                 </div>
               ) : (
@@ -5198,7 +5198,7 @@ export function MapHubPage({
                           {repJourney?.img ? (
                             <img src={getEffectiveImageUrl(repJourney.img)} alt={group.city} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-black/20 dark:text-white/20">
+                            <div className="w-full h-full flex items-center justify-center text-black/60 dark:text-white/60">
                               <MapPin className="w-4 h-4" />
                             </div>
                           )}
@@ -5209,22 +5209,22 @@ export function MapHubPage({
                               {group.city}
                             </span>
                             {group.country && (
-                              <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">
+                              <span className="text-meta font-mono text-black/60 dark:text-white/60 uppercase">
                                 · {group.country}
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] font-mono text-black/50 dark:text-white/50 truncate">
+                          <span className="text-meta font-mono text-black/60 dark:text-white/60 truncate">
                             {repJourney?.title || '기록된 여정'}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-sans font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10">
+                        <span className="text-meta font-sans font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10">
                           {group.journeys.length} Trip
                         </span>
-                        <ArrowRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                        <ArrowRight className="w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
                   );
@@ -5255,7 +5255,7 @@ export function MapHubPage({
         }
         .swiss-pin-badge, .swiss-wishlist-badge {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-          font-size: 8.5px;
+          font-size: 11px;
           font-weight: 800;
           letter-spacing: 0.12em;
           text-transform: uppercase;

@@ -128,7 +128,7 @@ export function LandingGuestView({
       <header className="relative z-20 w-full max-w-[1920px] mx-auto px-6 sm:px-12 md:px-16 pt-8 sm:pt-10 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="w-2 h-2 bg-red-600 rounded-none inline-block shrink-0" />
-          <span className="text-[10px] sm:text-[11px] font-mono font-bold tracking-[0.3em] uppercase text-white/80">
+          <span className="text-meta sm:text-[11px] font-mono font-bold tracking-[0.3em] uppercase text-white/80">
             TRAVEL LOG & VISUAL JOURNAL
           </span>
         </div>
@@ -138,11 +138,11 @@ export function LandingGuestView({
       <div className="relative z-20 w-full max-w-[1920px] mx-auto px-6 sm:px-12 md:px-16 py-8 flex-1 flex flex-col justify-end">
         <div className="flex flex-col gap-3 md:gap-5 pb-6">
           <div className="flex items-center gap-3">
-            <span className="text-[10px] sm:text-xs font-mono font-bold tracking-[0.25em] text-white/60 uppercase">
+            <span className="text-meta sm:text-xs font-mono font-bold tracking-[0.25em] text-white/60 uppercase">
               EDITORIAL ARCHIVE
             </span>
-            <span className="text-white/30 font-mono">/</span>
-            <span className="text-[10px] sm:text-xs font-mono font-bold tracking-[0.2em] text-red-500 uppercase">
+            <span className="text-white/60 font-mono">/</span>
+            <span className="text-meta sm:text-xs font-mono font-bold tracking-[0.2em] text-red-500 uppercase">
               {effectiveMedia[currentIndex]?.title || `FRAME ${String(currentIndex + 1).padStart(2, '0')}`}
             </span>
           </div>
@@ -180,7 +180,7 @@ export function LandingGuestView({
 
       {/* 4. Bottom Editorial Footer & Slide Controls */}
       <footer className="relative z-20 w-full max-w-[1920px] mx-auto px-6 sm:px-12 md:px-16 py-6 border-t border-white/15 flex items-center justify-between text-white/60">
-        <div className="flex items-center gap-4 text-[10px] sm:text-xs font-mono">
+        <div className="flex items-center gap-4 text-meta sm:text-xs font-mono">
           <span>© TRIPGON ARCHIVE</span>
           <span className="opacity-40">/</span>
           <span>ALL RIGHTS RESERVED</span>

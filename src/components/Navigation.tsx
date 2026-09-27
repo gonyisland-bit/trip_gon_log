@@ -162,7 +162,7 @@ export function Navigation({
               className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'home' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               HOME
@@ -172,7 +172,7 @@ export function Navigation({
               className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'archive' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               TRIP
@@ -188,7 +188,7 @@ export function Navigation({
               className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'magazine' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               MAGAZINE
@@ -198,7 +198,7 @@ export function Navigation({
               className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'map' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               MAP
@@ -208,7 +208,7 @@ export function Navigation({
               className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'calendar' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               CALENDAR
@@ -218,7 +218,7 @@ export function Navigation({
               className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'pocket' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               POCKET
@@ -435,13 +435,13 @@ export function Navigation({
                 NIGHT MODE
               </span>
               <span 
-                className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 ml-2.5 select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" 
+                className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-meta font-mono font-medium bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 ml-2.5 select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" 
                 title="키보드 단축키 (순환: AUTO → DAY → NIGHT)"
               >
                 ⌘⇧L
               </span>
             </div>
-            <div className="flex items-center self-start sm:self-auto p-0.5 sm:p-1 bg-black/5 dark:bg-white/10 rounded border border-black/10 dark:border-white/15 font-mono text-[10px] sm:text-xs font-bold tracking-wider shrink-0">
+            <div className="flex items-center self-start sm:self-auto p-0.5 sm:p-1 bg-black/5 dark:bg-white/10 rounded border border-black/10 dark:border-white/15 font-mono text-meta sm:text-xs font-bold tracking-wider shrink-0">
               <button
                 type="button"
                 onClick={() => setNightModeSetting ? setNightModeSetting('auto') : setIsDarkMode(!isDarkMode)}
@@ -504,7 +504,7 @@ export function Navigation({
                     <span className="font-bold text-black dark:text-white uppercase tracking-wider group-hover:text-red-600 transition-colors">
                       {displayName}
                     </span>
-                    <span className="text-[9px] text-black/40 dark:text-white/40 font-mono">
+                    <span className="text-micro text-black/60 dark:text-white/60 font-mono">
                       프로필 수정
                     </span>
                   </div>
@@ -524,7 +524,7 @@ export function Navigation({
                 >
                   LOGIN
                 </button>
-                <span className="text-black/30 dark:text-white/30">/</span>
+                <span className="text-black/60 dark:text-white/60">/</span>
                 <button
                   onClick={() => { setShowSettings(false); openAuthModal('signup'); }}
                   className="font-extrabold uppercase tracking-widest hover:underline cursor-pointer text-black dark:text-white"

@@ -33,7 +33,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
   // Early Return (conditional render)
   if (!trip) {
     return (
-      <div className="flex-grow flex items-center justify-center bg-transparent h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+      <div className="flex-grow flex items-center justify-center bg-transparent h-[80vh] text-xs font-bold uppercase tracking-widest text-black/60 dark:text-white/60">
         Loading Journey Details...
       </div>
     );
@@ -71,9 +71,9 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           <div className="flex items-center gap-1">
             <div className="w-10 h-1 bg-black/25 dark:bg-white/25 group-hover/grab:bg-black/40 rounded-full transition-colors" />
             {mobileSheetSnap === 'expanded' ? (
-              <ChevronDown className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+              <ChevronDown className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
             ) : (
-              <ChevronUp className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+              <ChevronUp className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
             )}
           </div>
         </div>
@@ -94,7 +94,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
               }} 
-              className={`flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-[10px] sm:text-[11px] md:text-xs font-extrabold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none ${
+              className={`flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-meta sm:text-[11px] md:text-xs font-extrabold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none ${
                 activeTab === tab.id 
                   ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                   : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
@@ -268,7 +268,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                       handleQuickJumpToDate('ALL');
                       setTimeout(() => setIsQuickJumpExpanded(false), 500);
                     }}
-                    className={`px-2 py-1 rounded-full text-[10px] sm:text-[10.5px] font-extrabold tracking-wider transition-all cursor-pointer shrink-0 ${
+                    className={`px-2 py-1 rounded-full text-meta sm:text-meta font-extrabold tracking-wider transition-all cursor-pointer shrink-0 ${
                       activeSpyDate === 'ALL'
                         ? 'bg-red-600 text-white shadow-sm scale-105'
                         : 'text-white/70 hover:text-white hover:bg-white/15'
@@ -289,7 +289,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                           handleQuickJumpToDate(d);
                           setTimeout(() => setIsQuickJumpExpanded(false), 500);
                         }}
-                        className={`min-w-[26px] h-6 sm:min-w-[28px] sm:h-7 px-1.5 rounded-full flex items-center justify-center text-[10.5px] font-mono font-extrabold transition-all cursor-pointer shrink-0 ${
+                        className={`min-w-[26px] h-6 sm:min-w-[28px] sm:h-7 px-1.5 rounded-full flex items-center justify-center text-meta font-mono font-extrabold transition-all cursor-pointer shrink-0 ${
                           isActive
                             ? 'bg-red-600 text-white shadow-md scale-105'
                             : 'text-white/70 hover:text-white hover:bg-white/15'

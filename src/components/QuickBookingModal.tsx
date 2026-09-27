@@ -112,7 +112,7 @@ function QuickBookingModalContent({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
             title="닫기 (ESC)"
           >
             <X className="w-4 h-4" />
@@ -128,13 +128,13 @@ function QuickBookingModalContent({
                 <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
                 자동 감지된 여정 파라미터
               </span>
-              <span className="text-[10px]">수정 시 링크 즉시 반영</span>
+              <span className="text-meta">수정 시 링크 즉시 반영</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               {/* Origin Airport */}
               <div>
-                <label className="block text-[10px] font-mono text-black/50 dark:text-white/50 mb-1">
+                <label className="block text-meta font-mono text-black/60 dark:text-white/60 mb-1">
                   출발 공항
                 </label>
                 <input
@@ -148,7 +148,7 @@ function QuickBookingModalContent({
 
               {/* Destination Airport */}
               <div>
-                <label className="block text-[10px] font-mono text-black/50 dark:text-white/50 mb-1">
+                <label className="block text-meta font-mono text-black/60 dark:text-white/60 mb-1">
                   도착 공항/도시
                 </label>
                 <input
@@ -162,7 +162,7 @@ function QuickBookingModalContent({
 
               {/* Destination City Name */}
               <div>
-                <label className="block text-[10px] font-mono text-black/50 dark:text-white/50 mb-1">
+                <label className="block text-meta font-mono text-black/60 dark:text-white/60 mb-1">
                   숙소 검색 도시
                 </label>
                 <input
@@ -179,7 +179,7 @@ function QuickBookingModalContent({
 
               {/* Adults */}
               <div>
-                <label className="block text-[10px] font-mono text-black/50 dark:text-white/50 mb-1">
+                <label className="block text-meta font-mono text-black/60 dark:text-white/60 mb-1">
                   인원 (성인)
                 </label>
                 <div className="flex items-center gap-1">
@@ -191,7 +191,7 @@ function QuickBookingModalContent({
                     onChange={(e) => setAdults(Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-full px-2 py-1.5 font-mono font-bold text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
                   />
-                  <span className="text-[11px] font-mono text-black/40 dark:text-white/40">명</span>
+                  <span className="text-[11px] font-mono text-black/60 dark:text-white/60">명</span>
                 </div>
               </div>
             </div>
@@ -199,7 +199,7 @@ function QuickBookingModalContent({
             {/* Dates row */}
             <div className="grid grid-cols-2 gap-2 pt-1 border-t border-black/5 dark:border-white/5 text-xs w-full min-w-0">
               <div className="min-w-0">
-                <label className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 mb-1 truncate">
+                <label className="flex items-center gap-1 text-meta font-mono text-black/60 dark:text-white/60 mb-1 truncate">
                   <Calendar className="w-3 h-3 shrink-0" /> 가는 날 (체크인)
                 </label>
                 <input
@@ -210,7 +210,7 @@ function QuickBookingModalContent({
                 />
               </div>
               <div className="min-w-0">
-                <label className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 mb-1 truncate">
+                <label className="flex items-center gap-1 text-meta font-mono text-black/60 dark:text-white/60 mb-1 truncate">
                   <Calendar className="w-3 h-3 shrink-0" /> 오는 날 (체크아웃)
                 </label>
                 <input
@@ -230,7 +230,7 @@ function QuickBookingModalContent({
                 <Plane className="w-3.5 h-3.5 text-black dark:text-white" />
                 항공권 실시간 비교 예약 (새 탭)
               </span>
-              <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+              <span className="text-meta font-mono text-black/60 dark:text-white/60">
                 {originAirport} ➔ {destAirport} • 성인 {adults}명
               </span>
             </div>
@@ -247,9 +247,9 @@ function QuickBookingModalContent({
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
                     스카이스캐너
                   </span>
-                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                <span className="text-micro sm:text-meta text-black/60 dark:text-white/60 line-clamp-1">
                   전 세계 최저가 비교
                 </span>
               </a>
@@ -265,9 +265,9 @@ function QuickBookingModalContent({
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
                     네이버 항공권
                   </span>
-                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                <span className="text-micro sm:text-meta text-black/60 dark:text-white/60 line-clamp-1">
                   국내 카드사 할인
                 </span>
               </a>
@@ -283,9 +283,9 @@ function QuickBookingModalContent({
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-rose-600 dark:group-hover:text-rose-400 truncate">
                     구글 플라이트
                   </span>
-                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                <span className="text-micro sm:text-meta text-black/60 dark:text-white/60 line-clamp-1">
                   가격 변동 트렌드
                 </span>
               </a>
@@ -299,7 +299,7 @@ function QuickBookingModalContent({
                 <Building className="w-3.5 h-3.5 text-black dark:text-white" />
                 숙소 실시간 검색 예약 (새 탭)
               </span>
-              <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+              <span className="text-meta font-mono text-black/60 dark:text-white/60">
                 {dest} • {depDate} ~ {retDate}
               </span>
             </div>
@@ -316,9 +316,9 @@ function QuickBookingModalContent({
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
                     아고다
                   </span>
-                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                <span className="text-micro sm:text-meta text-black/60 dark:text-white/60 line-clamp-1">
                   호텔 & 리조트 특가
                 </span>
               </a>
@@ -334,9 +334,9 @@ function QuickBookingModalContent({
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate">
                     부킹닷컴
                   </span>
-                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                <span className="text-micro sm:text-meta text-black/60 dark:text-white/60 line-clamp-1">
                   무료 취소 & 전세계
                 </span>
               </a>
@@ -352,9 +352,9 @@ function QuickBookingModalContent({
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-rose-500 truncate">
                     에어비앤비
                   </span>
-                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                <span className="text-micro sm:text-meta text-black/60 dark:text-white/60 line-clamp-1">
                   현지 감성 독채
                 </span>
               </a>
@@ -363,7 +363,7 @@ function QuickBookingModalContent({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] text-center text-[10px] sm:text-[11px] font-mono text-black/50 dark:text-white/50 shrink-0 truncate">
+        <div className="px-4 py-2.5 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] text-center text-meta sm:text-[11px] font-mono text-black/60 dark:text-white/60 shrink-0 truncate">
           각 버튼 클릭 시 새 탭에서 실시간 예약 검색이 열립니다.
         </div>
       </div>

@@ -669,7 +669,7 @@ export function MagazineHubPage({
             </div>
           </div>
 
-          <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+          <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-micro font-bold px-1.5 py-0.5 uppercase tracking-widest">
             {String(itemIndex + 1).padStart(2, '0')}
           </div>
         </div>
@@ -684,7 +684,7 @@ export function MagazineHubPage({
             </h3>
 
             {dateWithDay && (
-              <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+              <div className="text-[11px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider mt-1">
                 {dateWithDay}
               </div>
             )}
@@ -725,7 +725,7 @@ export function MagazineHubPage({
             {/* Top Barcode & Category Tag */}
             <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
               <div className="flex items-center gap-2.5 sm:gap-3">
-                <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-[10px]">
+                <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta">
                   MAGAZINE DIRECTORY
                 </span>
                 <span className="font-bold text-red-600 dark:text-red-400">
@@ -767,7 +767,7 @@ export function MagazineHubPage({
                     <button 
                       type="button"
                       onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                      className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
+                      className={`text-meta sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
                         magLocationFilter !== 'All'
                           ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                           : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
@@ -810,13 +810,13 @@ export function MagazineHubPage({
                           value={magSearchQuery}
                           onChange={(e) => setMagSearchQuery(e.target.value)}
                           placeholder="매거진 검색..."
-                          className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+                          className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 rounded-none"
                         />
                         {magSearchQuery && (
                           <button
                             type="button"
                             onClick={() => setMagSearchQuery('')}
-                            className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                            className="absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
                             title="검색어 지우기"
                           >
                             <X className="w-3 h-3" />
@@ -829,13 +829,13 @@ export function MagazineHubPage({
                     {(magLocationFilter !== 'All' || magSearchQuery) && (
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {magSearchQuery && (
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                          <span className="text-meta font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
                             "{magSearchQuery}"
                             <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setMagSearchQuery('')} />
                           </span>
                         )}
                         {magLocationFilter !== 'All' && (
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                          <span className="text-meta font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
                             {magLocationFilter}
                             <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setMagLocationFilter('All')} />
                           </span>
@@ -846,7 +846,7 @@ export function MagazineHubPage({
                             setMagLocationFilter('All');
                             setMagSearchQuery('');
                           }}
-                          className="text-[9px] px-1.5 py-0.5 uppercase font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                          className="text-micro px-1.5 py-0.5 uppercase font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                         >
                           RESET
                         </button>
@@ -859,14 +859,14 @@ export function MagazineHubPage({
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
                       <div className="absolute left-0 mt-1.5 w-64 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 shadow-2xl z-20 rounded-none p-3 flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-1 duration-150 text-black dark:text-white">
-                        <span className="text-[9px] font-mono font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50">
+                        <span className="text-micro font-mono font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                           LOCATION (지역)
                         </span>
                         <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
                           <button
                             type="button"
                             onClick={() => { setMagLocationFilter('All'); setIsTagDropdownOpen(false); }}
-                            className={`text-[10px] px-2 py-0.5 uppercase font-mono font-bold border transition-colors cursor-pointer ${
+                            className={`text-meta px-2 py-0.5 uppercase font-mono font-bold border transition-colors cursor-pointer ${
                               magLocationFilter === 'All' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
                             }`}
                           >
@@ -879,7 +879,7 @@ export function MagazineHubPage({
                                 key={loc}
                                 type="button"
                                 onClick={() => { setMagLocationFilter(loc === magLocationFilter ? 'All' : loc); setIsTagDropdownOpen(false); }}
-                                className={`text-[10px] px-2 py-0.5 uppercase font-mono font-bold border transition-colors cursor-pointer ${
+                                className={`text-meta px-2 py-0.5 uppercase font-mono font-bold border transition-colors cursor-pointer ${
                                   magLocationFilter === loc ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
                                 }`}
                               >
@@ -899,7 +899,7 @@ export function MagazineHubPage({
                   <select
                     value={magSortBy}
                     onChange={(e) => setMagSortBy(e.target.value as any)}
-                    className="bg-transparent text-[10px] sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
+                    className="bg-transparent text-meta sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
                   >
                     <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
                     <option value="newest" className="bg-[#F9F8F6] dark:bg-[#111111]">NEWEST</option>
@@ -914,8 +914,8 @@ export function MagazineHubPage({
           <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10">
             {filteredSections.length === 0 ? (
               <div className="py-20 text-center border border-dashed border-black/15 dark:border-white/15 flex flex-col items-center justify-center gap-2">
-                <BookOpen className="w-8 h-8 text-black/20 dark:text-white/20 mb-1" />
-                <p className="text-sm font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                <BookOpen className="w-8 h-8 text-black/60 dark:text-white/60 mb-1" />
+                <p className="text-sm font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                   검색 조건과 일치하는 매거진 이슈가 없습니다.
                 </p>
                 <button
@@ -956,21 +956,21 @@ export function MagazineHubPage({
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                         />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-white/40 p-4 text-center">
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-white/60 p-4 text-center">
                           <Compass className="w-8 h-8 mb-2 stroke-1 opacity-50" />
-                          <span className="font-mono text-[10px] uppercase tracking-wider">NO COVER IMAGE</span>
+                          <span className="font-mono text-meta uppercase tracking-wider">NO COVER IMAGE</span>
                         </div>
                       )}
 
                       {/* Top Left Tag Chip (Best Seller / Issue Chip Style) */}
-                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 dark:bg-black/85 backdrop-blur-md text-black dark:text-white text-[9px] sm:text-[9.5px] font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/15 rounded-full flex items-center gap-1.5 shadow-xs">
+                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 dark:bg-black/85 backdrop-blur-md text-black dark:text-white text-micro sm:text-micro font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/15 rounded-full flex items-center gap-1.5 shadow-xs">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
                         <span>NO. {formattedNumber} ISSUE</span>
                       </div>
 
                       {/* Top Right Circular Badge (Nike Circular Emblem Style) */}
                       <div 
-                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-[10px] font-mono font-extrabold text-black dark:text-white shadow-xs"
+                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-meta font-mono font-extrabold text-black dark:text-white shadow-xs"
                         title={`${itemCount} Stories`}
                       >
                         <span>{itemCount}</span>
@@ -981,10 +981,10 @@ export function MagazineHubPage({
                     <div className="p-3.5 sm:p-4 flex-grow flex flex-col justify-between">
                       <div>
                         {/* Region & Stories Meta Tag */}
-                        <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5 truncate">
+                        <div className="flex items-center gap-1.5 text-micro sm:text-meta font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5 truncate">
                           <span>{locationLabel}</span>
-                          <span className="text-black/20 dark:text-white/20">·</span>
-                          <span className="text-black/55 dark:text-white/55 font-semibold">{itemCount} {itemCount === 1 ? 'STORY' : 'STORIES'}</span>
+                          <span className="text-black/60 dark:text-white/60">·</span>
+                          <span className="text-black/60 dark:text-white/60 font-semibold">{itemCount} {itemCount === 1 ? 'STORY' : 'STORIES'}</span>
                         </div>
 
                         {/* Main Headline Title */}
@@ -1002,7 +1002,7 @@ export function MagazineHubPage({
 
                       {/* 3. Bottom Action Bar (Date + Pill Button) */}
                       <div className="pt-3 mt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
-                        <span className="text-[10px] font-mono font-semibold text-black/45 dark:text-white/45">
+                        <span className="text-meta font-mono font-semibold text-black/60 dark:text-white/60">
                           {sec.heroDate || 'VOL. 2026'}
                         </span>
                         <div 
@@ -1170,21 +1170,21 @@ export function MagazineHubPage({
                                           loading="lazy"
                                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
                                         />
-                                        <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+                                        <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-micro font-bold px-1.5 py-0.5 uppercase tracking-widest">
                                           {String(pIdx + 1).padStart(2, '0')}
                                         </div>
                                       </div>
 
                                       <div className="pt-2.5 flex-1 flex flex-col justify-between text-black dark:text-white">
                                         <div>
-                                          <div className="text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-red-600 dark:text-red-400 truncate">
+                                          <div className="text-meta font-mono font-bold uppercase tracking-[0.15em] text-red-600 dark:text-red-400 truncate">
                                             {displayPlace}
                                           </div>
                                           <h3 className="text-sm sm:text-base font-bold uppercase tracking-tight text-black dark:text-white line-clamp-1 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors mt-0.5 font-['Noto_Sans_KR',sans-serif]">
                                             {displayTitle}
                                           </h3>
                                         </div>
-                                        <div className="pt-2 mt-auto flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-black/50 dark:text-white/50 border-t border-black/10 dark:border-white/10 tracking-wider">
+                                        <div className="pt-2 mt-auto flex items-center justify-between text-meta sm:text-[11px] font-mono text-black/60 dark:text-white/60 border-t border-black/10 dark:border-white/10 tracking-wider">
                                           <span>{dateWithDay}</span>
                                           <span className="font-bold text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                                             <span>VIEW</span>
@@ -1197,7 +1197,7 @@ export function MagazineHubPage({
                                 })}
                               </div>
                             ) : (
-                              <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-6">
+                              <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/20 dark:border-white/20 p-6">
                                 NO PREVIEW MOMENTS AVAILABLE IN THIS ISSUE
                               </div>
                             )}
@@ -1302,14 +1302,14 @@ export function MagazineHubPage({
               {/* Hero Top Bar */}
               <div className="absolute top-4 sm:top-6 left-4 sm:left-10 right-4 sm:right-10 z-20 flex items-center justify-between text-white/90 border-b border-white/20 pb-2.5">
                 <div className="flex items-center gap-2.5 sm:gap-3">
-                  <span className="text-[9px] sm:text-[10px] font-mono font-extrabold tracking-widest uppercase bg-white text-black px-2 py-0.5 shadow-sm">
+                  <span className="text-micro sm:text-meta font-mono font-extrabold tracking-widest uppercase bg-white text-black px-2 py-0.5 shadow-sm">
                     ISSUE N°{String(effectiveSections.findIndex(s => s.id === currentSection.id) + 1).padStart(2, '0')}
                   </span>
-                  <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest uppercase text-white/90">
+                  <span className="text-meta sm:text-xs font-mono font-bold tracking-widest uppercase text-white/90">
                     TRIPGON MAGAZINE
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] font-mono tracking-widest uppercase text-white/70">
+                <div className="flex items-center gap-3 text-meta font-mono tracking-widest uppercase text-white/70">
                   <span className="hidden md:inline">VOL. {new Date().getFullYear()} · EDITORIAL EDITION</span>
                   <span className="hidden sm:inline bg-white/15 px-2 py-0.5 border border-white/20">
                     {currentSection.items?.length || 0} STORIES
@@ -1320,7 +1320,7 @@ export function MagazineHubPage({
               {/* Hero Content */}
               <div className="absolute bottom-6 sm:bottom-10 left-4 sm:left-10 right-4 sm:right-10 z-20 flex flex-col md:flex-row md:items-end justify-between gap-6 text-white">
                 <div className="max-w-3xl flex flex-col gap-2 sm:gap-3">
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-mono tracking-widest uppercase text-white/80">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-meta sm:text-xs font-mono tracking-widest uppercase text-white/80">
                     {currentSection.heroDate && (
                       <span className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5" />
@@ -1365,7 +1365,7 @@ export function MagazineHubPage({
                       <div key={i} className="bg-white/80 h-full" style={{ width: `${w}px` }} />
                     ))}
                   </div>
-                  <span className="text-[8px] font-mono tracking-widest text-white/70">
+                  <span className="text-micro font-mono tracking-widest text-white/70">
                     ISSN 2026-TRIPGON · #{String(currentSection.id).slice(-6).toUpperCase()}
                   </span>
                 </div>
@@ -1384,7 +1384,7 @@ export function MagazineHubPage({
                   className={`p-1.5 rounded transition-all shrink-0 cursor-pointer ${
                     canScrollLeft
                       ? 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white opacity-90'
-                      : 'text-black/20 dark:text-white/20 opacity-20 pointer-events-none'
+                      : 'text-black/60 dark:text-white/60 opacity-20 pointer-events-none'
                   }`}
                   title="이전 탭 보기"
                   aria-label="Scroll tabs left"
@@ -1409,7 +1409,7 @@ export function MagazineHubPage({
                             : 'bg-transparent border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                         }`}
                       >
-                        <span className="font-mono text-[9px] opacity-60 mr-1">{String(idx + 1).padStart(2, '0')}.</span>
+                        <span className="font-mono text-micro opacity-60 mr-1">{String(idx + 1).padStart(2, '0')}.</span>
                         {sec.title}
                       </button>
                     );
@@ -1423,7 +1423,7 @@ export function MagazineHubPage({
                   className={`p-1.5 rounded transition-all shrink-0 cursor-pointer ${
                     canScrollRight
                       ? 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white opacity-90'
-                      : 'text-black/20 dark:text-white/20 opacity-20 pointer-events-none'
+                      : 'text-black/60 dark:text-white/60 opacity-20 pointer-events-none'
                   }`}
                   title="다음 탭 보기"
                   aria-label="Scroll tabs right"
@@ -1444,7 +1444,7 @@ export function MagazineHubPage({
               >
                 <BookOpen className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
                 <span>ALL</span>
-                <span className="text-[10px] opacity-75 font-mono">({effectiveSections.length})</span>
+                <span className="text-meta opacity-75 font-mono">({effectiveSections.length})</span>
                 <div className={`p-0.5 rounded transition-transform duration-300 ${isAccordionOpen ? 'rotate-180 bg-white/20' : 'bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400'}`}>
                   <ChevronDown className="w-3.5 h-3.5 stroke-[2.5]" />
                 </div>
@@ -1456,17 +1456,17 @@ export function MagazineHubPage({
               <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
+                    <span className="text-meta font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
                       MAGAZINE RACK & ARCHIVE
                     </span>
-                    <span className="text-[10px] text-black/40 dark:text-white/40 hidden sm:inline">
+                    <span className="text-meta text-black/60 dark:text-white/60 hidden sm:inline">
                       — 커버를 선택하여 원하는 매거진 이슈를 바로 탐색하세요
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsAccordionOpen(false)}
-                    className="inline-flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
+                    className="inline-flex items-center gap-1 text-meta font-mono font-bold uppercase text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
                   >
                     <span>닫기</span>
                     <X className="w-3 h-3" />
@@ -1500,7 +1500,7 @@ export function MagazineHubPage({
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-white/40 font-mono text-[10px]">
+                            <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-white/60 font-mono text-meta">
                               NO COVER
                             </div>
                           )}
@@ -1508,11 +1508,11 @@ export function MagazineHubPage({
 
                           <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-col gap-1.5 z-10 text-white">
                             <div className="flex items-center justify-between">
-                              <div className="bg-black/85 backdrop-blur-xs text-white font-mono text-[9px] font-extrabold px-1.5 py-0.5 border border-white/20 uppercase tracking-widest shadow-xs">
+                              <div className="bg-black/85 backdrop-blur-xs text-white font-mono text-micro font-extrabold px-1.5 py-0.5 border border-white/20 uppercase tracking-widest shadow-xs">
                                 ISSUE #{String(idx + 1).padStart(2, '0')}
                               </div>
                               {isActive && (
-                                <div className="bg-red-600 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-sm">
+                                <div className="bg-red-600 text-white font-mono text-micro font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-sm">
                                   READING
                                 </div>
                               )}
@@ -1525,20 +1525,20 @@ export function MagazineHubPage({
 
                           <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white z-10 flex flex-col gap-0.5">
                             {showSeparateSectionTitle && (
-                              <div className="text-[10px] sm:text-[11px] font-satoshi font-bold tracking-wider uppercase text-white/90 drop-shadow-md truncate">
+                              <div className="text-meta sm:text-[11px] font-satoshi font-bold tracking-wider uppercase text-white/90 drop-shadow-md truncate">
                                 {sec.title}
                               </div>
                             )}
-                            <div className="text-[9px] sm:text-[10px] font-mono font-bold text-white/80 truncate tracking-wider uppercase drop-shadow-xs flex items-center gap-1 mt-0.5">
+                            <div className="text-micro sm:text-meta font-mono font-bold text-white/80 truncate tracking-wider uppercase drop-shadow-xs flex items-center gap-1 mt-0.5">
                               <MapPin className="w-2.5 h-2.5 text-red-400 shrink-0" />
                               <span className="truncate">{sec.heroLocation || `${sec.items?.length || 0} STORIES`}</span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="p-2.5 flex items-center justify-between text-[10px] font-mono font-bold text-black/70 dark:text-white/70 bg-[#FAF9F6] dark:bg-[#141414] border-t border-black/5 dark:border-white/5">
+                        <div className="p-2.5 flex items-center justify-between text-meta font-mono font-bold text-black/70 dark:text-white/70 bg-[#FAF9F6] dark:bg-[#141414] border-t border-black/5 dark:border-white/5">
                           <span className="truncate font-sans font-semibold uppercase">{sec.title}</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-black/40 dark:text-white/40 group-hover:translate-x-0.5 group-hover:text-red-600 dark:group-hover:text-red-400 transition-all shrink-0" />
+                          <ArrowRight className="w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:translate-x-0.5 group-hover:text-red-600 dark:group-hover:text-red-400 transition-all shrink-0" />
                         </div>
                       </div>
                     );
@@ -1560,19 +1560,19 @@ export function MagazineHubPage({
                 </h2>
               </div>
 
-              <div className="text-xs font-mono text-black/40 dark:text-white/40 shrink-0">
+              <div className="text-xs font-mono text-black/60 dark:text-white/60 shrink-0">
                 TOTAL {sectionItems.length} STORIES / MOMENTS
               </div>
             </div>
 
             {sectionItems.length === 0 ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-4 border border-dashed border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02] p-8">
-                <Compass className="w-8 h-8 text-black/30 dark:text-white/30 stroke-1" />
+                <Compass className="w-8 h-8 text-black/60 dark:text-white/60 stroke-1" />
                 <div className="flex flex-col gap-1 max-w-md">
                   <span className="text-sm font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
                     NO MAGAZINE MOMENTS YET
                   </span>
-                  <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed">
+                  <p className="text-xs text-black/60 dark:text-white/60 leading-relaxed">
                     이 섹션에 등록된 매거진 사진이나 텍스트 카드가 아직 없습니다. 설정에서 카드를 추가해보세요.
                   </p>
                 </div>

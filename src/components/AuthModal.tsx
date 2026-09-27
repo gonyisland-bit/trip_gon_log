@@ -359,7 +359,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-5 right-5 p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+          className="absolute top-5 right-5 p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -370,7 +370,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
             <div className="w-12 h-12 rounded-full border border-black/20 dark:border-white/20 flex items-center justify-center mb-4 text-black dark:text-white">
               <CheckCircle2 className="w-6 h-6 stroke-[1.8]" />
             </div>
-            <span className="text-[10px] font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
+            <span className="text-meta font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
               APPLICATION SUBMITTED
             </span>
             <h3 className="text-xl sm:text-2xl font-inter font-extrabold uppercase tracking-tight text-black dark:text-white mb-3">
@@ -385,10 +385,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
             {submittedUser && (
               <div className="w-full flex flex-col gap-2 mb-5 p-3 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] text-left">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                  <span className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                     DIRECT ADMIN NOTIFICATION
                   </span>
-                  <span className="text-[9px] font-mono text-red-600 dark:text-red-400 font-bold">
+                  <span className="text-micro font-mono text-red-600 dark:text-red-400 font-bold">
                     {adminEmail || 'gonyisland@naver.com'}
                   </span>
                 </div>
@@ -446,13 +446,13 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           <>
             {/* Header - Swiss Minimal with Inter font */}
             <div className="border-b border-black/15 dark:border-white/15 pb-4 mb-5">
-              <span className="text-[10px] font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
+              <span className="text-meta font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
                 {isSignUp ? 'USER REGISTRATION' : 'AUTHENTICATION'}
               </span>
               <h2 className="text-2xl sm:text-3xl font-inter font-extrabold uppercase tracking-tight text-black dark:text-white">
                 {isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
               </h2>
-              <p className="text-xs font-mono text-black/50 dark:text-white/50 mt-1">
+              <p className="text-xs font-mono text-black/60 dark:text-white/60 mt-1">
                 {isSignUp 
                   ? '필수 정보를 입력하여 새로운 유저 계정 가입을 신청하세요.' 
                   : '여정 편집 및 관리를 위해 등록된 계정으로 로그인하세요.'}
@@ -491,7 +491,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                         }`}
                       />
                       {lastNameError && (
-                        <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                        <p className="text-meta font-mono text-red-600 dark:text-red-400 mt-1">
                           {lastNameError}
                         </p>
                       )}
@@ -514,7 +514,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                         }`}
                       />
                       {firstNameError && (
-                        <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                        <p className="text-meta font-mono text-red-600 dark:text-red-400 mt-1">
                           {firstNameError}
                         </p>
                       )}
@@ -568,11 +568,11 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       }`}
                     />
                     {usernameError ? (
-                      <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                      <p className="text-meta font-mono text-red-600 dark:text-red-400 mt-1">
                         {usernameError}
                       </p>
                     ) : (
-                      <p className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-1">
+                      <p className="text-micro font-mono text-black/60 dark:text-white/60 mt-1">
                         영문 소문자, 숫자, 밑줄(_) 조합 (3~20자)
                       </p>
                     )}
@@ -600,7 +600,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                             }`}
                           >
                             <IconComp className="w-4 h-4 stroke-[2.2]" />
-                            <span className="text-[7.5px] font-mono mt-0.5">{item.label}</span>
+                            <span className="text-micro font-mono mt-0.5">{item.label}</span>
                           </button>
                         );
                       })}
@@ -626,7 +626,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       }`}
                     />
                     {emailError && (
-                      <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                      <p className="text-meta font-mono text-red-600 dark:text-red-400 mt-1">
                         {emailError}
                       </p>
                     )}
@@ -647,7 +647,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       hasError={Boolean(passwordError)}
                     />
                     {passwordError && (
-                      <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                      <p className="text-meta font-mono text-red-600 dark:text-red-400 mt-1">
                         {passwordError}
                       </p>
                     )}
@@ -668,7 +668,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       hasError={Boolean(passwordConfirmError)}
                     />
                     {passwordConfirmError && (
-                      <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                      <p className="text-meta font-mono text-red-600 dark:text-red-400 mt-1">
                         {passwordConfirmError}
                       </p>
                     )}
@@ -732,7 +732,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
 
                   {/* Switch to Sign Up */}
                   <div className="pt-4 border-t border-black/15 dark:border-white/15 flex flex-col items-center gap-1.5 text-center">
-                    <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+                    <span className="text-[11px] font-mono text-black/60 dark:text-white/60">
                       계정이 아직 없으신가요?
                     </span>
                     <button

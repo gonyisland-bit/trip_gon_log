@@ -127,11 +127,11 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
         <div className="absolute right-[20%] top-1/2 -translate-y-1/2 flex flex-col gap-12 w-[75vw] pointer-events-none animate-contrail-continuous">
           <div className="h-[1.5px] w-full" style={{ background: `linear-gradient(to left, transparent, ${contrailColor})` }} />
           <div className="flex items-center gap-2.5 justify-end pr-12">
-            <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-[0.25em] uppercase" style={{ color: fuselageFill }}>
+            <span className="font-mono text-micro sm:text-meta font-bold tracking-[0.25em] uppercase" style={{ color: fuselageFill }}>
               TRIPGON AIRWAYS · FLIGHT LOG
             </span>
             {destinationTitle && (
-              <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase opacity-85" style={{ color: fuselageFill }}>
+              <span className="font-mono text-micro sm:text-meta font-bold tracking-wider uppercase opacity-85" style={{ color: fuselageFill }}>
                 → {destinationTitle}
               </span>
             )}

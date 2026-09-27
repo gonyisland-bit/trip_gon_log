@@ -221,17 +221,17 @@ export function SearchModal({
   const getBadge = (type: string) => {
     switch (type) {
       case 'trip':
-        return <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Journey</span>;
+        return <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Journey</span>;
       case 'plan':
-        return <span className="bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Plan</span>;
+        return <span className="bg-teal-500/10 text-teal-600 dark:text-teal-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Plan</span>;
       case 'timeline':
-        return <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Log</span>;
+        return <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Log</span>;
       case 'flight':
-        return <span className="bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Flight</span>;
+        return <span className="bg-sky-500/10 text-sky-600 dark:text-sky-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Flight</span>;
       case 'stay':
-        return <span className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Hotel</span>;
+        return <span className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Hotel</span>;
       case 'transit':
-        return <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Transit</span>;
+        return <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Transit</span>;
       default:
         return null;
     }
@@ -273,7 +273,7 @@ export function SearchModal({
             className={`py-2 px-3 text-[11px] font-extrabold uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
               searchCategory === 'journeys'
                 ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
             }`}
           >
             <Compass className="w-3.5 h-3.5" />
@@ -285,7 +285,7 @@ export function SearchModal({
             className={`py-2 px-3 text-[11px] font-extrabold uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
               searchCategory === 'timeline'
                 ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -296,11 +296,11 @@ export function SearchModal({
         {/* Search Results List */}
         <div className="flex-grow overflow-y-auto divide-y divide-black/5 dark:divide-white/5 p-2 max-h-[500px]">
           {query.trim() === '' ? (
-            <div className="text-center py-12 text-black/45 dark:text-white/45 text-xs md:text-sm font-bold tracking-widest uppercase">
+            <div className="text-center py-12 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
               Type keywords to start search...
             </div>
           ) : results.length === 0 ? (
-            <div className="text-center py-12 text-black/45 dark:text-white/45 text-xs md:text-sm font-bold tracking-widest uppercase">
+            <div className="text-center py-12 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
               No results found for "{query}"
             </div>
           ) : (
@@ -324,12 +324,12 @@ export function SearchModal({
                     {getBadge(res.type)}
                   </div>
                   {res.subtitle && (
-                    <p className="text-xs text-black/50 dark:text-white/50 truncate mt-0.5">
+                    <p className="text-xs text-black/60 dark:text-white/60 truncate mt-0.5">
                       {res.subtitle}
                     </p>
                   )}
                   {res.type !== 'trip' && res.type !== 'plan' && (
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-black/35 dark:text-white/35 mt-1 block">
+                    <span className="text-micro font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mt-1 block">
                       Journey: {res.tripTitle}
                     </span>
                   )}

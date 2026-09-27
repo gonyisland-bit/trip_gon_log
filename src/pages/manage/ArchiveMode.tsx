@@ -36,7 +36,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
 
         {/* Top Bar with Header */}
         <div className="w-full px-4 sm:px-8 pt-6 pb-4 border-b border-black/15 dark:border-white/15 shrink-0">
-          <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+          <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
             JOURNEY LOGS & PLANNER MANAGEMENT
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
@@ -60,12 +60,12 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
                   여정 허브 메인 헤더 & 소개글 설정 (JOURNEY ARCHIVE MAIN HEADER)
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+                <span className="text-meta font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
                   HUB CONFIG
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-black/50 dark:text-white/50 font-['Noto_Sans_KR',sans-serif]">
+                <span className="text-[11px] font-mono text-black/60 dark:text-white/60 font-['Noto_Sans_KR',sans-serif]">
                   {isArchiveHubHeaderOpen ? '접기 ▲' : '펼치기 ▼'}
                 </span>
               </div>
@@ -133,7 +133,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
 
                 {/* Save Button for Hub Header */}
                 <div className="flex items-center justify-between pt-2 border-t border-black/10 dark:border-white/10">
-                  <span className="text-[11px] font-mono text-black/50 dark:text-white/50 font-['Noto_Sans_KR',sans-serif]">
+                  <span className="text-[11px] font-mono text-black/60 dark:text-white/60 font-['Noto_Sans_KR',sans-serif]">
                     * 수정 후 [SAVE TRIP HUB HEADER]를 누르면 여정 허브 메인에 즉시 반영됩니다.
                   </span>
                   <button
@@ -191,7 +191,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
               {/* Top Bar for Selected Journey with Direct View Link */}
               <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-4">
                 <div className="min-w-0 pr-2">
-                  <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                  <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                     EDITING ID #{selectedJourney.id}
                   </span>
                   <h2 className="text-xl sm:text-2xl font-extrabold uppercase tracking-tight text-black dark:text-white truncate">
@@ -230,7 +230,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Row 1: Title (여정 제목 - 전체 폭) */}
                 <div className="sm:col-span-2 flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
+                  <label className="text-meta font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                     Title (여정 제목)
                   </label>
                   <input
@@ -244,11 +244,11 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                 {/* Row 2 - Left: Date Range with Calendar Pickers */}
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-black/50 dark:text-white/50" />
+                    <label className="text-meta font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-black/60 dark:text-white/60" />
                       <span>Date Range (일정 기간 - 달력)</span>
                     </label>
-                    <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                    <span className="text-micro font-mono text-black/60 dark:text-white/60">
                       {editDate || '날짜 미지정'}
                     </span>
                   </div>
@@ -260,7 +260,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       className="w-full text-[11px] font-mono font-bold bg-transparent outline-none cursor-pointer text-black dark:text-white border-0 p-0"
                       title="시작 날짜 선택"
                     />
-                    <span className="text-black/30 dark:text-white/30 font-mono text-xs select-none">~</span>
+                    <span className="text-black/60 dark:text-white/60 font-mono text-xs select-none">~</span>
                     <input
                       type="date"
                       value={parsedDateInputs.end}
@@ -274,10 +274,10 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                 {/* Row 2 - Right: Status Badge (NEW, EDITING, PLAN 3-toggle) */}
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
+                    <label className="text-meta font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                       Status Badge (상태 뱃지)
                     </label>
-                    <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                    <span className="text-micro font-mono text-black/60 dark:text-white/60">
                       {editStatusBadge ? '클릭 시 해제(일반)' : '미지정 (일반)'}
                     </span>
                   </div>
@@ -322,10 +322,10 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                               }
                             }
                           }}
-                          className={`h-full text-[10px] sm:text-xs font-extrabold uppercase tracking-wider transition-all border flex items-center justify-center cursor-pointer ${
+                          className={`h-full text-meta sm:text-xs font-extrabold uppercase tracking-wider transition-all border flex items-center justify-center cursor-pointer ${
                             isActive
                               ? `${opt.activeBg} shadow-xs font-extrabold`
-                              : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white hover:border-black/40 dark:hover:border-white/40'
+                              : 'bg-transparent text-black/60 dark:text-white/60 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white hover:border-black/40 dark:hover:border-white/40'
                           }`}
                         >
                           {opt.label}
@@ -337,8 +337,8 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
 
                 {/* Row 3 - Left: Country (국가명 자동검색) */}
                 <div ref={countryDropdownRef} className="relative flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
-                    <Globe className="w-3 h-3 text-black/50 dark:text-white/50" />
+                  <label className="text-meta font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-black/60 dark:text-white/60" />
                     <span>Country (국가명 - 자동검색)</span>
                   </label>
                   <input
@@ -367,7 +367,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                           className="w-full px-3 py-2 text-left hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-between text-xs font-bold border-b border-black/5 dark:border-white/5 last:border-b-0 cursor-pointer"
                         >
                           <span className="text-black dark:text-white font-sans">{c.nameKo} ({c.nameEn})</span>
-                          <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40">{c.code}</span>
+                          <span className="text-micro font-mono font-bold text-black/60 dark:text-white/60">{c.code}</span>
                         </button>
                       ))}
                     </div>
@@ -376,8 +376,8 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
 
                 {/* Row 3 - Right: Location / Cities (Google Places 자동검색) */}
                 <div className="relative flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-black/50 dark:text-white/50" />
+                  <label className="text-meta font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-black/60 dark:text-white/60" />
                     <span>Location / Cities (장소 / 도시 - 자동검색)</span>
                   </label>
                   <PlaceAutocompleteInput
@@ -396,7 +396,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
 
                 {/* Tags */}
                 <div className="sm:col-span-2 flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
+                  <label className="text-meta font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                     Tags (태그 관리)
                   </label>
                   <div className="flex items-center gap-2">
@@ -441,7 +441,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       className={`flex-1 py-1.5 text-xs font-extrabold uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
                         archiveMediaTab === 'main'
                           ? 'border-black dark:border-white text-black dark:text-white'
-                          : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                          : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                       }`}
                     >
                       <span>MAIN</span>
@@ -455,7 +455,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       className={`flex-1 py-1.5 text-xs font-extrabold uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
                         archiveMediaTab === 'hero'
                           ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400'
-                          : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                          : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                       }`}
                     >
                       <span>HERO</span>
@@ -468,11 +468,11 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                   {archiveMediaTab === 'main' ? (
                     <div className="flex flex-col gap-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
+                        <label className="text-meta font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                           MAIN MEDIA (이미지 또는 비디오)
                         </label>
                         {isUploading && (
-                          <span className="text-[9.5px] font-mono font-bold text-red-600 flex items-center gap-1">
+                          <span className="text-micro font-mono font-bold text-red-600 flex items-center gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" /> 업로드 중...
                           </span>
                         )}
@@ -497,7 +497,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                           placeholder="이미지 또는 영상 URL 입력 / 파일 드롭"
                           className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none flex-1"
                         />
-                        <label className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 cursor-pointer shrink-0">
+                        <label className="px-3 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 cursor-pointer shrink-0">
                           <Upload className="w-3 h-3" />
                           <span>UPLOAD</span>
                           <input
@@ -537,7 +537,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                               alert('클립보드 복사 실패');
                             }
                           }}
-                          className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                           title="현재 MAIN 미디어 URL 복사"
                         >
                           <Copy className="w-3 h-3" />
@@ -588,7 +588,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                               alert('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
                             }
                           }}
-                          className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                           title="클립보드 미디어 붙여넣기"
                         >
                           <ClipboardPaste className="w-3 h-3" />
@@ -608,7 +608,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                             }
                             alert('MAIN 미디어가 HERO로 복사되었습니다.');
                           }}
-                          className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                           title="MAIN 미디어를 HERO로 복사"
                         >
                           <span>TO HERO</span>
@@ -665,7 +665,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                 setEditVideoUrl('');
                                 setEditImg('');
                               }}
-                              className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                              className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-micro font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                             >
                               Delete Video
                             </button>
@@ -679,13 +679,13 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                 setEditImg('');
                                 setEditVideoUrl('');
                               }}
-                              className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                              className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-micro font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                             >
                               Delete Image
                             </button>
                           </div>
                         ) : (
-                          <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-wider text-center flex flex-col items-center justify-center p-4">
+                          <div className="text-black/60 dark:text-white/60 text-meta font-bold uppercase tracking-wider text-center flex flex-col items-center justify-center p-4">
                             {isUploading ? (
                               <div className="flex flex-col items-center gap-2">
                                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -700,15 +700,15 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      <p className="text-[10px] text-black/60 dark:text-white/60 font-medium leading-relaxed bg-black/[0.03] dark:bg-white/[0.03] p-2 border border-black/10 dark:border-white/10">
+                      <p className="text-meta text-black/60 dark:text-white/60 font-medium leading-relaxed bg-black/[0.03] dark:bg-white/[0.03] p-2 border border-black/10 dark:border-white/10">
                         홈 상단 히어로 슬라이더에 우선 노출할 미디어입니다. (미등록 시 MAIN 미디어 사용)
                       </p>
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
+                        <label className="text-meta font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                           HERO MEDIA (이미지 또는 비디오)
                         </label>
                         {isUploading && (
-                          <span className="text-[9.5px] font-mono font-bold text-red-600 flex items-center gap-1">
+                          <span className="text-micro font-mono font-bold text-red-600 flex items-center gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" /> 업로드 중...
                           </span>
                         )}
@@ -733,7 +733,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                           placeholder="히어로 이미지 또는 영상 URL 입력 / 파일 드롭"
                           className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none flex-1"
                         />
-                        <label className="px-3 bg-red-600 hover:bg-red-700 text-white text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1.5 cursor-pointer shrink-0">
+                        <label className="px-3 bg-red-600 hover:bg-red-700 text-white text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1.5 cursor-pointer shrink-0">
                           <Upload className="w-3 h-3" />
                           <span>UPLOAD</span>
                           <input
@@ -777,7 +777,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                               alert('클립보드 복사 실패');
                             }
                           }}
-                          className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                           title="현재 HERO 미디어 URL 복사"
                         >
                           <Copy className="w-3 h-3" />
@@ -828,7 +828,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                               alert('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
                             }
                           }}
-                          className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                           title="클립보드 미디어 붙여넣기"
                         >
                           <ClipboardPaste className="w-3 h-3" />
@@ -848,7 +848,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                             }
                             alert('HERO 미디어가 MAIN으로 복사되었습니다.');
                           }}
-                          className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                           title="HERO 미디어를 MAIN으로 복사"
                         >
                           <span>TO MAIN</span>
@@ -909,7 +909,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                 setEditHeroVideoUrl('');
                                 setEditHeroImg('');
                               }}
-                              className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                              className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-micro font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                             >
                               Delete Video
                             </button>
@@ -923,13 +923,13 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                 setEditHeroImg('');
                                 setEditHeroVideoUrl('');
                               }}
-                              className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                              className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-micro font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                             >
                               Delete Image
                             </button>
                           </div>
                         ) : (
-                          <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-wider text-center flex flex-col items-center justify-center p-4">
+                          <div className="text-black/60 dark:text-white/60 text-meta font-bold uppercase tracking-wider text-center flex flex-col items-center justify-center p-4">
                             {isUploading ? (
                               <div className="flex flex-col items-center gap-2">
                                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -992,7 +992,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
               </div>
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center text-xs text-black/40 dark:text-white/40 font-mono">
+            <div className="h-64 flex items-center justify-center text-xs text-black/60 dark:text-white/60 font-mono">
               우측 목록에서 편집할 여정을 선택해 주세요.
             </div>
           )}
@@ -1009,7 +1009,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
             <span className="text-xs font-extrabold uppercase tracking-wider font-sans">
               JOURNEYS ORDER & SELECTION ({localJourneys.length})
             </span>
-            <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+            <span className="text-meta font-mono text-black/60 dark:text-white/60">
               드래그 또는 ▲ ▼ 클릭
             </span>
           </div>
@@ -1040,7 +1040,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                   }`}
                 >
                   {/* Drag Grip handle */}
-                  <div className="cursor-grab active:cursor-grabbing text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white shrink-0">
+                  <div className="cursor-grab active:cursor-grabbing text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white shrink-0">
                     <GripVertical className="w-4 h-4" />
                   </div>
 
@@ -1067,7 +1067,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                   </div>
 
                   {/* Number Badge */}
-                  <span className="font-mono text-xs font-extrabold text-black/40 dark:text-white/40 w-5 text-center shrink-0">
+                  <span className="font-mono text-xs font-extrabold text-black/60 dark:text-white/60 w-5 text-center shrink-0">
                     {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                   </span>
 
@@ -1087,20 +1087,20 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                         {journey.title.replace(' (Plan)', '')}
                       </h4>
                       {journey.statusBadge === 'NEW' ? (
-                        <span className="px-1.5 py-0.5 bg-red-600 text-white font-mono text-[8px] font-extrabold uppercase shrink-0">
+                        <span className="px-1.5 py-0.5 bg-red-600 text-white font-mono text-micro font-extrabold uppercase shrink-0">
                           NEW
                         </span>
                       ) : journey.statusBadge === 'EDITING' ? (
-                        <span className="px-1.5 py-0.5 bg-amber-600 text-white font-mono text-[8px] font-extrabold uppercase shrink-0">
+                        <span className="px-1.5 py-0.5 bg-amber-600 text-white font-mono text-micro font-extrabold uppercase shrink-0">
                           EDITING
                         </span>
                       ) : (journey.statusBadge === 'PLAN' || isPlan) ? (
-                        <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-[8px] font-extrabold uppercase shrink-0">
+                        <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-micro font-extrabold uppercase shrink-0">
                           PLAN
                         </span>
                       ) : null}
                     </div>
-                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50 truncate">
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60 truncate">
                       {journey.date} · {journey.locationStr}
                     </span>
                   </div>
@@ -1112,7 +1112,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       e.stopPropagation();
                       executeWithGuard(() => navigateSafely('detail', journey.id));
                     }}
-                    className="p-1.5 text-black/40 dark:text-white/40 hover:text-red-600 dark:hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                    className="p-1.5 text-black/60 dark:text-white/60 hover:text-red-600 dark:hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                     title="여정 상세 페이지 바로 보기"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />

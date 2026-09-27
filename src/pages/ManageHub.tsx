@@ -78,7 +78,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                     setActiveMode(tab.id);
                   });
                 }}
-                className={`flex-1 md:flex-none px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-mono font-bold uppercase tracking-tight cursor-pointer whitespace-nowrap text-center shrink-0 flex items-center justify-center gap-1 ${
+                className={`flex-1 md:flex-none px-2.5 sm:px-4 py-1 sm:py-1.5 text-meta sm:text-xs font-mono font-bold uppercase tracking-tight cursor-pointer whitespace-nowrap text-center shrink-0 flex items-center justify-center gap-1 ${
                   activeMode === tab.id
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -89,12 +89,12 @@ export function ManageHubPage(props: ManageHubPageProps) {
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
                 )}
                 {tab.id === 'UTIL' && (trashedJourneys.length + trashedSections.length) > 0 && (
-                  <span className="ml-1 text-[9px] font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block">
+                  <span className="ml-1 text-micro font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block">
                     {trashedJourneys.length + trashedSections.length}
                   </span>
                 )}
                 {tab.id === 'USERS' && pendingUsersCount > 0 && (
-                  <span className="ml-1 text-[9px] font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block animate-pulse">
+                  <span className="ml-1 text-micro font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block animate-pulse">
                     {pendingUsersCount}
                   </span>
                 )}
@@ -171,7 +171,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           >
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <div>
-                <span className="text-[9px] font-mono font-extrabold uppercase text-red-600 dark:text-red-500">
+                <span className="text-micro font-mono font-extrabold uppercase text-red-600 dark:text-red-500">
                   DELEGATE TRIP EDIT ACCESS
                 </span>
                 <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
@@ -210,14 +210,14 @@ export function ManageHubPage(props: ManageHubPageProps) {
                       <div className="text-xs font-extrabold uppercase text-black dark:text-white truncate">
                         {trip.title}
                       </div>
-                      <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                      <div className="text-meta font-mono text-black/60 dark:text-white/60">
                         {trip.date} · {trip.locationStr || trip.country}
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-[10px] font-mono font-extrabold uppercase shrink-0 ${
+                    <span className={`px-2 py-1 text-meta font-mono font-extrabold uppercase shrink-0 ${
                       hasAccess
                         ? 'bg-black text-white dark:bg-white dark:text-black'
-                        : 'border border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                        : 'border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                     }`}>
                       {hasAccess ? 'ALLOWED (허용됨)' : 'DENIED (권한없음)'}
                     </span>
@@ -412,7 +412,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               </select>
 
               <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60" />
                 <input
                   type="text"
                   value={momentSearchQuery}
@@ -426,7 +426,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
             {/* Photo Candidates Grid */}
             <div className="flex-1 overflow-y-auto p-3">
               {candidateTimelineItems.length === 0 ? (
-                <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-black/40 dark:text-white/40 font-mono text-xs">
+                <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-black/60 dark:text-white/60 font-mono text-xs">
                   <ImageIcon className="w-8 h-8 opacity-40" />
                   <span>선택된 여정의 사진이 없거나 검색 결과가 없습니다. 상단에서 여정을 선택해주세요.</span>
                 </div>
@@ -470,7 +470,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                           }`}
                         />
                         {isAttached ? (
-                          <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-[9px] font-mono font-extrabold uppercase">
+                          <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-micro font-mono font-extrabold uppercase">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                             <span>ATTACHED</span>
                           </div>
@@ -485,7 +485,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                             {displayTitle}
                           </span>
                           {itemDate && (
-                            <span className="text-[9px] font-mono text-white/70 truncate">
+                            <span className="text-micro font-mono text-white/70 truncate">
                               {itemDate}
                             </span>
                           )}
@@ -499,7 +499,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
 
             {/* Modal Footer */}
             <div className="p-3 border-t border-black/15 dark:border-white/15 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
-              <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+              <span className="text-meta font-mono text-black/60 dark:text-white/60">
                 * 사진을 클릭하면 현재 선택된 카드의 바로 다음 위치에 삽입됩니다.
               </span>
               <button
@@ -565,7 +565,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
 
             <form onSubmit={handleSavePresetModal} className="space-y-3 text-xs">
               <div>
-                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">TITLE</label>
+                <label className="block text-micro font-mono font-bold uppercase tracking-wider opacity-60 mb-1">TITLE</label>
                 <input 
                   type="text" 
                   required 
@@ -576,7 +576,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 />
               </div>
               <div>
-                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">SUBTITLE</label>
+                <label className="block text-micro font-mono font-bold uppercase tracking-wider opacity-60 mb-1">SUBTITLE</label>
                 <input 
                   type="text" 
                   value={editingPreset.subtitle || ''}
@@ -587,7 +587,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">COUNTRY</label>
+                  <label className="block text-micro font-mono font-bold uppercase tracking-wider opacity-60 mb-1">COUNTRY</label>
                   <input 
                     type="text" 
                     required 
@@ -598,7 +598,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">CITY</label>
+                  <label className="block text-micro font-mono font-bold uppercase tracking-wider opacity-60 mb-1">CITY</label>
                   <input 
                     type="text" 
                     required 
@@ -611,7 +611,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">DURATION (DAYS)</label>
+                  <label className="block text-micro font-mono font-bold uppercase tracking-wider opacity-60 mb-1">DURATION (DAYS)</label>
                   <input 
                     type="number" 
                     min={1} 
@@ -622,7 +622,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">THEME</label>
+                  <label className="block text-micro font-mono font-bold uppercase tracking-wider opacity-60 mb-1">THEME</label>
                   <select 
                     value={editingPreset.theme}
                     onChange={e => setEditingPreset({ ...editingPreset, theme: e.target.value as any })}
@@ -638,7 +638,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 </div>
               </div>
               <div>
-                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">COVER IMAGE URL</label>
+                <label className="block text-micro font-mono font-bold uppercase tracking-wider opacity-60 mb-1">COVER IMAGE URL</label>
                 <input 
                   type="text" 
                   value={editingPreset.coverImg}
@@ -648,7 +648,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 />
               </div>
               <div>
-                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">HIGHLIGHTS (쉼표 구분)</label>
+                <label className="block text-micro font-mono font-bold uppercase tracking-wider opacity-60 mb-1">HIGHLIGHTS (쉼표 구분)</label>
                 <input 
                   type="text" 
                   value={editingPreset.highlights?.join(', ') || ''}
@@ -740,7 +740,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                   기본 홈 복구 실행
                 </button>
               </div>
-              <span className="text-[11px] text-black/50 dark:text-white/50 leading-relaxed">
+              <span className="text-[11px] text-black/60 dark:text-white/60 leading-relaxed">
                 메인 기본 매거진(MAGAZINE HOME) 및 주요 여정 섹션이 목록에서 누락된 경우 즉시 복원합니다.
               </span>
             </div>
@@ -751,7 +751,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 2. 로컬 백업 스냅샷에서 불러오기 ({availableBackups.length}개 발견)
               </span>
               {availableBackups.length === 0 ? (
-                <div className="p-4 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/15 dark:border-white/15">
+                <div className="p-4 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/15 dark:border-white/15">
                   저장된 로컬 백업 스냅샷이 없습니다.
                 </div>
               ) : (
@@ -762,7 +762,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                         <div className="text-xs font-mono font-bold text-black dark:text-white truncate">
                           {b.label}
                         </div>
-                        <div className="text-[10px] font-mono text-black/50 dark:text-white/50 truncate">
+                        <div className="text-meta font-mono text-black/60 dark:text-white/60 truncate">
                           섹션: {b.sections.map(s => s.title).join(', ')}
                         </div>
                       </div>

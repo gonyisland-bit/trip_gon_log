@@ -23,10 +23,10 @@ export function UsersMode({ s }: { s: ManageHubState }) {
       {/* Header */}
       <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
         <div className="flex items-center justify-between">
-          <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+          <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
             REGISTERED USERS & PERMISSIONS MANAGEMENT
           </span>
-          <span className="text-[10px] font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+          <span className="text-meta font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
             TOTAL: {usersList.length}
           </span>
         </div>
@@ -56,7 +56,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-black/50 dark:text-white/50 uppercase">CURRENT:</span>
+            <span className="text-meta font-mono text-black/60 dark:text-white/60 uppercase">CURRENT:</span>
             <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 border border-red-500/30">
               {currentAdminEmail}
             </span>
@@ -64,7 +64,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="relative flex-1">
-            <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+            <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60" />
             <input
               type="email"
               value={newAdminEmailInput}
@@ -99,7 +99,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                   ADMINISTRATORS ({adminsList.length})
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+              <span className="text-meta font-mono text-black/60 dark:text-white/60">
                 최고 관리자 및 서브 관리자 계정 그룹
               </span>
             </div>
@@ -137,21 +137,21 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                             ({adminUser.email})
                           </span>
                           {isSuper ? (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-extrabold uppercase tracking-wider bg-red-600 text-white leading-none">
+                            <span className="px-2 py-0.5 text-micro font-mono font-extrabold uppercase tracking-wider bg-red-600 text-white leading-none">
                               SUPER ADMIN
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-extrabold uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
+                            <span className="px-2 py-0.5 text-micro font-mono font-extrabold uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
                               ADMIN
                             </span>
                           )}
                           {isOnline && (
-                            <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 leading-none">
+                            <span className="px-1.5 py-0.2 text-micro font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 leading-none">
                               ONLINE
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] font-mono text-black/50 dark:text-white/50 flex-wrap">
+                        <div className="flex items-center gap-3 text-meta font-mono text-black/60 dark:text-white/60 flex-wrap">
                           {adminUser.phone && <span>전화: {adminUser.phone}</span>}
                           <span>가입: {adminUser.createdAt ? new Date(adminUser.createdAt).toLocaleDateString() : '-'}</span>
                         </div>
@@ -166,10 +166,10 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           type="button"
                           disabled={isSuper}
                           onClick={() => handleToggleUserPermission(adminUser, 'canCreate')}
-                          className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
                             adminUser.permissions?.canCreate
                               ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
-                              : 'text-black/40 dark:text-white/40 hover:text-black'
+                              : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="여정 생성(추가) 권한 토글"
                         >
@@ -180,10 +180,10 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           type="button"
                           disabled={isSuper}
                           onClick={() => handleToggleUserPermission(adminUser, 'canEdit')}
-                          className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
                             adminUser.permissions?.canEdit
                               ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
-                              : 'text-black/40 dark:text-white/40 hover:text-black'
+                              : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="전체 여정 편집 권한 토글"
                         >
@@ -194,10 +194,10 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           type="button"
                           disabled={isSuper}
                           onClick={() => handleToggleUserPermission(adminUser, 'canDelete')}
-                          className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
                             adminUser.permissions?.canDelete
                               ? 'bg-red-600 text-white font-extrabold'
-                              : 'text-black/40 dark:text-white/40 hover:text-black'
+                              : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="여정 삭제 권한 토글"
                         >
@@ -274,10 +274,10 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                       }`}
                     >
                       <span>{label}</span>
-                      <span className={`text-[9.5px] px-1.5 py-0.5 font-mono leading-none ${
+                      <span className={`text-micro px-1.5 py-0.5 font-mono leading-none ${
                         isActive 
                           ? (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold' : 'bg-white/20 dark:bg-black/20 text-white dark:text-black')
-                          : (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold animate-pulse' : 'text-black/40 dark:text-white/40')
+                          : (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold animate-pulse' : 'text-black/60 dark:text-white/60')
                       }`}>
                         {count}
                       </span>
@@ -288,7 +288,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
 
               {/* Search Bar */}
               <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60" />
                 <input
                   type="text"
                   value={userSearchQuery}
@@ -349,26 +349,26 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                             ({user.email})
                           </span>
                           {user.status === 'rejected' ? (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-extrabold uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 leading-none">
+                            <span className="px-2 py-0.5 text-micro font-mono font-extrabold uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 leading-none">
                               REJECTED
                             </span>
                           ) : isPending ? (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-red-600 text-red-600 dark:text-red-400 bg-red-500/10 leading-none animate-pulse">
+                            <span className="px-2 py-0.5 text-micro font-mono font-bold uppercase tracking-wider border border-red-600 text-red-600 dark:text-red-400 bg-red-500/10 leading-none animate-pulse">
                               PENDING
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
+                            <span className="px-2 py-0.5 text-micro font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
                               USER
                             </span>
                           )}
                           {isOnline && (
-                            <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 leading-none">
+                            <span className="px-1.5 py-0.2 text-micro font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 leading-none">
                               ONLINE
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-3 text-[11px] font-mono text-black/50 dark:text-white/50 flex-wrap">
+                        <div className="flex items-center gap-3 text-[11px] font-mono text-black/60 dark:text-white/60 flex-wrap">
                           {user.phone && <span>전화: {user.phone}</span>}
                           {user.birthdate && <span>생일: {user.birthdate}</span>}
                           <span>가입일: {joinDate}</span>
@@ -404,10 +404,10 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => handleToggleUserPermission(user, 'canCreate')}
-                          className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             user.permissions?.canCreate
                               ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
-                              : 'text-black/40 dark:text-white/40 hover:text-black'
+                              : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="여정 생성(추가) 권한 토글"
                         >
@@ -418,10 +418,10 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => handleToggleUserPermission(user, 'canEdit')}
-                          className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             user.permissions?.canEdit
                               ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
-                              : 'text-black/40 dark:text-white/40 hover:text-black'
+                              : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="전체 여정 편집 권한 토글"
                         >
@@ -432,10 +432,10 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => handleToggleUserPermission(user, 'canDelete')}
-                          className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             user.permissions?.canDelete
                               ? 'bg-red-600 text-white font-extrabold'
-                              : 'text-black/40 dark:text-white/40 hover:text-black'
+                              : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="여정 삭제 권한 토글"
                         >
@@ -450,7 +450,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           setDelegatingUser(user);
                           setIsDelegatingModalOpen(true);
                         }}
-                        className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 text-[10px] font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                        className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 text-meta font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
                         title="특정 여정 편집 권한 위임"
                       >
                         여정 위임
@@ -485,7 +485,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                       <button
                         type="button"
                         onClick={() => handleDeleteUserByAdmin(user)}
-                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/40 dark:text-white/40 hover:border-red-600 hover:text-red-600 transition-colors cursor-pointer"
+                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-red-600 hover:text-red-600 transition-colors cursor-pointer"
                         title="유저 계정 영구 삭제 (잘못 가입한 계정 제거)"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -496,7 +496,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
               })}
 
               {filteredUsers.length === 0 && (
-                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60">
                   {userSearchQuery ? '검색 결과와 일치하는 유저가 없습니다.' : '등록된 유저가 없습니다.'}
                 </div>
               )}

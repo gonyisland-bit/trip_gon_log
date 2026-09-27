@@ -18,7 +18,7 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
         {visitedTabs.has('transit') && (
           <>
             {/* Sort Type Control */}
-            <div className="w-full flex justify-end items-center gap-2 py-2 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15 text-[9px] md:text-[10px] font-bold uppercase tracking-widest select-none">
+            <div className="w-full flex justify-end items-center gap-2 py-2 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15 text-micro md:text-meta font-bold uppercase tracking-widest select-none">
             <button 
               onClick={() => setTransitSortType('time')} 
               className={`px-2.5 py-1 border transition-colors rounded-sm cursor-pointer ${transitSortType === 'time' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
@@ -37,7 +37,7 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
             const rawTransitList = isEditing ? draftTransits : transits;
             if (rawTransitList.length === 0) {
               return (
-                <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                <div className="text-center py-16 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
                   등록된 교통편이 없습니다.
                 </div>
               );
@@ -70,11 +70,11 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
                   <div className="flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15">
                     <div className="flex items-center gap-2">
                       <IconComponent className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                      <span className="text-[10px] md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
+                      <span className="text-meta md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
                         {label}
                       </span>
                     </div>
-                    <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
+                    <span className="text-micro md:text-meta font-mono font-bold text-black/60 dark:text-white/60 tracking-wider">
                       {items.length} ITEM{items.length > 1 ? 'S' : ''}
                     </span>
                   </div>
@@ -147,29 +147,29 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
           {/* Add Transit control */}
           {isEditing && (
             <div className="flex flex-col items-center py-6 gap-2">
-              <span className="text-[10px] md:text-[11px] text-black/50 dark:text-white/50 uppercase font-extrabold tracking-widest font-sans break-keep">Add Transit Ticket (교통 티켓 추가)</span>
+              <span className="text-meta md:text-[11px] text-black/60 dark:text-white/60 uppercase font-extrabold tracking-widest font-sans break-keep">Add Transit Ticket (교통 티켓 추가)</span>
               <div className="flex flex-wrap justify-center gap-2">
                 <button 
                   onClick={() => handleAddTransit('train')} 
-                  className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="text-micro md:text-meta font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Train
                 </button>
                 <button 
                   onClick={() => handleAddTransit('bus')} 
-                  className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="text-micro md:text-meta font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Bus
                 </button>
                 <button 
                   onClick={() => handleAddTransit('taxi')} 
-                  className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="text-micro md:text-meta font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Taxi
                 </button>
                 <button 
                   onClick={() => handleAddTransit('car')} 
-                  className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="text-micro md:text-meta font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Rental
                 </button>

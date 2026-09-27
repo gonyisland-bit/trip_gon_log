@@ -200,7 +200,7 @@ export function PlaceAutocompleteInput({
               lastTypedValRef.current = '';
               onChange('');
             }}
-            className="absolute right-7 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+            className="absolute right-7 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
             title="입력 지우기"
           >
             <X className="w-3.5 h-3.5" />

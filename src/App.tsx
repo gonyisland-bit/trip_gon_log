@@ -162,7 +162,7 @@ function App() {
                           title={`${t.title} 바로가기`}
                         >
                           <span className="text-black dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors">{t.title.toUpperCase()}</span>
-                          {t.date && <span className="opacity-45 text-[10px] font-mono font-medium">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
+                          {t.date && <span className="opacity-45 text-meta font-mono font-medium">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
                         </button>
                         <span className="text-red-600 dark:text-red-400 font-bold mx-3 text-xs opacity-60">/</span>
                       </span>
@@ -178,7 +178,7 @@ function App() {
                           title={`${t.title} 바로가기`}
                         >
                           <span className="text-black dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors">{t.title.toUpperCase()}</span>
-                          {t.date && <span className="opacity-45 text-[10px] font-mono font-medium">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
+                          {t.date && <span className="opacity-45 text-meta font-mono font-medium">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
                         </button>
                         <span className="text-red-600 dark:text-red-400 font-bold mx-3 text-xs opacity-60">/</span>
                       </span>
@@ -221,7 +221,7 @@ function App() {
               ) : (
                 <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 bg-transparent text-center w-full">
                   <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin mb-3" />
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-black/40 dark:text-white/40">Loading Archive View...</span>
+                  <span className="text-meta font-mono uppercase tracking-widest text-black/60 dark:text-white/60">Loading Archive View...</span>
                 </div>
               )
             }>

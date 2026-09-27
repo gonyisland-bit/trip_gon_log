@@ -18,11 +18,11 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
       {/* Header Title */}
       <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
         <div className="flex items-center justify-between">
-          <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+          <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
             CALENDAR & WEATHER CONFIGURATION
           </span>
           {isCalendarDirty && (
-            <span className="px-2 py-0.5 bg-red-600 text-white font-mono text-[9px] font-extrabold uppercase tracking-wider animate-pulse">
+            <span className="px-2 py-0.5 bg-red-600 text-white font-mono text-micro font-extrabold uppercase tracking-wider animate-pulse">
               UNSAVED CHANGES
             </span>
           )}
@@ -40,7 +40,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
                 ? 'bg-emerald-600 text-white border border-emerald-600'
                 : isCalendarDirty
                   ? 'bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white ring-2 ring-red-600/30'
-                  : 'border border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                  : 'border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
             }`}
             title={isCalendarDirty ? "변경된 캘린더 세팅 저장" : "저장할 변경사항이 없습니다"}
           >
@@ -62,7 +62,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
               WEATHER CITIES MANAGEMENT
             </h3>
           </div>
-          <span className="text-[11px] font-mono font-bold text-black/50 dark:text-white/50">
+          <span className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60">
             총 {calendarWeatherCities.length}개 도시 등록됨
           </span>
         </div>
@@ -81,7 +81,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
             placeholder="도시명 검색 (예: 서울, 도쿄, 오사카, 파리, 삿포로, 런던, 뉴욕...)"
             className="w-full h-9 px-3 text-xs bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
           />
-          <span className="text-[10px] text-black/40 dark:text-white/40 font-mono">
+          <span className="text-meta text-black/60 dark:text-white/60 font-mono">
             * 검색 후 선택 시 한글 정규화 도시명과 공식 영문 코드가 자동 등록되며, 실시간 클라우드에 영속 저장됩니다.
           </span>
         </div>
@@ -103,16 +103,16 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
               >
                 {/* Left: Index + Home Badge + City Info */}
                 <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-                  <span className={`text-[11px] font-bold w-4 text-center shrink-0 ${isMoved ? 'text-red-600 dark:text-red-400' : 'text-black/40 dark:text-white/40'}`}>
+                  <span className={`text-[11px] font-bold w-4 text-center shrink-0 ${isMoved ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`}>
                     {idx + 1}
                   </span>
 
                   {isHomeTarget ? (
-                    <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-extrabold tracking-wider uppercase shrink-0">
+                    <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black text-micro font-mono font-extrabold tracking-wider uppercase shrink-0">
                       HOME 4
                     </span>
                   ) : (
-                    <span className="px-1.5 py-0.5 border border-black/15 dark:border-white/15 text-black/40 dark:text-white/40 text-[9px] font-mono tracking-wider uppercase shrink-0">
+                    <span className="px-1.5 py-0.5 border border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 text-micro font-mono tracking-wider uppercase shrink-0">
                       CALENDAR
                     </span>
                   )}
@@ -121,10 +121,10 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
                     <span className="font-sans font-extrabold text-sm text-black dark:text-white truncate">
                       {c.name}
                     </span>
-                    <span className="text-[11px] font-mono font-bold text-black/50 dark:text-white/50 shrink-0">
+                    <span className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
                       {c.nameEn}
                     </span>
-                    <span className="text-[9.5px] font-mono text-black/35 dark:text-white/35 shrink-0">
+                    <span className="text-micro font-mono text-black/60 dark:text-white/60 shrink-0">
                       ({c.country})
                     </span>
                   </div>

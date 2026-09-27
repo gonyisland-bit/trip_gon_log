@@ -196,12 +196,12 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
         )}
 
         {weatherData && (
-          <span className="text-[10.5px] sm:text-[11px] font-extrabold tracking-tight shrink-0">
+          <span className="text-meta sm:text-[11px] font-extrabold tracking-tight shrink-0">
             {weatherData.temp}°
           </span>
         )}
 
-        <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider hidden xs:inline shrink-0">
+        <span className="text-meta sm:text-meta font-bold uppercase tracking-wider hidden xs:inline shrink-0">
           {selectedCity.name || selectedCity.nameEn}
         </span>
 
@@ -212,10 +212,10 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 sm:w-56 py-1.5 bg-white dark:bg-zinc-900 border border-black/15 dark:border-white/15 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
           <div className="px-3 py-1.5 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-            <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">
+            <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60">
               SELECT CITY
             </span>
-            <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+            <span className="text-micro font-mono text-black/60 dark:text-white/60">
               {cities.length} CITIES
             </span>
           </div>
@@ -237,7 +237,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
                 >
                   <div className="flex items-center gap-2 truncate">
                     <span className="truncate">{cityName}</span>
-                    <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40 uppercase">
+                    <span className="text-micro font-mono text-black/60 dark:text-white/60 uppercase">
                       {city.nameEn}
                     </span>
                   </div>
@@ -252,20 +252,20 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
           {/* Swiss Minimal Weather Ambience Toggle */}
           <div className="px-3 py-2 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between">
             <div className="flex flex-col">
-              <span className="text-[9.5px] font-mono font-bold tracking-wider text-black/80 dark:text-white/80">
+              <span className="text-micro font-mono font-bold tracking-wider text-black/80 dark:text-white/80">
                 AMBIENCE EFFECT
               </span>
-              <span className="text-[8px] font-mono text-black/40 dark:text-white/40">
+              <span className="text-micro font-mono text-black/60 dark:text-white/60">
                 배경 날씨 애니메이션
               </span>
             </div>
             <button
               type="button"
               onClick={handleToggleBg}
-              className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-full text-micro font-mono font-bold transition-all cursor-pointer ${
                 isBgEnabled
                   ? 'bg-black text-white dark:bg-white dark:text-black shadow-2xs'
-                  : 'bg-black/10 dark:bg-white/10 text-black/50 dark:text-white/50 hover:bg-black/15 dark:hover:bg-white/15'
+                  : 'bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60 hover:bg-black/15 dark:hover:bg-white/15'
               }`}
             >
               {isBgEnabled ? 'ON' : 'OFF'}

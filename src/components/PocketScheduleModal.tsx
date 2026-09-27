@@ -87,7 +87,7 @@ export function PocketScheduleModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-4">
           <div>
-            <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-red-500 uppercase font-bold">
+            <div className="flex items-center gap-1.5 text-meta font-mono tracking-widest text-red-500 uppercase font-bold">
               <Clock className="w-3 h-3" />
               <span>SCHEDULE SLOT PICKER</span>
             </div>
@@ -97,7 +97,7 @@ export function PocketScheduleModal({
           </div>
           <button
             onClick={onClose}
-            className="text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+            className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -105,7 +105,7 @@ export function PocketScheduleModal({
 
         {/* 1. Date Selection (DAY 1, DAY 2 ...) */}
         <div className="mb-4">
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-black/50 dark:text-white/50 mb-1.5 font-bold">
+          <label className="block text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1.5 font-bold">
             1. 여행 날짜 선택 (DATE)
           </label>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
@@ -122,7 +122,7 @@ export function PocketScheduleModal({
                       : 'border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:border-black dark:hover:border-white'
                   }`}
                 >
-                  <span className="text-[9px] uppercase tracking-wider opacity-70">DAY {idx + 1}</span>
+                  <span className="text-micro uppercase tracking-wider opacity-70">DAY {idx + 1}</span>
                   <span className="font-bold">{d.split('.').slice(1).join('/')}</span>
                 </button>
               );
@@ -132,7 +132,7 @@ export function PocketScheduleModal({
 
         {/* 2. Realistic 6-Time-Slot Selection */}
         <div className="mb-5">
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-black/50 dark:text-white/50 mb-1.5 font-bold">
+          <label className="block text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1.5 font-bold">
             2. 시간대 선택 (TIME SLOT)
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -155,9 +155,9 @@ export function PocketScheduleModal({
                       <Icon className="w-3 h-3 text-red-500" />
                       <span>{slot.label}</span>
                     </span>
-                    <span className="text-[10px] font-mono opacity-60">{slot.time}</span>
+                    <span className="text-meta font-mono opacity-60">{slot.time}</span>
                   </div>
-                  <span className="text-[9.5px] font-mono opacity-50 truncate">{slot.sub}</span>
+                  <span className="text-micro font-mono opacity-50 truncate">{slot.sub}</span>
                 </button>
               );
             })}

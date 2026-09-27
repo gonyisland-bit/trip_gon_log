@@ -87,7 +87,7 @@ export function PasswordVerifyModal({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-60">
+            <label className="text-meta font-mono font-bold uppercase tracking-wider opacity-60">
               비밀번호 (PASSWORD)
             </label>
             <div className="relative flex items-center">

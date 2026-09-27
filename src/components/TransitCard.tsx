@@ -198,7 +198,7 @@ export function TransitCard({
       }`}
     >
       {/* Header bar */}
-      <div className="bg-black/[0.03] dark:bg-white/5 px-4 py-2.5 border-b border-black/15 dark:border-white/15 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
+      <div className="bg-black/[0.03] dark:bg-white/5 px-4 py-2.5 border-b border-black/15 dark:border-white/15 flex justify-between items-center text-meta md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
         <div className="flex items-center gap-2">
           {(() => {
             const isCar = transit.transitType === 'car' || (transit.ticketType || '').toUpperCase().includes('CAR');
@@ -226,7 +226,7 @@ export function TransitCard({
                 }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 cursor-pointer"
+              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 cursor-pointer"
             >
               <option value="TRAIN TICKET">TRAIN TICKET</option>
               <option value="BUS TICKET">BUS TICKET</option>
@@ -241,24 +241,24 @@ export function TransitCard({
           {transit.transitType === 'car' ? (
             isEditMode ? (
               <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                <span className="text-[8px] uppercase font-extrabold opacity-40">PICKUP</span>
+                <span className="text-micro uppercase font-extrabold opacity-40">PICKUP</span>
                 <input
                   type="date"
                   value={transit.date ? transit.date.replace(/\./g, '-') : ''}
                   min={minDate}
                   max={maxDate}
                   onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
                 />
-                <span className="text-black/40 dark:text-white/40">—</span>
-                <span className="text-[8px] uppercase font-extrabold opacity-40">RETURN</span>
+                <span className="text-black/60 dark:text-white/60">—</span>
+                <span className="text-micro uppercase font-extrabold opacity-40">RETURN</span>
                 <input
                   type="date"
                   value={transit.rentalDropoffDate ? transit.rentalDropoffDate.replace(/\./g, '-') : ''}
                   min={transit.date ? transit.date.replace(/\./g, '-') : minDate}
                   max={maxDate}
                   onChange={(e) => onUpdate(transit.id, 'rentalDropoffDate', e.target.value.replace(/-/g, '.'))}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
                 />
               </div>
             ) : (
@@ -272,7 +272,7 @@ export function TransitCard({
               max={maxDate}
               onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
               onClick={(e) => e.stopPropagation()}
-              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
+              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
             />
           ) : (
             <span>{transit.date}</span>
@@ -305,7 +305,7 @@ export function TransitCard({
               className="w-full h-full object-cover" 
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-black/40 dark:text-white/40 gap-1.5 text-xs font-bold uppercase tracking-widest">
+            <div className="w-full h-full flex flex-col items-center justify-center text-black/60 dark:text-white/60 gap-1.5 text-xs font-bold uppercase tracking-widest">
               <Car className="w-6 h-6 opacity-40" />
               <span>VEHICLE PHOTO (드래그하여 차량 사진 추가)</span>
             </div>
@@ -349,7 +349,7 @@ export function TransitCard({
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                 {transit.transitType === 'car' ? (
                   <div className="w-full relative">
-                    <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
+                    <span className="text-micro uppercase font-bold tracking-widest opacity-40 block mb-0.5">
                       PICKUP LOCATION
                     </span>
                     <PlaceAutocompleteInput
@@ -376,7 +376,7 @@ export function TransitCard({
                 ) : (
                   <>
                     <div className="flex-1 min-w-0 relative">
-                      <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
+                      <span className="text-micro uppercase font-bold tracking-widest opacity-40 block mb-0.5">
                         DEPART
                       </span>
                       <PlaceAutocompleteInput
@@ -398,9 +398,9 @@ export function TransitCard({
                         placeholder="Departure terminal/station..."
                       />
                     </div>
-                    <span className="text-black/40 dark:text-white/40 self-end mb-1.5 hidden sm:inline">→</span>
+                    <span className="text-black/60 dark:text-white/60 self-end mb-1.5 hidden sm:inline">→</span>
                     <div className="flex-1 min-w-0 relative">
-                      <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
+                      <span className="text-micro uppercase font-bold tracking-widest opacity-40 block mb-0.5">
                         ARRIVE
                       </span>
                       <PlaceAutocompleteInput
@@ -426,7 +426,7 @@ export function TransitCard({
                 )}
               </div>
             ) : (
-              <p className="text-xs md:text-sm text-black/50 dark:text-white/50 mt-1 block flex flex-wrap items-center gap-1">
+              <p className="text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 block flex flex-wrap items-center gap-1">
                 {transit.transitType === 'car' ? (
                   transit.departPlace ? (
                     <span 
@@ -470,7 +470,7 @@ export function TransitCard({
             {transit.transitType === 'car' ? (
               <div className="mt-3 flex flex-wrap items-center gap-3" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                  <span className="text-micro font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                     PICKUP:
                   </span>
                   <span className="text-xs font-mono font-extrabold text-black/80 dark:text-white/80">
@@ -487,10 +487,10 @@ export function TransitCard({
                   )}
                 </div>
 
-                <span className="text-black/30 dark:text-white/30">—</span>
+                <span className="text-black/60 dark:text-white/60">—</span>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                  <span className="text-micro font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                     RETURN:
                   </span>
                   <span className="text-xs font-mono font-extrabold text-black/80 dark:text-white/80">
@@ -556,7 +556,7 @@ export function TransitCard({
             {transit.transitType === 'car' ? (
               <>
                 <div className="mb-2.5">
-                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">CAR MODEL</span>
+                  <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">CAR MODEL</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -578,7 +578,7 @@ export function TransitCard({
                   )}
                 </div>
                 <div>
-                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">PLATE NO.</span>
+                  <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">PLATE NO.</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -603,7 +603,7 @@ export function TransitCard({
             ) : (
               <>
                 <div className="mb-3">
-                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
+                  <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -625,7 +625,7 @@ export function TransitCard({
                   )}
                 </div>
                 <div>
-                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">BOOKING REF</span>
+                  <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5">BOOKING REF</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -668,7 +668,7 @@ export function TransitCard({
                 <span className="w-[2.5px] h-full bg-black dark:bg-white shrink-0" />
                 <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
               </div>
-              <span className="text-[7px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase mt-0.5">
+              <span className="text-micro font-mono tracking-widest text-black/60 dark:text-white/60 uppercase mt-0.5">
                 {transit.transitType === 'car' ? 'LOG-CAR-PASS' : 'LOG-TRN-PASS'}
               </span>
             </div>
@@ -680,7 +680,7 @@ export function TransitCard({
             {/* Transit Type Selector - Only shown in edit mode */}
             {isEditMode && (
               <div>
-                <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-extrabold tracking-widest block mb-2">Transit Type (교통 종류)</label>
+                <label className="text-micro text-black/60 dark:text-white/60 uppercase font-extrabold tracking-widest block mb-2">Transit Type (교통 종류)</label>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -745,7 +745,7 @@ export function TransitCard({
             {/* Memo Field */}
             {(isEditMode || transit.memo) && (
               <div className="flex flex-col gap-1">
-                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 block">
+                <span className="font-bold shrink-0 text-meta tracking-widest uppercase opacity-60 block">
                   MEMO:
                 </span>
                 {isEditMode ? (
@@ -771,7 +771,7 @@ export function TransitCard({
             {/* Boarding Image Thumbnail */}
             {(isEditMode || transit.boardingImg) && (
               <div className="flex flex-col gap-1">
-                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 block">Boarding Photo:</span>
+                <span className="font-bold shrink-0 text-meta tracking-widest uppercase opacity-60 block">Boarding Photo:</span>
                 <div className="flex items-center gap-3 ml-5 mt-1">
                   <div className="relative w-20 h-20 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden group flex items-center justify-center shrink-0">
                     {transit.boardingImg ? (
@@ -782,7 +782,7 @@ export function TransitCard({
                         onClick={(e) => { if (!isEditMode) { e.stopPropagation(); setLightboxOpen(true); } }}
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center text-black/30 dark:text-white/30 text-[8px] text-center p-1">
+                      <div className="flex flex-col items-center justify-center text-black/60 dark:text-white/60 text-micro text-center p-1">
                         <ImageIcon className="w-4 h-4 opacity-40 mb-0.5" />
                         <span>NO PHOTO</span>
                       </div>
@@ -797,9 +797,9 @@ export function TransitCard({
                     )}
                   </div>
                   {isEditMode ? (
-                    <span className="text-[9px] text-black/40 dark:text-white/40 italic">Drag & Drop or click overlay to add photo</span>
+                    <span className="text-micro text-black/60 dark:text-white/60 italic">Drag & Drop or click overlay to add photo</span>
                   ) : (
-                    <span className="text-[9px] text-black/40 dark:text-white/40 italic">Click image to enlarge</span>
+                    <span className="text-micro text-black/60 dark:text-white/60 italic">Click image to enlarge</span>
                   )}
                 </div>
               </div>
@@ -810,7 +810,7 @@ export function TransitCard({
         {/* Settlement Section */}
         {(isEditMode || (transit.cost && transit.cost !== '-')) && (
           <div className={`mt-4 pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
-            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+            <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
             <SettlementExpenseInput
               cost={transit.cost}
               currency={transit.currency}
@@ -832,7 +832,7 @@ export function TransitCard({
       <div className="px-4 pb-4 md:px-6 md:pb-6" onClick={(e) => e.stopPropagation()}>
         <div className="pt-3 border-t border-dashed border-black/10 dark:border-white/10">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest flex items-center gap-1">
+            <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest flex items-center gap-1">
               <Paperclip className="w-3 h-3" /> ATTACHMENTS (첨부파일)
             </span>
             {isEditMode && (
@@ -841,7 +841,7 @@ export function TransitCard({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAttachment}
-                  className="text-[9px] md:text-[10px] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-sm flex items-center gap-1 cursor-pointer text-black dark:text-white"
+                  className="text-micro md:text-meta bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-sm flex items-center gap-1 cursor-pointer text-black dark:text-white"
                 >
                   {uploadingAttachment ? (
                     <>
@@ -866,7 +866,7 @@ export function TransitCard({
 
           {/* Attachment List */}
           {(!transit.attachments || transit.attachments.length === 0) ? (
-            <div className="text-[9px] text-black/30 dark:text-white/30 italic py-1">
+            <div className="text-micro text-black/60 dark:text-white/60 italic py-1">
               첨부된 파일이 없습니다.
             </div>
           ) : (
@@ -882,7 +882,7 @@ export function TransitCard({
                         className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-sm cursor-pointer"
                       >
                         <ExternalLink className="w-4 h-4 mb-1" />
-                        <span className="text-[8px] font-bold">PDF</span>
+                        <span className="text-micro font-bold">PDF</span>
                       </button>
                     ) : (
                       <button
@@ -900,7 +900,7 @@ export function TransitCard({
                       <button
                         type="button"
                         onClick={(e) => removeAttachment(e, idx)}
-                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px] cursor-pointer"
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-micro cursor-pointer"
                         title="첨부파일 삭제"
                       >
                         ×

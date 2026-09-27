@@ -301,7 +301,7 @@ export function FlightCard({
       }`}
     >
       {/* Header bar */}
-      <div className="bg-black/[0.03] dark:bg-white/5 px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 border-b border-black/15 dark:border-white/15 gap-2 sm:gap-4">
+      <div className="bg-black/[0.03] dark:bg-white/5 px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center text-meta md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 border-b border-black/15 dark:border-white/15 gap-2 sm:gap-4">
         {isEditMode ? (
           <input
             type="text"
@@ -313,7 +313,7 @@ export function FlightCard({
               onUpdate(flight.id, 'title', e.target.value.toUpperCase());
             }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 sm:w-40"
+            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 sm:w-40"
             placeholder="FLIGHT TITLE"
           />
         ) : (
@@ -327,7 +327,7 @@ export function FlightCard({
             max={maxDate}
             onChange={(e) => onUpdate(flight.id, 'date', e.target.value.replace(/-/g, '.'))}
             onClick={(e) => e.stopPropagation()}
-            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 sm:w-36 text-right font-mono"
+            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 sm:w-36 text-right font-mono"
           />
         ) : (
           <span className="font-mono">{flight.date}</span>
@@ -389,7 +389,7 @@ export function FlightCard({
                           <span className="font-extrabold text-red-600 dark:text-red-400 font-mono text-xs sm:text-sm">{s.code}</span>
                           <span className="font-bold opacity-90 text-xs sm:text-sm">{s.city}</span>
                         </div>
-                        <span className="text-[10px] sm:text-xs opacity-60 truncate mt-0.5">{s.name}</span>
+                        <span className="text-meta sm:text-xs opacity-60 truncate mt-0.5">{s.name}</span>
                       </button>
                     ))}
                   </div>
@@ -423,14 +423,14 @@ export function FlightCard({
                   onUpdate(flight.id, 'fromTerminal', `TER ${val}`);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16 sm:w-20 mt-1 cursor-pointer font-mono"
+                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16 sm:w-20 mt-1 cursor-pointer font-mono"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
                 ))}
               </select>
             ) : (
-              <span className="text-[10px] sm:text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 uppercase font-bold block font-mono">
+              <span className="text-meta sm:text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 uppercase font-bold block font-mono">
                 {formatTerminal(flight.fromTerminal)}
               </span>
             )}
@@ -442,7 +442,7 @@ export function FlightCard({
                   type="time"
                   value={timeStrTo24h(flight.fromTime)}
                   onChange={(e) => onUpdate(flight.id, 'fromTime', time24hTo12h(e.target.value))}
-                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[76px] sm:w-[86px] md:w-[94px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[76px] sm:w-[86px] md:w-[94px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -492,7 +492,7 @@ export function FlightCard({
               </button>
             ) : (
               <div className="mb-2 sm:mb-2.5 flex items-center justify-center">
-                <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/40 dark:text-white/40 rotate-90 shrink-0 overflow-visible" />
+                <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60 dark:text-white/60 rotate-90 shrink-0 overflow-visible" />
               </div>
             )}
             
@@ -508,11 +508,11 @@ export function FlightCard({
                     onUpdate(flight.id, 'flightNo', e.target.value.toUpperCase());
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white tracking-wider text-center w-16 sm:w-20 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase font-mono"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white tracking-wider text-center w-16 sm:w-20 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase font-mono"
                   placeholder="KE000"
                 />
               ) : (
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 sm:px-1.5 text-[10px] sm:text-xs md:text-sm font-bold text-black/70 dark:text-white/70 tracking-wider whitespace-nowrap z-10 font-mono">
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 sm:px-1.5 text-meta sm:text-xs md:text-sm font-bold text-black/70 dark:text-white/70 tracking-wider whitespace-nowrap z-10 font-mono">
                   {flight.flightNo}
                 </span>
               )}
@@ -520,7 +520,7 @@ export function FlightCard({
             
             {/* Layover Info */}
             {!isEditMode && flight.layoverCode && (
-              <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 font-mono">
+              <div className="text-micro sm:text-meta md:text-xs font-bold text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 font-mono">
                 <span>
                   경유: {flight.layoverCode} {flight.layoverTime ? `(${flight.layoverTime})` : ''}
                 </span>
@@ -578,7 +578,7 @@ export function FlightCard({
                           <span className="font-extrabold text-red-600 dark:text-red-400 font-mono text-xs sm:text-sm">{s.code}</span>
                           <span className="font-bold opacity-90 text-xs sm:text-sm">{s.city}</span>
                         </div>
-                        <span className="text-[10px] sm:text-xs opacity-60 truncate mt-0.5">{s.name}</span>
+                        <span className="text-meta sm:text-xs opacity-60 truncate mt-0.5">{s.name}</span>
                       </button>
                     ))}
                   </div>
@@ -612,14 +612,14 @@ export function FlightCard({
                   onUpdate(flight.id, 'toTerminal', `TER ${val}`);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16 sm:w-20 mt-1 cursor-pointer font-mono"
+                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16 sm:w-20 mt-1 cursor-pointer font-mono"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
                 ))}
               </select>
             ) : (
-              <span className="text-[10px] sm:text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 uppercase font-bold block font-mono">
+              <span className="text-meta sm:text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 uppercase font-bold block font-mono">
                 {formatTerminal(flight.toTerminal)}
               </span>
             )}
@@ -631,7 +631,7 @@ export function FlightCard({
                   type="time"
                   value={timeStrTo24h(flight.toTime)}
                   onChange={(e) => onUpdate(flight.id, 'toTime', time24hTo12h(e.target.value))}
-                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[76px] sm:w-[86px] md:w-[94px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[76px] sm:w-[86px] md:w-[94px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -673,7 +673,7 @@ export function FlightCard({
         {/* Right Side: Seat, PNR & Minimal Barcode (Boarding Pass Stub) */}
         <div className="w-full md:w-28 md:pl-2 grid grid-cols-2 md:flex md:flex-col items-center justify-between md:justify-center gap-2 md:gap-0 shrink-0 ticket-stub-interactive">
           <div className="w-full text-center md:text-left md:mb-1.5">
-            <span className="text-[9px] sm:text-[9.5px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
+            <span className="text-micro sm:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
             {isEditMode ? (
               <input
                 type="text"
@@ -695,7 +695,7 @@ export function FlightCard({
             )}
           </div>
           <div className="w-full text-center md:text-left">
-            <span className="text-[9px] sm:text-[9.5px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
+            <span className="text-micro sm:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
             {isEditMode ? (
               <input
                 type="text"
@@ -738,7 +738,7 @@ export function FlightCard({
               <span className="w-[3px] h-full bg-black dark:bg-white shrink-0" />
               <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
             </div>
-            <span className="text-[7.5px] font-mono tracking-widest text-black/50 dark:text-white/50 uppercase mt-0.5 font-bold">
+            <span className="text-micro font-mono tracking-widest text-black/60 dark:text-white/60 uppercase mt-0.5 font-bold">
               {flight.fromCode || 'DEP'}·{flight.toCode || 'ARR'}
             </span>
           </div>
@@ -751,18 +751,18 @@ export function FlightCard({
           e.stopPropagation();
           setIsExpanded(prev => !prev);
         }}
-        className="px-4 py-2 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
+        className="px-4 py-2 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-meta sm:text-[11px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
       >
         <span className="flex items-center gap-2">
           <span>EXPENSE & ATTACHMENTS</span>
           {flight.attachments && flight.attachments.length > 0 && (
-            <span className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 text-[10px] font-mono font-bold flex items-center gap-0.5">
+            <span className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 text-meta font-mono font-bold flex items-center gap-0.5">
               <Paperclip className="w-2.5 h-2.5" />
               {flight.attachments.length}
             </span>
           )}
         </span>
-        <span className="flex items-center gap-1 text-[10px] font-semibold text-black/50 dark:text-white/50">
+        <span className="flex items-center gap-1 text-meta font-semibold text-black/60 dark:text-white/60">
           <span>{isExpanded ? '접기 (Close)' : '펼치기 (Expand)'}</span>
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </span>
@@ -775,7 +775,7 @@ export function FlightCard({
           {(isEditMode || (flight.cost && flight.cost !== '-')) && (
             <div className="px-4 pb-4 md:px-6 md:pb-6">
               <div className={`pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
-                <span className="text-[10px] md:text-[11px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+                <span className="text-meta md:text-[11px] text-black/60 dark:text-white/60 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
                 <SettlementExpenseInput
                   cost={flight.cost}
                   currency={flight.currency}
@@ -797,7 +797,7 @@ export function FlightCard({
           <div className="px-4 pb-4 md:px-6 md:pb-6" onClick={(e) => e.stopPropagation()}>
             <div className="pt-3 border-t border-dashed border-black/10 dark:border-white/10">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-[10px] md:text-[11px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest flex items-center gap-1">
+                <span className="text-meta md:text-[11px] text-black/60 dark:text-white/60 uppercase font-bold tracking-widest flex items-center gap-1">
                   <Paperclip className="w-3 h-3" /> ATTACHMENTS (첨부파일)
                 </span>
                 {isEditMode && (
@@ -806,7 +806,7 @@ export function FlightCard({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingAttachment}
-                      className="text-[9px] md:text-[10px] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-sm flex items-center gap-1 cursor-pointer text-black dark:text-white"
+                      className="text-micro md:text-meta bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-sm flex items-center gap-1 cursor-pointer text-black dark:text-white"
                     >
                       {uploadingAttachment ? (
                         <>
@@ -831,7 +831,7 @@ export function FlightCard({
 
               {/* Attachment List */}
               {(!flight.attachments || flight.attachments.length === 0) ? (
-                <div className="text-[9px] text-black/30 dark:text-white/30 italic py-1">
+                <div className="text-micro text-black/60 dark:text-white/60 italic py-1">
                   첨부된 파일이 없습니다.
                 </div>
               ) : (
@@ -847,7 +847,7 @@ export function FlightCard({
                             className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-sm cursor-pointer"
                           >
                             <ExternalLink className="w-4 h-4 mb-1" />
-                            <span className="text-[8px] font-bold">PDF</span>
+                            <span className="text-micro font-bold">PDF</span>
                           </button>
                         ) : (
                           <button
@@ -865,7 +865,7 @@ export function FlightCard({
                           <button
                             type="button"
                             onClick={(e) => removeAttachment(e, idx)}
-                            className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px] cursor-pointer"
+                            className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-micro cursor-pointer"
                             title="첨부파일 삭제"
                           >
                             ×

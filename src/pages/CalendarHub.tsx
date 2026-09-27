@@ -1775,7 +1775,7 @@ export function CalendarHubPage({
         {/* Top Metadata Bar & Pure Typography Year */}
         <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
-            <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-[10px] tracking-widest font-mono">
+            <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta tracking-widest font-mono">
               CALENDAR
             </span>
 
@@ -1793,7 +1793,7 @@ export function CalendarHubPage({
                 <span className="text-xl sm:text-2xl lg:text-3xl font-light font-satoshi tracking-tight">
                   {currentYear}
                 </span>
-                <ChevronDown className={`w-3.5 h-3.5 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-transform duration-200 ${isYearDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-transform duration-200 ${isYearDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Scrollable Year Dropdown Popover */}
@@ -1816,7 +1816,7 @@ export function CalendarHubPage({
                         }`}
                       >
                         <span className="text-sm sm:text-base font-satoshi">{year}</span>
-                        {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
+                        {isSelected && <span className="text-meta uppercase font-mono tracking-wider">선택</span>}
                       </button>
                     );
                   })}
@@ -1840,7 +1840,7 @@ export function CalendarHubPage({
                     setSelectedRange({ start: nextUpcomingTrip.startDate, end: nextUpcomingTrip.startDate });
                   }
                 }}
-                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-500 dark:hover:text-black transition-colors font-mono font-bold text-[10px] sm:text-[10.5px] cursor-pointer group shadow-2xs shrink-0"
+                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-500 dark:hover:text-black transition-colors font-mono font-bold text-meta sm:text-meta cursor-pointer group shadow-2xs shrink-0"
                 title={`클릭하여 ${nextUpcomingTrip.title} 일정으로 바로 이동`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 group-hover:bg-white animate-pulse shrink-0" />
@@ -1850,7 +1850,7 @@ export function CalendarHubPage({
             )}
           </div>
 
-          <div className="text-[11px] sm:text-xs font-mono font-bold tracking-wider text-black/40 dark:text-white/40 flex items-center gap-3">
+          <div className="text-[11px] sm:text-xs font-mono font-bold tracking-wider text-black/60 dark:text-white/60 flex items-center gap-3">
             <span className="hidden sm:inline">VOL. {currentYear}</span>
             <span>{trips.length + plans.length} JOURNEYS RECORDED</span>
           </div>
@@ -1876,7 +1876,7 @@ export function CalendarHubPage({
                   <span className="text-base sm:text-xl lg:text-2xl font-bold font-satoshi tracking-[0.25em] sm:tracking-[0.3em] uppercase text-black/60 dark:text-white/60 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                     {MONTH_NAMES[currentMonth]}
                   </span>
-                  <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isMonthStripOpen ? 'rotate-180 text-red-600' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60 dark:text-white/60 group-hover:text-red-600 transition-transform duration-200 ${isMonthStripOpen ? 'rotate-180 text-red-600' : ''}`} />
                 </div>
               </button>
 
@@ -1901,7 +1901,7 @@ export function CalendarHubPage({
                             isActive
                               ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs ring-1 ring-black dark:ring-white'
                               : isAvoid
-                              ? 'opacity-40 text-black/40 dark:text-white/40 hover:opacity-80 hover:bg-black/5 dark:hover:bg-white/5'
+                              ? 'opacity-40 text-black/60 dark:text-white/60 hover:opacity-80 hover:bg-black/5 dark:hover:bg-white/5'
                               : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
                           }`}
                           title={
@@ -1919,12 +1919,12 @@ export function CalendarHubPage({
                           <span className="text-sm sm:text-lg md:text-xl font-extrabold font-['Inter',sans-serif] leading-none tracking-tight">
                             {mTab.num}
                           </span>
-                          <span className={`text-[8px] sm:text-[9.5px] md:text-[10.5px] font-bold tracking-wider uppercase leading-tight mt-0.5 font-['Inter',sans-serif] ${
+                          <span className={`text-micro sm:text-micro md:text-meta font-bold tracking-wider uppercase leading-tight mt-0.5 font-['Inter',sans-serif] ${
                             isActive 
                               ? 'text-white dark:text-black' 
                               : isBest
                               ? 'text-red-600 dark:text-red-400 font-extrabold'
-                              : 'text-black/40 dark:text-white/40'
+                              : 'text-black/60 dark:text-white/60'
                           }`}>
                             {mTab.short}
                           </span>
@@ -1935,7 +1935,7 @@ export function CalendarHubPage({
 
                   {/* Best Season Guide Caption (날씨 모드 켜졌을 때 해당 도시 시즌 요약 브리핑) */}
                   {isWeatherMode && destinationCityData && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-black/5 dark:border-white/5 text-[10px] sm:text-xs font-mono">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-black/5 dark:border-white/5 text-meta sm:text-xs font-mono">
                       <div className="flex items-center gap-1.5 text-black/70 dark:text-white/70">
                         <span className="font-bold text-red-600 dark:text-red-400 uppercase">
                           [{destinationCityData.nameKo || selectedWeatherCity.name}]
@@ -1944,7 +1944,7 @@ export function CalendarHubPage({
                           최적 여행 시즌: {destinationCityData.bestMonths.map(m => `${m}월`).join(', ')}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-black/40 dark:text-white/40 text-[9.5px]">
+                      <div className="flex items-center gap-2 text-black/60 dark:text-white/60 text-micro">
                         <span className="flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500" />
                           BEST
@@ -1964,7 +1964,7 @@ export function CalendarHubPage({
               <span className="text-4xl sm:text-6xl lg:text-7xl font-extrabold font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
                 {currentYear}
               </span>
-              <span className="text-xs sm:text-sm font-mono tracking-widest text-black/40 dark:text-white/40 mt-1 uppercase">
+              <span className="text-xs sm:text-sm font-mono tracking-widest text-black/60 dark:text-white/60 mt-1 uppercase">
                 ANNUAL CALENDAR
               </span>
             </div>
@@ -1989,7 +1989,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={handleGoToday}
-                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[9.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-micro sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title="오늘 날짜로 이동"
               >
                 TODAY
@@ -2006,7 +2006,7 @@ export function CalendarHubPage({
             </div>
 
             {/* 2. [ MONTH | YEAR ] View Mode Switcher */}
-            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[9.5px] sm:text-xs font-bold shrink-0">
+            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-micro sm:text-xs font-bold shrink-0">
               <button
                 type="button"
                 onClick={() => toggleViewMode('month')}
@@ -2059,7 +2059,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={toggleWeatherBg}
-                className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs ${
+                className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border text-meta sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs ${
                   isWeatherBgEnabled
                     ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-600/20'
                     : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/60 dark:text-white/60'
@@ -2084,7 +2084,7 @@ export function CalendarHubPage({
                     return next;
                   });
                 }}
-                className={`w-7 h-7 sm:w-auto sm:h-8 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center sm:gap-1.5 shrink-0 shadow-xs ${
+                className={`w-7 h-7 sm:w-auto sm:h-8 sm:px-3 rounded-full border text-meta sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center sm:gap-1.5 shrink-0 shadow-xs ${
                   isEditMode
                     ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
                     : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
@@ -2109,7 +2109,7 @@ export function CalendarHubPage({
                   const dd = '01';
                   onCreateTrip(`${yyyy}-${mm}-${dd}`);
                 }}
-                className="w-7 h-7 sm:w-auto sm:h-8 sm:px-3.5 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center sm:gap-1.5 shrink-0 shadow-xs"
+                className="w-7 h-7 sm:w-auto sm:h-8 sm:px-3.5 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-meta sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center sm:gap-1.5 shrink-0 shadow-xs"
                 title="이 달을 기준으로 새로운 트립 생성"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -2141,7 +2141,7 @@ export function CalendarHubPage({
                 <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
               )}
               <span>{cleanCityDisplayName(selectedWeatherCity.name)}</span>
-              <span className="text-[9.5px] font-normal text-black/50 dark:text-white/50 hidden sm:inline">
+              <span className="text-micro font-normal text-black/60 dark:text-white/60 hidden sm:inline">
                 ({selectedWeatherCity.country})
               </span>
             </div>
@@ -2154,7 +2154,7 @@ export function CalendarHubPage({
               className={`w-6 h-6 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shrink-0 transition-all ${
                 canScrollChipsLeft
                   ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shadow-2xs'
-                  : 'opacity-20 text-black/30 dark:text-white/30 cursor-not-allowed border-transparent'
+                  : 'opacity-20 text-black/60 dark:text-white/60 cursor-not-allowed border-transparent'
               }`}
               title="이전 지역 보기"
             >
@@ -2174,7 +2174,7 @@ export function CalendarHubPage({
                     key={c.nameEn}
                     type="button"
                     onClick={() => handleSelectCity(c)}
-                    className={`h-6 px-2.5 rounded-full text-[10px] sm:text-[10.5px] font-mono font-bold transition-all cursor-pointer shrink-0 flex items-center shadow-2xs ${
+                    className={`h-6 px-2.5 rounded-full text-meta sm:text-meta font-mono font-bold transition-all cursor-pointer shrink-0 flex items-center shadow-2xs ${
                       isSelected
                         ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
                         : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-black/70 dark:text-white/70'
@@ -2195,7 +2195,7 @@ export function CalendarHubPage({
               className={`w-6 h-6 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shrink-0 transition-all ${
                 canScrollChipsRight
                   ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shadow-2xs'
-                  : 'opacity-20 text-black/30 dark:text-white/30 cursor-not-allowed border-transparent'
+                  : 'opacity-20 text-black/60 dark:text-white/60 cursor-not-allowed border-transparent'
               }`}
               title="다음 지역 보기"
             >
@@ -2231,14 +2231,14 @@ export function CalendarHubPage({
                     <button
                       type="button"
                       onClick={() => openNewEventModal(selectedRange.start, selectedRange.end)}
-                      className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1 shrink-0"
+                      className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-meta sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1 shrink-0"
                     >
                       <Plus className="w-3 h-3 stroke-[2.5]" />
                       <span>ADD SCHEDULE</span>
                     </button>
                   </div>
                 ) : (
-                  <div className="text-black/40 dark:text-white/40 text-[11px] sm:text-xs tracking-wider font-medium">
+                  <div className="text-black/60 dark:text-white/60 text-[11px] sm:text-xs tracking-wider font-medium">
                     날짜를 드래그하거나 클릭하여 일정을 선택하세요
                   </div>
                 )}
@@ -2306,7 +2306,7 @@ export function CalendarHubPage({
                 const isSelected = isSelectedDate || isSelectedWeather;
 
                 if (!cell.isCurrentMonth) {
-                  circleClasses += ' opacity-20 text-black/40 dark:text-white/40 hover:opacity-40';
+                  circleClasses += ' opacity-20 text-black/60 dark:text-white/60 hover:opacity-40';
                   if (hasTrip) {
                     circleClasses += ' !opacity-60 text-white font-bold';
                   }
@@ -2405,7 +2405,7 @@ export function CalendarHubPage({
                         return (
                           <div className="flex flex-col items-center justify-between h-full w-full py-1 sm:py-1.5 pointer-events-none select-none">
                             {/* 1. 상단: 날짜 일자 숫자 */}
-                            <span className={`text-[9px] sm:text-[10px] md:text-[11px] font-mono leading-none ${
+                            <span className={`text-micro sm:text-meta md:text-[11px] font-mono leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-extrabold' 
                                 : cell.isToday
@@ -2429,7 +2429,7 @@ export function CalendarHubPage({
                             </div>
 
                             {/* 3. 하단: 최저/최고 기온 */}
-                            <span className={`text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-mono tracking-tighter leading-none ${
+                            <span className={`text-micro sm:text-micro md:text-micro font-mono tracking-tighter leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-extrabold' 
                                 : cell.isToday
@@ -2502,11 +2502,11 @@ export function CalendarHubPage({
                         <span className="text-xs sm:text-sm font-extrabold text-black dark:text-white">
                           {selectedWeatherDay.dateStr.replace(/-/g, '.')} ({selectedWeatherDay.weather.dayOfWeek})
                         </span>
-                        <span className="text-[10.5px] font-bold text-red-600 dark:text-red-400 uppercase truncate">
+                        <span className="text-meta font-bold text-red-600 dark:text-red-400 uppercase truncate">
                           {selectedWeatherDay.city.name} ({selectedWeatherDay.city.nameEn})
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] sm:text-[11px] text-black/60 dark:text-white/60 mt-0.5 truncate">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta sm:text-[11px] text-black/60 dark:text-white/60 mt-0.5 truncate">
                         <span className="font-bold text-black dark:text-white">{labelKo} ({label})</span>
                         <span>·</span>
                         <span>최고 {selectedWeatherDay.weather.tempMax}°C / 최저 {selectedWeatherDay.weather.tempMin}°C</span>
@@ -2532,7 +2532,7 @@ export function CalendarHubPage({
                     SCHEDULES
                   </span>
                   {selectedRange && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold shrink-0 truncate">
+                    <span className="text-meta font-mono px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold shrink-0 truncate">
                       {selectedRange.start === selectedRange.end
                         ? selectedRange.start.replace(/-/g, '.')
                         : `${selectedRange.start.replace(/-/g, '.')} ~ ${selectedRange.end.replace(/-/g, '.')}`}
@@ -2543,7 +2543,7 @@ export function CalendarHubPage({
                   <button
                     type="button"
                     onClick={() => openNewEventModal(selectedRange?.start, selectedRange?.end)}
-                    className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10px] sm:text-xs font-bold font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs shrink-0"
+                    className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-meta sm:text-xs font-bold font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs shrink-0"
                   >
                     <Plus className="w-3 h-3 stroke-[2.5]" />
                     <span>ADD</span>
@@ -2655,7 +2655,7 @@ export function CalendarHubPage({
 
                 if (items.length === 0) {
                   return (
-                    <div className="text-xs font-mono text-black/40 dark:text-white/40 py-8 text-center uppercase tracking-wider">
+                    <div className="text-xs font-mono text-black/60 dark:text-white/60 py-8 text-center uppercase tracking-wider">
                       이번 달에 등록된 일정이 없습니다.
                     </div>
                   );
@@ -2703,7 +2703,7 @@ export function CalendarHubPage({
                             }`}>
                               {item.dateBadge}
                             </span>
-                            <span className="text-black/30 dark:text-white/30 shrink-0">|</span>
+                            <span className="text-black/60 dark:text-white/60 shrink-0">|</span>
                             <span className={`font-sans truncate block whitespace-nowrap text-xs sm:text-sm ${
                               isHighlighted 
                                 ? 'font-extrabold text-red-600 dark:text-red-400' 
@@ -2714,7 +2714,7 @@ export function CalendarHubPage({
                           </div>
                           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                             {item.type === 'trip' && (
-                              <span className="text-[10.5px] sm:text-xs font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
+                              <span className="text-meta sm:text-xs font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
                                 {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
                               </span>
                             )}
@@ -2724,7 +2724,7 @@ export function CalendarHubPage({
                                   className="w-2 h-2 rounded-full shrink-0"
                                   style={{ backgroundColor: item.eventCatColor }}
                                 />
-                                <span className="text-[10.5px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
+                                <span className="text-meta sm:text-xs font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
                                   {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
                                 </span>
                                 <button
@@ -2733,7 +2733,7 @@ export function CalendarHubPage({
                                     e.stopPropagation();
                                     handleShareEvent(item.data);
                                   }}
-                                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                                   title="일정 공유"
                                 >
                                   <Share2 className="w-3.5 h-3.5" />
@@ -2744,7 +2744,7 @@ export function CalendarHubPage({
                                     e.stopPropagation();
                                     openEditEventModal(item.data);
                                   }}
-                                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                                   title="일정 수정"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
@@ -2765,7 +2765,7 @@ export function CalendarHubPage({
                                 }
                               }}
                               className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/15 active:scale-95 transition-all cursor-pointer ${
-                                isHighlighted ? 'text-red-600 dark:text-red-400' : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                                isHighlighted ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                               }`}
                               title="상세 일정 보기"
                             >
@@ -2781,7 +2781,7 @@ export function CalendarHubPage({
 
               {/* Weather Mode Attribution (Swiss Minimal Mono) */}
               {isWeatherMode && (
-                <div className="mt-4 pt-3 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[9.5px] sm:text-[10px] font-mono text-black/40 dark:text-white/40 select-none">
+                <div className="mt-4 pt-3 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-micro sm:text-meta font-mono text-black/60 dark:text-white/60 select-none">
                   <span>WEATHER SOURCE: OPEN-METEO GLOBAL FORECAST API (HOURLY UPDATED)</span>
                   <span>{selectedWeatherCity.nameEn} ({selectedWeatherCity.name}) · 14-DAY FORECAST</span>
                 </div>
@@ -2793,7 +2793,7 @@ export function CalendarHubPage({
           <div className="max-w-5xl xl:max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 mt-5 sm:mt-6">
             {/* Year View Minimal Header */}
             <div className="flex items-center justify-between pb-2.5 sm:pb-3 text-xs font-mono text-black/60 dark:text-white/60 border-b border-black/10 dark:border-white/10 mb-4 sm:mb-6">
-              <span className="font-bold text-black/40 dark:text-white/40 tracking-wider uppercase">
+              <span className="font-bold text-black/60 dark:text-white/60 tracking-wider uppercase">
                 ANNUAL CALENDAR
               </span>
               <button
@@ -2842,7 +2842,7 @@ export function CalendarHubPage({
                     <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-end">
                       {isBestMonth && (
                         <span 
-                          className="text-[8px] sm:text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-full bg-red-600 text-white tracking-wider shadow-2xs"
+                          className="text-micro sm:text-micro font-mono font-extrabold px-1.5 py-0.5 rounded-full bg-red-600 text-white tracking-wider shadow-2xs"
                           title={`${destinationCityData?.nameKo || selectedWeatherCity.nameEn} 최적 여행 시기`}
                         >
                           BEST
@@ -2850,19 +2850,19 @@ export function CalendarHubPage({
                       )}
                       {isAvoidMonth && (
                         <span 
-                          className="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/10 dark:bg-white/15 text-black/60 dark:text-white/60 border border-black/10 dark:border-white/15 tracking-wider"
+                          className="text-micro sm:text-micro font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/10 dark:bg-white/15 text-black/60 dark:text-white/60 border border-black/10 dark:border-white/15 tracking-wider"
                           title={`${destinationCityData?.nameKo || selectedWeatherCity.nameEn} 비추천 시기`}
                         >
                           AVOID
                         </span>
                       )}
                       {m.totalTripDays > 0 && (
-                        <span className="text-[8.5px] sm:text-[9.5px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-red-600 text-white tracking-tight shadow-2xs">
+                        <span className="text-micro sm:text-micro font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-red-600 text-white tracking-tight shadow-2xs">
                           TRIP {m.totalTripDays}-D
                         </span>
                       )}
                       {m.totalEventDays > 0 && (
-                        <span className="text-[8.5px] sm:text-[9.5px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/15 tracking-tight">
+                        <span className="text-micro sm:text-micro font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/15 tracking-tight">
                           EVENT {m.totalEventDays}-D
                         </span>
                       )}
@@ -2870,11 +2870,11 @@ export function CalendarHubPage({
                   </div>
 
                   {/* Mini Weekday Headers (S M T W T F S) */}
-                  <div className="grid grid-cols-7 text-center text-[10px] sm:text-xs font-mono font-bold mb-1.5 select-none">
+                  <div className="grid grid-cols-7 text-center text-meta sm:text-xs font-mono font-bold mb-1.5 select-none">
                     {WEEKDAYS.map((wd, wIdx) => (
                       <div
                         key={wd}
-                        className={wIdx === 0 ? 'text-red-500' : wIdx === 6 ? 'text-blue-500' : 'text-black/40 dark:text-white/40'}
+                        className={wIdx === 0 ? 'text-red-500' : wIdx === 6 ? 'text-blue-500' : 'text-black/60 dark:text-white/60'}
                       >
                         {wd[0]}
                       </div>
@@ -2903,7 +2903,7 @@ export function CalendarHubPage({
                       const WeatherIcon = weatherMeta?.icon;
 
                       // 날씨 모드와 일반 모드 모두 균일한 원형(rounded-full) 유지하여 겹침 방지 및 폰트 튐(jank) 완전 제거
-                      let circleClasses = 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs md:text-sm font-bold transition-colors relative z-10';
+                      let circleClasses = 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-meta sm:text-xs md:text-sm font-bold transition-colors relative z-10';
                       let textClasses = 'leading-none';
 
                       const isYearSelected = selectedYearDate === day.dateStr;
@@ -2984,7 +2984,7 @@ export function CalendarHubPage({
                           >
                             {isWeatherMode && WeatherIcon ? (
                               <div className="flex flex-col items-center justify-center w-full h-full p-0.5 leading-none select-none pointer-events-none">
-                                <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-bold leading-none mb-0.5 ${
+                                <span className={`text-micro sm:text-micro font-mono font-bold leading-none mb-0.5 ${
                                   day.hasTrip
                                     ? 'text-white'
                                     : day.isToday
@@ -3048,7 +3048,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={closeEventModal}
-                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3078,7 +3078,7 @@ export function CalendarHubPage({
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 min-w-0 w-full max-w-full">
                   <div className="min-w-0 w-full max-w-full relative overflow-hidden box-border">
-                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block mb-1">시작일</span>
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60 block mb-1">시작일</span>
                     <input
                       type="date"
                       required
@@ -3093,7 +3093,7 @@ export function CalendarHubPage({
                     />
                   </div>
                   <div className="min-w-0 w-full max-w-full relative overflow-hidden box-border">
-                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block mb-1">종료일</span>
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60 block mb-1">종료일</span>
                     <input
                       type="date"
                       required
@@ -3230,11 +3230,11 @@ export function CalendarHubPage({
                 const CatIcon = cat.icon;
                 return (
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10.5px] font-mono font-bold px-2 py-0.5 rounded-2xs flex items-center gap-1.5 ${cat.badgeClass}`}>
+                    <span className={`text-meta font-mono font-bold px-2 py-0.5 rounded-2xs flex items-center gap-1.5 ${cat.badgeClass}`}>
                       <CatIcon className="w-3 h-3" />
                       <span>{cat.label}</span>
                     </span>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60 uppercase">
                       EVENT DETAIL
                     </span>
                   </div>
@@ -3292,7 +3292,7 @@ export function CalendarHubPage({
             {/* Card Content: Swiss Minimal Typography */}
             <div className="mt-5 space-y-4">
               <div>
-                <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block mb-1">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 block mb-1">
                   SCHEDULE TITLE
                 </span>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-black dark:text-white font-satoshi tracking-tight">
@@ -3303,7 +3303,7 @@ export function CalendarHubPage({
               {/* Date & Duration */}
               <div className="py-3 border-y border-black/10 dark:border-white/10 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block">
+                  <span className="text-meta font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 block">
                     DATE & PERIOD
                   </span>
                   <span className="text-base sm:text-lg font-mono font-bold text-black dark:text-white mt-0.5 block">
@@ -3313,7 +3313,7 @@ export function CalendarHubPage({
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block">
+                  <span className="text-meta font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 block">
                     TOTAL
                   </span>
                   <span className="text-base sm:text-lg font-mono font-bold text-red-600 dark:text-red-400 mt-0.5 block">
@@ -3325,7 +3325,7 @@ export function CalendarHubPage({
               {/* Memo */}
               {viewingEvent.memo ? (
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block mb-1">
+                  <span className="text-meta font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 block mb-1">
                     MEMO / NOTE
                   </span>
                   <p className="text-sm font-sans text-black/80 dark:text-white/80 whitespace-pre-wrap leading-relaxed bg-black/[0.02] dark:bg-white/[0.03] p-3 border-l-2 border-black/20 dark:border-white/20">
@@ -3354,14 +3354,14 @@ export function CalendarHubPage({
             <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <Plane className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
-                <span className="text-[10.5px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-500">
+                <span className="text-meta font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-500">
                   {viewingTrip.isPlan ? 'TRAVEL PLAN' : 'JOURNEY LOG'}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setViewingTrip(null)}
-                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 title="닫기 (ESC)"
               >
                 <X className="w-4 h-4" />
@@ -3371,7 +3371,7 @@ export function CalendarHubPage({
             {/* Content */}
             <div className="py-4 space-y-3">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block mb-0.5">
+                <span className="text-meta font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 block mb-0.5">
                   TITLE
                 </span>
                 <h3 className="text-xl font-extrabold text-black dark:text-white font-satoshi tracking-tight leading-tight">
@@ -3381,7 +3381,7 @@ export function CalendarHubPage({
 
               <div className="flex items-baseline justify-between py-2 border-y border-black/10 dark:border-white/10">
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block">
+                  <span className="text-meta font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 block">
                     PERIOD
                   </span>
                   <span className="font-mono text-sm font-bold text-black dark:text-white">
@@ -3404,7 +3404,7 @@ export function CalendarHubPage({
 
               {(viewingTrip.trip.locationStr || (viewingTrip.trip.tags && viewingTrip.trip.tags.length > 0)) && (
                 <div className="flex items-center gap-1.5 text-xs font-mono text-black/60 dark:text-white/60">
-                  <MapPin className="w-3 h-3 text-black/40 dark:text-white/40" />
+                  <MapPin className="w-3 h-3 text-black/60 dark:text-white/60" />
                   <span>{viewingTrip.trip.locationStr || viewingTrip.trip.tags.join(', ')}</span>
                 </div>
               )}
@@ -3464,7 +3464,7 @@ export function CalendarHubPage({
               <span className="font-extrabold text-red-500 tracking-wider">
                 {hoveredTooltip.dateStr.replace(/-/g, '.')}
               </span>
-              <span className="text-white/30">|</span>
+              <span className="text-white/60">|</span>
               <span className="text-red-400 font-bold whitespace-nowrap">
                 {hoveredTooltip.holidayName}
               </span>
@@ -3475,7 +3475,7 @@ export function CalendarHubPage({
                   setHoveredTooltip(null);
                   setSelectedYearDate(null);
                 }}
-                className="text-white/40 hover:text-white transition-colors ml-0.5 p-0.5 cursor-pointer"
+                className="text-white/60 hover:text-white transition-colors ml-0.5 p-0.5 cursor-pointer"
                 title="닫기"
               >
                 <X className="w-3 h-3" />
@@ -3494,7 +3494,7 @@ export function CalendarHubPage({
             style={{ left: hoveredTooltip.x, top: hoveredTooltip.y }}
             title={viewMode === 'year' ? "클릭하여 월달력으로 이동" : undefined}
           >
-            <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-white/15 text-[10px] font-mono">
+            <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-white/15 text-meta font-mono">
               <span className="font-extrabold text-red-500 tracking-wider">
                 {hoveredTooltip.dateStr.replace(/-/g, '.')}
               </span>
@@ -3511,7 +3511,7 @@ export function CalendarHubPage({
                     setHoveredTooltip(null);
                     setSelectedYearDate(null);
                   }}
-                  className="text-white/40 hover:text-white transition-colors p-0.5 cursor-pointer"
+                  className="text-white/60 hover:text-white transition-colors p-0.5 cursor-pointer"
                   title="닫기"
                 >
                   <X className="w-3 h-3" />
@@ -3531,7 +3531,7 @@ export function CalendarHubPage({
                     </span>
                   </div>
                   {it.days && (
-                    <span className="text-[10px] font-mono text-white/60 shrink-0 font-bold">
+                    <span className="text-meta font-mono text-white/60 shrink-0 font-bold">
                       {it.days === 1 ? '1 DAY' : `${it.days} DAYS`}
                     </span>
                   )}
@@ -3568,7 +3568,7 @@ export function CalendarHubPage({
                   {quickViewDate.dateStr.replace(/-/g, '.')}
                 </span>
                 {quickViewDate.holidayName && (
-                  <span className="px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold font-mono">
+                  <span className="px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-meta font-bold font-mono">
                     {quickViewDate.holidayName}
                   </span>
                 )}
@@ -3576,7 +3576,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={closeQuickView}
-                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 title="닫기"
               >
                 <X className="w-4 h-4" />
@@ -3592,7 +3592,7 @@ export function CalendarHubPage({
                   <div className="flex items-center gap-2">
                     <IconComp className={`w-4 h-4 ${meta.colorClass}`} />
                     <span className="font-bold">{meta.labelKo}</span>
-                    <span className="text-black/50 dark:text-white/50 font-normal">
+                    <span className="text-black/60 dark:text-white/60 font-normal">
                       {selectedWeatherCity.name}
                     </span>
                   </div>
@@ -3600,7 +3600,7 @@ export function CalendarHubPage({
                     <span className="text-red-600 dark:text-red-400">
                       {quickViewDate.weather.tempMax}°
                     </span>
-                    <span className="text-black/30 dark:text-white/30">/</span>
+                    <span className="text-black/60 dark:text-white/60">/</span>
                     <span className="text-blue-600 dark:text-blue-400">
                       {quickViewDate.weather.tempMin}°
                     </span>
@@ -3627,7 +3627,7 @@ export function CalendarHubPage({
                       </span>
                     </div>
                     {it.days && (
-                      <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 shrink-0">
+                      <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
                         {it.days} DAYS
                       </span>
                     )}
@@ -3691,7 +3691,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={() => setIsYearTripsModalOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 title="닫기"
               >
                 <X className="w-4 h-4" />
@@ -3701,7 +3701,7 @@ export function CalendarHubPage({
             {/* Content: Journeys List */}
             <div className="py-4 overflow-y-auto divide-y divide-black/10 dark:divide-white/10 flex-1">
               {currentYearJourneys.length === 0 ? (
-                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40 uppercase">
+                <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60 uppercase">
                   NO JOURNEYS RECORDED IN {currentYear}
                 </div>
               ) : (
@@ -3734,21 +3734,21 @@ export function CalendarHubPage({
                             {item.journey.title}
                           </span>
                           {item.isPlan && (
-                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-600/10 text-blue-600 dark:text-blue-400 shrink-0">
+                            <span className="text-micro font-mono font-bold px-1.5 py-0.5 rounded bg-blue-600/10 text-blue-600 dark:text-blue-400 shrink-0">
                               PLAN
                             </span>
                           )}
                         </div>
-                        <span className="text-xs font-mono text-black/50 dark:text-white/50">
+                        <span className="text-xs font-mono text-black/60 dark:text-white/60">
                           {dateRangeStr}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-600 text-white">
+                        <span className="text-meta font-mono font-bold px-2 py-0.5 rounded-full bg-red-600 text-white">
                           {daysCount === 1 ? '1 DAY' : `${daysCount} DAYS`}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 group-hover:translate-x-0.5 transition-all" />
+                        <ChevronRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-red-600 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
                   );
@@ -3757,7 +3757,7 @@ export function CalendarHubPage({
             </div>
 
             {/* Footer */}
-            <div className="pt-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-mono text-black/40 dark:text-white/40 shrink-0">
+            <div className="pt-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-mono text-black/60 dark:text-white/60 shrink-0">
               <span>클릭 시 해당 월 달력으로 이동합니다</span>
               <button
                 type="button"

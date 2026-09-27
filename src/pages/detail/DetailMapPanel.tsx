@@ -86,8 +86,8 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
           })()}
 
           <ErrorBoundary fallback={
-            <div className="flex-grow flex flex-col items-center justify-center bg-neutral-100 dark:bg-[#111111] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
-              <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
+            <div className="flex-grow flex flex-col items-center justify-center bg-neutral-100 dark:bg-[#111111] text-black/60 dark:text-white/60 p-6 relative h-full w-full">
+              <span className="text-meta uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
               <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
             </div>
           }>
@@ -152,8 +152,8 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                   title="근접 레이더 위젯 열기"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
-                  <span className="font-mono font-bold text-[10px] tracking-wider uppercase text-red-500">RADAR</span>
-                  <span className="text-[9px] font-mono font-bold px-1 rounded bg-red-500/20 text-red-500">
+                  <span className="font-mono font-bold text-meta tracking-wider uppercase text-red-500">RADAR</span>
+                  <span className="text-micro font-mono font-bold px-1 rounded bg-red-500/20 text-red-500">
                     {radarItems.length}
                   </span>
                 </button>
@@ -183,14 +183,14 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                   <span className="font-bold text-xs truncate max-w-[110px] sm:max-w-[160px]">
                     {currentRadarItem.title}
                   </span>
-                  <span className="text-[10px] text-red-500 font-mono font-bold shrink-0">
+                  <span className="text-meta text-red-500 font-mono font-bold shrink-0">
                     {currentRadarItem.distance}m
                   </span>
                 </button>
 
                 {/* Minimal multi-item pagination (if 2 or more targets) */}
                 {radarItems.length > 1 && (
-                  <div className="flex items-center gap-0.5 px-1 py-0.5 bg-white/10 dark:bg-black/10 rounded text-[9px] font-mono shrink-0">
+                  <div className="flex items-center gap-0.5 px-1 py-0.5 bg-white/10 dark:bg-black/10 rounded text-micro font-mono shrink-0">
                     <button
                       type="button"
                       onClick={() => setActiveRadarIndex(prev => (prev > 0 ? prev - 1 : radarItems.length - 1))}
@@ -342,7 +342,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                           </div>
                         </div>
 
-                        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-white/60 shrink-0">
+                        <span className="text-micro sm:text-micro font-mono font-bold text-white/60 shrink-0">
                           {String(cinematicIndex + 1).padStart(2, '0')}/{String(cinematicItems.length).padStart(2, '0')}
                         </span>
                       </div>
@@ -379,7 +379,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
 
                         <button
                           onClick={() => setIsCinematicMode(false)}
-                          className="p-1 text-black/40 hover:text-black transition-colors cursor-pointer ml-0.5"
+                          className="p-1 text-black/60 hover:text-black transition-colors cursor-pointer ml-0.5"
                           title="종료 (Esc)"
                         >
                           <CloseIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />

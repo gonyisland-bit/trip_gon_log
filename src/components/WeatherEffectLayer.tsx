@@ -571,7 +571,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
                 <div className="relative">
                   {/* 새 1 (선두) */}
                   <svg
-                    className="absolute w-5 h-3 text-black/35"
+                    className="absolute w-5 h-3 text-black/60"
                     style={{ animation: 'tglBirdWingFlap 0.65s ease-in-out infinite alternate', transformOrigin: 'center' }}
                     viewBox="0 0 24 14"
                     fill="currentColor"
@@ -580,7 +580,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
                   </svg>
                   {/* 새 2 (좌후방) */}
                   <svg
-                    className="absolute -left-6 top-3 w-4 h-2.5 text-black/30"
+                    className="absolute -left-6 top-3 w-4 h-2.5 text-black/60"
                     style={{ animation: 'tglBirdWingFlap 0.6s ease-in-out infinite alternate', animationDelay: '0.12s', transformOrigin: 'center' }}
                     viewBox="0 0 24 14"
                     fill="currentColor"
@@ -589,7 +589,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
                   </svg>
                   {/* 새 3 (우후방) */}
                   <svg
-                    className="absolute left-6 top-5 w-3.5 h-2 text-black/25"
+                    className="absolute left-6 top-5 w-3.5 h-2 text-black/60"
                     style={{ animation: 'tglBirdWingFlap 0.7s ease-in-out infinite alternate', animationDelay: '0.22s', transformOrigin: 'center' }}
                     viewBox="0 0 24 14"
                     fill="currentColor"

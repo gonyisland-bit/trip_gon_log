@@ -198,13 +198,13 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                 alt={spot.title}
                 className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
               />
-              <div className="absolute top-3.5 right-14 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <div className="absolute top-3.5 right-14 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-meta font-mono opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <ZoomIn className="w-3 h-3" />
                 <span>원본 확대</span>
               </div>
             </>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-black/30 dark:text-white/30">
+            <div className="w-full h-full flex flex-col items-center justify-center text-black/60 dark:text-white/60">
               <Camera className="w-12 h-12 mb-2" />
               <span className="text-xs font-mono font-bold tracking-wider uppercase">NO PREVIEW IMAGE</span>
             </div>
@@ -212,7 +212,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
 
           {/* Top-Left Category Badge */}
           <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-white/95 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/15 text-[10px] font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-sm text-black dark:text-white">
+            <span className="px-3 py-1 rounded-full bg-white/95 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/15 text-meta font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-sm text-black dark:text-white">
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
               <span>{meta.label}</span>
             </span>
@@ -220,7 +220,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
 
           {/* Platform Tag Overlay (if exists) */}
           {spot.platform && (
-            <div className="absolute bottom-3 left-3.5 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-[9px] font-mono tracking-wider uppercase rounded-sm">
+            <div className="absolute bottom-3 left-3.5 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-micro font-mono tracking-wider uppercase rounded-sm">
               @{spot.platform}
             </div>
           )}
@@ -230,7 +230,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
           {/* Title & Region */}
           <div>
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-black/50 dark:text-white/50 mb-1">
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-black/60 dark:text-white/60 mb-1">
               <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
               <span>{locationLabel}</span>
             </div>
@@ -253,7 +253,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                   href={googleMapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 hover:bg-black text-white dark:bg-white/90 dark:hover:bg-white dark:text-black backdrop-blur-md text-[10px] font-mono font-bold tracking-wider uppercase shadow-sm border border-white/20 dark:border-black/20 transition-all cursor-pointer select-none"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 hover:bg-black text-white dark:bg-white/90 dark:hover:bg-white dark:text-black backdrop-blur-md text-meta font-mono font-bold tracking-wider uppercase shadow-sm border border-white/20 dark:border-black/20 transition-all cursor-pointer select-none"
                   title="Google Maps 열기"
                 >
                   <Navigation className="w-2.5 h-2.5 text-red-500 fill-red-500" />
@@ -266,9 +266,9 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
 
           {/* Detailed Address Block */}
           <div className="p-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl border border-black/10 dark:border-white/10 flex items-start gap-2.5 text-xs">
-            <MapPin className="w-3.5 h-3.5 text-black/40 dark:text-white/40 shrink-0 mt-0.5" />
+            <MapPin className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
-              <span className="text-[9.5px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 block font-bold mb-0.5">
+              <span className="text-micro font-mono uppercase tracking-wider text-black/60 dark:text-white/60 block font-bold mb-0.5">
                 LOCATION & ADDRESS
               </span>
               <p className="text-black/80 dark:text-white/80 font-mono text-[11.5px] leading-relaxed break-words select-all">
@@ -280,7 +280,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
           {/* Full Story / Notes (No truncation) */}
           {spot.memo && (
             <div className="pt-2 border-t border-black/10 dark:border-white/10">
-              <span className="text-[10px] font-mono tracking-widest uppercase text-black/40 dark:text-white/40 font-bold block mb-1.5">
+              <span className="text-meta font-mono tracking-widest uppercase text-black/60 dark:text-white/60 font-bold block mb-1.5">
                 TRAVEL NOTE / MEMO
               </span>
               <p className="text-xs sm:text-[13px] font-sans text-black/85 dark:text-white/85 leading-relaxed whitespace-pre-wrap break-words">
@@ -297,11 +297,11 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
             >
               <div className="flex items-center gap-1.5">
                 <MessageSquare className={`w-3.5 h-3.5 transition-colors ${isCommentsExpanded ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`} />
-                <span className="text-[10px] font-mono tracking-widest uppercase text-black/70 dark:text-white/70 font-bold group-hover:text-black dark:group-hover:text-white transition-colors">
+                <span className="text-meta font-mono tracking-widest uppercase text-black/70 dark:text-white/70 font-bold group-hover:text-black dark:group-hover:text-white transition-colors">
                   COMMENTS ({spot.comments?.length || 0})
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-black/40 dark:text-white/40 group-hover:text-black/70 dark:group-hover:text-white/70">
+              <span className="text-meta font-mono text-black/60 dark:text-white/60 group-hover:text-black/70 dark:group-hover:text-white/70">
                 {isCommentsExpanded ? '접기 ▲' : '펼치기 ▼'}
               </span>
             </div>
@@ -319,13 +319,13 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
 
                       return (
                         <div key={c.id} className="p-2 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded group">
-                          <div className="flex items-center justify-between text-[10px] font-mono mb-1">
+                          <div className="flex items-center justify-between text-meta font-mono mb-1">
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-black dark:text-white">{c.authorName}</span>
                               {currentUser?.uid && c.authorId === currentUser.uid && (
-                                <span className="px-1 py-0.2 text-[8px] bg-black text-white dark:bg-white dark:text-black font-bold">YOU</span>
+                                <span className="px-1 py-0.2 text-micro bg-black text-white dark:bg-white dark:text-black font-bold">YOU</span>
                               )}
-                              <span className="text-black/40 dark:text-white/40">
+                              <span className="text-black/60 dark:text-white/60">
                                 {new Date(c.createdAt).toLocaleDateString()}
                               </span>
                             </div>
@@ -498,7 +498,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                 href={spot.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-[10.5px] sm:text-[11px] font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1 cursor-pointer shrink-0"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1 cursor-pointer shrink-0"
                 title="출처 원본 게시물 보기"
               >
                 <span className="hidden sm:inline">ORIGINAL</span>

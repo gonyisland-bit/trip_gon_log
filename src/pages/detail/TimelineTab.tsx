@@ -104,7 +104,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
           </div>
 
           {!isLoggedIn && (
-            <div className="bg-black/5 dark:bg-white/10 px-4 py-1.5 text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-center flex items-center justify-center gap-2 shrink-0 w-full">
+            <div className="bg-black/5 dark:bg-white/10 px-4 py-1.5 text-micro md:text-meta uppercase font-bold tracking-widest text-center flex items-center justify-center gap-2 shrink-0 w-full">
               <User className="w-3 h-3 shrink-0" /> <span className="truncate">로그인 후 기록을 수정하거나 새 일정을 추가할 수 있습니다.</span>
             </div>
           )}
@@ -121,7 +121,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                       setCollapsedDays([...allTripDates]);
                     }
                   }}
-                  className="text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  className="text-micro md:text-meta font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                 >
                   {collapsedDays.length === allTripDates.length ? '▼ EXPAND ALL DAYS' : '▲ COLLAPSE ALL DAYS'}
                 </button>
@@ -132,7 +132,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                 <div className="flex justify-between items-center py-3 px-4 md:px-6 flex-wrap gap-2">
                   <button
                     onClick={handleGenerateDefaultTemplate}
-                    className="text-[10px] font-extrabold uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 transition-colors flex items-center gap-1.5"
+                    className="text-meta font-extrabold uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 transition-colors flex items-center gap-1.5"
                   >
                     Generate Default Template
                   </button>
@@ -145,7 +145,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         setSelectedItemIds(currentTimeline.map(item => item.id));
                       }
                     }}
-                    className="text-[10px] font-bold uppercase tracking-widest text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 transition-colors"
+                    className="text-meta font-bold uppercase tracking-widest text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 transition-colors"
                   >
                     {selectedItemIds.length === currentTimeline.length ? 'Deselect All' : 'Select All'}
                   </button>
@@ -157,7 +157,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                       {selectedItemIds.length} items selected
                     </div>
                     <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Move to:</span>
+                      <span className="text-meta font-bold uppercase tracking-widest opacity-80">Move to:</span>
                       <select
                         onChange={(e) => {
                           const targetDate = e.target.value;
@@ -175,7 +175,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                           setSelectedItemIds([]);
                           setSelectedDate(targetDate);
                         }}
-                        className="bg-white text-black text-[10px] font-bold p-1 outline-none border border-white/20 rounded-none w-28"
+                        className="bg-white text-black text-meta font-bold p-1 outline-none border border-white/20 rounded-none w-28"
                         defaultValue=""
                       >
                         <option value="" disabled>Select Day</option>
@@ -185,7 +185,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                       </select>
                       <button
                         onClick={() => setSelectedItemIds([])}
-                        className="text-[10px] font-bold uppercase tracking-widest hover:underline"
+                        className="text-meta font-bold uppercase tracking-widest hover:underline"
                       >
                         Cancel
                       </button>
@@ -195,7 +195,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
               </div>
             )}
             {currentTimeline.length === 0 ? (
-              <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+              <div className="text-center py-16 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
                 해당 날짜에 등록된 일정이 없습니다.
               </div>
             ) : (
@@ -244,7 +244,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'sunny', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Sunny (해)"
                               >
                                 <Sun className="w-4 h-4" />
@@ -253,7 +253,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'overcast', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Overcast (흐림)"
                               >
                                 <Cloudy className="w-4 h-4" />
@@ -262,7 +262,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'cloudy', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-blue-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-blue-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Cloudy (구름)"
                               >
                                 <Cloud className="w-4 h-4" />
@@ -271,7 +271,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'rainy', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-indigo-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-indigo-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Rainy (비)"
                               >
                                 <CloudRain className="w-4 h-4" />
@@ -280,7 +280,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'snowy', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Snowy (눈)"
                               >
                                 <Snowflake className="w-4 h-4" />
@@ -289,7 +289,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'stormy', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Stormy (태풍)"
                               >
                                 <CloudLightning className="w-4 h-4" />
@@ -298,7 +298,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 <button
                                   type="button"
                                   onClick={() => handleWeatherChange(item.date || '', '', '')}
-                                  className="text-[10px] font-bold text-red-500 dark:text-red-400 hover:underline px-1 font-mono"
+                                  className="text-meta font-bold text-red-500 dark:text-red-400 hover:underline px-1 font-mono"
                                 >
                                   CLEAR
                                 </button>
@@ -330,10 +330,10 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                         const newTemp = (minNum || max) ? `${minNum ? minNum + '°' : ''}/${max ? max + '°' : ''}` : '';
                                         handleWeatherChange(item.date || '', weatherInfo?.type || '', newTemp);
                                       }}
-                                      className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-[10px] text-center font-bold outline-none text-black dark:text-white rounded-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                      className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-meta text-center font-bold outline-none text-black dark:text-white rounded-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
                                       onClick={(e) => e.stopPropagation()}
                                     />
-                                    <span className="text-[10px] text-black/50 dark:text-white/50 font-bold">/</span>
+                                    <span className="text-meta text-black/60 dark:text-white/60 font-bold">/</span>
                                     <input
                                       type="number"
                                       placeholder="Max"
@@ -343,7 +343,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                         const newTemp = (min || maxNum) ? `${min ? min + '°' : ''}/${maxNum ? maxNum + '°' : ''}` : '';
                                         handleWeatherChange(item.date || '', weatherInfo?.type || '', newTemp);
                                       }}
-                                      className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-[10px] text-center font-bold outline-none text-black dark:text-white rounded-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                      className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-meta text-center font-bold outline-none text-black dark:text-white rounded-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
                                       onClick={(e) => e.stopPropagation()}
                                     />
                                   </div>
@@ -364,7 +364,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             )
                           )}
                         </div>
-                        <span className="text-[10px] md:text-[11px] font-extrabold font-mono text-black/45 dark:text-white/45 flex items-center gap-1 shrink-0">
+                        <span className="text-meta md:text-[11px] font-extrabold font-mono text-black/60 dark:text-white/60 flex items-center gap-1 shrink-0">
                           {collapsedDays.includes(item.date || '') ? '▼ EXPAND' : '▲ COLLAPSE'}
                         </span>
                       </div>
@@ -414,10 +414,10 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         <div className="flex-1 flex flex-row items-start py-4 px-4 md:py-5 md:px-6 min-w-0">
                         {/* Left Column: Fixed Width in BOTH view and edit mode (w-24 sm:w-28 md:w-32 shrink-0 pr-2.5) */}
                         {isEditing ? (
-                          <div className="w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col gap-1.5 text-[10px] md:text-xs font-bold">
+                          <div className="w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col gap-1.5 text-meta md:text-xs font-bold">
                             {/* Compact action row: Grip, Checkbox, Trash (Swiss Minimal) */}
                             <div className="flex items-center justify-between w-full py-1 px-1.5 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15">
-                              <div className="drag-handle cursor-grab active:cursor-grabbing text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5" title="순서 이동">
+                              <div className="drag-handle cursor-grab active:cursor-grabbing text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5" title="순서 이동">
                                 <GripVertical className="w-3.5 h-3.5" />
                               </div>
                               <input
@@ -451,7 +451,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 scrollTargetItemIdRef.current = item.id;
                                 updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
                               }}
-                              className="bg-black/5 dark:bg-white/10 px-1 py-1 outline-none font-mono font-bold text-[10px] md:text-xs text-black dark:text-white border border-black/15 dark:border-white/15 w-full text-center rounded-none"
+                              className="bg-black/5 dark:bg-white/10 px-1 py-1 outline-none font-mono font-bold text-meta md:text-xs text-black dark:text-white border border-black/15 dark:border-white/15 w-full text-center rounded-none"
                             />
 
                             <select
@@ -462,7 +462,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 updateTimelineItem(item.id, 'date', newDate);
                                 setSelectedDate(newDate);
                               }}
-                              className="bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 text-[9px] md:text-[10px] font-mono font-bold p-1 outline-none text-black dark:text-white w-full text-center rounded-none cursor-pointer"
+                              className="bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 text-micro md:text-meta font-mono font-bold p-1 outline-none text-black dark:text-white w-full text-center rounded-none cursor-pointer"
                             >
                               {allTripDates.map(d => (
                                 <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
@@ -477,7 +477,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'car'
                                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                                    : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'car' ? "차량 선택 해제 (기본 도보)" : "차량으로 이동"}
                               >
@@ -489,7 +489,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'train'
                                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                                    : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'train' ? "열차 선택 해제 (기본 도보)" : "열차로 이동"}
                               >
@@ -501,7 +501,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'ship'
                                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                                    : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'ship' ? "선박 선택 해제 (기본 도보)" : "선박으로 이동"}
                               >
@@ -513,7 +513,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'flight'
                                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                                    : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'flight' ? "항공 선택 해제 (기본 도보)" : "항공으로 이동"}
                               >
@@ -524,9 +524,9 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                               <button
                                 onClick={() => handleToggleExcludeFromMap(item)}
-                                className={`flex items-center justify-center py-1 border border-black/15 dark:border-white/15 text-[10px] font-mono font-bold w-full transition-colors rounded-none cursor-pointer ${
+                                className={`flex items-center justify-center py-1 border border-black/15 dark:border-white/15 text-meta font-mono font-bold w-full transition-colors rounded-none cursor-pointer ${
                                   isExcluded
-                                    ? 'text-black/20 dark:text-white/20'
+                                    ? 'text-black/60 dark:text-white/60'
                                     : 'hover:opacity-80'
                                 }`}
                                 style={!isExcluded && dayColor ? { color: dayColor, borderColor: dayColor } : undefined}
@@ -549,7 +549,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                         {match[1]}
                                       </span>
                                       {match[2] && (
-                                        <span className="text-[8.5px] sm:text-[9.5px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                                        <span className="text-micro sm:text-micro font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60">
                                           {match[2].toUpperCase()}
                                         </span>
                                       )}
@@ -566,22 +566,22 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             <div className="flex items-center gap-1.5 mt-1.5 h-6">
                               {/* Vehicle indicator in view mode */}
                               {item.vehicleType === 'car' && (
-                                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 차량 이동">
+                                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-micro font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 차량 이동">
                                   <Car className="w-3 h-3" />
                                 </span>
                               )}
                               {item.vehicleType === 'train' && (
-                                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 열차 이동">
+                                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-micro font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 열차 이동">
                                   <Train className="w-3 h-3" />
                                 </span>
                               )}
                               {item.vehicleType === 'ship' && (
-                                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 선박 이동">
+                                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-micro font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 선박 이동">
                                   <Ship className="w-3 h-3" />
                                 </span>
                               )}
                               {item.vehicleType === 'flight' && (
-                                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 항공 이동">
+                                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-micro font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 항공 이동">
                                   <Plane className="w-3 h-3" />
                                 </span>
                               )}
@@ -598,7 +598,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                   title={isExcluded ? "지도에 표시하기 (현재 OFF)" : "지도에서 제외하기 (현재 ON)"}
                                 >
                                   {isExcluded ? (
-                                    <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                                    <MapPinOff className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
                                   ) : (
                                     <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                                   )}
@@ -724,7 +724,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                       setTimeout(() => setCopiedSpotId(null), 1500);
                                     }
                                   }}
-                                  className="p-1 -m-1 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                                  className="p-1 -m-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
                                   title="주소/장소명 복사"
                                   aria-label="주소 복사"
                                 >
@@ -741,7 +741,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
                                     setMapConfirm({ placeName: item.location || '', url });
                                   }}
-                                  className="p-1 -m-1 text-black/40 hover:text-red-600 dark:text-white/40 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                                  className="p-1 -m-1 text-black/60 hover:text-red-600 dark:text-white/60 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
                                   title="구글 지도에서 위치 확인 (새 창)"
                                   aria-label="구글 지도 열기"
                                 >
@@ -756,7 +756,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black/10 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
                               <button 
                                 type="button"
-                                className="px-2 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider" 
+                                className="px-2 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer flex items-center gap-1 text-meta font-mono font-bold uppercase tracking-wider" 
                                 title="위로 일정 추가"
                                 onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
                               >
@@ -765,7 +765,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               </button>
                               <button 
                                 type="button"
-                                className="px-2 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider" 
+                                className="px-2 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer flex items-center gap-1 text-meta font-mono font-bold uppercase tracking-wider" 
                                 title="아래로 일정 추가"
                                 onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
                               >
@@ -825,7 +825,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                           </div>
                         ) : isEditing ? (
                           <div className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 border-l bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-center transition-colors relative rounded-none ${isActive ? 'border-red-600 dark:border-red-400 text-red-600' : 'border-black/15 dark:border-white/15'}`}>
-                            <ImageIcon className="w-5 h-5 text-black/20 dark:text-white/20" />
+                            <ImageIcon className="w-5 h-5 text-black/60 dark:text-white/60" />
                             <ImageEditOverlay 
                               isEditMode={isEditing} 
                               hasImage={false}
@@ -875,12 +875,12 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                           <button
                             type="button"
                             onClick={() => setIsPocketWidgetOpen(true)}
-                            className="w-full py-2 px-3 border border-dashed border-black/20 dark:border-white/20 hover:border-red-500 hover:text-red-500 hover:bg-red-500/5 transition-all text-[10px] md:text-[11px] font-mono font-bold uppercase tracking-widest text-black/50 dark:text-white/50 flex items-center justify-center gap-2 cursor-pointer group select-none"
+                            className="w-full py-2 px-3 border border-dashed border-black/20 dark:border-white/20 hover:border-red-500 hover:text-red-500 hover:bg-red-500/5 transition-all text-meta md:text-[11px] font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 flex items-center justify-center gap-2 cursor-pointer group select-none"
                             title={`${gapHours}시간의 빈틈이 있습니다. 포켓 위젯을 열어 스팟을 채워보세요.`}
                           >
                             <Plus className="w-3 h-3 group-hover:scale-110 transition-transform text-red-500 shrink-0" />
                             <span>GAP FILL ({gapHours}h)</span>
-                            <span className="text-[9px] opacity-70 font-normal">· {midTimeStr}</span>
+                            <span className="text-micro opacity-70 font-normal">· {midTimeStr}</span>
                           </button>
                         </div>
                       );

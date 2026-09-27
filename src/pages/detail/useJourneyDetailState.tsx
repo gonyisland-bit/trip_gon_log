@@ -3174,17 +3174,17 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
             onClick={() => {
               onNavigate('archive');
             }}
-            className="flex items-center gap-1 text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wider text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1 text-micro sm:text-meta font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
             title="Go back"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Back</span>
           </button>
 
-          <span className="text-black/20 dark:text-white/20 shrink-0">|</span>
+          <span className="text-black/60 dark:text-white/60 shrink-0">|</span>
 
           {/* Issue # badge (minimalist) */}
-          <span className="hidden md:inline-block bg-black/10 dark:bg-white/15 px-1.5 py-0.5 rounded-[2px] font-mono text-[8.5px] font-extrabold text-black dark:text-white shrink-0">
+          <span className="hidden md:inline-block bg-black/10 dark:bg-white/15 px-1.5 py-0.5 rounded-[2px] font-mono text-micro font-extrabold text-black dark:text-white shrink-0">
             #{String((trip!.displayOrder ?? (trip!.id % 99)) + 1).padStart(2, '0')}
           </span>
 
@@ -3202,12 +3202,12 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
             </h1>
 
             {/* Date & Destination summary - placed beneath title with clean typography & full visibility */}
-            <div className="flex items-center gap-1.5 text-[10.5px] sm:text-xs font-mono font-medium text-black/75 dark:text-white/75 min-w-0 leading-tight mt-0.5">
+            <div className="flex items-center gap-1.5 text-meta sm:text-xs font-mono font-medium text-black/75 dark:text-white/75 min-w-0 leading-tight mt-0.5">
               <span className="truncate break-keep font-medium">{generateJourneyMessage(trip!.locationStr, trip!.date, generatedDates.length)}</span>
               <button
                 type="button"
                 onClick={handleOpenInCalendar}
-                className="p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white shrink-0 cursor-pointer"
+                className="p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white shrink-0 cursor-pointer"
                 title="스위스 달력에서 이 여정 확인하기"
               >
                 <Calendar className="w-3.5 h-3.5" />
@@ -3220,7 +3220,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           {/* Destination Current Local Time Badge (Clean, no 'LOCAL' text) */}
           {destLocalTime && (
-            <div className="hidden min-[480px]:flex items-center gap-1 px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-[9px] font-bold text-black/70 dark:text-white/70 border border-black/5 dark:border-white/5" title="현지 시각">
+            <div className="hidden min-[480px]:flex items-center gap-1 px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-micro font-bold text-black/70 dark:text-white/70 border border-black/5 dark:border-white/5" title="현지 시각">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span>{destLocalTime}</span>
             </div>
@@ -3265,7 +3265,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 className={`p-1.5 rounded transition-colors flex items-center justify-center ${
                   canUndo
                     ? 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 cursor-pointer'
-                    : 'text-black/25 dark:text-white/25 cursor-not-allowed'
+                    : 'text-black/60 dark:text-white/60 cursor-not-allowed'
                 }`}
                 title="실행 취소 (Undo: Ctrl+Z)"
               >
@@ -3278,7 +3278,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 className={`p-1.5 rounded transition-colors flex items-center justify-center ${
                   canRedo
                     ? 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 cursor-pointer'
-                    : 'text-black/25 dark:text-white/25 cursor-not-allowed'
+                    : 'text-black/60 dark:text-white/60 cursor-not-allowed'
                 }`}
                 title="다시 실행 (Redo: Ctrl+Y)"
               >
@@ -3330,7 +3330,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
             className={`p-1.5 rounded transition-all cursor-pointer ${
               isBannerMenuOpen
                 ? 'bg-black/10 dark:bg-white/15 text-red-600 dark:text-red-400'
-                : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/55 dark:text-white/55'
+                : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
             }`}
             title="여정 상세 메뉴 토글"
             aria-label="Toggle banner menu"
@@ -3347,7 +3347,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             {isEditing && draftTrip ? (
               <div className="flex-1 min-w-0">
-                <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold block mb-1">Journey Title</span>
+                <span className="text-meta uppercase tracking-widest text-black/60 dark:text-white/60 font-bold block mb-1">Journey Title</span>
                 <JourneyTitleInput
                   initialTitle={draftTrip.title}
                   onUpdateTitle={(title) => setDraftTrip(prev => prev ? { ...prev, title } : null)}
@@ -3368,7 +3368,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                   setActiveTab(prev => prev === 'settlement' ? 'timeline' : 'settlement');
                   setExpandedItemId(null);
                 }}
-                className={`px-2.5 py-1 border rounded text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 border rounded text-micro font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
                   activeTab === 'settlement'
                     ? 'bg-emerald-600 text-white border-emerald-600'
                     : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
@@ -3381,7 +3381,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
               <button
                 onClick={handleCopyShareLink}
-                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-[9px] font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-micro font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
                 title="공유 링크 복사"
               >
                 <Share2 className="w-3 h-3" />
@@ -3390,7 +3390,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
               <button
                 onClick={handleOpenInCalendar}
-                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-[9px] font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-micro font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
                 title="달력에서 보기"
               >
                 <Calendar className="w-3 h-3" />
@@ -3403,7 +3403,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                   setCoverInputUrl(tripToUse?.img || '');
                   setIsCoverModalOpen(true);
                 }}
-                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-[9px] font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-micro font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
                 title="카드 커버 이미지 변경"
               >
                 <ImageIcon className="w-3 h-3" />
@@ -3413,7 +3413,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               {isEditing && (
                 <button
                   onClick={handleCancel}
-                  className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-[9px] font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors cursor-pointer"
+                  className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-micro font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -3422,7 +3422,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               {isEditing && (
                 <button
                   onClick={() => setShowTripDeleteConfirm(true)}
-                  className="px-2.5 py-1 border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white rounded text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white rounded text-micro font-bold uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer"
                   title="여정 삭제"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -3433,31 +3433,31 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
           </div>
 
           {/* Row 2: Dates & Destinations */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-[9px] sm:text-[10px] font-bold border-t border-black/10 dark:border-white/10 pt-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-micro sm:text-meta font-bold border-t border-black/10 dark:border-white/10 pt-2.5">
             {isEditing && draftTrip ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">Dates:</span>
+                  <span className="text-meta uppercase tracking-widest text-black/60 dark:text-white/60 font-bold shrink-0">Dates:</span>
                   <input
                     type="date"
                     value={parseDateRange(draftTrip.date).start}
                     onChange={(e) => handleDateChange('start', e.target.value)}
-                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] text-black dark:text-white rounded border border-black/15 font-mono"
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta text-black dark:text-white rounded border border-black/15 font-mono"
                   />
                   <span>—</span>
                   <input
                     type="date"
                     value={parseDateRange(draftTrip.date).end}
                     onChange={(e) => handleDateChange('end', e.target.value)}
-                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] text-black dark:text-white rounded border border-black/15 font-mono"
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta text-black dark:text-white rounded border border-black/15 font-mono"
                   />
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">Cities:</span>
+                  <span className="text-meta uppercase tracking-widest text-black/60 dark:text-white/60 font-bold shrink-0">Cities:</span>
                   <div className="flex flex-wrap items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-white/5 rounded flex-1">
                     {(draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : [])).map((loc, idx) => (
-                      <span key={idx} className="flex items-center gap-1 bg-white dark:bg-[#222] text-[10px] font-bold px-1.5 py-0.5 border border-black/15 text-black dark:text-white rounded-sm">
+                      <span key={idx} className="flex items-center gap-1 bg-white dark:bg-[#222] text-meta font-bold px-1.5 py-0.5 border border-black/15 text-black dark:text-white rounded-sm">
                         {loc.name}
                         <button
                           type="button"
@@ -3498,7 +3498,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                             setDetailLocInput('');
                           }
                         }}
-                        className="bg-transparent outline-none text-[8px] text-black dark:text-white w-full border-none px-1 py-0.5"
+                        className="bg-transparent outline-none text-micro text-black dark:text-white w-full border-none px-1 py-0.5"
                         placeholder="+ City..."
                       />
                     </div>
@@ -3512,7 +3512,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                     const planInfo = getUpcomingPlanInfo(trip!);
                     if (planInfo.isPlanOrFuture) {
                       return (
-                        <span className="px-2.5 py-0.5 rounded-full bg-blue-600/90 text-white font-sans text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-600/90 text-white font-sans text-meta font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-xs">
                           <span>PLAN</span>
                           {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
                             <span className="font-mono font-bold opacity-90">· {planInfo.dDayLabel}</span>
@@ -3523,12 +3523,12 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                     return null;
                   })()}
                   <span className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                    <Calendar className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
                     <span>{trip!.date}</span>
                   </span>
-                  <span className="text-black/30 dark:text-white/30">•</span>
+                  <span className="text-black/60 dark:text-white/60">•</span>
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                    <MapPin className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
                     <span className="font-sans font-bold">{formatDestinations(trip!.locationStr)}</span>
                   </span>
                 </div>
@@ -3537,7 +3537,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 <button
                   type="button"
                   onClick={() => setIsQuickBookingOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/15 dark:border-white/15 text-[10px] font-mono font-bold uppercase tracking-wider text-black dark:text-white transition-all active:scale-[0.98] cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/15 dark:border-white/15 text-meta font-mono font-bold uppercase tracking-wider text-black dark:text-white transition-all active:scale-[0.98] cursor-pointer"
                   title="항공권 & 숙소 원클릭 스마트 예약 비교"
                 >
                   <Sparkles className="w-3 h-3 text-emerald-500" />
@@ -3551,7 +3551,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-black/10 dark:border-white/10 pt-2.5">
             {/* Members */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">
+              <span className="flex items-center gap-1 text-meta uppercase tracking-widest text-black/60 dark:text-white/60 font-bold shrink-0">
                 <Users className="w-3 h-3" /> MEMBERS:
               </span>
               {isEditing && draftTrip ? (
@@ -3571,7 +3571,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                           const newMembers = (draftTrip.members || []).filter(x => x !== m);
                           setDraftTrip({ ...draftTrip, members: newMembers });
                         }}
-                        className="hover:text-red-500 text-red-600 font-bold text-[10px] ml-1 leading-none"
+                        className="hover:text-red-500 text-red-600 font-bold text-meta ml-1 leading-none"
                         title="삭제"
                       >
                         <X className="w-2.5 h-2.5" />
@@ -3592,7 +3592,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                         }
                       }
                     }}
-                    className="text-[10px] font-bold font-mono border border-black/20 dark:border-white/20 px-2 py-0.5 rounded-sm bg-transparent outline-none w-20 focus:w-28 text-black dark:text-white"
+                    className="text-meta font-bold font-mono border border-black/20 dark:border-white/20 px-2 py-0.5 rounded-sm bg-transparent outline-none w-20 focus:w-28 text-black dark:text-white"
                   />
                 </div>
               ) : (

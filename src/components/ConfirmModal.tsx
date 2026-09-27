@@ -164,7 +164,7 @@ export function ConfirmModal({
         <button
           type="button"
           onClick={() => handleImmediateClose(onCancel)}
-          className="absolute top-3.5 right-3.5 p-1 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white transition-colors cursor-pointer"
+          className="absolute top-3.5 right-3.5 p-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
           title="닫기 (ESC)"
         >
           <X className="w-4 h-4" />

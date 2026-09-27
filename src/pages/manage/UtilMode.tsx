@@ -32,11 +32,11 @@ export function UtilMode({ s }: { s: ManageHubState }) {
       {/* Header Title */}
       <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
         <div className="flex items-center justify-between">
-          <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+          <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
             SYSTEM UTILITIES & GLOBAL CONFIGURATION
           </span>
           {(trashedJourneys.length + trashedSections.length) > 0 && (
-            <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600 text-white uppercase font-bold">
+            <span className="text-meta font-mono px-2 py-0.5 bg-red-600 text-white uppercase font-bold">
               TRASH: {trashedJourneys.length + trashedSections.length}
             </span>
           )}
@@ -70,7 +70,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
             >
               <span>{tab.label}</span>
               {'count' in tab && typeof tab.count === 'number' && (
-                <span className={`text-[8.5px] sm:text-[9px] px-1 py-0.2 font-mono font-bold shrink-0 ${
+                <span className={`text-micro sm:text-micro px-1 py-0.2 font-mono font-bold shrink-0 ${
                   'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-black text-white dark:bg-white dark:text-black'
                 }`}>
                   {tab.count}
@@ -103,7 +103,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
                   BACKGROUND GRADIENT
                 </span>
-                <span className="text-[10px] text-black/50 dark:text-white/50 font-mono">
+                <span className="text-meta text-black/60 dark:text-white/60 font-mono">
                   홈 메인 배경 은은한 그라데이션 활성화
                 </span>
               </div>
@@ -113,7 +113,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                   gradientEnabled
                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                    : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                 }`}
               >
                 {gradientEnabled ? 'ON' : 'OFF'}
@@ -124,7 +124,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               <div className="flex flex-col gap-4 pt-2 bg-black/[0.02] dark:bg-white/[0.02] p-4 border border-black/10 dark:border-white/10">
                 {/* Presets */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                  <label className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                     SWISS MINIMAL PRESETS (추천 프리셋)
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
@@ -159,7 +159,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                             )}
                           </div>
                           <div className="flex items-center justify-between gap-1">
-                            <span className={`text-[10px] truncate ${isSelected ? 'font-extrabold text-black dark:text-white' : 'font-bold text-black/80 dark:text-white/80'}`}>
+                            <span className={`text-meta truncate ${isSelected ? 'font-extrabold text-black dark:text-white' : 'font-bold text-black/80 dark:text-white/80'}`}>
                               {p.name}
                             </span>
                             {isSelected && (
@@ -175,7 +175,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 {/* Custom Color Pickers */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                    <label className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                       COLOR 1 (시작 색상)
                     </label>
                     <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                    <label className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                       COLOR 2 (끝 색상)
                     </label>
                     <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
 
                 {/* Live Preview Strip */}
                 <div className="flex flex-col gap-1 pt-1">
-                  <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                  <label className="text-micro font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                     LIVE PREVIEW (실시간 미리보기)
                   </label>
                   <div
@@ -242,7 +242,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
                   MARQUEE BANNER
                 </span>
-                <span className="text-[10px] text-black/50 dark:text-white/50 font-mono">
+                <span className="text-meta text-black/60 dark:text-white/60 font-mono">
                   홈 상단 흐르는 텍스트 배너 설정
                 </span>
               </div>
@@ -252,7 +252,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                   showMarquee
                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                    : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                 }`}
               >
                 {showMarquee ? 'ON' : 'OFF'}
@@ -262,7 +262,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
             {showMarquee && (
               <div className="flex flex-col gap-3 pt-1">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                  <label className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                     MARQUEE TEXT (한글/영문 흐르는 문구)
                   </label>
                   <input
@@ -275,7 +275,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-[10px] font-mono">
+                  <div className="flex items-center justify-between text-meta font-mono">
                     <span className="font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                       MARQUEE SPEED (흐르는 속도)
                     </span>
@@ -284,7 +284,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">FAST (10s)</span>
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60">FAST (10s)</span>
                     <input
                       type="range"
                       min="10"
@@ -294,7 +294,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                       onChange={e => setHomeSpeed(Number(e.target.value))}
                       className="flex-1 accent-black dark:accent-white cursor-pointer"
                     />
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">SLOW (60s)</span>
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60">SLOW (60s)</span>
                   </div>
                 </div>
               </div>
@@ -343,7 +343,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                       key={preset}
                       type="button"
                       onClick={() => setBgmDefaultVolume(preset)}
-                      className={`px-1.5 py-0.5 text-[9px] font-mono border transition-colors cursor-pointer ${
+                      className={`px-1.5 py-0.5 text-micro font-mono border transition-colors cursor-pointer ${
                         bgmDefaultVolume === preset
                           ? 'bg-red-500 text-white border-red-500 font-bold'
                           : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5'
@@ -364,7 +364,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
                     슬라이드쇼 BGM 자동 재생
                   </span>
-                  <span className="text-[10px] text-black/50 dark:text-white/50 font-mono truncate">
+                  <span className="text-meta text-black/60 dark:text-white/60 font-mono truncate">
                     쇼 시작 시 자동 재생
                   </span>
                 </div>
@@ -374,7 +374,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                     bgmAutoplay
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                      : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                   }`}
                 >
                   {bgmAutoplay ? 'ON' : 'OFF'}
@@ -387,7 +387,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
                     BGM 셔플(무작위) 재생
                   </span>
-                  <span className="text-[10px] text-black/50 dark:text-white/50 font-mono truncate">
+                  <span className="text-meta text-black/60 dark:text-white/60 font-mono truncate">
                     랜덤 순서 순환
                   </span>
                 </div>
@@ -397,7 +397,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                     bgmShuffle
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                      : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                   }`}
                 >
                   {bgmShuffle ? 'ON' : 'OFF'}
@@ -447,11 +447,11 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   </>
                 ) : (
                   <>
-                    <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
+                    <Upload className="w-5 h-5 text-black/60 dark:text-white/60" />
                     <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                       오디오 파일 추가 (클릭 또는 드래그 앤 드롭)
                     </span>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60">
                       MP3, M4A, WAV, AAC, OGG 파일 지원
                     </span>
                   </>
@@ -472,7 +472,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={handleRestoreDefaultBgm}
-                className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
+                className="flex items-center gap-1 text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white underline cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 기본 트랙 복구
@@ -480,7 +480,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
             </div>
 
             {bgmTracks.length === 0 ? (
-              <div className="p-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/15 dark:border-white/15">
+              <div className="p-8 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/15 dark:border-white/15">
                 등록된 배경음악 트랙이 없습니다.
               </div>
             ) : (
@@ -504,7 +504,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                       />
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40">
+                          <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60">
                             #{idx + 1}
                           </span>
                           <span className="text-xs font-bold truncate text-black dark:text-white font-sans">
@@ -630,7 +630,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
                 TRIP PRESETS (여정 추천 템플릿 관리)
               </h3>
-              <span className="text-[9px] px-1.5 py-0.2 bg-red-600 text-white font-mono font-bold">
+              <span className="text-micro px-1.5 py-0.2 bg-red-600 text-white font-mono font-bold">
                 {presetsList.length}
               </span>
             </div>
@@ -638,7 +638,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={() => setShowRestorePresetsConfirm(true)}
-                className="flex items-center gap-1 text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/20 dark:border-white/20 px-2.5 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                className="flex items-center gap-1 text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/20 dark:border-white/20 px-2.5 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>기본 복구</span>
@@ -646,7 +646,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={handleOpenNewPreset}
-                className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 hover:opacity-85 transition-opacity cursor-pointer"
+                className="flex items-center gap-1 text-meta font-mono font-bold uppercase bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 hover:opacity-85 transition-opacity cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>NEW PRESET</span>
@@ -657,7 +657,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
           {/* Filter Bar: Search & Theme Chips */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-black/10 dark:border-white/10">
             <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/60 dark:text-white/60" />
               <input
                 type="text"
                 value={presetSearchQuery}
@@ -669,7 +669,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 <button
                   type="button"
                   onClick={() => setPresetSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -682,10 +682,10 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   key={theme}
                   type="button"
                   onClick={() => setPresetThemeFilter(theme)}
-                  className={`px-2 py-1 text-[10px] font-bold uppercase border transition-colors cursor-pointer ${
+                  className={`px-2 py-1 text-meta font-bold uppercase border transition-colors cursor-pointer ${
                     presetThemeFilter === theme
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'border-black/15 dark:border-white/15 text-black/50 dark:text-white/50 hover:border-black/40 dark:hover:border-white/40'
+                      : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40 dark:hover:border-white/40'
                   }`}
                 >
                   {theme}
@@ -695,7 +695,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
           </div>
 
           {/* Presets Count Badge */}
-          <div className="flex items-center justify-between text-[11px] font-mono text-black/50 dark:text-white/50">
+          <div className="flex items-center justify-between text-[11px] font-mono text-black/60 dark:text-white/60">
             <span>
               TOTAL {presetsList.filter(p => {
                 if (presetThemeFilter !== 'all' && p.theme !== presetThemeFilter) return false;
@@ -743,16 +743,16 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                     <div>
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[8px] font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
+                          <span className="text-micro font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
                             {preset.country}
                           </span>
-                          <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60">
+                          <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60">
                             {preset.city}
                           </span>
-                          <span className="text-[9px] font-mono px-1 border border-black/20 dark:border-white/20 text-black/50 dark:text-white/50">
+                          <span className="text-micro font-mono px-1 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60">
                             {preset.durationDays}D
                           </span>
-                          <span className="text-[8px] font-mono font-bold uppercase text-red-600 dark:text-red-400">
+                          <span className="text-micro font-mono font-bold uppercase text-red-600 dark:text-red-400">
                             {preset.theme}
                           </span>
                         </div>
@@ -779,7 +779,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         {preset.title}
                       </h4>
                       {preset.subtitle && (
-                        <p className="text-[10px] text-black/50 dark:text-white/50 truncate font-sans mt-0.5">
+                        <p className="text-meta text-black/60 dark:text-white/60 truncate font-sans mt-0.5">
                           {preset.subtitle}
                         </p>
                       )}
@@ -788,7 +788,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                     {preset.highlights && preset.highlights.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {preset.highlights.slice(0, 3).map((h, i) => (
-                          <span key={i} className="text-[9px] font-mono text-black/45 dark:text-white/45 border-l border-black/20 dark:border-white/20 pl-1">
+                          <span key={i} className="text-micro font-mono text-black/60 dark:text-white/60 border-l border-black/20 dark:border-white/20 pl-1">
                             {h}
                           </span>
                         ))}
@@ -811,7 +811,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 SYSTEM (데이터베이스 진단 & 휴지통) ({trashedJourneys.length + trashedSections.length})
               </h3>
             </div>
-            <span className="text-xs font-mono text-black/50 dark:text-white/50 truncate">
+            <span className="text-xs font-mono text-black/60 dark:text-white/60 truncate">
               삭제 여정 보관 및 DB 무결성 진단
             </span>
           </div>
@@ -825,12 +825,12 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   DATABASE OPTIMIZER
                 </span>
                 {diagReport?.isClean && (
-                  <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <span className="text-micro font-mono font-bold px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     100% HEALTHY
                   </span>
                 )}
               </div>
-              <span className="text-[11px] font-mono text-black/50 dark:text-white/50 truncate">
+              <span className="text-[11px] font-mono text-black/60 dark:text-white/60 truncate">
                 {diagReport 
                   ? `ACTIVE: ${diagReport.activeTripsCount} trips (${diagReport.activeTimelineCount} timelines) | ORPHANED: ${diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length} items`
                   : '고아 문서, 폐기 필드 및 로컬 캐시를 안전하게 자동 스캔 및 정리합니다.'}
@@ -861,7 +861,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
           {/* Clean Log Output (if any) */}
           {cleanLog.length > 0 && (
             <div className="border border-black/10 dark:border-white/10 p-3 bg-black/[0.02] dark:bg-white/[0.02] text-[11px] font-mono space-y-1">
-              <div className="flex items-center justify-between text-[10px] text-black/40 dark:text-white/40 font-bold uppercase mb-1">
+              <div className="flex items-center justify-between text-meta text-black/60 dark:text-white/60 font-bold uppercase mb-1">
                 <span>OPTIMIZATION REPORT</span>
                 <button type="button" onClick={() => setCleanLog([])} className="hover:text-black dark:hover:text-white cursor-pointer">CLEAR</button>
               </div>
@@ -920,11 +920,11 @@ export function UtilMode({ s }: { s: ManageHubState }) {
           {/* Empty Trash State */}
           {trashedJourneys.length === 0 && trashedSections.length === 0 && (
             <div className="p-12 text-center border border-dashed border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex flex-col items-center justify-center gap-2">
-              <Trash2 className="w-8 h-8 text-black/20 dark:text-white/20 stroke-[1.5]" />
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+              <Trash2 className="w-8 h-8 text-black/60 dark:text-white/60 stroke-[1.5]" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                 휴지통이 비어 있습니다
               </span>
-              <span className="text-[11px] font-mono text-black/30 dark:text-white/30">
+              <span className="text-[11px] font-mono text-black/60 dark:text-white/60">
                 삭제된 여정이나 매거진 섹션이 여기에 안전하게 보관됩니다.
               </span>
             </div>
@@ -963,7 +963,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                           <h4 className="text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
                             {sec.title}
                           </h4>
-                          <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                          <span className="text-[11px] font-mono text-black/60 dark:text-white/60 block mt-0.5">
                             {sec.subtitle || '부제목 없음'} · 아이템 {sec.items?.length || 0}개
                           </span>
                         </div>
@@ -1037,7 +1037,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                           <h4 className="text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
                             {journey.title}
                           </h4>
-                          <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                          <span className="text-[11px] font-mono text-black/60 dark:text-white/60 block mt-0.5">
                             {journey.date} · {journey.locationStr}
                           </span>
                         </div>

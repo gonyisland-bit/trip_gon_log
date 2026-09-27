@@ -60,7 +60,7 @@ export function PasswordInput({
         aria-label={visible ? '비밀번호 숨기기' : '비밀번호 보기'}
         aria-pressed={visible}
         title={visible ? '비밀번호 숨기기' : '비밀번호 보기'}
-        className={`absolute right-0 top-0 ${variant === 'box' ? 'h-9 w-9' : 'h-8 w-8'} flex items-center justify-center text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white transition-colors cursor-pointer`}
+        className={`absolute right-0 top-0 ${variant === 'box' ? 'h-9 w-9' : 'h-8 w-8'} flex items-center justify-center text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer`}
       >
         {visible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
       </button>

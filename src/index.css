@@ -311,7 +311,7 @@
 /* Pin label */
 .pin-label {
   margin-top: 6px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -329,7 +329,7 @@
 
 .pin-label-active {
   opacity: 1 !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-weight: 800 !important;
   font-family: 'Inter', sans-serif !important;
   letter-spacing: 0.02em !important;
@@ -574,7 +574,7 @@
 
 .poi-type-tag {
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.05em;
   line-height: 1;
@@ -587,7 +587,7 @@
 
 .poi-name-text {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: #111111;
@@ -630,7 +630,7 @@
   border: 1.5px solid #111111 !important;
   border-top: none !important;
   font-family: 'Outfit', 'Inter', sans-serif !important;
-  font-size: 8px !important;
+  font-size: 11px !important;
   font-weight: 800 !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
   text-transform: uppercase !important;
@@ -816,7 +816,7 @@ div[data-pin-hover],
   background: #FAFAFA;
   border: 1px solid #111111;
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;

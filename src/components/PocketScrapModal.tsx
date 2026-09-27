@@ -33,34 +33,34 @@ const renderPlatformBadge = (platform: SpotPocketPlatform) => {
   const p = platform.toLowerCase();
   if (p === 'instagram') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-[10px] font-bold tracking-wider bg-gradient-to-r from-pink-500/15 via-red-500/15 to-amber-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/30">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-gradient-to-r from-pink-500/15 via-red-500/15 to-amber-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/30">
         INSTAGRAM
       </span>
     );
   }
   if (p === 'threads') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-[10px] font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
         THREADS
       </span>
     );
   }
   if (p === 'x') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-[10px] font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
         X / TWITTER
       </span>
     );
   }
   if (p === 'youtube') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-[10px] font-bold tracking-wider bg-red-600/15 text-red-600 dark:text-red-400 border border-red-600/30">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-red-600/15 text-red-600 dark:text-red-400 border border-red-600/30">
         YOUTUBE
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-[10px] font-bold tracking-wider bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/15 dark:border-white/15 uppercase">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/15 dark:border-white/15 uppercase">
       {platform}
     </span>
   );
@@ -404,7 +404,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           <button
             type="button"
             onClick={handleAttemptClose}
-            className="p-1.5 text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
             title="닫기 (ESC)"
           >
             <X className="w-4 h-4" />
@@ -415,7 +415,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[78vh]">
           {/* STEP 1: SOURCE LOADING (URL or Screenshot Image) */}
           <div className="flex flex-col gap-2 p-3 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10">
-            <span className="text-[10px] font-mono font-bold tracking-widest text-black/50 dark:text-white/50 uppercase">
+            <span className="text-meta font-mono font-bold tracking-widest text-black/60 dark:text-white/60 uppercase">
               01 SOURCE (링크 또는 이미지 불러오기)
             </span>
 
@@ -427,15 +427,15 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                   value={sourceUrlInput}
                   onChange={(e) => setSourceUrlInput(e.target.value)}
                   placeholder="https://... (인스타그램, 유튜브, 블로그 등 링크)"
-                  className="w-full pl-7 pr-3 py-1.5 text-xs font-mono bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors placeholder:text-black/30 dark:placeholder:text-white/30"
+                  className="w-full pl-7 pr-3 py-1.5 text-xs font-mono bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors placeholder:text-black/50 dark:placeholder:text-white/50"
                 />
-                <Link2 className="w-3.5 h-3.5 text-black/40 dark:text-white/40 absolute left-2 top-2" />
+                <Link2 className="w-3.5 h-3.5 text-black/60 dark:text-white/60 absolute left-2 top-2" />
               </div>
               <button
                 type="button"
                 onClick={handleFetchUrl}
                 disabled={isFetchingUrl || !sourceUrlInput.trim()}
-                className="px-3 py-1.5 bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[10px] font-bold tracking-wider uppercase transition-colors shrink-0 disabled:opacity-40 cursor-pointer flex items-center gap-1"
+                className="px-3 py-1.5 bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-meta font-bold tracking-wider uppercase transition-colors shrink-0 disabled:opacity-40 cursor-pointer flex items-center gap-1"
               >
                 {isFetchingUrl ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
                 <span>{isFetchingUrl ? 'FETCHING' : 'FETCH'}</span>
@@ -445,7 +445,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             {/* Image Loading Options Bar */}
             <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-black/60 dark:text-white/60">
               <span className="flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
+                <ImageIcon className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
                 <span>스크린샷 이미지</span>
               </span>
               <div className="flex items-center gap-2">
@@ -453,13 +453,13 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                   <button
                     type="button"
                     onClick={() => setIsLightboxOpen(true)}
-                    className="text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+                    className="text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <ZoomIn className="w-3 h-3" />
                     <span>원본 확대</span>
                   </button>
                 )}
-                <label className="text-[10px] font-mono text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:underline cursor-pointer flex items-center gap-1">
+                <label className="text-meta font-mono text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:underline cursor-pointer flex items-center gap-1">
                   <Upload className="w-3 h-3" />
                   <span>{isUploading ? '분석 중...' : '이미지 불러오기'}</span>
                   <input 
@@ -486,14 +486,14 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                   crossOrigin="anonymous"
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center gap-1.5 text-black/35 dark:text-white/35 font-mono text-xs py-12">
+                <div className="flex flex-col items-center justify-center gap-1.5 text-black/60 dark:text-white/60 font-mono text-xs py-12">
                   <ImageIcon className="w-7 h-7 stroke-1" />
                   <span>이미지 없음 (클립보드 스크린샷 Ctrl+V 붙여넣기 지원)</span>
                 </div>
               )}
               {selectedImage && (
                 <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none z-10">
-                  <span className="flex items-center gap-1 px-2 py-0.5 bg-black/70 backdrop-blur-xs text-white/90 text-[9px] font-mono border border-white/15">
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-black/70 backdrop-blur-xs text-white/90 text-micro font-mono border border-white/15">
                     <Clipboard className="w-2.5 h-2.5" />
                     <span>Ctrl+V 붙여넣기 지원</span>
                   </span>
@@ -504,7 +504,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
           {/* STEP 2: EXTRACT & EDIT */}
           <div className="flex flex-col gap-3">
-            <span className="text-[10px] font-mono font-bold tracking-widest text-black/50 dark:text-white/50 uppercase">
+            <span className="text-meta font-mono font-bold tracking-widest text-black/60 dark:text-white/60 uppercase">
               02 EXTRACT & EDIT (장소명·노트 추출 및 편집)
             </span>
 
@@ -534,13 +534,13 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             {/* Multi-spot Candidates (If feed contains multiple recommendations) */}
             {scrapedData.candidates && scrapedData.candidates.length > 0 && (
               <div className="p-2.5 bg-red-600/[0.04] dark:bg-red-500/[0.06] border border-red-500/20 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-red-600 dark:text-red-400">
+                <div className="flex items-center justify-between text-meta font-mono font-bold text-red-600 dark:text-red-400">
                   <span className="flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />
                     FEED SPOTS ({scrapedData.candidates.length})
                   </span>
                   {scrapedData.targetImgIndex && (
-                    <span className="text-[9px] font-normal text-black/40 dark:text-white/40">
+                    <span className="text-micro font-normal text-black/60 dark:text-white/60">
                       SLIDE #{scrapedData.targetImgIndex}
                     </span>
                   )}
@@ -559,7 +559,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                             : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
                         }`}
                       >
-                        {cand.index && <span className="opacity-60 text-[9px]">#{cand.index}</span>}
+                        {cand.index && <span className="opacity-60 text-micro">#{cand.index}</span>}
                         <span>{cand.title}</span>
                       </button>
                     );
@@ -571,12 +571,12 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             {/* Detected Place Candidates Chips */}
             {ocrCandidates.length > 0 && (
               <div className="p-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 flex flex-col gap-1.5 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-black/60 dark:text-white/60">
+                <div className="flex items-center justify-between text-meta font-mono font-bold text-black/60 dark:text-white/60">
                   <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
                     <ScanText className="w-3 h-3" />
                     DETECTED PLACES ({ocrCandidates.length})
                   </span>
-                  <span className="text-[9px] font-normal text-black/40 dark:text-white/40">클릭 시 제목 적용</span>
+                  <span className="text-micro font-normal text-black/60 dark:text-white/60">클릭 시 제목 적용</span>
                 </div>
                 <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                   {ocrCandidates.map((cand, idx) => (
@@ -601,20 +601,20 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             {ocrDescription && (
               <div className="p-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 flex flex-col gap-1.5 animate-in fade-in duration-150">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
+                  <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
                     <FileText className="w-3 h-3 text-red-600 dark:text-red-400" />
                     DETECTED NOTE ({ocrDescription.length})
                   </span>
                   <button
                     type="button"
                     onClick={handleApplyDescriptionToMemo}
-                    className="px-2 py-0.5 bg-black dark:bg-white text-white dark:text-black text-[10px] font-mono font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
+                    className="px-2 py-0.5 bg-black dark:bg-white text-white dark:text-black text-meta font-mono font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
                   >
                     <Check className="w-2.5 h-2.5" />
                     <span>APPLY TO MEMO</span>
                   </button>
                 </div>
-                <p className="text-[10.5px] font-sans text-black/60 dark:text-white/60 line-clamp-3 leading-relaxed">
+                <p className="text-meta font-sans text-black/60 dark:text-white/60 line-clamp-3 leading-relaxed">
                   {ocrDescription}
                 </p>
               </div>
@@ -631,7 +631,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 type="button"
                 onClick={() => handleRunOcr(false)}
                 disabled={isOcrRunning || !selectedImage}
-                className="text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
                 title="사진에서 글씨를 다시 읽어 장소명 후보와 설명을 추출합니다"
               >
                 {isOcrRunning ? (
@@ -664,7 +664,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
             {/* Selected Address & Location Info Badge */}
             {address && (
-              <div className="flex items-center gap-1.5 text-[10.5px] font-mono text-black/60 dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02] px-2.5 py-1 border border-black/10 dark:border-white/10 animate-in fade-in duration-150">
+              <div className="flex items-center gap-1.5 text-meta font-mono text-black/60 dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02] px-2.5 py-1 border border-black/10 dark:border-white/10 animate-in fade-in duration-150">
                 <MapPin className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0" />
                 <span className="truncate">{address}</span>
               </div>
@@ -673,12 +673,12 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             {/* OCR Extracted Place Name Candidates (One-touch select) */}
             {ocrCandidates.length > 0 && (
               <div className="flex flex-col gap-1.5 p-2.5 bg-black/[0.025] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-black/60 dark:text-white/60">
+                <div className="flex items-center justify-between text-meta font-mono font-bold text-black/60 dark:text-white/60">
                   <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
                     <ScanText className="w-3 h-3" />
                     추천 장소명 후보 키워드 ({ocrCandidates.length}개):
                   </span>
-                  <span className="text-[9px] font-normal text-black/40 dark:text-white/40">클릭 시 제목에 즉시 입력</span>
+                  <span className="text-micro font-normal text-black/60 dark:text-white/60">클릭 시 제목에 즉시 입력</span>
                 </div>
                 <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pt-0.5">
                   {ocrCandidates.map((cand, idx) => {
@@ -773,7 +773,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 <button
                   type="button"
                   onClick={handleApplyDescriptionToMemo}
-                  className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-meta font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
                   title="사진 속 설명 텍스트로 기존 메모를 대체합니다"
                 >
                   <FileText className="w-3 h-3" />
@@ -791,7 +791,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           </div>
 
           {/* Source Link Preview */}
-          <div className="flex items-center justify-between text-[11px] font-mono text-black/50 dark:text-white/50 pt-1 border-t border-black/10 dark:border-white/10">
+          <div className="flex items-center justify-between text-[11px] font-mono text-black/60 dark:text-white/60 pt-1 border-t border-black/10 dark:border-white/10">
             <span className="truncate max-w-[320px] flex items-center gap-1">
               <Link2 className="w-3 h-3 shrink-0" />
               <span className="truncate">{scrapedData.sourceUrl}</span>

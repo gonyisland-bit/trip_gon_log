@@ -602,7 +602,7 @@ export function JourneyCardMenu({
         <button
           onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
           className={variant === 'minimal'
-            ? "p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer bg-transparent border-0 shadow-none"
+            ? "p-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer bg-transparent border-0 shadow-none"
             : "p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
           }
           title="카드 관리 메뉴"
@@ -622,7 +622,7 @@ export function JourneyCardMenu({
                   <Edit2 className="w-3.5 h-3.5 text-white/80" />
                   <span>EDIT</span>
                 </div>
-                <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">E</span>
+                <span className="font-mono text-micro font-bold text-white/60 border border-white/20 px-1.5 py-0.5">E</span>
               </button>
             )}
             {onClone && (
@@ -634,7 +634,7 @@ export function JourneyCardMenu({
                   <Copy className="w-3.5 h-3.5 text-white/80" />
                   <span>COPY</span>
                 </div>
-                <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">C</span>
+                <span className="font-mono text-micro font-bold text-white/60 border border-white/20 px-1.5 py-0.5">C</span>
               </button>
             )}
             {onMove && (
@@ -646,7 +646,7 @@ export function JourneyCardMenu({
                   <ArrowUp className="w-3.5 h-3.5 text-white/80" />
                   <span>{moveLabel || "MOVE"}</span>
                 </div>
-                <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">S</span>
+                <span className="font-mono text-micro font-bold text-white/60 border border-white/20 px-1.5 py-0.5">S</span>
               </button>
             )}
             {onDelete && (
@@ -658,7 +658,7 @@ export function JourneyCardMenu({
                   <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   <span>DELETE</span>
                 </div>
-                <span className="font-mono text-[9.5px] font-bold text-red-400/70 border border-red-500/30 px-1.5 py-0.5">D</span>
+                <span className="font-mono text-micro font-bold text-red-400/70 border border-red-500/30 px-1.5 py-0.5">D</span>
               </button>
             )}
           </div>
@@ -1306,7 +1306,7 @@ export function HomePage({
                 <div className="hidden md:flex md:col-span-3 lg:col-span-3 flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-8 lg:-mr-12 pointer-events-none py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
                   <div>
                     {/* Minimal Branding / Title in Inter */}
-                    <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-3 sm:mb-4 md:mb-6 pointer-events-auto">
+                    <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/60 dark:text-white/60 uppercase mb-3 sm:mb-4 md:mb-6 pointer-events-auto">
                       {homeTitle ? homeTitle.replace(/\\n|\n/g, ' ') : 'JOURNAL'}
                     </div>
 
@@ -1362,7 +1362,7 @@ export function HomePage({
                   <div className="w-full block md:hidden px-2 pt-4 pb-2 font-['Inter',sans-serif]">
                     {/* Row 1: Brand/Category + Slide Indicator & Arrows */}
                     <div className="flex items-center justify-between text-xs mb-1.5 h-6">
-                      <span className="text-[10px] font-bold tracking-[0.2em] text-black/40 dark:text-white/40 uppercase">
+                      <span className="text-meta font-bold tracking-[0.2em] text-black/60 dark:text-white/60 uppercase">
                         {homeTitle ? homeTitle.replace(/\\n|\n/g, ' ') : 'JOURNAL'}
                       </span>
                       {heroJourneys.length > 1 && (
@@ -1410,12 +1410,12 @@ export function HomePage({
                           <span className="text-xs sm:text-sm font-extrabold tracking-tight text-black dark:text-white uppercase shrink-0">
                             {month} {year}
                           </span>
-                          <span className="text-black/30 dark:text-white/30 text-xs shrink-0">·</span>
+                          <span className="text-black/60 dark:text-white/60 text-xs shrink-0">·</span>
                           <span className="text-xs sm:text-sm font-extrabold tracking-tight text-black dark:text-white shrink-0">
                             {dateRange}
                           </span>
                           {days && (
-                            <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 uppercase shrink-0">
+                            <span className="text-meta font-mono font-bold text-red-600 dark:text-red-400 uppercase shrink-0">
                               ({days})
                             </span>
                           )}
@@ -1425,7 +1425,7 @@ export function HomePage({
                         </div>
                         {/* Auto Journey Message (Fixed 2-line height for layout stability) */}
                         <div className="min-h-[29px] sm:min-h-[31px] mt-0.5 flex items-start">
-                          <p className="text-[10.5px] sm:text-[11px] font-medium text-black/60 dark:text-white/60 leading-snug break-keep line-clamp-2">
+                          <p className="text-meta sm:text-[11px] font-medium text-black/60 dark:text-white/60 leading-snug break-keep line-clamp-2">
                             {generateJourneyMessage(currentHero.locationStr, currentHero.date, getHeroDetails(currentHero).daysCount)}
                           </p>
                         </div>
@@ -1466,7 +1466,7 @@ export function HomePage({
                           />
                         ))}
                       </div>
-                      <span className="text-xs font-bold tracking-widest text-black/40 dark:text-white/40">
+                      <span className="text-xs font-bold tracking-widest text-black/60 dark:text-white/60">
                         {String(heroJourneys.length).padStart(2, '0')}
                       </span>
 
@@ -1498,7 +1498,7 @@ export function HomePage({
                       {dateRange}
                     </div>
                     {days && (
-                      <div className="text-xs sm:text-sm font-bold text-black/50 dark:text-white/50 tracking-widest uppercase mt-2">
+                      <div className="text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 tracking-widest uppercase mt-2">
                         {days}
                       </div>
                     )}
@@ -1545,14 +1545,14 @@ export function HomePage({
             >
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-red-600 dark:bg-red-500 animate-live-pulse shrink-0" />
-                <span className="text-[10.5px] sm:text-xs font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-400 shrink-0">
+                <span className="text-meta sm:text-xs font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-400 shrink-0">
                   LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}
                 </span>
                 <span className="text-xs sm:text-sm font-sans font-bold text-black dark:text-white truncate">
                   {liveTrip.title}
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-[10.5px] sm:text-xs font-mono font-bold text-red-600 dark:text-red-400 shrink-0 group-hover:translate-x-1 transition-transform">
+              <div className="flex items-center gap-1 text-meta sm:text-xs font-mono font-bold text-red-600 dark:text-red-400 shrink-0 group-hover:translate-x-1 transition-transform">
                 <span className="hidden sm:inline">VIEW TRIP</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
@@ -1581,7 +1581,7 @@ export function HomePage({
                 <button
                   type="button"
                   onClick={() => setIsTagAccordionOpen(prev => !prev)}
-                  className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`text-meta sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter !== 'All'
                       ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
                       : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
@@ -1598,7 +1598,7 @@ export function HomePage({
                   <button
                     type="button"
                     onClick={() => setActiveFilter('All')}
-                    className="text-[9px] px-1.5 py-1 uppercase font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer flex items-center gap-0.5"
+                    className="text-micro px-1.5 py-1 uppercase font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer flex items-center gap-0.5"
                     title="RESET"
                   >
                     <X className="w-3 h-3" />
@@ -1614,7 +1614,7 @@ export function HomePage({
                     className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
                       cardViewMode === 'grid' 
                         ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                        : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                        : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                     }`}
                     title="GRID"
                   >
@@ -1626,7 +1626,7 @@ export function HomePage({
                     className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
                       cardViewMode === 'wide' 
                         ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                        : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                        : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                     }`}
                     title="WIDE"
                   >
@@ -1638,7 +1638,7 @@ export function HomePage({
                     className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
                       cardViewMode === 'list' 
                         ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                        : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                        : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                     }`}
                     title="LIST"
                   >
@@ -1662,19 +1662,19 @@ export function HomePage({
                 <div className="flex flex-col gap-2 p-3 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 rounded-sm shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 mt-1 md:absolute md:top-full md:right-0 md:w-80">
                   {/* Tag Search Input */}
                   <div className="relative flex items-center">
-                    <Search className="w-3 h-3 text-black/40 dark:text-white/40 absolute left-2 pointer-events-none" />
+                    <Search className="w-3 h-3 text-black/60 dark:text-white/60 absolute left-2 pointer-events-none" />
                     <input
                       type="text"
                       value={tagSearchQuery}
                       onChange={(e) => setTagSearchQuery(e.target.value)}
                       placeholder="태그 검색..."
-                      className="w-full pl-7 pr-7 py-1 text-[10px] bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-sm font-bold outline-none text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
+                      className="w-full pl-7 pr-7 py-1 text-meta bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-sm font-bold outline-none text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50"
                     />
                     {tagSearchQuery && (
                       <button
                         type="button"
                         onClick={() => setTagSearchQuery('')}
-                        className="absolute right-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+                        className="absolute right-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1690,7 +1690,7 @@ export function HomePage({
                         onClick={() => {
                           setActiveFilter(f);
                         }}
-                        className={`text-[9.5px] px-2.5 py-1 uppercase font-bold tracking-wider border rounded-sm transition-colors shrink-0 cursor-pointer ${
+                        className={`text-micro px-2.5 py-1 uppercase font-bold tracking-wider border rounded-sm transition-colors shrink-0 cursor-pointer ${
                           activeFilter === f
                             ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
                             : 'border-black/15 bg-black/4 dark:bg-white/5 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40'
@@ -1700,7 +1700,7 @@ export function HomePage({
                       </button>
                     ))}
                     {visibleTags.length === 0 && (
-                      <span className="text-[10px] text-black/40 dark:text-white/40 py-1 italic">
+                      <span className="text-meta text-black/60 dark:text-white/60 py-1 italic">
                         검색 결과가 없습니다.
                       </span>
                     )}
@@ -1736,7 +1736,7 @@ export function HomePage({
                     }`}
                   >
                     {/* Monospace Index Column: Compact & Slim */}
-                    <div className="w-7 sm:w-8 md:w-9 flex items-center justify-center font-mono font-bold text-[10px] sm:text-xs text-black/30 dark:text-white/30 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
+                    <div className="w-7 sm:w-8 md:w-9 flex items-center justify-center font-mono font-bold text-meta sm:text-xs text-black/60 dark:text-white/60 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
                       {issueNumber}
                     </div>
 
@@ -1749,7 +1749,7 @@ export function HomePage({
                             PLAN
                           </span>
                           {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
-                            <span className="font-mono text-[8px] font-bold text-white px-1 rounded bg-blue-600/90 leading-tight">
+                            <span className="font-mono text-micro font-bold text-white px-1 rounded bg-blue-600/90 leading-tight">
                               {planInfo.dDayLabel}
                             </span>
                           )}
@@ -1770,7 +1770,7 @@ export function HomePage({
                           const liveStatus = getLiveTripStatus(trip.date);
                           if (liveStatus.isLive) {
                             return (
-                              <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-red-500/50 flex items-center gap-1.5 leading-none">
+                              <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-red-500/50 flex items-center gap-1.5 leading-none">
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
                                 <span>LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}</span>
                               </span>
@@ -1778,14 +1778,14 @@ export function HomePage({
                           }
                           if (isItemPlan || trip.statusBadge === 'PLAN') {
                             return (
-                              <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
+                              <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
                                 PLAN
                               </span>
                             );
                           }
                           if (trip.statusBadge) {
                             return (
-                              <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono rounded-none leading-none ${
+                              <span className={`px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono rounded-none leading-none ${
                                 trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                               }`}>
                                 {trip.statusBadge}
@@ -1876,7 +1876,7 @@ export function HomePage({
                             PLAN
                           </span>
                           {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
-                            <span className="font-mono text-[9px] sm:text-[11px] font-bold text-white px-2 py-0.5 rounded-full bg-blue-600/90 backdrop-blur-md shadow-xs uppercase tracking-widest leading-normal">
+                            <span className="font-mono text-micro sm:text-[11px] font-bold text-white px-2 py-0.5 rounded-full bg-blue-600/90 backdrop-blur-md shadow-xs uppercase tracking-widest leading-normal">
                               {planInfo.dDayLabel}
                             </span>
                           )}
@@ -1889,7 +1889,7 @@ export function HomePage({
                       const liveStatus = getLiveTripStatus(trip.date);
                       if (liveStatus.isLive) {
                         return (
-                          <div className="absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs bg-black/85 dark:bg-black/90 text-white border border-red-500/40 flex items-center gap-1.5 z-10">
+                          <div className="absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-micro sm:text-meta font-bold tracking-wider uppercase rounded-full shadow-xs bg-black/85 dark:bg-black/90 text-white border border-red-500/40 flex items-center gap-1.5 z-10">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
                             <span>LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}</span>
                           </div>
@@ -1909,7 +1909,7 @@ export function HomePage({
                         : (isNewBadge ? 'bg-red-600/90 text-white' : 'bg-amber-600/90 text-white');
 
                       return (
-                        <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs z-10 ${badgeBg}`}>
+                        <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-micro sm:text-meta font-bold tracking-wider uppercase rounded-full shadow-xs z-10 ${badgeBg}`}>
                           <span>{badgeText}</span>
                         </div>
                       );
@@ -1920,7 +1920,7 @@ export function HomePage({
                       const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
                       return (
                         <div 
-                          className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-extrabold tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
+                          className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-micro sm:text-meta font-extrabold tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
                           title={`${tripYear}년 여정`}
                         >
                           <span>{tripYear}</span>
@@ -1934,11 +1934,11 @@ export function HomePage({
                   <div className="p-3.5 sm:p-5 flex-1 flex flex-col justify-between">
                     <div>
                       {/* Region & Duration Meta Tag */}
-                      <div className={`flex items-center justify-between text-[9.5px] sm:text-[10.5px] font-mono font-bold uppercase tracking-wider mb-1 truncate ${
+                      <div className={`flex items-center justify-between text-micro sm:text-meta font-mono font-bold uppercase tracking-wider mb-1 truncate ${
                         isItemPlan ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
                       }`}>
                         <span>{dateRangeOnly || trip.date}</span>
-                        {durationBadge && <span className="text-black/50 dark:text-white/50">{durationBadge}</span>}
+                        {durationBadge && <span className="text-black/60 dark:text-white/60">{durationBadge}</span>}
                       </div>
 
                       {/* 메인 타이틀: 2줄로 다 보이게 표기 (line-clamp-2) */}
@@ -1964,12 +1964,12 @@ export function HomePage({
                     <div className="pt-3 mt-3 border-t border-black/8 dark:border-white/10 flex items-center justify-between gap-1.5 sm:gap-2">
                       {/* 좌측 알약 뱃지: 장소명 웹/모바일 온전 표기 최적화 (생략 방지) */}
                       <div className="flex-1 min-w-0 mr-1 sm:mr-1.5">
-                        <div className={`min-h-[26px] sm:min-h-[30px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full inline-flex items-center gap-1 font-mono text-[9.5px] sm:text-[11px] font-bold max-w-full leading-tight ${
+                        <div className={`min-h-[26px] sm:min-h-[30px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full inline-flex items-center gap-1 font-mono text-micro sm:text-[11px] font-bold max-w-full leading-tight ${
                           isItemPlan 
                             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                             : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
                         }`}>
-                          <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-black/40 dark:text-white/40" />
+                          <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-black/60 dark:text-white/60" />
                           <span className="truncate">{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
                         </div>
                       </div>
@@ -2224,7 +2224,7 @@ export function HomePage({
                                       loading="lazy"
                                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
                                     />
-                                    <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+                                    <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-micro font-bold px-1.5 py-0.5 uppercase tracking-widest">
                                       {String(idx + 1).padStart(2, '0')}
                                     </div>
                                   </div>
@@ -2235,7 +2235,7 @@ export function HomePage({
                                         {displayTitle}
                                       </h3>
                                       {dateWithDay && (
-                                        <div className="text-[10px] sm:text-[11px] font-mono font-medium text-black/50 dark:text-white/50 uppercase tracking-wider mt-0.5">
+                                        <div className="text-meta sm:text-[11px] font-mono font-medium text-black/60 dark:text-white/60 uppercase tracking-wider mt-0.5">
                                           {dateWithDay}
                                         </div>
                                       )}
@@ -2250,7 +2250,7 @@ export function HomePage({
                             })}
                           </div>
                         ) : (
-                          <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-6">
+                          <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/20 dark:border-white/20 p-6">
                             NO PREVIEW MOMENTS AVAILABLE IN THIS ISSUE
                           </div>
                         )}
@@ -2483,7 +2483,7 @@ export function HomePage({
             {/* Minimal Section Sub-Header */}
             <div className="flex items-center justify-between pb-4 sm:pb-5 border-b border-black/10 dark:border-white/10 mb-6 sm:mb-8">
               <div className="flex items-center gap-2.5">
-                <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-[10px] px-2 py-0.5 uppercase tracking-widest">
+                <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-meta px-2 py-0.5 uppercase tracking-widest">
                   CALENDAR ARCHIVE
                 </span>
                 <span className="text-xs font-mono font-bold tracking-widest uppercase text-black/60 dark:text-white/60">
@@ -2517,7 +2517,7 @@ export function HomePage({
                       {MONTH_NAMES_EN[month]}
                     </span>
                     <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
-                      <span className="text-sm sm:text-base lg:text-lg font-bold font-mono text-black/40 dark:text-white/40">
+                      <span className="text-sm sm:text-base lg:text-lg font-bold font-mono text-black/60 dark:text-white/60">
                         {year}
                       </span>
                       <span className="text-xs sm:text-sm font-bold font-mono text-red-600 dark:text-red-500 uppercase">
@@ -2528,7 +2528,7 @@ export function HomePage({
                 </div>
 
                 {/* Micro Guide Label */}
-                <div className="mt-2 pt-4 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-3 text-xs font-mono text-black/50 dark:text-white/50">
+                <div className="mt-2 pt-4 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-3 text-xs font-mono text-black/60 dark:text-white/60">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#FF4500]" />
                     <span className="text-[11px] font-bold">여정 등록일</span>
@@ -2543,20 +2543,20 @@ export function HomePage({
               {/* 2. Monthly Schedules Feed Column (lg:col-span-5 xl:col-span-5) */}
               <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:px-7">
                 <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-3">
-                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-black/40 dark:text-white/40">
+                  <span className="text-meta font-mono font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60">
                     MONTHLY SCHEDULES ({monthSchedules.length})
                   </span>
                   <button
                     type="button"
                     onClick={() => onNavigate('calendar')}
-                    className="text-[10.5px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                    className="text-meta font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                   >
                     VIEW ALL
                   </button>
                 </div>
 
                 {monthSchedules.length === 0 ? (
-                  <div className="text-xs font-mono text-black/40 dark:text-white/40 py-8 text-center">
+                  <div className="text-xs font-mono text-black/60 dark:text-white/60 py-8 text-center">
                     NO SCHEDULES RECORDED THIS MONTH
                   </div>
                 ) : (
@@ -2573,14 +2573,14 @@ export function HomePage({
                           className="pt-2 flex items-center justify-between gap-2 text-xs font-mono cursor-pointer group hover:text-red-600 transition-colors"
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <span className="text-black/50 dark:text-white/50 font-bold shrink-0">
+                            <span className="text-black/60 dark:text-white/60 font-bold shrink-0">
                               {dateRangeStr}
                             </span>
                             <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 truncate">
                               {item.title}
                             </span>
                           </div>
-                          <span className="text-[10.5px] font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
+                          <span className="text-meta font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
                             {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
                           </span>
                         </div>
@@ -2594,7 +2594,7 @@ export function HomePage({
               <div className="lg:col-span-4 xl:col-span-4 flex flex-col items-center lg:items-end justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-7 lg:pr-0">
                 <div className="w-full max-w-[380px] lg:max-w-full mx-auto lg:mr-0 lg:ml-auto">
                   {/* Weekday Headers: SUN ~ SAT */}
-                  <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-extrabold font-mono select-none text-black/40 dark:text-white/40">
+                  <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-extrabold font-mono select-none text-black/60 dark:text-white/60">
                     <div className="text-red-500">S</div>
                     <div>M</div>
                     <div>T</div>
@@ -2709,11 +2709,11 @@ export function HomePage({
                     <span className="font-mono font-bold text-xs uppercase tracking-wider text-black dark:text-white group-hover:text-red-600 transition-colors">
                       {nextTrip.title}
                     </span>
-                    <span className="text-[11px] font-mono text-black/50 dark:text-white/50 hidden sm:inline">
+                    <span className="text-[11px] font-mono text-black/60 dark:text-white/60 hidden sm:inline">
                       {nextTrip.locationStr || nextTrip.country} · {nextTrip.date}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-xs font-mono font-bold text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors">
+                  <div className="flex items-center gap-1 text-xs font-mono font-bold text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors">
                     <span className="hidden sm:inline">VIEW TRIP</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
@@ -2728,8 +2728,8 @@ export function HomePage({
               <div className="w-full py-2 sm:py-2.5 px-3.5 sm:px-5 rounded-full border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-xs flex items-center justify-between gap-2 sm:gap-4">
                 {/* Left: Swiss Minimal Icon & Label */}
                 <div className="flex items-center gap-1.5 shrink-0 pr-2 sm:pr-3 border-r border-black/10 dark:border-white/10">
-                  <Coins className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
-                  <span className="font-extrabold text-[10px] sm:text-[11px] uppercase tracking-wider text-black/70 dark:text-white/70 hidden xs:inline">
+                  <Coins className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+                  <span className="font-extrabold text-meta sm:text-[11px] uppercase tracking-wider text-black/70 dark:text-white/70 hidden xs:inline">
                     EXCHANGE
                   </span>
                 </div>
@@ -2742,26 +2742,26 @@ export function HomePage({
                     { code: 'EUR', rate: '1,512.20', diff: '+3.0', isUp: true },
                   ].map((cur, idx) => (
                     <div key={cur.code} className="flex items-center gap-1 sm:gap-1.5">
-                      <span className="font-extrabold text-[10px] sm:text-xs text-black/60 dark:text-white/60 tracking-wider">
+                      <span className="font-extrabold text-meta sm:text-xs text-black/60 dark:text-white/60 tracking-wider">
                         {cur.code}
                       </span>
                       <span className="font-extrabold text-xs sm:text-sm text-black dark:text-white tracking-tight">
                         {cur.rate}
                       </span>
-                      <span className={`text-[8.5px] sm:text-[9.5px] font-bold hidden sm:inline ${
+                      <span className={`text-micro sm:text-micro font-bold hidden sm:inline ${
                         cur.isUp ? 'text-red-500' : 'text-blue-500'
                       }`}>
                         {cur.isUp ? '▲' : '▼'}{cur.diff.replace('-', '')}
                       </span>
                       {idx < 2 && (
-                        <span className="text-black/20 dark:text-white/20 ml-1.5 sm:ml-3 hidden xs:inline">/</span>
+                        <span className="text-black/60 dark:text-white/60 ml-1.5 sm:ml-3 hidden xs:inline">/</span>
                       )}
                     </div>
                   ))}
                 </div>
 
                 {/* Right: Currency Base */}
-                <span className="text-[9px] sm:text-[10px] text-black/40 dark:text-white/40 shrink-0 pl-2 sm:pr-1 border-l border-black/10 dark:border-white/10 hidden sm:inline font-bold">
+                <span className="text-micro sm:text-meta text-black/60 dark:text-white/60 shrink-0 pl-2 sm:pr-1 border-l border-black/10 dark:border-white/10 hidden sm:inline font-bold">
                   KRW
                 </span>
               </div>

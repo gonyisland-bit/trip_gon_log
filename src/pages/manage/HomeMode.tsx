@@ -33,7 +33,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
       <div className="flex flex-col gap-8">
         {/* Header Title */}
         <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
-          <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+          <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
             APP & HOMEPAGE CONFIGURATION
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
@@ -92,7 +92,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   className={`w-full py-2 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center ${
                     autoSlide
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'bg-transparent border-black/20 dark:border-white/20 text-black/50 dark:text-white/50'
+                      : 'bg-transparent border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                   }`}
                 >
                   {autoSlide ? 'AUTO SLIDE: ON' : 'AUTO SLIDE: OFF'}
@@ -125,7 +125,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                         key={sec}
                         type="button"
                         onClick={() => setSlideDuration(sec)}
-                        className={`px-2 py-1 text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                        className={`px-2 py-1 text-meta font-mono font-bold border transition-colors cursor-pointer ${
                           slideDuration === sec
                             ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
                             : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
@@ -150,7 +150,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 className={`px-3 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer rounded-none ${
                   playVideoOnActivate
                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                    : 'border-black/20 dark:border-white/20 text-black/50 dark:text-white/50'
+                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                 }`}
               >
                 {playVideoOnActivate ? 'ENABLED' : 'DISABLED'}
@@ -171,7 +171,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 <button
                   type="button"
                   onClick={() => setIsHeroJourneysAccordionOpen(prev => !prev)}
-                  className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white transition-colors cursor-pointer flex items-center gap-1.5 text-black dark:text-white"
+                  className="px-2.5 py-1 text-meta font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white transition-colors cursor-pointer flex items-center gap-1.5 text-black dark:text-white"
                 >
                   <span>{isHeroJourneysAccordionOpen ? 'COLLAPSE' : 'SELECT JOURNEYS'}</span>
                   <ChevronDown className={`w-3 h-3 transition-transform ${isHeroJourneysAccordionOpen ? 'rotate-180' : ''}`} />
@@ -181,7 +181,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
               {/* Selected Hero Slides Reorder List */}
               {selectedHeroIds.length > 0 && (
                 <div className="flex flex-col gap-1.5 p-2 border border-black/15 dark:border-white/15">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 px-1">
+                  <span className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 px-1">
                     SLIDE ORDER
                   </span>
                   <div className="flex flex-col gap-1">
@@ -208,7 +208,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                               <div className="text-xs font-bold truncate text-black dark:text-white font-sans">
                                 {journey.title}
                               </div>
-                              <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                              <div className="text-meta font-mono text-black/60 dark:text-white/60">
                                 {journey.date}
                               </div>
                             </div>
@@ -235,7 +235,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                             <button
                               type="button"
                               onClick={() => handleToggleHero(id)}
-                              className="p-1 text-black/40 dark:text-white/40 hover:text-red-600 transition-colors cursor-pointer"
+                              className="p-1 text-black/60 dark:text-white/60 hover:text-red-600 transition-colors cursor-pointer"
                               title="제거"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -252,7 +252,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
               {isHeroJourneysAccordionOpen && (
                 <div className="flex flex-col gap-2 pt-1">
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60" />
                     <input
                       type="text"
                       value={heroSearchQuery}
@@ -264,7 +264,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
 
                   <div className="max-h-60 overflow-y-auto border border-black/15 dark:border-white/15 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
                     {filteredHeroCandidates.length === 0 ? (
-                      <div className="p-4 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                      <div className="p-4 text-center text-xs font-mono text-black/60 dark:text-white/60">
                         검색 결과가 없습니다.
                       </div>
                     ) : (
@@ -299,13 +299,13 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                                 <div className="text-xs font-bold truncate text-black dark:text-white font-sans">
                                   {journey.title}
                                 </div>
-                                <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                                <div className="text-meta font-mono text-black/60 dark:text-white/60">
                                   {journey.locationStr} · {journey.date}
                                 </div>
                               </div>
                             </div>
                             {isSelected && (
-                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black shrink-0">
+                              <span className="text-micro font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black shrink-0">
                                 SLIDE #{selectedHeroIds.indexOf(journey.id) + 1}
                               </span>
                             )}
@@ -323,9 +323,9 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   <div>
                     <label className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
                       <span>GUEST LANDING HERO</span>
-                      <span className="text-[9px] px-1.5 py-0.2 bg-red-600 text-white font-mono uppercase font-bold">SLIDESHOW</span>
+                      <span className="text-micro px-1.5 py-0.2 bg-red-600 text-white font-mono uppercase font-bold">SLIDESHOW</span>
                     </label>
-                    <p className="text-[10px] font-mono text-black/50 dark:text-white/50 mt-0.5">
+                    <p className="text-meta font-mono text-black/60 dark:text-white/60 mt-0.5">
                       비로그인 방문자에게 풀스크린으로 재생되는 미디어입니다. (이미지/동영상 복수 등록 및 순서 변경 가능)
                     </p>
                   </div>
@@ -336,7 +336,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                         setLocalLandingHeroMedia([]);
                         setLocalLandingHeroImage('');
                       }}
-                      className="text-[10px] font-mono text-red-600 hover:underline cursor-pointer"
+                      className="text-meta font-mono text-red-600 hover:underline cursor-pointer"
                     >
                       전체 초기화 (RESET ALL)
                     </button>
@@ -367,7 +367,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                     }}
                     className="flex-1 px-3 py-1.5 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
                   />
-                  <span className="text-[10px] font-mono text-black/40 dark:text-white/40 shrink-0">
+                  <span className="text-meta font-mono text-black/60 dark:text-white/60 shrink-0">
                     [ENTER로 추가]
                   </span>
                 </div>
@@ -411,7 +411,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                           {isBeingReplaced ? (
                             <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-black/80 text-white">
                               <Loader2 className="w-5 h-5 animate-spin text-white" />
-                              <span className="text-[9.5px] font-mono font-bold tracking-wider">REPLACING...</span>
+                              <span className="text-micro font-mono font-bold tracking-wider">REPLACING...</span>
                             </div>
                           ) : (
                             <>
@@ -432,13 +432,13 @@ export function HomeMode({ s }: { s: ManageHubState }) {
 
                               {/* Drag-over drop overlay indicator */}
                               {isCardDragOver && (
-                                <div className="absolute inset-0 bg-red-600/30 flex items-center justify-center text-white font-mono text-[10px] font-bold">
+                                <div className="absolute inset-0 bg-red-600/30 flex items-center justify-center text-white font-mono text-meta font-bold">
                                   [드롭하여 교체]
                                 </div>
                               )}
 
                               {/* Slot Number & Type Badge */}
-                              <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/80 text-white font-mono text-[8.5px] font-bold uppercase tracking-wider flex items-center gap-1">
+                              <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/80 text-white font-mono text-micro font-bold uppercase tracking-wider flex items-center gap-1">
                                 {item.type === 'video' ? <Film className="w-2.5 h-2.5 text-red-400" /> : <ImageIcon className="w-2.5 h-2.5 text-blue-400" />}
                                 <span>#{idx + 1}</span>
                               </div>
@@ -485,7 +485,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                               setLocalLandingHeroMedia(prev => prev.map((m, i) => i === idx ? { ...m, title: val } : m));
                             }}
                             placeholder="제목"
-                            className="flex-1 text-[10.5px] font-mono font-bold bg-transparent outline-none border-b border-transparent focus:border-black dark:focus:border-white text-black dark:text-white truncate"
+                            className="flex-1 text-meta font-mono font-bold bg-transparent outline-none border-b border-transparent focus:border-black dark:focus:border-white text-black dark:text-white truncate"
                           />
                           <div className="flex items-center gap-0.5 shrink-0">
                             <button
@@ -538,17 +538,17 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                     {isUploadingLandingHero ? (
                       <div className="flex flex-col items-center justify-center gap-1.5">
                         <Loader2 className="w-5 h-5 animate-spin text-black dark:text-white" />
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                        <span className="text-meta font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                           UPLOADING...
                         </span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center gap-1">
-                        <Upload className="w-4 h-4 text-black/50 dark:text-white/50" />
-                        <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                        <Upload className="w-4 h-4 text-black/60 dark:text-white/60" />
+                        <span className="text-meta font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                           + ADD MEDIA
                         </span>
-                        <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                        <span className="text-micro font-mono text-black/60 dark:text-white/60">
                           클릭 / 파일 드롭
                         </span>
                       </div>
@@ -618,7 +618,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                   MAGAZINE
                 </h3>
-                <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
+                <span className="text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase">
                   HOME CURATION
                 </span>
               </div>
@@ -656,7 +656,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                         </span>
                         {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
                       </div>
-                      <div className="flex items-center justify-between text-[10px] font-mono opacity-70">
+                      <div className="flex items-center justify-between text-meta font-mono opacity-70">
                         <span>{sec.items?.length || 0} ITEMS</span>
                         <span>{sec.isDefault ? 'DEFAULT' : 'CUSTOM'}</span>
                       </div>
@@ -685,14 +685,14 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                         setActiveMagSectionId(homeMagSectionId);
                         setActiveMode('MAGAZINE');
                       }}
-                      className="text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                      className="text-meta font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                     >
                       이 섹션 편집하기 →
                     </button>
                   </div>
 
                   {itemsToPreview.length === 0 ? (
-                    <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20">
+                    <div className="py-8 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/20 dark:border-white/20">
                       선택된 매거진 섹션에 등록된 사진이 없습니다. 매거진 허브 편집기에서 사진을 추가해주세요.
                     </div>
                   ) : (
@@ -713,8 +713,8 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-1.5 flex flex-col justify-end">
-                            <span className="text-[9px] font-mono text-white/70">#{idx + 1}</span>
-                            <span className="text-[10px] font-bold text-white truncate">{item.title}</span>
+                            <span className="text-micro font-mono text-white/70">#{idx + 1}</span>
+                            <span className="text-meta font-bold text-white truncate">{item.title}</span>
                           </div>
                         </div>
                       ))}
@@ -734,7 +734,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 <h3 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
                   BOTTOM WIDGETS
                 </h3>
-                <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
+                <span className="text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase">
                   CALENDAR & WEATHER SETTINGS
                 </span>
               </div>
@@ -763,7 +763,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                     }`} />
                   </button>
                 </div>
-                <p className="text-[10px] font-mono text-black/50 dark:text-white/50 mt-1">
+                <p className="text-meta font-mono text-black/60 dark:text-white/60 mt-1">
                   홈 하단에 여행 일정 및 연간 캘린더 대시보드를 표시합니다.
                 </p>
               </div>
@@ -789,7 +789,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                     }`} />
                   </button>
                 </div>
-                <p className="text-[10px] font-mono text-black/50 dark:text-white/50 mt-1">
+                <p className="text-meta font-mono text-black/60 dark:text-white/60 mt-1">
                   홈 하단에 여행지 및 주요 도시의 실시간 일기예보를 표시합니다.
                 </p>
               </div>
@@ -812,7 +812,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 >
                   <div className="flex flex-col">
                     <span className="text-xs font-bold font-mono uppercase">1. 달력 ➔ 2. 날씨</span>
-                    <span className="text-[10px] opacity-70 font-mono">CALENDAR ARCHIVE FIRST</span>
+                    <span className="text-meta opacity-70 font-mono">CALENDAR ARCHIVE FIRST</span>
                   </div>
                   {widgetOrder === 'calendar-first' && <Check className="w-4 h-4 shrink-0" />}
                 </button>
@@ -828,7 +828,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 >
                   <div className="flex flex-col">
                     <span className="text-xs font-bold font-mono uppercase">1. 날씨 ➔ 2. 달력</span>
-                    <span className="text-[10px] opacity-70 font-mono">LIVE WEATHER FIRST</span>
+                    <span className="text-meta opacity-70 font-mono">LIVE WEATHER FIRST</span>
                   </div>
                   {widgetOrder === 'weather-first' && <Check className="w-4 h-4 shrink-0" />}
                 </button>
@@ -843,7 +843,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   <span className="text-xs font-mono font-bold uppercase text-black dark:text-white">
                     다가오는 여정 D-DAY 배너
                   </span>
-                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                  <span className="text-meta font-mono text-black/60 dark:text-white/60">
                     UPCOMING TRIP D-DAY
                   </span>
                 </div>
@@ -866,7 +866,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   <span className="text-xs font-mono font-bold uppercase text-black dark:text-white">
                     실시간 주요 환율 정보 바
                   </span>
-                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                  <span className="text-meta font-mono text-black/60 dark:text-white/60">
                     LIVE EXCHANGE RATES
                   </span>
                 </div>
@@ -891,7 +891,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
                     홈 날씨 대상 도시 목록 ({widgetCities.length}개 설정됨)
                   </label>
-                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                  <span className="text-meta font-mono text-black/60 dark:text-white/60">
                     * 미설정 시 최근 등록된 여정의 여행지 및 세계 주요 도시가 자동 노출됩니다.
                   </span>
                 </div>
@@ -932,7 +932,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
               {/* Cities List with Ordering & Deleting */}
               <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
                 {widgetCities.length === 0 ? (
-                  <div className="p-4 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                  <div className="p-4 text-center text-xs font-mono text-black/60 dark:text-white/60">
                     등록된 맞춤 도시가 없습니다. (자동 감지 모드로 동작)
                   </div>
                 ) : (
@@ -942,14 +942,14 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                       className="p-2.5 sm:px-4 sm:py-3 flex items-center justify-between gap-3 text-xs font-mono"
                     >
                       <div className="flex items-center gap-2 sm:gap-3 truncate">
-                        <span className="text-[10px] text-black/40 dark:text-white/40 font-bold w-4">
+                        <span className="text-meta text-black/60 dark:text-white/60 font-bold w-4">
                           {idx + 1}
                         </span>
                         <div className="flex items-baseline gap-1.5 truncate">
                           <span className="font-bold text-black dark:text-white uppercase truncate">
                             {city.nameEn}
                           </span>
-                          <span className="text-[10px] text-black/50 dark:text-white/50">
+                          <span className="text-meta text-black/60 dark:text-white/60">
                             ({city.name}, {city.country})
                           </span>
                         </div>
@@ -960,7 +960,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={() => handleMoveHomeWeatherCity(idx, 'up')}
                           disabled={idx === 0}
-                          className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
                           title="위로 이동"
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
@@ -969,7 +969,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={() => handleMoveHomeWeatherCity(idx, 'down')}
                           disabled={idx === widgetCities.length - 1}
-                          className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
                           title="아래로 이동"
                         >
                           <ChevronDown className="w-3.5 h-3.5" />

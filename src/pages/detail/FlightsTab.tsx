@@ -27,7 +27,7 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
               <button
                 type="button"
                 onClick={() => setIsQuickBookingOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[10px] font-bold tracking-widest uppercase transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-meta font-bold tracking-widest uppercase transition-all active:scale-[0.98] shadow-xs cursor-pointer"
               >
                 <Sparkles className="w-3 h-3 text-emerald-400" />
                 <span>SMART BOOKING</span>
@@ -38,7 +38,7 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
               const flightsToUse = isEditing ? draftFlights : flights;
               if (flightsToUse.length === 0) {
                 return (
-                  <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                  <div className="text-center py-16 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
                     등록된 항공편이 없습니다.
                   </div>
                 );
@@ -76,10 +76,10 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
                 return (
                   <div className="w-full flex flex-col">
                     <div className="flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15">
-                      <span className="text-[10px] md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
+                      <span className="text-meta md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
                         {groupLabel}
                       </span>
-                      <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
+                      <span className="text-micro md:text-meta font-mono font-bold text-black/60 dark:text-white/60 tracking-wider">
                         {groupFlights.length} FLIGHT{groupFlights.length > 1 ? 'S' : ''}
                       </span>
                     </div>
@@ -97,7 +97,7 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
                         >
                           {prevFlight && layoverTimeStr && (
                             <div className="py-2 px-4 md:px-6 flex items-center justify-center bg-red-50/60 dark:bg-red-950/20 border-b border-red-500/20 w-full" onClick={(e) => e.stopPropagation()}>
-                              <span className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-400">
+                              <span className="flex items-center gap-1.5 text-micro sm:text-meta font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-400">
                                 <Plane className="w-3 h-3" />
                                 <span>LAYOVER AT {prevFlight.toCode} · {layoverTimeStr}</span>
                               </span>
@@ -138,19 +138,19 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
               <div className="flex gap-4 justify-center py-6">
                 <button 
                   onClick={() => handleAddFlight('OUTBOUND FLIGHT')} 
-                  className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                  className="text-meta md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" /> Outbound Flight
                 </button>
                 <button 
                   onClick={() => handleAddFlight('LAYOVER FLIGHT')} 
-                  className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                  className="text-meta md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" /> Layover Flight
                 </button>
                 <button 
                   onClick={() => handleAddFlight('INBOUND FLIGHT')} 
-                  className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                  className="text-meta md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" /> Inbound Flight
                 </button>

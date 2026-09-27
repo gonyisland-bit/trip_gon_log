@@ -305,7 +305,7 @@ export function TripBuilderPanel({
             <button
               type="button"
               onClick={() => setMembers(prev => prev.filter((_, i) => i !== idx))}
-              className="hover:text-red-500 text-red-600 font-bold text-[10px] ml-1 leading-none cursor-pointer"
+              className="hover:text-red-500 text-red-600 font-bold text-meta ml-1 leading-none cursor-pointer"
               title="삭제"
             >
               <X className="w-2.5 h-2.5" />
@@ -535,7 +535,7 @@ export function TripBuilderPanel({
       return (
         <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 p-3.5 flex items-center justify-between text-xs transition-all">
           <div className="flex items-center gap-2 text-black/60 dark:text-white/60 font-mono">
-            <Bookmark className="w-4 h-4 text-black/40 dark:text-white/40" />
+            <Bookmark className="w-4 h-4 text-black/60 dark:text-white/60" />
             <span>보관된 포켓 장소가 없습니다. 포켓 허브에서 장소를 스크랩해 보세요.</span>
           </div>
         </div>
@@ -546,7 +546,7 @@ export function TripBuilderPanel({
       return (
         <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 p-3.5 flex items-center justify-between text-xs transition-all">
           <div className="flex items-center gap-2 text-black/60 dark:text-white/60 font-mono">
-            <Bookmark className="w-4 h-4 text-black/40 dark:text-white/40" />
+            <Bookmark className="w-4 h-4 text-black/60 dark:text-white/60" />
             <span>선택한 지역과 관련된 보관된 포켓이 없습니다. (총 {totalSavedCount}개 보관됨)</span>
           </div>
         </div>
@@ -583,7 +583,7 @@ export function TripBuilderPanel({
               <span className="text-xs font-bold uppercase tracking-wide text-black dark:text-white">
                 {isAreaMatched ? 'MATCHING POCKETS' : 'SAVED POCKETS'}
               </span>
-              <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+              <span className="text-[11px] font-mono text-black/60 dark:text-white/60">
                 ({relevantPocketSpots.length}개 {isAreaMatched ? '지역 맞춤' : '보관 장소'})
               </span>
             </div>
@@ -594,7 +594,7 @@ export function TripBuilderPanel({
                 {selectedCount}개 선택됨
               </span>
             )}
-            <ChevronDown className={`w-4 h-4 text-black/40 dark:text-white/40 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-black/60 dark:text-white/60 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
           </div>
         </button>
 
@@ -602,7 +602,7 @@ export function TripBuilderPanel({
         {isOpen && (
           <div className="p-3 border-t border-black/5 dark:border-white/5 space-y-2.5 bg-white/70 dark:bg-[#181818]/70">
             <div className="flex items-center justify-between text-xs font-mono px-0.5">
-              <span className="text-black/50 dark:text-white/50">
+              <span className="text-black/60 dark:text-white/60">
                 {isAreaMatched 
                   ? '현재 선택 지역과 일치하는 장소입니다. 선택 시 1일차 일정에 자동 배치됩니다.' 
                   : '보관함 전체 장소 목록입니다. 원하는 장소를 선택하여 일정에 추가하세요.'}
@@ -659,7 +659,7 @@ export function TripBuilderPanel({
                           className="w-12 h-12 rounded-lg object-cover shadow-2xs shrink-0 bg-neutral-100 dark:bg-neutral-800"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-lg shrink-0 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-black/30 dark:text-white/30">
+                        <div className="w-12 h-12 rounded-lg shrink-0 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-black/60 dark:text-white/60">
                           <CatIcon className="w-5 h-5" />
                         </div>
                       )}
@@ -667,17 +667,17 @@ export function TripBuilderPanel({
                       {/* Meta Information & Title */}
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase flex items-center gap-1 ${catMeta.bg}`}>
+                          <span className={`text-meta font-bold px-2 py-0.5 rounded-md uppercase flex items-center gap-1 ${catMeta.bg}`}>
                             <CatIcon className="w-2.5 h-2.5" />
                             {catMeta.label}
                           </span>
                           {spot.platform && spot.platform !== 'web' && (
-                            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
+                            <span className="text-meta font-mono uppercase px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
                               {spot.platform}
                             </span>
                           )}
                           {locationText && (
-                            <span className="text-xs font-mono text-black/50 dark:text-white/50 truncate">
+                            <span className="text-xs font-mono text-black/60 dark:text-white/60 truncate">
                               {locationText}
                             </span>
                           )}
@@ -1773,11 +1773,11 @@ export function TripBuilderPanel({
   }, [selectedPresetObj, presetStartDate]);
 
   const inputCls = 'w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-sans';
-  const labelCls = 'text-[10.5px] font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 mb-1 block';
-  const iconCls = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40 dark:text-white/40 pointer-events-none';
+  const labelCls = 'text-meta font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 mb-1 block';
+  const iconCls = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 dark:text-white/60 pointer-events-none';
 
   // Soft Mobile Native Form Styles (Nou producte reference style)
-  const softInputCls = 'w-full px-4 py-3 text-sm bg-neutral-100 dark:bg-neutral-800/90 rounded-xl text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 font-medium border border-transparent focus:border-black/20 dark:focus:border-white/20 outline-none transition-all';
+  const softInputCls = 'w-full px-4 py-3 text-sm bg-neutral-100 dark:bg-neutral-800/90 rounded-xl text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 font-medium border border-transparent focus:border-black/20 dark:focus:border-white/20 outline-none transition-all';
   const fieldLabelCls = 'text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1 mb-1.5 font-sans';
 
   const renderSeasonAnalysisBlock = (analysis: any) => {
@@ -1807,7 +1807,7 @@ export function TripBuilderPanel({
               {analysis.targetName ? `${analysis.targetName} · ` : ''}{analysis.startMonth}월 시즌 분석
             </span>
           </div>
-          <span className={`text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider ${badgeCls}`}>
+          <span className={`text-meta px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider ${badgeCls}`}>
             {isWarn && <AlertTriangle className="w-3 h-3 stroke-[2.5]" />}
             {isBest && <Check className="w-3 h-3 stroke-[2.5]" />}
             {badgeLabel}
@@ -1852,7 +1852,7 @@ export function TripBuilderPanel({
         <button
           type="button"
           onClick={onClose}
-          className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
           title="닫기"
         >
           <X className="w-4 h-4" />
@@ -1875,7 +1875,7 @@ export function TripBuilderPanel({
               className={`flex-1 py-3 px-3 flex items-center justify-center gap-2 text-xs font-mono font-bold tracking-wider uppercase border-b-2 transition-all cursor-pointer ${
                 active
                   ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white'
-                  : 'border-transparent text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white'
+                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -1927,10 +1927,10 @@ export function TripBuilderPanel({
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase">
+                        <span className="text-meta font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase">
                           {preset.country}
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400">
+                        <span className="text-meta font-mono font-bold text-red-600 dark:text-red-400">
                           {preset.durationDays}D
                         </span>
                       </div>
@@ -1957,7 +1957,7 @@ export function TripBuilderPanel({
                       PRESET SUMMARY
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                  <span className="text-meta font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
                     {selectedPresetObj.theme.toUpperCase()}
                   </span>
                 </div>
@@ -1966,11 +1966,11 @@ export function TripBuilderPanel({
                 <div className="divide-y divide-black/10 dark:divide-white/10 text-xs font-sans">
                   {/* 1. Country / City */}
                   <div className="py-2.5 flex items-center justify-between gap-3">
-                    <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 shrink-0">
+                    <span className="text-meta font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 shrink-0">
                       DESTINATION
                     </span>
                     <div className="text-right flex items-center gap-1.5">
-                      <span className="font-mono font-extrabold text-black dark:text-white uppercase px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-[10.5px]">
+                      <span className="font-mono font-extrabold text-black dark:text-white uppercase px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-meta">
                         {selectedPresetObj.country}
                       </span>
                       <span className="font-bold text-black dark:text-white">
@@ -1982,10 +1982,10 @@ export function TripBuilderPanel({
                   {/* 2. Start Date (Adjustable) */}
                   <div className="py-2.5 flex items-center justify-between gap-3">
                     <div>
-                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 block">
+                      <span className="text-meta font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 block">
                         START DATE
                       </span>
-                      <span className="text-[9.5px] font-sans text-black/40 dark:text-white/40">
+                      <span className="text-micro font-sans text-black/60 dark:text-white/60">
                         출발 예정일
                       </span>
                     </div>
@@ -2000,10 +2000,10 @@ export function TripBuilderPanel({
                   {/* 3. Duration & Calculated Period */}
                   <div className="py-2.5 flex items-center justify-between gap-3">
                     <div>
-                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 block">
+                      <span className="text-meta font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 block">
                         DURATION
                       </span>
-                      <span className="text-[9.5px] font-sans text-black/40 dark:text-white/40">
+                      <span className="text-micro font-sans text-black/60 dark:text-white/60">
                         전체 일정
                       </span>
                     </div>
@@ -2011,7 +2011,7 @@ export function TripBuilderPanel({
                       <span className="font-mono font-extrabold text-black dark:text-white text-xs">
                         {presetDateCalc.nightsDays}
                       </span>
-                      <span className="text-[10.5px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                      <span className="text-meta font-mono text-black/60 dark:text-white/60 block mt-0.5">
                         {presetDateCalc.rangeStr}
                       </span>
                     </div>
@@ -2019,13 +2019,13 @@ export function TripBuilderPanel({
 
                   {/* 4. Highlight Route */}
                   <div className="py-2.5">
-                    <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 block mb-2">
+                    <span className="text-meta font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 block mb-2">
                       HIGHLIGHT ROUTE
                     </span>
                     <div className="flex flex-col gap-1.5 pl-3 border-l-2 border-black/20 dark:border-white/20">
                       {selectedPresetObj.highlights.map((h, i) => (
                         <div key={i} className="flex items-baseline gap-2 text-xs">
-                          <span className="text-[9.5px] font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
+                          <span className="text-micro font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
                             0{i + 1}
                           </span>
                           <span className="text-black/80 dark:text-white/80 leading-relaxed font-medium">
@@ -2039,12 +2039,12 @@ export function TripBuilderPanel({
                   {/* 5. Tags */}
                   {selectedPresetObj.tags && selectedPresetObj.tags.length > 0 && (
                     <div className="py-2 flex items-center justify-between gap-3">
-                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 shrink-0">
+                      <span className="text-meta font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 shrink-0">
                         TAGS
                       </span>
                       <div className="flex flex-wrap gap-1 justify-end">
                         {selectedPresetObj.tags.map((t, idx) => (
-                          <span key={idx} className="text-[9.5px] font-mono font-bold uppercase px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">
+                          <span key={idx} className="text-micro font-mono font-bold uppercase px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">
                             #{t}
                           </span>
                         ))}
@@ -2077,7 +2077,7 @@ export function TripBuilderPanel({
                 {/* ─── SOFT ROUND HERO WIDGET (Nou producte reference style) ─── */}
                 <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800/70 p-5 border border-black/5 dark:border-white/5 flex flex-col justify-between min-h-[140px] relative overflow-hidden transition-all">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                       {smartCountry ? `${smartCountry.nameKo} · ${smartCountry.nameEn}` : 'GLOBAL TRIP'}
                     </span>
                     <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400 bg-white dark:bg-[#1f1f1f] px-2.5 py-0.5 rounded-full shadow-2xs">
@@ -2117,7 +2117,7 @@ export function TripBuilderPanel({
                         <span className="text-xs font-bold text-black/70 dark:text-white/70">
                           여정 템플릿 불러오기
                         </span>
-                        <span className="text-[10.5px] font-mono text-black/40 dark:text-white/40 mt-0.5">
+                        <span className="text-meta font-mono text-black/60 dark:text-white/60 mt-0.5">
                           일본 3일 · 동남아 4일 · 유럽 6일 등
                         </span>
                       </div>
@@ -2225,7 +2225,7 @@ export function TripBuilderPanel({
                               setCountrySearchInput('');
                               onFocusLocationChange?.({});
                             }}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                             title="국가 선택 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -2253,7 +2253,7 @@ export function TripBuilderPanel({
                               <span className="font-bold text-black dark:text-white">
                                 {c.nameKo} ({c.nameEn})
                               </span>
-                              <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                              <span className="text-meta font-mono text-black/60 dark:text-white/60">
                                 {c.popularCities?.slice(0, 2).join(', ') || c.code}
                               </span>
                             </button>
@@ -2288,7 +2288,7 @@ export function TripBuilderPanel({
                                 onFocusLocationChange?.({});
                               }
                             }}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                             title="도시 선택 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -2326,7 +2326,7 @@ export function TripBuilderPanel({
                               <span className="font-bold text-black dark:text-white">
                                 {city.nameKo} ({city.nameEn})
                               </span>
-                              <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                              <span className="text-meta font-mono text-black/60 dark:text-white/60">
                                 {city.countryEn}
                               </span>
                             </button>
@@ -2368,7 +2368,7 @@ export function TripBuilderPanel({
                           );
                         })}
                       </select>
-                      <span className="text-xs text-black/20 dark:text-white/20 mx-2">|</span>
+                      <span className="text-xs text-black/60 dark:text-white/60 mx-2">|</span>
                       <input
                         type="number"
                         min={2020}
@@ -2381,7 +2381,7 @@ export function TripBuilderPanel({
                         className="w-14 bg-transparent text-xs font-bold text-black dark:text-white outline-none text-right"
                         placeholder="연도"
                       />
-                      <span className="text-xs text-black/50 dark:text-white/50 ml-0.5">년</span>
+                      <span className="text-xs text-black/60 dark:text-white/60 ml-0.5">년</span>
                     </div>
 
                     <button
@@ -2418,7 +2418,7 @@ export function TripBuilderPanel({
                                 ? 'bg-red-500/20 text-red-600 dark:text-red-400 ring-1.5 ring-red-500 font-bold'
                                 : isBestSeason
                                   ? 'bg-neutral-200 dark:bg-neutral-700 text-black dark:text-white font-bold'
-                                  : 'text-black/50 dark:text-white/50 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                                  : 'text-black/60 dark:text-white/60 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                           }`}
                           title={isAutoBest ? `AUTO 추천 월 (${m}월)` : isBestSeason ? `추천 최적 시즌 (${m}월)` : `${m}월`}
                         >
@@ -2461,23 +2461,23 @@ export function TripBuilderPanel({
                               {activeMonth}월 여행 시즌 리포트
                             </span>
                             {targetMonth === 0 && (
-                              <span className="text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400 bg-orange-500/10 px-1.5 py-0.2 rounded-md">
+                              <span className="text-meta font-mono font-bold uppercase text-orange-600 dark:text-orange-400 bg-orange-500/10 px-1.5 py-0.2 rounded-md">
                                 AUTO 추천
                               </span>
                             )}
                           </div>
                           {isWarning ? (
-                            <span className="text-[10.5px] font-extrabold text-white bg-red-600 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="text-meta font-extrabold text-white bg-red-600 px-2 py-0.5 rounded-md flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 stroke-[2.5]" />
                               주의 시즌
                             </span>
                           ) : isBest ? (
-                            <span className="text-[10.5px] font-extrabold text-white bg-emerald-600 dark:bg-emerald-500 dark:text-black px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="text-meta font-extrabold text-white bg-emerald-600 dark:bg-emerald-500 dark:text-black px-2 py-0.5 rounded-md flex items-center gap-1">
                               <Check className="w-3 h-3 stroke-[2.5]" />
                               최적 시즌
                             </span>
                           ) : (
-                            <span className="text-[10.5px] font-mono font-bold text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
+                            <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
                               시즌 참고
                             </span>
                           )}
@@ -2507,8 +2507,8 @@ export function TripBuilderPanel({
 
                         {/* 추천 방문 시기 */}
                         {bestSeasonText && (
-                          <div className="text-[11px] text-black/50 dark:text-white/50 pt-0.5 flex items-center gap-1">
-                            <Calendar className="w-3 h-3 shrink-0 text-black/40 dark:text-white/40" />
+                          <div className="text-[11px] text-black/60 dark:text-white/60 pt-0.5 flex items-center gap-1">
+                            <Calendar className="w-3 h-3 shrink-0 text-black/60 dark:text-white/60" />
                             <span>추천 방문 시기: {bestSeasonText}</span>
                           </div>
                         )}
@@ -2657,17 +2657,17 @@ export function TripBuilderPanel({
                         {/* Card Top: Number, Region, Theme Badge */}
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-extrabold">
+                            <span className="w-5 h-5 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black text-meta font-mono font-extrabold">
                               0{idx + 1}
                             </span>
                             <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
                               {prop.cityName} ({prop.countryKo})
                             </span>
-                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">
+                            <span className="text-meta font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">
                               {prop.themeLabel}
                             </span>
                           </div>
-                          <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 bg-red-600 text-white uppercase tracking-wider">
+                          <span className="text-micro font-mono font-bold px-1.5 py-0.5 bg-red-600 text-white uppercase tracking-wider">
                             {prop.seasonBadge}
                           </span>
                         </div>
@@ -2685,7 +2685,7 @@ export function TripBuilderPanel({
                         {/* Schedule Line: Dates & Nights */}
                         <div className="flex items-center justify-between text-[11px] font-mono font-bold text-black/75 dark:text-white/75 py-1 border-y border-black/10 dark:border-white/10">
                           <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                            <Calendar className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
                             <span>{prop.startDate.replace(/-/g, '.')} - {prop.endDate.replace(/-/g, '.')}</span>
                           </div>
                           <span className="text-red-600 dark:text-red-400 font-extrabold">{prop.nightsDays}</span>
@@ -2697,7 +2697,7 @@ export function TripBuilderPanel({
                             {prop.highlights.map((h, hIdx) => (
                               <span
                                 key={hIdx}
-                                className="text-[9.5px] font-mono font-medium px-1.5 py-0.5 bg-black/[0.04] dark:bg-white/[0.06] text-black/70 dark:text-white/70"
+                                className="text-micro font-mono font-medium px-1.5 py-0.5 bg-black/[0.04] dark:bg-white/[0.06] text-black/70 dark:text-white/70"
                               >
                                 #{h}
                               </span>
@@ -2706,7 +2706,7 @@ export function TripBuilderPanel({
                         )}
 
                         {/* Season Note Bar */}
-                        <div className="border-l-2 border-black/30 dark:border-white/30 pl-2 py-0.5 text-[10.5px] font-sans text-black/60 dark:text-white/60">
+                        <div className="border-l-2 border-black/30 dark:border-white/30 pl-2 py-0.5 text-meta font-sans text-black/60 dark:text-white/60">
                           {prop.seasonNote}
                         </div>
 
@@ -2767,7 +2767,7 @@ export function TripBuilderPanel({
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className={labelCls}>CONTINENT (대륙 필터)</label>
-                <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                <span className="text-micro font-mono text-black/60 dark:text-white/60">
                   {CONTINENTS.find(c => c.id === selectedContinent)?.labelEn}
                 </span>
               </div>
@@ -2793,7 +2793,7 @@ export function TripBuilderPanel({
                           }
                         }
                       }}
-                      className={`px-2 py-1 text-[10px] font-mono uppercase border transition-all cursor-pointer ${
+                      className={`px-2 py-1 text-meta font-mono uppercase border transition-all cursor-pointer ${
                         isSel
                           ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
                           : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40'
@@ -2872,7 +2872,7 @@ export function TripBuilderPanel({
                           setCountrySearchInput('');
                           onFocusLocationChange?.({});
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                         title="국가 선택 해제"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -2900,7 +2900,7 @@ export function TripBuilderPanel({
                           <span className="font-bold text-black dark:text-white font-mono text-[11px]">
                             {c.nameKo} ({c.nameEn})
                           </span>
-                          <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                          <span className="text-meta font-mono text-black/60 dark:text-white/60">
                             {c.popularCities?.slice(0, 2).join(', ') || c.code}
                           </span>
                         </button>
@@ -2935,7 +2935,7 @@ export function TripBuilderPanel({
                             onFocusLocationChange?.({});
                           }
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                         title="도시 선택 해제"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -2976,7 +2976,7 @@ export function TripBuilderPanel({
                           <span className="font-bold text-black dark:text-white font-mono text-[11px]">
                             {city.nameKo} ({city.nameEn})
                           </span>
-                          <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                          <span className="text-meta font-mono text-black/60 dark:text-white/60">
                             {city.countryEn}
                           </span>
                         </button>
@@ -3023,7 +3023,7 @@ export function TripBuilderPanel({
               if (!climateMetric) return null;
               return (
                 <div className="rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-3 text-xs font-mono text-black/80 dark:text-white/80 flex items-center justify-between border border-black/5 dark:border-white/5">
-                  <span className="font-bold text-black/50 dark:text-white/50">{m}월 현지 기후</span>
+                  <span className="font-bold text-black/60 dark:text-white/60">{m}월 현지 기후</span>
                   <span className="font-semibold text-black dark:text-white">{climateMetric}</span>
                 </div>
               );
@@ -3036,7 +3036,7 @@ export function TripBuilderPanel({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className={fieldLabelCls}>LOCATIONS (일정에 넣을 세부 스팟)</label>
-                <span className="text-xs font-mono text-black/40 dark:text-white/40">
+                <span className="text-xs font-mono text-black/60 dark:text-white/60">
                   타임라인에 자동 배치
                 </span>
               </div>
@@ -3063,7 +3063,7 @@ export function TripBuilderPanel({
                 if (recommendedSpots.length === 0) return null;
                 return (
                   <div className="space-y-1.5 pt-1">
-                    <div className="text-xs font-mono text-black/50 dark:text-white/50 flex items-center justify-between">
+                    <div className="text-xs font-mono text-black/60 dark:text-white/60 flex items-center justify-between">
                       <span>{targetCityObj.nameKo} 대표 명소 추천 (클릭하여 추가)</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
@@ -3081,7 +3081,7 @@ export function TripBuilderPanel({
                             disabled={isAlreadyAdded}
                             className={`px-3 py-1.5 text-xs rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                               isAlreadyAdded
-                                ? 'bg-neutral-100 dark:bg-neutral-800/40 text-black/30 dark:text-white/30 line-through'
+                                ? 'bg-neutral-100 dark:bg-neutral-800/40 text-black/60 dark:text-white/60 line-through'
                                 : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-black dark:text-white shadow-2xs'
                             }`}
                           >
@@ -3108,14 +3108,14 @@ export function TripBuilderPanel({
                         <button
                           type="button"
                           onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))}
-                          className="text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer text-sm font-bold"
+                          className="text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer text-sm font-bold"
                         >
                           &times;
                         </button>
                       </span>
                     ))}
                   </div>
-                  <p className="text-[11px] font-mono text-black/40 dark:text-white/40">
+                  <p className="text-[11px] font-mono text-black/60 dark:text-white/60">
                     * 위 장소들은 트립 생성 시 일자별 추천 타임라인(1일차, 2일차...)에 자동 분배됩니다.
                   </p>
                 </div>
@@ -3191,7 +3191,7 @@ export function TripBuilderPanel({
               <button
                 type="button"
                 onClick={() => setIsTemplateDrawerOpen(false)}
-                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
+                className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -3205,7 +3205,7 @@ export function TripBuilderPanel({
                   <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
                     대중적 러프 템플릿 (QUICK START)
                   </span>
-                  <span className="text-[10px] font-mono text-black/40 dark:text-white/40">4 PRESETS</span>
+                  <span className="text-meta font-mono text-black/60 dark:text-white/60">4 PRESETS</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {ROUGH_TEMPLATES.map(tpl => (
@@ -3218,14 +3218,14 @@ export function TripBuilderPanel({
                         <span className="text-xs font-extrabold uppercase font-sans tracking-tight">
                           {tpl.name}
                         </span>
-                        <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black">
+                        <span className="text-micro font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black">
                           {tpl.badge}
                         </span>
                       </div>
                       <p className="text-[11px] text-black/60 dark:text-white/60 line-clamp-2 leading-relaxed font-sans">
                         {tpl.description}
                       </p>
-                      <div className="pt-1 flex items-center gap-1.5 text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                      <div className="pt-1 flex items-center gap-1.5 text-micro font-mono text-black/60 dark:text-white/60">
                         <span>{tpl.countryKo}</span>
                         <span>•</span>
                         <span className="uppercase">{tpl.theme}</span>
@@ -3242,7 +3242,7 @@ export function TripBuilderPanel({
                     <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
                       나만의 맞춤 템플릿 (SAVED TEMPLATES)
                     </span>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60">
                       {presets.filter(p => p.isCustom).length} SAVED
                     </span>
                   </div>
@@ -3260,7 +3260,7 @@ export function TripBuilderPanel({
                             <span className="text-xs font-bold font-sans text-black dark:text-white truncate">
                               {cp.title}
                             </span>
-                            <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
+                            <span className="text-meta font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
                               {cp.durationDays}D
                             </span>
                           </div>
@@ -3277,7 +3277,7 @@ export function TripBuilderPanel({
                               setPresets(getSavedPresets());
                             }
                           }}
-                          className="p-1.5 text-black/30 dark:text-white/30 hover:text-red-600 transition-colors cursor-pointer shrink-0"
+                          className="p-1.5 text-black/60 dark:text-white/60 hover:text-red-600 transition-colors cursor-pointer shrink-0"
                           title="템플릿 삭제"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -3294,7 +3294,7 @@ export function TripBuilderPanel({
                   <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
                     전 세계 추천 여정 (WORLD PRESETS)
                   </span>
-                  <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                  <span className="text-meta font-mono text-black/60 dark:text-white/60">
                     {presets.filter(p => !p.isCustom).length} AVAILABLE
                   </span>
                 </div>
@@ -3307,18 +3307,18 @@ export function TripBuilderPanel({
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5">
+                          <span className="text-meta font-mono font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5">
                             {wp.country}
                           </span>
                           <span className="text-xs font-bold text-black dark:text-white truncate">
                             {wp.title}
                           </span>
                         </div>
-                        <p className="text-[10.5px] text-black/50 dark:text-white/50 truncate mt-0.5">
+                        <p className="text-meta text-black/60 dark:text-white/60 truncate mt-0.5">
                           {wp.highlights?.[0] || wp.subtitle}
                         </p>
                       </div>
-                      <span className="text-[10.5px] font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
+                      <span className="text-meta font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
                         {wp.durationDays}D
                       </span>
                     </div>

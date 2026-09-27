@@ -157,7 +157,7 @@ export function TimelineItemPlaceInput({
         <button 
           type="button"
           onClick={() => toggleFrequentPlace(item)}
-          className="p-1 hover:text-yellow-500 text-black/30 dark:text-white/30 transition-colors shrink-0"
+          className="p-1 hover:text-yellow-500 text-black/60 dark:text-white/60 transition-colors shrink-0"
           title={isFrequent(inputRef.current?.value || filterVal) ? "자주 가는 장소 등록 해제" : "자주 가는 장소로 등록"}
         >
           <Star className={`w-3.5 h-3.5 ${isFrequent(inputRef.current?.value || filterVal) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
@@ -167,7 +167,7 @@ export function TimelineItemPlaceInput({
       {/* Frequent Places Auto-complete Dropdown */}
       {showDropdown && filteredFrequent.length > 0 && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#222222] border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto rounded-none" onClick={(e) => e.stopPropagation()}>
-          <div className="px-2 py-1 text-[8px] font-bold text-black/40 dark:text-white/40 border-b border-black/5 dark:border-white/5 uppercase tracking-widest">
+          <div className="px-2 py-1 text-micro font-bold text-black/60 dark:text-white/60 border-b border-black/5 dark:border-white/5 uppercase tracking-widest">
             자주 사용하는 장소
           </div>
           {filteredFrequent.map((fp, idx) => (
@@ -180,7 +180,7 @@ export function TimelineItemPlaceInput({
                 <MapPin className="w-3 h-3 text-red-500" />
                 {fp.place}
               </div>
-              {fp.location && <div className="text-[10px] text-black/50 dark:text-white/50 truncate pl-4.5">{fp.location}</div>}
+              {fp.location && <div className="text-meta text-black/60 dark:text-white/60 truncate pl-4.5">{fp.location}</div>}
             </div>
           ))}
         </div>

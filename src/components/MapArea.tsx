@@ -429,7 +429,7 @@ export function MapArea({
       polyline.bindTooltip(distText, {
         permanent: true,
         direction: 'center',
-        className: 'font-mono text-[10px] font-extrabold bg-[#111] text-white px-2 py-0.5 rounded border border-white/20 shadow-md',
+        className: 'font-mono text-meta font-extrabold bg-[#111] text-white px-2 py-0.5 rounded border border-white/20 shadow-md',
       });
     }
 
@@ -523,8 +523,8 @@ export function MapArea({
           </div>
 
           <!-- Clean Swiss Minimal Gray Label (Hidden by default, shown on hover/click) -->
-          <div class="pocket-pin-label" style="position: absolute; top: 25px; left: 50%; z-index: 10; background: rgba(244, 244, 246, 0.96); backdrop-filter: blur(8px); border: 1px solid rgba(212, 212, 216, 0.95); border-radius: 4px; color: #18181b; font-size: 10px; font-weight: 700; padding: 2.5px 7px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center;">
-            <span style="background: #e4e4e7; color: #52525b; font-size: 7.5px; font-weight: 800; padding: 1px 4px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em; border: 0.5px solid rgba(82,82,91,0.25);">POCKET</span>
+          <div class="pocket-pin-label" style="position: absolute; top: 25px; left: 50%; z-index: 10; background: rgba(244, 244, 246, 0.96); backdrop-filter: blur(8px); border: 1px solid rgba(212, 212, 216, 0.95); border-radius: 4px; color: #18181b; font-size: 11px; font-weight: 700; padding: 2.5px 7px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center;">
+            <span style="background: #e4e4e7; color: #52525b; font-size: 11px; font-weight: 800; padding: 1px 4px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em; border: 0.5px solid rgba(82,82,91,0.25);">POCKET</span>
             <span style="color: #18181b; font-weight: 700;">${spot.title}</span>
           </div>
         </div>
@@ -541,14 +541,14 @@ export function MapArea({
 
       const popupHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 190px; padding: 4px;">
-          <div style="font-size: 9px; font-weight: 800; color: #52525b; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+          <div style="font-size: 11px; font-weight: 800; color: #52525b; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
             ${(spot.category || 'SPOT').toUpperCase()} · POCKET SPOT
           </div>
           <div style="font-size: 13px; font-weight: 800; color: #111; margin-bottom: 4px; line-height: 1.2;">
             ${spot.title}
           </div>
           ${spot.memo ? `<div style="font-size: 11px; color: #555; margin-bottom: 8px; line-height: 1.35; max-height: 60px; overflow-y: auto;">${spot.memo}</div>` : ''}
-          <button id="ghost-pin-add-${spot.id}" style="width: 100%; padding: 6px 8px; background: #52525b; color: #fff; font-size: 10px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; font-family: monospace; border-radius: 2px; transition: background 0.15s;">
+          <button id="ghost-pin-add-${spot.id}" style="width: 100%; padding: 6px 8px; background: #52525b; color: #fff; font-size: 11px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; font-family: monospace; border-radius: 2px; transition: background 0.15s;">
             + ADD TO TIMELINE
           </button>
         </div>
@@ -1884,8 +1884,8 @@ export function MapArea({
 
   if (!(window as any).L) {
     return (
-      <div className="flex-grow relative bg-neutral-100 dark:bg-[#111111] overflow-hidden flex flex-col items-center justify-center text-black/40 dark:text-white/40 p-6">
-        <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Loading Map Engine...</span>
+      <div className="flex-grow relative bg-neutral-100 dark:bg-[#111111] overflow-hidden flex flex-col items-center justify-center text-black/60 dark:text-white/60 p-6">
+        <span className="text-meta uppercase tracking-widest font-bold z-10 mb-2">Loading Map Engine...</span>
       </div>
     );
   }
@@ -1950,7 +1950,7 @@ export function MapArea({
                 }`}
               >
                 <Store className="w-3.5 h-3.5" />
-                <span className="ml-1 text-[9px] font-mono">
+                <span className="ml-1 text-micro font-mono">
                   {poiItems.filter(p => p.type === 'convenience').length}
                 </span>
               </button>
@@ -1967,7 +1967,7 @@ export function MapArea({
                 }`}
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
-                <span className="ml-1 text-[9px] font-mono">
+                <span className="ml-1 text-micro font-mono">
                   {poiItems.filter(p => p.type === 'supermarket').length}
                 </span>
               </button>
@@ -1984,7 +1984,7 @@ export function MapArea({
                 }`}
               >
                 <Train className="w-3.5 h-3.5" />
-                <span className="ml-1 text-[9px] font-mono">
+                <span className="ml-1 text-micro font-mono">
                   {poiItems.filter(p => p.type === 'station').length}
                 </span>
               </button>
@@ -1996,7 +1996,7 @@ export function MapArea({
             type="button"
             onClick={() => setIsPoiExpanded(!isPoiExpanded)}
             title={isPoiExpanded ? "아이콘 바 접기" : "주변 편의시설 (편의점/슈퍼/역) 보기"}
-            className="p-1 rounded text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center cursor-pointer"
+            className="p-1 rounded text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center cursor-pointer"
           >
             {poiLoading ? (
               <Loader2 className="w-3.5 h-3.5 text-red-600 animate-spin" />
@@ -2007,7 +2007,7 @@ export function MapArea({
                 <Store className="w-3.5 h-3.5 text-blue-600" />
                 <ShoppingBag className="w-3.5 h-3.5 text-emerald-600" />
                 <Train className="w-3.5 h-3.5 text-purple-600" />
-                <ChevronRight className="w-3 h-3 text-black/40 dark:text-white/40 ml-0.5" />
+                <ChevronRight className="w-3 h-3 text-black/60 dark:text-white/60 ml-0.5" />
               </div>
             )}
           </button>
@@ -2047,12 +2047,12 @@ export function MapArea({
             className={`w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md active:scale-95 ${
               showPocketPins
                 ? 'border-red-500/40 text-red-500'
-                : 'border-black/15 dark:border-white/15 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
             }`}
             title="포켓 스팟 지도 표시 토글 (POCKET)"
             aria-label="Toggle pocket spots on map"
           >
-            <Bookmark className={`w-3.5 h-3.5 transition-colors ${showPocketPins ? 'text-red-500 fill-red-500' : 'text-black/40 dark:text-white/40'}`} />
+            <Bookmark className={`w-3.5 h-3.5 transition-colors ${showPocketPins ? 'text-red-500 fill-red-500' : 'text-black/60 dark:text-white/60'}`} />
           </button>
 
           <button

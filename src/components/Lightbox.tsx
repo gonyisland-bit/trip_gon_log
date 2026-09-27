@@ -1014,11 +1014,11 @@ export function Lightbox({
           >
             <div className="flex items-center gap-2">
               {/* Image counter */}
-              <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-white/60 text-meta font-bold uppercase tracking-widest">
                 {currentIndex + 1} / {images.length}
               </span>
               {isPaused && (
-                <span className="text-red-400 text-[9px] font-extrabold uppercase tracking-widest animate-pulse ml-2">
+                <span className="text-red-400 text-micro font-extrabold uppercase tracking-widest animate-pulse ml-2">
                   ● PAUSED
                 </span>
               )}
@@ -1056,8 +1056,8 @@ export function Lightbox({
                 {/* Mute / Unmute Toggle */}
                 <button
                   onClick={handleToggleMute}
-                  className={`p-1 text-[9px] transition-all cursor-pointer ${
-                    volume > 0 ? 'text-red-400 font-extrabold' : 'text-white/50 hover:text-white'
+                  className={`p-1 text-micro transition-all cursor-pointer ${
+                    volume > 0 ? 'text-red-400 font-extrabold' : 'text-white/60 hover:text-white'
                   }`}
                   title={volume === 0 ? '음소거 해제 (M)' : '음소거 (M)'}
                 >
@@ -1074,7 +1074,7 @@ export function Lightbox({
                 <button
                   type="button"
                   onClick={showVolumeHud}
-                  className="px-1 py-0.5 font-mono text-[9px] font-bold text-white/80 hover:text-red-400 transition-colors cursor-pointer border-r border-white/15 pr-1.5"
+                  className="px-1 py-0.5 font-mono text-micro font-bold text-white/80 hover:text-red-400 transition-colors cursor-pointer border-r border-white/15 pr-1.5"
                   title="볼륨 조절 (방향키 ↑/↓, 마우스 휠)"
                 >
                   {volume}%
@@ -1083,7 +1083,7 @@ export function Lightbox({
                 {/* Track Title Button: Click to open track list selector */}
                 <button
                   onClick={() => setIsTrackListOpen(prev => !prev)}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider transition-all cursor-pointer max-w-[120px] truncate ${
+                  className={`flex items-center gap-1 px-1.5 py-0.5 text-micro font-extrabold uppercase tracking-wider transition-all cursor-pointer max-w-[120px] truncate ${
                     isBgmPlaying ? 'text-red-400' : 'text-white/70 hover:text-white'
                   }`}
                   title="클릭하여 음원 선택"
@@ -1115,13 +1115,13 @@ export function Lightbox({
                 {/* Swiss Minimal Track Selector Popover (Opens downwards below top control bar) */}
                 {isTrackListOpen && (
                   <div className="absolute top-full right-0 mt-2 w-64 max-h-64 overflow-y-auto bg-black/95 backdrop-blur-md border border-white/20 rounded-sm shadow-2xl p-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-2 py-1.5 border-b border-white/10 flex items-center justify-between text-[10px] font-mono text-white/50 uppercase tracking-widest">
+                    <div className="px-2 py-1.5 border-b border-white/10 flex items-center justify-between text-meta font-mono text-white/60 uppercase tracking-widest">
                       <span>BGM PLAYLIST</span>
                       <span className="text-red-400 font-bold">{bgmPlayer.getPlayableTracks().length} TRACKS</span>
                     </div>
                     <div className="flex flex-col gap-0.5 mt-1">
                       {bgmPlayer.getPlayableTracks().length === 0 ? (
-                        <div className="p-3 text-center text-xs text-white/40 font-mono">
+                        <div className="p-3 text-center text-xs text-white/60 font-mono">
                           재생 가능한 음원이 없습니다
                         </div>
                       ) : (
@@ -1142,7 +1142,7 @@ export function Lightbox({
                               }`}
                             >
                               <div className="flex items-center gap-2 min-w-0 pr-2">
-                                <span className="text-[10px] opacity-40 shrink-0">#{idx + 1}</span>
+                                <span className="text-meta opacity-40 shrink-0">#{idx + 1}</span>
                                 <span className="truncate">{track.title}</span>
                               </div>
                               {isSelected && <Check className="w-3.5 h-3.5 text-red-400 shrink-0" />}
@@ -1167,7 +1167,7 @@ export function Lightbox({
                     key={item.val}
                     type="button"
                     onClick={() => handleChangeInterval(item.val)}
-                    className={`px-1.5 py-0.5 font-mono text-[9px] uppercase transition-all rounded-xs cursor-pointer ${
+                    className={`px-1.5 py-0.5 font-mono text-micro uppercase transition-all rounded-xs cursor-pointer ${
                       slideshowInterval === item.val
                         ? 'bg-red-500 text-white font-bold shadow-xs'
                         : 'text-white/60 hover:text-white'
@@ -1195,7 +1195,7 @@ export function Lightbox({
               {/* Stop slideshow */}
               <button
                 onClick={handleStopSlideshow}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 text-white text-[9px] font-extrabold uppercase tracking-widest transition-all border border-white/20 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 text-white text-micro font-extrabold uppercase tracking-widest transition-all border border-white/20 cursor-pointer"
                 title="슬라이드쇼 종료 (ESC)"
               >
                 <SkipBack className="w-3.5 h-3.5" />
@@ -1369,7 +1369,7 @@ export function Lightbox({
               ) : (
                 <Volume2 className="w-3.5 h-3.5 text-red-400" />
               )}
-              <span className="font-mono text-[9px] font-bold text-white tracking-tighter">
+              <span className="font-mono text-micro font-bold text-white tracking-tighter">
                 {volume}%
               </span>
             </button>
@@ -1393,7 +1393,7 @@ export function Lightbox({
       {/* ── NORMAL MODE: Top Header controls ── */}
       {!isSlideshow && (
         <div className="flex justify-between items-center px-4 py-3 md:px-6 md:py-4 text-white z-20 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 pointer-events-none">
-          <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold opacity-50 pointer-events-auto">
+          <span className="text-meta md:text-xs uppercase tracking-widest font-bold opacity-50 pointer-events-auto">
             {currentIndex + 1} / {images.length}
           </span>
 
@@ -1401,10 +1401,10 @@ export function Lightbox({
             {/* Log toggle */}
             <button
               onClick={() => setShowLog(v => !v)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-widest border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
                 showLog
                   ? 'bg-white/10 border-white/20 text-white font-extrabold'
-                  : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/20'
+                  : 'border-white/10 text-white/60 hover:text-white/70 hover:border-white/20'
               }`}
               title="Toggle log info"
             >
@@ -1418,7 +1418,7 @@ export function Lightbox({
             {images.length > 1 && (
               <button
                 onClick={handleStartSlideshow}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-widest border border-white/20 hover:bg-white/10 text-white/70 hover:text-white transition-all"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border border-white/20 hover:bg-white/10 text-white/70 hover:text-white transition-all"
                 title="슬라이드쇼 시작"
               >
                 <Play className="w-3 h-3" />
@@ -1429,7 +1429,7 @@ export function Lightbox({
             {/* BGM Toggle in Normal Mode */}
             <button
               onClick={() => bgmPlayer.toggle()}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-widest border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
                 isBgmPlaying
                   ? 'border-red-500/80 bg-red-500/10 text-red-400 font-extrabold'
                   : 'border-white/20 hover:bg-white/10 text-white/60 hover:text-white'
@@ -1453,7 +1453,7 @@ export function Lightbox({
                 <ZoomOut className="w-4 h-4 md:w-5 md:h-5" />
               </button>
 
-              <span className="text-[10px] md:text-xs font-mono font-bold w-10 text-center opacity-70">
+              <span className="text-meta md:text-xs font-mono font-bold w-10 text-center opacity-70">
                 {Math.round(scale * 100)}%
               </span>
 
@@ -1714,7 +1714,7 @@ export function Lightbox({
                       <span className="text-center">{secondaryLoc}</span>
                     </div>
                   ) : !primaryTitle ? (
-                    <div className="text-white/30 font-bold text-[10px] md:text-xs tracking-widest uppercase text-center w-full">
+                    <div className="text-white/60 font-bold text-meta md:text-xs tracking-widest uppercase text-center w-full">
                       No Location Tagged
                     </div>
                   ) : null}
@@ -1728,7 +1728,7 @@ export function Lightbox({
       {/* Hint when no log or date */}
       {(!showLog || !hasLog) && !hasDate && !isSlideshow && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pb-3 pt-6 text-center bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
-          <p className="text-white/35 text-[9px] uppercase tracking-widest font-bold">
+          <p className="text-white/60 text-micro uppercase tracking-widest font-bold">
             +/- to Zoom · * to Reset · Swipe/Click Thumbnails to Navigate
           </p>
         </div>

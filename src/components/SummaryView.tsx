@@ -646,7 +646,7 @@ export function SummaryView({
       >
         {/* 1. Masthead & Inverted Tag Pill */}
         <div className="flex flex-col items-start gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-black text-white dark:bg-white dark:text-black rounded-xs text-[10px] font-extrabold uppercase tracking-widest font-mono">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-black text-white dark:bg-white dark:text-black rounded-xs text-meta font-extrabold uppercase tracking-widest font-mono">
             <span>MEMORANDUM OF TRAVEL</span>
             <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
           </div>
@@ -681,7 +681,7 @@ export function SummaryView({
                 <button
                   id="capture-exclude-btn"
                   onClick={handleCapture}
-                  className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-black dark:text-white hover:opacity-60 transition-opacity cursor-pointer active:scale-95 shrink-0"
+                  className="inline-flex items-center gap-2 text-meta font-extrabold uppercase tracking-widest text-black dark:text-white hover:opacity-60 transition-opacity cursor-pointer active:scale-95 shrink-0"
                 >
                   <span className="w-4 h-4 rounded-xs bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
                     <ArrowDownRight className="w-3 h-3" />
@@ -748,7 +748,7 @@ export function SummaryView({
               <span>STAYS</span>
               <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
             </button>
-            <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">{stays.length} PROPERTIES</span>
+            <span className="text-meta sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">{stays.length} PROPERTIES</span>
           </div>
 
           <div className="divide-y divide-black/15 dark:divide-white/15">
@@ -770,7 +770,7 @@ export function SummaryView({
                         <span className="text-xs font-mono font-bold text-black/60 dark:text-white/60">
                           {nights} {nights === 1 ? 'NIGHT' : 'NIGHTS'}
                         </span>
-                        <span className="text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
+                        <span className="text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
                           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </span>
                       </div>
@@ -787,11 +787,11 @@ export function SummaryView({
                               <button
                                 type="button"
                                 onClick={(e) => handleCopyAddress(e, s.address)}
-                                className="p-0.5 hover:text-red-600 dark:hover:text-red-400 text-black/50 dark:text-white/50 transition-colors cursor-pointer shrink-0 mt-0.5"
+                                className="p-0.5 hover:text-red-600 dark:hover:text-red-400 text-black/60 dark:text-white/60 transition-colors cursor-pointer shrink-0 mt-0.5"
                                 title="주소 복사"
                               >
                                 {copiedAddress === s.address ? (
-                                  <span className="flex items-center gap-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                  <span className="flex items-center gap-0.5 text-meta font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                                     <Check className="w-3 h-3" /> COPIED
                                   </span>
                                 ) : (
@@ -812,7 +812,7 @@ export function SummaryView({
                 );
               })
             ) : (
-              <div className="py-4 text-xs italic text-black/40 dark:text-white/40">등록된 숙소 정보가 없습니다.</div>
+              <div className="py-4 text-xs italic text-black/60 dark:text-white/60">등록된 숙소 정보가 없습니다.</div>
             )}
           </div>
         </div>
@@ -829,7 +829,7 @@ export function SummaryView({
               <span>FLIGHTS</span>
               <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
             </button>
-            <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">{flights.length} SEGMENTS</span>
+            <span className="text-meta sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">{flights.length} SEGMENTS</span>
           </div>
 
           <div className="divide-y divide-black/15 dark:divide-white/15">
@@ -854,7 +854,7 @@ export function SummaryView({
                         <span className="text-xs font-mono text-black/60 dark:text-white/60">
                           {f.date}
                         </span>
-                        <span className="text-black/50 dark:text-white/50">
+                        <span className="text-black/60 dark:text-white/60">
                           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </span>
                       </div>
@@ -863,21 +863,21 @@ export function SummaryView({
                     {isOpen && (
                       <div className="pt-3 pb-1 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono animate-in fade-in duration-150">
                         <div>
-                          <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block">Departure</span>
+                          <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block">Departure</span>
                           <span className="font-bold text-black dark:text-white">{f.fromCode} {f.fromTime || ''}</span>
-                          {f.fromTerminal && <span className="text-[10px] text-black/60 dark:text-white/60 block">Terminal {f.fromTerminal}</span>}
+                          {f.fromTerminal && <span className="text-meta text-black/60 dark:text-white/60 block">Terminal {f.fromTerminal}</span>}
                         </div>
                         <div>
-                          <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block">Arrival</span>
+                          <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block">Arrival</span>
                           <span className="font-bold text-black dark:text-white">{f.toCode} {f.toTime || ''}</span>
-                          {f.toTerminal && <span className="text-[10px] text-black/60 dark:text-white/60 block">Terminal {f.toTerminal}</span>}
+                          {f.toTerminal && <span className="text-meta text-black/60 dark:text-white/60 block">Terminal {f.toTerminal}</span>}
                         </div>
                         <div>
-                          <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block">Seat</span>
+                          <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block">Seat</span>
                           <span className="font-bold text-black dark:text-white">{f.seat || '—'}</span>
                         </div>
                         <div>
-                          <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block">Booking PNR</span>
+                          <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block">Booking PNR</span>
                           <span className="font-bold text-red-600 dark:text-red-400">{f.pnr || '—'}</span>
                         </div>
                       </div>
@@ -886,7 +886,7 @@ export function SummaryView({
                 );
               })
             ) : (
-              <div className="py-4 text-xs italic text-black/40 dark:text-white/40">등록된 항공 정보가 없습니다.</div>
+              <div className="py-4 text-xs italic text-black/60 dark:text-white/60">등록된 항공 정보가 없습니다.</div>
             )}
           </div>
         </div>
@@ -904,7 +904,7 @@ export function SummaryView({
                 <span>TRANSIT</span>
                 <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
               </button>
-              <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">{transits.length} PASSES</span>
+              <span className="text-meta sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">{transits.length} PASSES</span>
             </div>
 
             {/* Collapsed 1-line summary toggle */}
@@ -915,7 +915,7 @@ export function SummaryView({
               <span className="text-xs sm:text-sm font-sans font-bold text-black/90 dark:text-white/90 uppercase tracking-wider group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                 {transitSummaryStr}
               </span>
-              <span className="text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
+              <span className="text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
                 {isTransitExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </span>
             </div>
@@ -934,7 +934,7 @@ export function SummaryView({
                         className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                       >
                         <div className="flex items-center gap-2 sm:gap-3">
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 rounded-xs uppercase">
+                          <span className="text-meta font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 rounded-xs uppercase">
                             {eType.toUpperCase()}
                           </span>
                           <span className="font-bold text-sm text-black dark:text-white font-sans uppercase">
@@ -950,7 +950,7 @@ export function SummaryView({
                           <span className="text-xs font-mono text-black/60 dark:text-white/60">
                             {isCar && t.rentalDropoffDate ? `${t.date} ~ ${t.rentalDropoffDate}` : t.date}
                           </span>
-                          <span className="text-black/50 dark:text-white/50">
+                          <span className="text-black/60 dark:text-white/60">
                             {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           </span>
                         </div>
@@ -959,7 +959,7 @@ export function SummaryView({
                       {isOpen && (
                         <div className="pt-3 pb-1 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono animate-in fade-in duration-150 border-t border-black/5 dark:border-white/5 mt-2">
                           <div>
-                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">
+                            <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block font-sans font-bold">
                               {isCar ? 'PICKUP / 픽업' : 'ROUTE / 경로'}
                             </span>
                             <span className="font-bold text-black dark:text-white">
@@ -967,7 +967,7 @@ export function SummaryView({
                             </span>
                           </div>
                           <div>
-                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">
+                            <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block font-sans font-bold">
                               {isCar ? 'PERIOD / 대여기간' : 'TIME / 시간'}
                             </span>
                             <span className="font-bold text-black dark:text-white">
@@ -975,7 +975,7 @@ export function SummaryView({
                             </span>
                           </div>
                           <div>
-                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">
+                            <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block font-sans font-bold">
                               {isCar ? 'VEHICLE / 차량' : 'SEAT / 좌석'}
                             </span>
                             <span className="font-bold text-black dark:text-white">
@@ -983,12 +983,12 @@ export function SummaryView({
                             </span>
                           </div>
                           <div>
-                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">CONFIRMATION / 예약번호</span>
+                            <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block font-sans font-bold">CONFIRMATION / 예약번호</span>
                             <span className="font-bold text-red-600 dark:text-red-400">{t.bookingRef || '—'}</span>
                           </div>
                           {t.memo && (
                             <div className="col-span-2 sm:col-span-4 pt-1">
-                              <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">MEMO / 메모</span>
+                              <span className="text-micro uppercase tracking-wider text-black/60 dark:text-white/60 block font-sans font-bold">MEMO / 메모</span>
                               <p className="text-black/80 dark:text-white/80 whitespace-pre-wrap font-sans">{t.memo}</p>
                             </div>
                           )}
@@ -1021,7 +1021,7 @@ export function SummaryView({
               <span className="text-xs sm:text-sm font-mono font-bold text-black/80 dark:text-white/80">
                 ₩{Math.round(totalInBaseCurrency).toLocaleString()}
               </span>
-              <span className="text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
+              <span className="text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
                 {isCostExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </span>
             </div>
@@ -1041,17 +1041,17 @@ export function SummaryView({
                     </div>
                   ))
                 ) : (
-                  <div className="py-3 italic text-black/40 dark:text-white/40">등록된 지출 내역 없음</div>
+                  <div className="py-3 italic text-black/60 dark:text-white/60">등록된 지출 내역 없음</div>
                 )}
               </div>
 
               {/* Total Converted (Point Clean Accent Box) */}
               <div className="p-4 sm:p-5 border border-black/15 dark:border-white/15 flex flex-col justify-between gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
                 <div className="flex justify-between items-start">
-                  <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest font-sans text-black/60 dark:text-white/60">
+                  <span className="text-meta sm:text-xs font-extrabold uppercase tracking-widest font-sans text-black/60 dark:text-white/60">
                     TOTAL ESTIMATED
                   </span>
-                  <span className="text-[9px] font-sans text-black/40 dark:text-white/40 uppercase font-bold">
+                  <span className="text-micro font-sans text-black/60 dark:text-white/60 uppercase font-bold">
                     KRW BASE
                   </span>
                 </div>

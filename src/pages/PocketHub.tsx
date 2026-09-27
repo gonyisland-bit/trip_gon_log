@@ -1162,7 +1162,7 @@ export function PocketHubPage({
         {/* Top Metadata Barcode & Category Tag */}
         <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-[10px]">
+            <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta">
               POCKET
             </span>
             <span className="font-bold text-red-600 dark:text-red-400">
@@ -1204,7 +1204,7 @@ export function PocketHubPage({
             <button
               type="button"
               onClick={() => setIsFilterOpen(prev => !prev)}
-              className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`text-meta sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
                 isFilterOpen || activeFilterCount > 0
                   ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                   : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
@@ -1247,13 +1247,13 @@ export function PocketHubPage({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="장소, 지역 검색..."
-                  className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+                  className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 rounded-none"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                    className="absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
                     title="검색어 지우기"
                   >
                     <X className="w-3 h-3" />
@@ -1271,7 +1271,7 @@ export function PocketHubPage({
               <select
                 value={sortMode}
                 onChange={(e) => setSortMode(e.target.value as any)}
-                className="bg-transparent text-[10px] sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans text-black dark:text-white"
+                className="bg-transparent text-meta sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans text-black dark:text-white"
               >
                 <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
                 <option value="city" className="bg-[#F9F8F6] dark:bg-[#111111]">CITY</option>
@@ -1322,7 +1322,7 @@ export function PocketHubPage({
               {selectedCountry !== 'ALL' && (
                 <button
                   onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
-                  className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                  className="h-7 px-2 flex items-center gap-1 text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
                 >
                   <span>{selectedCountry}</span>
                   <X className="w-2.5 h-2.5" />
@@ -1331,7 +1331,7 @@ export function PocketHubPage({
               {selectedCity !== 'ALL' && (
                 <button
                   onClick={() => setSelectedCity('ALL')}
-                  className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-red-600 bg-red-600/10 text-red-600 dark:border-red-400 dark:text-red-400 cursor-pointer hover:bg-red-600 hover:text-white transition-colors shrink-0"
+                  className="h-7 px-2 flex items-center gap-1 text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-red-600 bg-red-600/10 text-red-600 dark:border-red-400 dark:text-red-400 cursor-pointer hover:bg-red-600 hover:text-white transition-colors shrink-0"
                 >
                   <span>{selectedCity}</span>
                   <X className="w-2.5 h-2.5" />
@@ -1340,7 +1340,7 @@ export function PocketHubPage({
               {selectedCategory !== 'ALL' && (
                 <button
                   onClick={() => setSelectedCategory('ALL')}
-                  className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                  className="h-7 px-2 flex items-center gap-1 text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
                 >
                   <span>{selectedCategory}</span>
                   <X className="w-2.5 h-2.5" />
@@ -1349,7 +1349,7 @@ export function PocketHubPage({
               {isFavoriteFilter && (
                 <button
                   onClick={() => setIsFavoriteFilter(false)}
-                  className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                  className="h-7 px-2 flex items-center gap-1 text-meta sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
                 >
                   <Star className="w-2.5 h-2.5 fill-current" />
                   <span>FAVORITES</span>
@@ -1358,7 +1358,7 @@ export function PocketHubPage({
               )}
               <button
                 onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); setSelectedCategory('ALL'); setIsFavoriteFilter(false); }}
-                className="h-7 px-2 text-[10px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer transition-colors shrink-0"
+                className="h-7 px-2 text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer transition-colors shrink-0"
               >
                 RESET
               </button>
@@ -1370,7 +1370,7 @@ export function PocketHubPage({
             <div className="border border-black/15 dark:border-white/15 p-4 sm:p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-150 bg-black/[0.015] dark:bg-white/[0.015]">
               {/* COUNTRY */}
               <div className="flex items-start gap-2.5 flex-wrap">
-                <span className="text-[10px] font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">COUNTRY</span>
+                <span className="text-meta font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">COUNTRY</span>
                 <div className="flex flex-wrap gap-1.5 flex-1">
                   <button
                     onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
@@ -1392,7 +1392,7 @@ export function PocketHubPage({
                             : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                         }`}
                       >
-                        {country} <span className="opacity-60 text-[9.5px]">({count})</span>
+                        {country} <span className="opacity-60 text-micro">({count})</span>
                       </button>
                     );
                   })}
@@ -1402,7 +1402,7 @@ export function PocketHubPage({
               {/* CITY (Direct Major City Filtering: Always available if spots have cities) */}
               {cityOptions.length > 0 && (
                 <div className="flex items-start gap-2.5 flex-wrap">
-                  <span className="text-[10px] font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">CITY</span>
+                  <span className="text-meta font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">CITY</span>
                   <div className="flex flex-wrap gap-1.5 flex-1">
                     <button
                       onClick={() => setSelectedCity('ALL')}
@@ -1424,7 +1424,7 @@ export function PocketHubPage({
                               : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                           }`}
                         >
-                          {city} <span className="opacity-60 text-[9.5px]">({count})</span>
+                          {city} <span className="opacity-60 text-micro">({count})</span>
                         </button>
                       );
                     })}
@@ -1434,7 +1434,7 @@ export function PocketHubPage({
 
               {/* CATEGORY */}
               <div className="flex items-start gap-2.5 flex-wrap">
-                <span className="text-[10px] font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">CATEGORY</span>
+                <span className="text-meta font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">CATEGORY</span>
                 <div className="flex flex-wrap gap-1.5 flex-1">
                   <button
                     onClick={() => setSelectedCategory('ALL')}
@@ -1482,7 +1482,7 @@ export function PocketHubPage({
                 </button>
                 <button
                   onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); setSelectedCategory('ALL'); setIsFavoriteFilter(false); }}
-                  className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50 hover:text-red-500 cursor-pointer transition-colors px-2 py-1"
+                  className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer transition-colors px-2 py-1"
                 >
                   RESET ALL
                 </button>
@@ -1497,11 +1497,11 @@ export function PocketHubPage({
         {/* Gallery — Grouped by country·city or flat drag mode */}
         {sortedSpots.length === 0 ? (
           <div className="flex-grow flex flex-col items-center justify-center py-24 border border-dashed border-black/20 dark:border-white/20 text-center">
-            <Bookmark className="w-8 h-8 text-black/20 dark:text-white/20 mb-3" />
-            <p className="text-sm font-mono text-black/50 dark:text-white/50 uppercase tracking-widest">
+            <Bookmark className="w-8 h-8 text-black/60 dark:text-white/60 mb-3" />
+            <p className="text-sm font-mono text-black/60 dark:text-white/60 uppercase tracking-widest">
               보관된 스팟이 없습니다
             </p>
-            <p className="text-xs text-black/40 dark:text-white/40 mt-1">
+            <p className="text-xs text-black/60 dark:text-white/60 mt-1">
               상단의 'KEEP SPOT' 버튼을 눌러 인스타, 유튜브 등의 핫플과 꿀팁을 킵해보세요.
             </p>
           </div>
@@ -1557,7 +1557,7 @@ export function PocketHubPage({
                   >
                     {/* Drag Handle (admin + custom sort mode + order mode only) */}
                     {isDragMode && (
-                      <div className="flex items-center justify-center h-6 bg-black/[0.03] dark:bg-white/[0.04] border-b border-black/10 dark:border-white/10 cursor-grab text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors">
+                      <div className="flex items-center justify-center h-6 bg-black/[0.03] dark:bg-white/[0.04] border-b border-black/10 dark:border-white/10 cursor-grab text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors">
                         <GripVertical className="w-3.5 h-3.5" />
                       </div>
                     )}
@@ -1575,14 +1575,14 @@ export function PocketHubPage({
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-black/25 dark:text-white/25">
+                        <div className="w-full h-full flex flex-col items-center justify-center text-black/60 dark:text-white/60">
                           <Icon className="w-10 h-10 mb-1" />
-                          <span className="text-[9px] font-mono tracking-widest uppercase font-normal">{meta.label}</span>
+                          <span className="text-micro font-mono tracking-widest uppercase font-normal">{meta.label}</span>
                         </div>
                       )}
 
                       {/* Category Chip Overlay (Top-Left) */}
-                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 dark:bg-black/85 backdrop-blur-md text-black dark:text-white text-[9px] sm:text-[9.5px] font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/15 rounded-full flex items-center gap-1.5 shadow-xs">
+                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 dark:bg-black/85 backdrop-blur-md text-black dark:text-white text-micro sm:text-micro font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/15 rounded-full flex items-center gap-1.5 shadow-xs">
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
                         <span>{meta.label}</span>
                       </div>
@@ -1607,7 +1607,7 @@ export function PocketHubPage({
                             <button
                               type="button"
                               onClick={(e) => handleToggleFavorite(spot.id, e)}
-                              className="w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-black/50 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer shadow-xs"
+                              className="w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer shadow-xs"
                               title={spot.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
                             >
                               <Star className={`w-3.5 h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : ''}`} />
@@ -1621,12 +1621,12 @@ export function PocketHubPage({
                     <div className="p-3.5 sm:p-4 flex-grow flex flex-col justify-between">
                       <div>
                         {/* Region & Platform Meta Tag */}
-                        <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-wider text-black/45 dark:text-white/45 mb-1.5 truncate">
+                        <div className="flex items-center gap-1.5 text-micro sm:text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 mb-1.5 truncate">
                           <MapPin className="w-3 h-3 text-red-500 shrink-0" />
                           <span>{locationLabel}</span>
                           {spot.platform && (
                             <>
-                              <span className="text-black/20 dark:text-white/20">·</span>
+                              <span className="text-black/60 dark:text-white/60">·</span>
                               <span className="text-black/60 dark:text-white/60 font-semibold">@{spot.platform}</span>
                             </>
                           )}
@@ -1646,7 +1646,7 @@ export function PocketHubPage({
 
                         {/* Address */}
                         {spot.address && (
-                          <p className="mt-1.5 text-[9px] sm:text-[9.5px] text-black/35 dark:text-white/40 font-mono truncate font-normal">
+                          <p className="mt-1.5 text-micro sm:text-micro text-black/60 dark:text-white/60 font-mono truncate font-normal">
                             {spot.address}
                           </p>
                         )}
@@ -1659,7 +1659,7 @@ export function PocketHubPage({
                           <button
                             type="button"
                             onClick={() => handleToggleLike(spot.id)}
-                            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 h-6.5 sm:h-7 rounded-full border text-[9.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
+                            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 h-6.5 sm:h-7 rounded-full border text-micro sm:text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
                               isLiked
                                 ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
                                 : 'border-black/10 dark:border-white/15 text-black/65 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
@@ -1674,7 +1674,7 @@ export function PocketHubPage({
                           <button
                             type="button"
                             onClick={() => setSelectedSpotForModal(spot)}
-                            className={`flex items-center gap-1 sm:gap-1.5 h-6.5 sm:h-7 rounded-full border text-[9.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
+                            className={`flex items-center gap-1 sm:gap-1.5 h-6.5 sm:h-7 rounded-full border text-micro sm:text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
                               spot.comments && spot.comments.length > 0
                                 ? 'px-1.5 py-0.5 sm:px-2 sm:py-1 bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20 text-black dark:text-white shadow-xs'
                                 : 'w-6.5 h-6.5 sm:w-7 sm:h-7 !p-0 justify-center border-black/10 dark:border-white/15 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
@@ -1731,18 +1731,18 @@ export function PocketHubPage({
                             title={isCollapsed ? "섹션 펼치기" : "섹션 접기"}
                           >
                             {group.subBadge && (
-                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-xs bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border border-black/10 dark:border-white/10">
+                              <span className="text-micro font-mono font-bold px-1.5 py-0.5 rounded-xs bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border border-black/10 dark:border-white/10">
                                 {group.subBadge}
                               </span>
                             )}
                             <span className="text-[11px] font-mono font-extrabold tracking-widest uppercase text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                               {group.label}
                             </span>
-                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                            <span className="text-meta font-mono text-black/60 dark:text-white/60">
                               {group.items.length}
                             </span>
                             <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
-                            <span className="text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white p-0.5 transition-transform duration-200">
+                            <span className="text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white p-0.5 transition-transform duration-200">
                               {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                             </span>
                           </div>
@@ -1794,7 +1794,7 @@ export function PocketHubPage({
                         className="h-10 px-6 border border-black dark:border-white text-xs font-mono font-extrabold uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-2"
                       >
                         <span>LOAD MORE (+40)</span>
-                        <span className="text-black/40 dark:text-white/40 font-normal">
+                        <span className="text-black/60 dark:text-white/60 font-normal">
                           ({visibleCount} / {sortedSpots.length})
                         </span>
                       </button>
@@ -1813,14 +1813,14 @@ export function PocketHubPage({
           <div className="bg-white dark:bg-[#111111] border border-black dark:border-white w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-4">
               <div>
-                <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase">ADD TO TIMELINE</span>
+                <span className="text-meta font-mono tracking-widest text-red-500 uppercase">ADD TO TIMELINE</span>
                 <h3 className="text-lg font-extrabold uppercase tracking-tight truncate max-w-[280px]">
                   {spotToUseInTrip.title}
                 </h3>
               </div>
               <button
                 onClick={() => setSpotToUseInTrip(null)}
-                className="text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white"
+                className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1832,7 +1832,7 @@ export function PocketHubPage({
 
             <div className="max-h-60 overflow-y-auto space-y-2 pr-1 border-t border-b border-black/10 dark:border-white/10 py-3">
               {allAvailableTrips.length === 0 ? (
-                <p className="text-xs font-mono text-center text-black/40 dark:text-white/40 py-4">
+                <p className="text-xs font-mono text-center text-black/60 dark:text-white/60 py-4">
                   등록된 여정이 없습니다.
                 </p>
               ) : (
@@ -1850,16 +1850,16 @@ export function PocketHubPage({
                             {trip.title}
                           </span>
                           {isPlanItem && (
-                            <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold tracking-widest uppercase border border-amber-600/50 text-amber-600 dark:border-amber-400/50 dark:text-amber-400">
+                            <span className="px-1.5 py-0.2 text-micro font-mono font-bold tracking-widest uppercase border border-amber-600/50 text-amber-600 dark:border-amber-400/50 dark:text-amber-400">
                               PLAN
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] font-mono text-black/40 dark:text-white/40 mt-0.5">
+                        <div className="text-meta font-mono text-black/60 dark:text-white/60 mt-0.5">
                           {trip.date || '일정 미지정'} · {trip.locationStr || '위치 미지정'}
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                      <ChevronRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                     </button>
                   );
                 })
@@ -1902,7 +1902,7 @@ export function PocketHubPage({
           >
             <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-5">
               <div>
-                <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase">
+                <span className="text-meta font-mono tracking-widest text-red-500 uppercase">
                   {editingSpot ? 'EDIT SPOT' : 'KEEP SPOT'}
                 </span>
                 <h3 className="text-xl font-extrabold uppercase tracking-tight">
@@ -1912,7 +1912,7 @@ export function PocketHubPage({
               <button
                 type="button"
                 onClick={handleCloseModal}
-                className="text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
+                className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1922,7 +1922,7 @@ export function PocketHubPage({
               {/* Title / Spot Name or Tip Title */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
+                  <label className="text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
                     제목 (장소명 또는 꿀팁 제목) *
                   </label>
                   {newThumbnailUrl && (
@@ -1930,7 +1930,7 @@ export function PocketHubPage({
                       type="button"
                       onClick={handleRunOcrInModal}
                       disabled={isModalOcrRunning}
-                      className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      className="text-meta font-mono font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
                       title="썸네일 사진 속 글씨(장소명)를 읽어옵니다"
                     >
                       {isModalOcrRunning ? (
@@ -1965,7 +1965,7 @@ export function PocketHubPage({
                 {/* OCR Candidates Chips in Modal */}
                 {modalOcrCandidates.length > 0 && (
                   <div className="mt-2 p-2 bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 flex flex-col gap-1.5 animate-in fade-in duration-150">
-                    <span className="text-[9.5px] font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
+                    <span className="text-micro font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
                       <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
                       인식된 제목 후보 (터치하여 자동완성 위치에 적용):
                     </span>
@@ -1975,7 +1975,7 @@ export function PocketHubPage({
                           key={idx}
                           type="button"
                           onClick={() => setNewTitle(cand)}
-                          className={`px-2 py-0.5 text-[10.5px] font-mono border transition-all cursor-pointer ${
+                          className={`px-2 py-0.5 text-meta font-mono border transition-all cursor-pointer ${
                             newTitle === cand
                               ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
                               : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
@@ -1988,16 +1988,16 @@ export function PocketHubPage({
                   </div>
                 )}
                 {modalOcrError && (
-                  <p className="text-[9.5px] font-mono text-red-500 mt-1">{modalOcrError}</p>
+                  <p className="text-micro font-mono text-red-500 mt-1">{modalOcrError}</p>
                 )}
-                <p className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-1">
+                <p className="text-micro font-mono text-black/60 dark:text-white/60 mt-1">
                   구글 장소 자동완성을 사용하거나, 꿀팁인 경우 제목을 직접 입력하세요.
                 </p>
               </div>
 
               {/* Category selector */}
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1.5">
+                <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1.5">
                   카테고리
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
@@ -2008,7 +2008,7 @@ export function PocketHubPage({
                         type="button"
                         key={cat}
                         onClick={() => setNewCategory(cat)}
-                        className={`h-8 text-[10px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                        className={`h-8 text-meta font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
                           isSelected
                             ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
                             : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40'
@@ -2024,7 +2024,7 @@ export function PocketHubPage({
               {/* Country & City */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                     국가 (Country)
                   </label>
                   <input
@@ -2036,7 +2036,7 @@ export function PocketHubPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                     도시/지역 (City)
                   </label>
                   <input
@@ -2052,14 +2052,14 @@ export function PocketHubPage({
               {/* Memo & Tips */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
+                  <label className="text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
                     핵심 꿀팁 / 할인 / 웨이팅 정보
                   </label>
                   {modalOcrDescription ? (
                     <button
                       type="button"
                       onClick={handleApplyDescriptionToNewMemo}
-                      className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-meta font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
                       title="사진 속 설명 텍스트로 기존 메모를 대체합니다"
                     >
                       <FileText className="w-3 h-3" />
@@ -2071,7 +2071,7 @@ export function PocketHubPage({
                       onClick={async () => {
                         await handleRunOcrInModal();
                       }}
-                      className="text-[10px] font-mono text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
                       title="사진에서 본문 설명을 찾아 메모에 넣습니다"
                     >
                       <FileText className="w-3 h-3" />
@@ -2082,15 +2082,15 @@ export function PocketHubPage({
 
                 {/* Modal OCR Description preview card if detected */}
                 {modalOcrDescription && (
-                  <div className="mb-2 p-2 bg-amber-500/[0.05] border border-amber-500/20 text-[10.5px] flex flex-col gap-1 animate-in fade-in duration-150">
+                  <div className="mb-2 p-2 bg-amber-500/[0.05] border border-amber-500/20 text-meta flex flex-col gap-1 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-[9.5px]">
+                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-micro">
                         사진에서 추출된 설명 ({modalOcrDescription.length}자):
                       </span>
                       <button
                         type="button"
                         onClick={handleApplyDescriptionToNewMemo}
-                        className="px-1.5 py-0.5 bg-black dark:bg-white text-white dark:text-black text-[9px] font-mono font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer"
+                        className="px-1.5 py-0.5 bg-black dark:bg-white text-white dark:text-black text-micro font-mono font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer"
                       >
                         덮어쓰기 적용
                       </button>
@@ -2110,7 +2110,7 @@ export function PocketHubPage({
 
               {/* Source SNS URL */}
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                   SNS 원본 링크 (인스타, 유튜브, 블로그, 구글맵)
                 </label>
                 <input
@@ -2125,10 +2125,10 @@ export function PocketHubPage({
               {/* Thumbnail Image Uploader (Swiss Minimal, Drag&Drop, Paste, URL) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
+                  <label className="text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
                     썸네일 이미지 (선택)
                   </label>
-                  <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                  <span className="text-micro font-mono text-black/60 dark:text-white/60">
                     드래그&드롭 · 붙여넣기(Ctrl+V) 지원
                   </span>
                 </div>
@@ -2145,13 +2145,13 @@ export function PocketHubPage({
                         type="button"
                         onClick={handleRunOcrInModal}
                         disabled={isModalOcrRunning}
-                        className="h-7 px-3 bg-red-600 text-white text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-red-700"
+                        className="h-7 px-3 bg-red-600 text-white text-meta font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-red-700"
                         title="사진 속 글씨(장소명/설명)를 읽어옵니다"
                       >
                         <ScanText className="w-3.5 h-3.5" />
                         OCR 읽기
                       </button>
-                      <label className="h-7 px-3 bg-white text-black text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-white/90">
+                      <label className="h-7 px-3 bg-white text-black text-meta font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-white/90">
                         <Upload className="w-3.5 h-3.5" />
                         CHANGE
                         <input
@@ -2167,7 +2167,7 @@ export function PocketHubPage({
                       <button
                         type="button"
                         onClick={() => setNewThumbnailUrl('')}
-                        className="h-7 px-3 bg-black/80 text-white text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-black"
+                        className="h-7 px-3 bg-black/80 text-white text-meta font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-black"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         REMOVE
@@ -2205,17 +2205,17 @@ export function PocketHubPage({
                       {isUploadingThumbnail ? (
                         <div className="flex flex-col items-center justify-center py-2 gap-1.5">
                           <Loader2 className="w-5 h-5 animate-spin text-black dark:text-white" />
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60">
+                          <span className="text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60">
                             UPLOADING IMAGE...
                           </span>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center py-2 gap-1">
-                          <Upload className="w-4 h-4 text-black/50 dark:text-white/50" />
-                          <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                          <Upload className="w-4 h-4 text-black/60 dark:text-white/60" />
+                          <span className="text-meta font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                             CLICK OR DRAG IMAGE HERE
                           </span>
-                          <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                          <span className="text-micro font-mono text-black/60 dark:text-white/60">
                             또는 이미지를 클립보드에 복사 후 Ctrl+V 붙여넣기
                           </span>
                         </div>
@@ -2229,7 +2229,7 @@ export function PocketHubPage({
                         value={newThumbnailUrl}
                         onChange={e => setNewThumbnailUrl(e.target.value)}
                         placeholder="또는 이미지 URL 직접 입력 (https://...)"
-                        className="w-full h-7 px-0 bg-transparent border-b border-black/15 dark:border-white/15 text-[11px] font-mono focus:border-black dark:focus:border-white focus:outline-none placeholder:text-black/30 dark:placeholder:text-white/30"
+                        className="w-full h-7 px-0 bg-transparent border-b border-black/15 dark:border-white/15 text-[11px] font-mono focus:border-black dark:focus:border-white focus:outline-none placeholder:text-black/50 dark:placeholder:text-white/50"
                       />
                     </div>
                   </div>

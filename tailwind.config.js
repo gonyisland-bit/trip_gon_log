@@ -18,6 +18,11 @@ export default {
         serif: ['Satoshi', 'Inter', '"Noto Sans KR"', 'sans-serif'],
         mono: ['"SF Mono"', 'Consolas', '"Noto Sans KR"', 'monospace'],
       },
+      // Legibility floor: nothing smaller than `micro`. Size only (line-height inherits, like the arbitrary sizes they replace)
+      fontSize: {
+        micro: '11px', // uppercase mono labels, badges, coordinates
+        meta: '12px',  // dates, places, units, helper text
+      },
     },
   },
   plugins: [],

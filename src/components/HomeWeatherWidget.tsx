@@ -192,7 +192,7 @@ export function HomeWeatherWidget({
       {/* Sub-Header */}
       <div className="flex items-center justify-between pb-3.5 border-b border-black/10 dark:border-white/10 mb-0">
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-[10px] px-2 py-0.5 uppercase tracking-widest">
+          <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-meta px-2 py-0.5 uppercase tracking-widest">
             LIVE WEATHER
           </span>
           <span className="text-[11px] sm:text-xs font-mono font-bold tracking-widest uppercase text-black/60 dark:text-white/60">
@@ -200,7 +200,7 @@ export function HomeWeatherWidget({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4 font-mono text-[10px] sm:text-[11px] text-black/50 dark:text-white/50">
+        <div className="flex items-center gap-2 sm:gap-4 font-mono text-meta sm:text-[11px] text-black/60 dark:text-white/60">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>{lastUpdated} KST</span>
@@ -254,7 +254,7 @@ export function HomeWeatherWidget({
                   <span className="text-xs sm:text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white leading-tight">
                     {city.nameEn}
                   </span>
-                  <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
+                  <span className="text-micro font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
                     {city.country}
                   </span>
                 </div>
@@ -266,7 +266,7 @@ export function HomeWeatherWidget({
                     <span className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold font-mono tracking-tighter text-black dark:text-white leading-none">
                       {temp}°
                     </span>
-                    <span className="text-[10.5px] sm:text-[11px] font-mono font-bold text-black/50 dark:text-white/50 mt-1.5">
+                    <span className="text-meta sm:text-[11px] font-mono font-bold text-black/60 dark:text-white/60 mt-1.5">
                       H:{tempMax}° L:{tempMin}°
                     </span>
                   </div>
@@ -302,14 +302,14 @@ export function HomeWeatherWidget({
                         <IconComponent className={`w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2] ${colorClass}`} />
                       </div>
                     </div>
-                    <span className="text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider text-black/65 dark:text-white/65 mt-1 text-center truncate max-w-[62px]">
+                    <span className="text-micro sm:text-micro font-mono font-bold uppercase tracking-wider text-black/65 dark:text-white/65 mt-1 text-center truncate max-w-[62px]">
                       {label}
                     </span>
                   </div>
                 </div>
 
                 {/* 3. Footer: Local Time & Weekly Toggle Indicator */}
-                <div className="flex items-center justify-between text-[10px] sm:text-[10.5px] font-mono text-black/45 dark:text-white/45 pt-2 border-t border-black/5 dark:border-white/5 w-full">
+                <div className="flex items-center justify-between text-meta sm:text-meta font-mono text-black/60 dark:text-white/60 pt-2 border-t border-black/5 dark:border-white/5 w-full">
                   <span>{localTime} · 7D</span>
                   <div className="flex items-center gap-1">
                     {isSelected ? (
@@ -337,14 +337,14 @@ export function HomeWeatherWidget({
               <span className="text-xs font-extrabold uppercase tracking-wider text-black dark:text-white">
                 {activeForecastCity.cityEn} · 7-DAY FORECAST
               </span>
-              <span className="text-[10px] text-black/40 dark:text-white/40 hidden sm:inline">
+              <span className="text-meta text-black/60 dark:text-white/60 hidden sm:inline">
                 (향후 1주일 기상 전망)
               </span>
             </div>
             <button
               type="button"
               onClick={() => setSelectedCityEn(null)}
-              className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+              className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               title="예보 닫기"
             >
               <X className="w-3.5 h-3.5" />
@@ -367,7 +367,7 @@ export function HomeWeatherWidget({
                     <span className={`text-xs ${isToday ? 'font-extrabold text-red-600 dark:text-red-500' : 'font-bold text-black/70 dark:text-white/70'}`}>
                       {isToday ? 'TODAY' : fItem.dayOfWeek}
                     </span>
-                    <span className="text-[10px] text-black/40 dark:text-white/40">
+                    <span className="text-meta text-black/60 dark:text-white/60">
                       {fItem.dayMonth}
                     </span>
                   </div>
@@ -375,11 +375,11 @@ export function HomeWeatherWidget({
                   {/* Center: 날씨 아이콘 및 상태 라벨 */}
                   <div className="flex items-center gap-1.5 flex-1 justify-center">
                     <DayIcon className={`w-4 h-4 stroke-[2] shrink-0 ${colorClass}`} />
-                    <span className="text-[10px] font-mono font-bold uppercase text-black/75 dark:text-white/75 truncate">
+                    <span className="text-meta font-mono font-bold uppercase text-black/75 dark:text-white/75 truncate">
                       {label}
                     </span>
                     {fItem.precipitationProb > 0 && (
-                      <span className="text-[9px] font-mono text-blue-500 font-bold ml-1">
+                      <span className="text-micro font-mono text-blue-500 font-bold ml-1">
                         {fItem.precipitationProb}%
                       </span>
                     )}
@@ -388,7 +388,7 @@ export function HomeWeatherWidget({
                   {/* Right: 최고 / 최저 기온 */}
                   <div className="w-16 text-right font-mono text-xs shrink-0">
                     <span className="font-bold text-black dark:text-white">{fItem.tempMax}°</span>
-                    <span className="text-black/40 dark:text-white/40 ml-1.5">{fItem.tempMin}°</span>
+                    <span className="text-black/60 dark:text-white/60 ml-1.5">{fItem.tempMin}°</span>
                   </div>
                 </div>
               );
@@ -411,7 +411,7 @@ export function HomeWeatherWidget({
                     <span className={`text-[11px] font-mono ${isToday ? 'font-extrabold text-red-600 dark:text-red-500' : 'font-bold text-black/60 dark:text-white/60'}`}>
                       {isToday ? 'TODAY' : fItem.dayOfWeek}
                     </span>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40 mt-0.5">
+                    <span className="text-meta font-mono text-black/60 dark:text-white/60 mt-0.5">
                       {fItem.dayMonth}
                     </span>
                   </div>
@@ -419,7 +419,7 @@ export function HomeWeatherWidget({
                   {/* 날씨 아이콘 & 라벨 */}
                   <div className="flex flex-col items-center gap-1.5 my-0.5">
                     <DayIcon className={`w-5 h-5 stroke-[2] ${colorClass}`} />
-                    <span className="text-[10px] font-mono font-bold uppercase text-black/75 dark:text-white/75">
+                    <span className="text-meta font-mono font-bold uppercase text-black/75 dark:text-white/75">
                       {label}
                     </span>
                   </div>
@@ -428,10 +428,10 @@ export function HomeWeatherWidget({
                   <div className="flex flex-col items-center gap-1">
                     <div className="text-xs font-mono">
                       <span className="font-bold text-black dark:text-white">{fItem.tempMax}°</span>
-                      <span className="text-black/40 dark:text-white/40 ml-1">{fItem.tempMin}°</span>
+                      <span className="text-black/60 dark:text-white/60 ml-1">{fItem.tempMin}°</span>
                     </div>
                     {fItem.precipitationProb > 0 ? (
-                      <div className="flex items-center gap-0.5 text-[9px] font-mono text-blue-500">
+                      <div className="flex items-center gap-0.5 text-micro font-mono text-blue-500">
                         <Droplets className="w-2.5 h-2.5" />
                         <span>{fItem.precipitationProb}%</span>
                       </div>

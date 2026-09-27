@@ -79,7 +79,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                           setExpandedItemId(imgItem.id);
                         }
                       }}
-                      className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-none ${!imgItem.excludeFromMap ? 'bg-red-500 hover:bg-red-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
+                      className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-none ${!imgItem.excludeFromMap ? 'bg-red-500 hover:bg-red-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/60 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/60 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
                       title={imgItem.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
                     >
                       <MapPin className="w-3.5 h-3.5" />
@@ -108,13 +108,13 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                   {/* Top Meta: Date and Time */}
                   {imgItem.date && (
                     <div 
-                      className="flex items-center gap-1 text-[10px] sm:text-[10.5px] font-mono font-medium text-black/50 dark:text-white/50 whitespace-nowrap truncate min-w-0"
+                      className="flex items-center gap-1 text-meta sm:text-meta font-mono font-medium text-black/60 dark:text-white/60 whitespace-nowrap truncate min-w-0"
                       title={`${imgItem.date}${imgItem.time ? ' · ' + imgItem.time : ''}`}
                     >
                       <span className="truncate">{imgItem.date}</span>
                       {imgItem.time && (
                         <>
-                          <span className="text-black/30 dark:text-white/30 shrink-0">·</span>
+                          <span className="text-black/60 dark:text-white/60 shrink-0">·</span>
                           <span className="shrink-0">{imgItem.time}</span>
                         </>
                       )}
@@ -143,12 +143,12 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                           {imgItem.imgNote}
                         </h4>
                       ) : (
-                        <p className="text-[10.5px] font-sans font-medium not-italic text-black/35 dark:text-white/35">기록된 제목 없음</p>
+                        <p className="text-meta font-sans font-medium not-italic text-black/60 dark:text-white/60">기록된 제목 없음</p>
                       )}
 
                       {/* 2. Specified Location Name: 구글 자동완성 위치명 (location) */}
                       {((imgItem as any).location || (imgItem.type === 'gallery' && imgItem.place && imgItem.imgNote)) && (
-                        <div className="text-[10.5px] sm:text-xs font-sans font-semibold tracking-tight flex items-center gap-1 mt-1 not-italic truncate text-black/70 dark:text-white/70">
+                        <div className="text-meta sm:text-xs font-sans font-semibold tracking-tight flex items-center gap-1 mt-1 not-italic truncate text-black/70 dark:text-white/70">
                           <MapPin className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" />
                           <span className="truncate">{(imgItem as any).location || imgItem.place}</span>
                         </div>
@@ -227,7 +227,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
               {/* Gallery View Mode & Column Toggle */}
               {allGalleryImages.length > 0 && (
                 <div className="w-full flex items-center justify-between gap-2 py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15 flex-wrap">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                  <span className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                     {allGalleryImages.length} Photos
                   </span>
                   <div className="flex items-center gap-2">
@@ -235,7 +235,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                     <div className="flex border border-black/15 dark:border-white/15 p-0.5 bg-black/5 dark:bg-white/5 rounded-none">
                       <button
                         onClick={() => setGalleryColumns(4)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-micro md:text-meta font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
                           galleryColumns === 4
                             ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                             : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -247,7 +247,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                       </button>
                       <button
                         onClick={() => setGalleryColumns(2)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-micro md:text-meta font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
                           galleryColumns === 2
                             ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                             : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -263,20 +263,20 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                     <div className="flex border border-black/10 dark:border-white/10 p-0.5 bg-black/5 dark:bg-white/5">
                       <button
                         onClick={() => setGalleryViewMode('accordion')}
-                        className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                        className={`px-2.5 py-1 text-micro md:text-meta font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                           galleryViewMode === 'accordion'
                             ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
-                            : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                         }`}
                       >
                         DATE
                       </button>
                       <button
                         onClick={() => setGalleryViewMode('grid')}
-                        className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                        className={`px-2.5 py-1 text-micro md:text-meta font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                           galleryViewMode === 'grid'
                             ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
-                            : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                         }`}
                       >
                         TIME
@@ -287,7 +287,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
               )}
 
               {allGalleryImages.length === 0 ? (
-                <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                <div className="text-center py-16 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
                   등록된 갤러리 사진이 없습니다.
                 </div>
               ) : galleryViewMode === 'accordion' ? (
@@ -308,14 +308,14 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                               setCollapsedGalleryDays(prev => [...prev, date]);
                             }
                           }}
-                          className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                          className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-meta sm:text-xs font-extrabold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                         >
                           <div className="flex items-center gap-2">
                             <span className="font-extrabold">DAY {idx + 1}</span>
-                            <span className="text-black/30 dark:text-white/30">·</span>
+                            <span className="text-black/60 dark:text-white/60">·</span>
                             <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
                           </div>
-                          <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
+                          <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 tracking-wider">
                             {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
                           </span>
                         </button>
@@ -342,10 +342,10 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                               setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
                             }
                           }}
-                          className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                          className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-meta sm:text-xs font-extrabold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                         >
                           <span className="font-extrabold">NO DATE</span>
-                          <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
+                          <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 tracking-wider">
                             {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
                           </span>
                         </button>

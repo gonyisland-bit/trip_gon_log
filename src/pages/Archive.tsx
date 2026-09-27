@@ -684,7 +684,7 @@ export function ArchiveHubPage({
           {/* Top Barcode & Category Tag */}
           <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-[10px]">
+              <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta">
                 JOURNEY DIRECTORY
               </span>
               <span className="font-bold text-red-600 dark:text-red-400">
@@ -727,7 +727,7 @@ export function ArchiveHubPage({
                   <button 
                     type="button"
                     onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                    className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
+                    className={`text-meta sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
                       activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All'
                         ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                         : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
@@ -770,13 +770,13 @@ export function ArchiveHubPage({
                       value={hubSearchQuery}
                       onChange={(e) => setHubSearchQuery(e.target.value)}
                       placeholder="여정 검색..."
-                      className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+                      className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 rounded-none"
                     />
                     {hubSearchQuery && (
                       <button
                         type="button"
                         onClick={() => setHubSearchQuery('')}
-                        className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                        className="absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
                         title="검색어 지우기"
                       >
                         <X className="w-3 h-3" />
@@ -788,25 +788,25 @@ export function ArchiveHubPage({
                 {(activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All' || hubSearchQuery) && (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {hubSearchQuery && (
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                      <span className="text-meta font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
                         "{hubSearchQuery}"
                         <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setHubSearchQuery('')} />
                       </span>
                     )}
                     {activeFilter !== 'All' && (
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                      <span className="text-meta font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
                         #{activeFilter}
                         <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setActiveFilter('All')} />
                       </span>
                     )}
                     {activeYearFilter !== 'All' && (
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                      <span className="text-meta font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
                         {activeYearFilter}
                         <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setActiveYearFilter('All')} />
                       </span>
                     )}
                     {activeLocationFilter !== 'All' && (
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                      <span className="text-meta font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
                         {activeLocationFilter}
                         <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setActiveLocationFilter('All')} />
                       </span>
@@ -819,7 +819,7 @@ export function ArchiveHubPage({
                         setActiveLocationFilter('All');
                         setHubSearchQuery('');
                       }}
-                      className="text-[9px] px-1.5 py-0.5 uppercase font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                      className="text-micro px-1.5 py-0.5 uppercase font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                     >
                       RESET
                     </button>
@@ -834,14 +834,14 @@ export function ArchiveHubPage({
                     {/* 1. Year Filter Section */}
                     {availableYears.length > 0 && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50">
+                        <span className="text-micro font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                           YEAR (연도)
                         </span>
                         <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                           <button
                             type="button"
                             onClick={() => { setActiveYearFilter('All'); }}
-                            className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                            className={`text-micro px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
                               activeYearFilter === 'All' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
                             }`}
                           >
@@ -852,7 +852,7 @@ export function ArchiveHubPage({
                               key={yr}
                               type="button"
                               onClick={() => { setActiveYearFilter(yr === activeYearFilter ? 'All' : yr); }}
-                              className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                              className={`text-micro px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
                                 activeYearFilter === yr ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
                               }`}
                             >
@@ -866,14 +866,14 @@ export function ArchiveHubPage({
                     {/* 2. Location Section */}
                     {availableLocations.length > 0 && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50">
+                        <span className="text-micro font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                           LOCATION (장소 / 국가)
                         </span>
                         <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                           <button
                             type="button"
                             onClick={() => { setActiveLocationFilter('All'); }}
-                            className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                            className={`text-micro px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
                               activeLocationFilter === 'All' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
                             }`}
                           >
@@ -884,7 +884,7 @@ export function ArchiveHubPage({
                               key={loc}
                               type="button"
                               onClick={() => { setActiveLocationFilter(loc === activeLocationFilter ? 'All' : loc); }}
-                              className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                              className={`text-micro px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
                                 activeLocationFilter === loc ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
                               }`}
                             >
@@ -897,7 +897,7 @@ export function ArchiveHubPage({
 
                     {/* 3. Tags Section */}
                     <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-black/50 dark:text-white/50">
+                      <span className="text-micro font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
                         TAGS (태그)
                       </span>
                       <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto pt-0.5">
@@ -908,7 +908,7 @@ export function ArchiveHubPage({
                             onClick={() => {
                               setActiveFilter(f === activeFilter ? 'All' : f);
                             }}
-                            className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                            className={`text-micro px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
                               activeFilter === f 
                                 ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' 
                                 : 'border-black/15 dark:border-white/15 hover:bg-black/5'
@@ -918,7 +918,7 @@ export function ArchiveHubPage({
                           </button>
                         ))}
                         {visibleTags.length === 0 && (
-                          <span className="text-[10px] text-black/40 dark:text-white/40 py-1 italic">
+                          <span className="text-meta text-black/60 dark:text-white/60 py-1 italic">
                             검색 결과가 없습니다.
                           </span>
                         )}
@@ -938,7 +938,7 @@ export function ArchiveHubPage({
                   className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
                     cardViewMode === 'grid' 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                   }`}
                   title="그리드 보기 (모바일 2열)"
                 >
@@ -950,7 +950,7 @@ export function ArchiveHubPage({
                   className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
                     cardViewMode === 'wide' 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                   }`}
                   title="와이드 보기 (모바일 1열)"
                 >
@@ -962,7 +962,7 @@ export function ArchiveHubPage({
                   className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
                     cardViewMode === 'list' 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                   }`}
                   title="리스트 보기"
                 >
@@ -975,7 +975,7 @@ export function ArchiveHubPage({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-transparent text-[10px] sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
+                  className="bg-transparent text-meta sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
                 >
                   <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
                   <option value="date" className="bg-[#F9F8F6] dark:bg-[#111111]">TIME</option>
@@ -986,7 +986,7 @@ export function ArchiveHubPage({
             </div>
             </div>
             {isLoggedIn && (
-              <button onClick={onAddArchive} className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-extrabold uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer">
+              <button onClick={onAddArchive} className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-micro sm:text-meta md:text-xs font-mono font-extrabold uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer">
                 <Plus className="w-3.5 h-3.5" /> <span>ADD TRIP</span>
               </button>
             )}
@@ -1012,13 +1012,13 @@ export function ArchiveHubPage({
                       <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold uppercase font-sans tracking-tight text-black dark:text-white">
                         {group.title}
                       </h2>
-                      <span className="font-mono text-xs font-bold text-black/40 dark:text-white/40 tracking-wider">
+                      <span className="font-mono text-xs font-bold text-black/60 dark:text-white/60 tracking-wider">
                         {group.items.length} {group.items.length === 1 ? 'JOURNEY' : 'JOURNEYS'}
                       </span>
                     </div>
                     <button
                       type="button"
-                      className="p-1 text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors"
+                      className="p-1 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors"
                     >
                       {isCollapsed ? (
                         <ChevronDown className="w-5 h-5" />
@@ -1061,7 +1061,7 @@ export function ArchiveHubPage({
                             }`}
                           >
                             {/* Monospace Index Column: Compact & Slim */}
-                            <div className="w-7 sm:w-8 md:w-9 flex items-center justify-center font-mono font-bold text-[10px] sm:text-xs text-black/30 dark:text-white/30 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
+                            <div className="w-7 sm:w-8 md:w-9 flex items-center justify-center font-mono font-bold text-meta sm:text-xs text-black/60 dark:text-white/60 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
                               {issueNumber}
                             </div>
 
@@ -1074,7 +1074,7 @@ export function ArchiveHubPage({
                                     PLAN
                                   </span>
                                   {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
-                                    <span className="font-mono text-[8px] font-bold text-white px-1 rounded bg-blue-600/90 leading-tight">
+                                    <span className="font-mono text-micro font-bold text-white px-1 rounded bg-blue-600/90 leading-tight">
                                       {planInfo.dDayLabel}
                                     </span>
                                   )}
@@ -1092,11 +1092,11 @@ export function ArchiveHubPage({
                                   {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
                                 </div>
                                 {isPlanOrFuture || trip.statusBadge === 'PLAN' ? (
-                                  <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
+                                  <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
                                     PLAN
                                   </span>
                                 ) : trip.statusBadge ? (
-                                  <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider font-mono rounded-none leading-none ${
+                                  <span className={`px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono rounded-none leading-none ${
                                     trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                                   }`}>
                                     {trip.statusBadge}
@@ -1188,7 +1188,7 @@ export function ArchiveHubPage({
                                       PLAN
                                     </span>
                                     {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
-                                      <span className="font-mono text-[9px] sm:text-[11px] font-bold text-white px-2 py-0.5 rounded-full bg-blue-600/90 backdrop-blur-md shadow-xs uppercase tracking-widest leading-normal">
+                                      <span className="font-mono text-micro sm:text-[11px] font-bold text-white px-2 py-0.5 rounded-full bg-blue-600/90 backdrop-blur-md shadow-xs uppercase tracking-widest leading-normal">
                                         {planInfo.dDayLabel}
                                       </span>
                                     )}
@@ -1211,7 +1211,7 @@ export function ArchiveHubPage({
                                   : (isNewBadge ? 'bg-red-600/90 text-white' : 'bg-amber-600/90 text-white');
 
                                 return (
-                                  <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs z-10 ${badgeBg}`}>
+                                  <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-micro sm:text-meta font-bold tracking-wider uppercase rounded-full shadow-xs z-10 ${badgeBg}`}>
                                     <span>{badgeText}</span>
                                   </div>
                                 );
@@ -1222,7 +1222,7 @@ export function ArchiveHubPage({
                                 const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
                                 return (
                                   <div 
-                                    className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-extrabold tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
+                                    className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-micro sm:text-meta font-extrabold tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
                                     title={`${tripYear}년 여정`}
                                   >
                                     <span>{tripYear}</span>
@@ -1236,11 +1236,11 @@ export function ArchiveHubPage({
                           <div className="p-3.5 sm:p-5 flex-1 flex flex-col justify-between">
                             <div>
                               {/* Region & Duration Meta Tag */}
-                              <div className={`flex items-center justify-between text-[9.5px] sm:text-[10.5px] font-mono font-bold uppercase tracking-wider mb-1 truncate ${
+                              <div className={`flex items-center justify-between text-micro sm:text-meta font-mono font-bold uppercase tracking-wider mb-1 truncate ${
                                 (trip.statusBadge === 'PLAN' || isPlanOrFuture) ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
                               }`}>
                                 <span>{dateRangeOnly || trip.date}</span>
-                                {durationBadge && <span className="text-black/50 dark:text-white/50">{durationBadge}</span>}
+                                {durationBadge && <span className="text-black/60 dark:text-white/60">{durationBadge}</span>}
                               </div>
 
                               {/* 메인 타이틀: 2줄로 다 보이게 표기 (line-clamp-2) */}
@@ -1266,12 +1266,12 @@ export function ArchiveHubPage({
                             <div className="pt-3 mt-3 border-t border-black/8 dark:border-white/10 flex items-center justify-between gap-1.5 sm:gap-2">
                               {/* 좌측 알약 뱃지: 장소명 웹/모바일 온전 표기 최적화 (생략 방지) */}
                               <div className="flex-1 min-w-0 mr-1 sm:mr-1.5">
-                                <div className={`min-h-[26px] sm:min-h-[30px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full inline-flex items-center gap-1 font-mono text-[9.5px] sm:text-[11px] font-bold max-w-full leading-tight ${
+                                <div className={`min-h-[26px] sm:min-h-[30px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full inline-flex items-center gap-1 font-mono text-micro sm:text-[11px] font-bold max-w-full leading-tight ${
                                   (trip.statusBadge === 'PLAN' || isPlanOrFuture)
                                     ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                                     : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
                                 }`}>
-                                  <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-black/40 dark:text-white/40" />
+                                  <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-black/60 dark:text-white/60" />
                                   <span className="truncate">{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
                                 </div>
                               </div>
@@ -1303,24 +1303,24 @@ export function ArchiveHubPage({
       {/* ===== Bottom Bold Typography Statistics Banner (Seamlessly attached without white gap) ===== */}
       <footer className="w-full border-t border-black/15 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] py-8 sm:py-12 md:py-16 px-6 sm:px-12 md:px-16 mt-0 transition-colors">
         <div className="max-w-[1920px] mx-auto flex flex-col gap-2.5 sm:gap-3 font-['Inter',sans-serif]">
-          <span className="text-xs font-extrabold text-black/40 dark:text-white/40 tracking-[0.25em] uppercase">
+          <span className="text-xs font-extrabold text-black/60 dark:text-white/60 tracking-[0.25em] uppercase">
             TOTAL TRAVEL RECORD
           </span>
           <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold uppercase tracking-tighter leading-[1.1] text-black dark:text-white flex flex-col sm:flex-row sm:items-center sm:flex-nowrap whitespace-nowrap gap-1 sm:gap-0">
             {/* Mobile Row 1 / Desktop Left Half: TRIPS · COUNTRIES */}
             <div className="flex items-center">
               <span>{tripStats.totalTrips} {tripStats.totalTrips === 1 ? 'TRIP' : 'TRIPS'}</span>
-              <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-2.5 lg:mx-3">·</span>
+              <span className="text-black/60 dark:text-white/60 mx-2 sm:mx-2.5 lg:mx-3">·</span>
               <span>{tripStats.totalCountries} {tripStats.totalCountries === 1 ? 'COUNTRY' : 'COUNTRIES'}</span>
             </div>
 
             {/* Middle divider on Desktop */}
-            <span className="hidden sm:inline text-black/30 dark:text-white/30 mx-2 sm:mx-2.5 lg:mx-3">·</span>
+            <span className="hidden sm:inline text-black/60 dark:text-white/60 mx-2 sm:mx-2.5 lg:mx-3">·</span>
 
             {/* Mobile Row 2 / Desktop Right Half: CITIES · DAYS */}
             <div className="flex items-center">
               <span>{tripStats.totalCities} {tripStats.totalCities === 1 ? 'CITY' : 'CITIES'}</span>
-              <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-2.5 lg:mx-3">·</span>
+              <span className="text-black/60 dark:text-white/60 mx-2 sm:mx-2.5 lg:mx-3">·</span>
               <span>{tripStats.totalDays} {tripStats.totalDays === 1 ? 'DAY' : 'DAYS'}</span>
             </div>
           </div>

@@ -37,7 +37,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
       {/* Top Bar with Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-black dark:border-white pb-4">
         <div>
-          <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+          <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
             EDITORIAL MAGAZINE CURATION
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
@@ -61,12 +61,12 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
               매거진 허브 메인 헤더 & 소개글 설정 (MAGAZINE HUB MAIN HEADER)
             </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+            <span className="text-meta font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
               HUB CONFIG
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-black/50 dark:text-white/50 font-['Noto_Sans_KR',sans-serif]">
+            <span className="text-[11px] font-mono text-black/60 dark:text-white/60 font-['Noto_Sans_KR',sans-serif]">
               {isHubHeaderOpen ? '접기 ▲' : '펼치기 ▼'}
             </span>
           </div>
@@ -134,7 +134,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
 
             {/* Save Button for Hub Header */}
             <div className="flex items-center justify-between pt-2 border-t border-black/10 dark:border-white/10">
-              <span className="text-[11px] font-mono text-black/50 dark:text-white/50 font-['Noto_Sans_KR',sans-serif]">
+              <span className="text-[11px] font-mono text-black/60 dark:text-white/60 font-['Noto_Sans_KR',sans-serif]">
                 * 수정 후 [SAVE MAGAZINE HUB HEADER]를 누르면 매거진 허브 메인에 즉시 반영됩니다.
               </span>
               <button
@@ -270,7 +270,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               </h3>
             </div>
             {currentMagSection.isDefault && (
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+              <span className="text-meta font-mono font-bold px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
                 DEFAULT MAIN
               </span>
             )}
@@ -298,18 +298,18 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/20 pointer-events-none" />
                     <div className="relative z-10 p-4 sm:p-5 flex flex-col justify-between h-full text-white pointer-events-none">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 bg-black/60 backdrop-blur-xs border border-white/20">
+                        <span className="text-micro font-mono font-bold uppercase tracking-widest px-2 py-0.5 bg-black/60 backdrop-blur-xs border border-white/20">
                           HERO PREVIEW
                         </span>
                         {currentMagSection.heroLocation && (
-                          <span className="text-[10px] font-mono tracking-widest uppercase text-white/80">
+                          <span className="text-meta font-mono tracking-widest uppercase text-white/80">
                             {currentMagSection.heroLocation}
                           </span>
                         )}
                       </div>
                       <div>
                         {currentMagSection.heroDate && (
-                          <span className="text-[10px] font-mono uppercase tracking-widest text-white/70 block mb-1">
+                          <span className="text-meta font-mono uppercase tracking-widest text-white/70 block mb-1">
                             {currentMagSection.heroDate}
                           </span>
                         )}
@@ -320,12 +320,12 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                     </div>
                   </>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center p-6 text-black/40 dark:text-white/40">
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center p-6 text-black/60 dark:text-white/60">
                     <Sparkles className="w-6 h-6 opacity-40" />
                     <span className="text-xs font-mono font-bold uppercase tracking-wider">
                       히어로 이미지가 지정되지 않았습니다.
                     </span>
-                    <span className="text-[10px] font-mono">
+                    <span className="text-meta font-mono">
                       하단 사진에서 [★ SET AS HERO] 버튼을 눌러 지정해주세요.
                     </span>
                   </div>
@@ -358,7 +358,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] font-mono text-black/40 dark:text-white/40">
+                    <div className="w-full h-full flex items-center justify-center text-meta font-mono text-black/60 dark:text-white/60">
                       NO COVER
                     </div>
                   )}
@@ -366,7 +366,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
 
                 {/* Bottom Meta */}
                 <div className="pt-2.5 flex flex-col items-center justify-center text-center font-['Inter',sans-serif] gap-0.5 w-full">
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center justify-center gap-1">
+                  <div className="text-meta font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center justify-center gap-1">
                     <span className="text-red-600 dark:text-red-400 font-extrabold">
                       ISSUE {String(sectionsList.findIndex(s => s.id === currentMagSection.id) + 1).padStart(2, '0')}
                     </span>
@@ -377,7 +377,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                       </>
                     )}
                   </div>
-                  <div className="text-[9px] font-sans font-semibold tracking-wide uppercase text-black/50 dark:text-white/50 flex items-center justify-center gap-1.5">
+                  <div className="text-micro font-sans font-semibold tracking-wide uppercase text-black/60 dark:text-white/60 flex items-center justify-center gap-1.5">
                     {currentMagSection.heroLocation && (
                       <span className="truncate max-w-[140px]">{currentMagSection.heroLocation}</span>
                     )}
@@ -493,7 +493,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
             const rawItems = currentMagSection.items || [];
             if (rawItems.length === 0) {
               return (
-                <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-8">
+                <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/20 dark:border-white/20 p-8">
                   <Layout className="w-6 h-6 opacity-30" />
                   <span>현재 섹션에 등록된 카드가 없습니다.</span>
                   <span>아래 타임라인 사진에서 '+ ADD'를 누르거나 상단의 'ADD TEXT CARD'를 클릭해주세요.</span>
@@ -667,19 +667,19 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                       onClick={e => e.stopPropagation()}
                     >
                       <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-mono font-bold uppercase text-black/40 dark:text-white/40 mr-1">
+                        <span className="text-micro font-mono font-bold uppercase text-black/60 dark:text-white/60 mr-1">
                           #{String(idx + 1).padStart(2, '0')}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleUpdateItemInCurrentSection(item.id, 'layoutType', isLandscape ? 'portrait' : 'landscape')}
-                          className="px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 text-meta font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
                           title="가로형/세로형 비율 전환"
                         >
                           {isLandscape ? '가로 ⟳' : '세로 ⟳'}
                         </button>
                         {isTextCard && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
+                          <span className="px-1.5 py-0.5 text-micro font-mono font-bold uppercase bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
                             TEXT
                           </span>
                         )}
@@ -688,7 +688,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                             <button
                               type="button"
                               onClick={() => setInlineAddMenuCardId(prev => prev === item.id ? null : item.id)}
-                              className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase bg-red-600 hover:bg-red-700 text-white flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                              className="px-2 py-0.5 text-meta font-mono font-bold uppercase bg-red-600 hover:bg-red-700 text-white flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
                               title="현재 카드 바로 뒤에 추가"
                             >
                               <Plus className="w-3 h-3" />
@@ -739,7 +739,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                           <button
                             type="button"
                             onClick={() => handleSetAsHeroFromItem(item)}
-                            className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
+                            className={`px-2 py-0.5 text-meta font-mono font-bold uppercase transition-colors cursor-pointer border ${
                               isItemHero
                                 ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
                                 : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
@@ -794,7 +794,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                           value={item.textContent || ''}
                           onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
                           placeholder="매거진 본문 텍스트를 입력하세요..."
-                          className="w-full max-h-full bg-transparent text-black dark:text-white font-['Noto_Sans_KR',sans-serif] font-bold text-base sm:text-lg md:text-xl tracking-tight leading-snug break-keep outline-none resize-none border-0 text-center whitespace-pre-line placeholder:text-black/25 dark:placeholder:text-white/25 overflow-hidden"
+                          className="w-full max-h-full bg-transparent text-black dark:text-white font-['Noto_Sans_KR',sans-serif] font-bold text-base sm:text-lg md:text-xl tracking-tight leading-snug break-keep outline-none resize-none border-0 text-center whitespace-pre-line placeholder:text-black/50 dark:placeholder:text-white/50 overflow-hidden"
                           style={{ height: 'auto' }}
                           ref={el => {
                             if (el) {
@@ -819,7 +819,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                           className="w-full h-full object-cover"
                         />
                         {isItemHero && (
-                          <div className="absolute top-2 left-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-1.5 py-0.5 shadow-sm">
+                          <div className="absolute top-2 left-2 bg-black text-white dark:bg-white dark:text-black text-micro font-mono font-bold px-1.5 py-0.5 shadow-sm">
                             HERO SELECTED ★
                           </div>
                         )}
@@ -833,7 +833,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                         onClick={e => e.stopPropagation()}
                       >
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
+                          <span className="text-micro font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                             TITLE · 타임라인 동기화
                           </span>
                           <div className="text-xs sm:text-sm font-bold font-['Inter',sans-serif] text-black dark:text-white truncate" title={item.title}>
@@ -842,7 +842,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                         </div>
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
+                              <span className="text-micro font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                                 PLACE / THEME · 직접 입력 가능
                               </span>
                               <input
@@ -850,12 +850,12 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                                 value={item.placeName || item.location || ''}
                                 onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
                                 placeholder="장소명 또는 테마(ex. 여행 음식, 쇼핑거리)..."
-                                className="text-xs sm:text-sm font-bold font-['Inter',sans-serif] text-black dark:text-white bg-transparent border-b border-black/15 dark:border-white/15 focus:border-black dark:focus:border-white outline-none w-full py-0.5 placeholder:font-normal placeholder:text-black/30 dark:placeholder:text-white/30"
+                                className="text-xs sm:text-sm font-bold font-['Inter',sans-serif] text-black dark:text-white bg-transparent border-b border-black/15 dark:border-white/15 focus:border-black dark:focus:border-white outline-none w-full py-0.5 placeholder:font-normal placeholder:text-black/50 dark:placeholder:text-white/50"
                               />
                             </div>
                             {item.date && (
                               <div className="flex flex-col items-end gap-0.5 shrink-0">
-                                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
+                                <span className="text-micro font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                                   DATE
                                 </span>
                                 <div className="text-[11px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">
@@ -942,7 +942,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
             + ADD PHOTOS FROM TIMELINE TO [{currentMagSection?.title}]
           </span>
-          <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+          <span className="text-[11px] font-mono text-black/60 dark:text-white/60">
             사진을 클릭하면 현재 선택된 섹션에 자동 추가됩니다.
           </span>
         </div>
@@ -964,7 +964,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
 
           {/* Search Keyword */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60" />
             <input
               type="text"
               value={momentSearchQuery}
@@ -980,16 +980,16 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
           {candidateTimelineItems.length === 0 ? (
             selectedTripForMoments === null && !momentSearchQuery.trim() ? (
               <div className="py-10 px-4 text-center flex flex-col items-center justify-center gap-2 border border-dashed border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02]">
-                <ImageIcon className="w-6 h-6 text-black/30 dark:text-white/30" />
+                <ImageIcon className="w-6 h-6 text-black/60 dark:text-white/60" />
                 <span className="text-xs font-mono font-extrabold text-black/70 dark:text-white/70 tracking-wider uppercase">
                   SELECT A JOURNEY TO VIEW CANDIDATE PHOTOS
                 </span>
-                <span className="text-[11px] text-black/40 dark:text-white/40 max-w-sm leading-relaxed">
+                <span className="text-[11px] text-black/60 dark:text-white/60 max-w-sm leading-relaxed">
                   위 드롭다운에서 여행을 선택하시거나 검색어를 입력하시면 사진들이 즉시 로드됩니다.
                 </span>
               </div>
             ) : (
-              <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-black/10 dark:border-white/10">
+              <div className="py-8 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-black/10 dark:border-white/10">
                 NO PHOTOS FOUND FOR THIS SELECTION
               </div>
             )
@@ -1036,7 +1036,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
 
                     {/* Attached Minimal Badge */}
                     {isAttached ? (
-                      <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-[9px] font-mono font-extrabold tracking-wider uppercase shadow-md">
+                      <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-micro font-mono font-extrabold tracking-wider uppercase shadow-md">
                         <Check className="w-2.5 h-2.5 stroke-[3]" />
                         <span>ATTACHED</span>
                       </div>
@@ -1051,7 +1051,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                         {displayTitle}
                       </span>
                       {itemDate && (
-                        <span className="text-[9px] font-mono text-white/70 truncate">
+                        <span className="text-micro font-mono text-white/70 truncate">
                           {itemDate}
                         </span>
                       )}
@@ -1138,7 +1138,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   setSelectedTripForAutoGenerate(firstUncreated ? firstUncreated.id : (localJourneys[0]?.id ?? null));
                   setShowAutoGenerateModal(true);
                 }}
-                className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-meta font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors shrink-0"
               >
                 <Sparkles className="w-3 h-3" />
                 <span>여정 자동 생성 →</span>
@@ -1192,7 +1192,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
             <div className="flex flex-col gap-2">
               <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80 flex items-center justify-between">
                 <span>SELECT JOURNEY (생성할 여정 선택)</span>
-                <span className="text-[10px] text-black/50 dark:text-white/50 lowercase">
+                <span className="text-meta text-black/60 dark:text-white/60 lowercase">
                   총 {localJourneys.length}개 중 {existingTripIds.size}개 섹션 생성됨
                 </span>
               </label>
@@ -1247,7 +1247,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                     <img src={getEffectiveImageUrl(selected.img)} alt={selected.title} className="w-full h-full object-cover" />
                     {isAlreadyCreated && (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span className="text-[8px] font-mono font-bold text-white uppercase px-1 bg-amber-600">CREATED</span>
+                        <span className="text-micro font-mono font-bold text-white uppercase px-1 bg-amber-600">CREATED</span>
                       </div>
                     )}
                   </div>
@@ -1257,7 +1257,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                         {selected.title}
                       </span>
                       {isAlreadyCreated && (
-                        <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0">
+                        <span className="px-1.5 py-0.2 text-micro font-mono font-bold uppercase bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0">
                           이미 생성됨
                         </span>
                       )}
@@ -1265,7 +1265,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                     <div className="text-[11px] font-mono text-black/60 dark:text-white/60 mt-0.5">
                       {selected.locationStr || selected.country} · {selected.date}
                     </div>
-                    <div className={`text-[10px] font-mono mt-1 ${isAlreadyCreated ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-red-600 dark:text-red-400'}`}>
+                    <div className={`text-meta font-mono mt-1 ${isAlreadyCreated ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-red-600 dark:text-red-400'}`}>
                       {isAlreadyCreated 
                         ? '* 이미 매거진 섹션으로 등록된 여정입니다. 중복 생성이 필요한 경우에만 진행해주세요.'
                         : '* 타임라인 시간 순서(일정 흐름)대로 매거진 섹션이 자동 구성됩니다.'}

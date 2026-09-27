@@ -327,7 +327,7 @@ export function ProfileEditModal({
                 {title}
               </span>
               {isAdminEditing && (
-                <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 bg-red-600 text-white leading-none">
+                <span className="text-micro font-mono font-bold uppercase px-1.5 py-0.5 bg-red-600 text-white leading-none">
                   ADMIN MODE
                 </span>
               )}
@@ -364,7 +364,7 @@ export function ProfileEditModal({
                       setProfileType('icon');
                       setProfileIcon('user');
                     }}
-                    className="absolute -top-1 -right-1 p-1 bg-red-600 text-white text-[9px] font-mono hover:bg-red-700 transition-colors shadow-xs"
+                    className="absolute -top-1 -right-1 p-1 bg-red-600 text-white text-micro font-mono hover:bg-red-700 transition-colors shadow-xs"
                     title="이미지 제거 및 기본값으로 복귀"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -396,7 +396,7 @@ export function ProfileEditModal({
                   </button>
                 )}
               </div>
-              <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+              <span className="text-micro font-mono text-black/60 dark:text-white/60">
                 1:1 비율 프로필 · 아이콘 및 이미지 등록 지원
               </span>
             </div>
@@ -405,7 +405,7 @@ export function ProfileEditModal({
             <div className="space-y-3 text-xs font-mono">
               {/* Username (아이디) Field */}
               <div>
-                <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
                   아이디 (USERNAME)
                 </label>
                 <input 
@@ -415,7 +415,7 @@ export function ProfileEditModal({
                   placeholder="예: traveler_gon, alex99"
                   className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono focus:border-black dark:focus:border-white text-black dark:text-white"
                 />
-                <span className="text-[9px] text-black/40 dark:text-white/40 mt-0.5 block">
+                <span className="text-micro text-black/60 dark:text-white/60 mt-0.5 block">
                   * 로그인 이메일 외에 여정 및 서비스 내에서 표시될 고유 아이디입니다.
                 </span>
               </div>
@@ -423,7 +423,7 @@ export function ProfileEditModal({
               {/* Names */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                  <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
                     성 (LAST NAME)
                   </label>
                   <input 
@@ -434,7 +434,7 @@ export function ProfileEditModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                  <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
                     이름 (FIRST NAME)
                   </label>
                   <input 
@@ -448,7 +448,7 @@ export function ProfileEditModal({
 
               {/* Email (Read-Only) */}
               <div>
-                <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
                   이메일 (EMAIL - 읽기 전용)
                 </label>
                 <input 
@@ -462,7 +462,7 @@ export function ProfileEditModal({
               {/* Birthday & Phone */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                  <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
                     생년월일 (BIRTHDAY)
                   </label>
                   <input 
@@ -474,7 +474,7 @@ export function ProfileEditModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                  <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
                     전화번호 (PHONE)
                   </label>
                   <input 
@@ -517,14 +517,14 @@ export function ProfileEditModal({
             {!isAdminEditing && (
               <div className="pt-3 border-t border-black/10 dark:border-white/10 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-60">
+                  <span className="text-meta font-mono font-bold uppercase tracking-wider opacity-60">
                     비밀번호 (PASSWORD)
                   </span>
                   <button
                     type="button"
                     onClick={() => { setIsPasswordSectionOpen(v => !v); setPasswordMsg(null); }}
                     aria-expanded={isPasswordSectionOpen}
-                    className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                    className="px-2.5 py-1 text-meta font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
                   >
                     {isPasswordSectionOpen ? 'CLOSE' : 'CHANGE'}
                   </button>
@@ -532,7 +532,7 @@ export function ProfileEditModal({
                 {isPasswordSectionOpen && (
                   <div className="flex flex-col gap-2">
                     <div>
-                      <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                      <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
                         새 비밀번호 (NEW PASSWORD)
                       </label>
                       <PasswordInput
@@ -544,11 +544,11 @@ export function ProfileEditModal({
                         hasError={Boolean(newPasswordError)}
                       />
                       {newPasswordError && (
-                        <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">{newPasswordError}</p>
+                        <p className="text-meta font-mono text-red-600 dark:text-red-400 mt-1">{newPasswordError}</p>
                       )}
                     </div>
                     <div>
-                      <label className="block text-[9.5px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                      <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
                         새 비밀번호 확인 (CONFIRM)
                       </label>
                       <PasswordInput
@@ -560,7 +560,7 @@ export function ProfileEditModal({
                         hasError={Boolean(newPasswordConfirmError)}
                       />
                       {newPasswordConfirmError && (
-                        <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">{newPasswordConfirmError}</p>
+                        <p className="text-meta font-mono text-red-600 dark:text-red-400 mt-1">{newPasswordConfirmError}</p>
                       )}
                     </div>
                     {passwordMsg && (
@@ -591,13 +591,13 @@ export function ProfileEditModal({
             {/* Account Deletion Area (User Only) */}
             {!isAdminEditing && (
               <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
-                <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                <span className="text-meta font-mono text-black/60 dark:text-white/60">
                   더 이상 계정을 사용하지 않는 경우
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:bg-red-500/10 border border-red-500/30 transition-colors cursor-pointer"
+                  className="px-2.5 py-1 text-meta font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:bg-red-500/10 border border-red-500/30 transition-colors cursor-pointer"
                 >
                   회원 탈퇴 (DELETE ACCOUNT)
                 </button>
@@ -681,7 +681,7 @@ export function ProfileEditModal({
                 className={`flex-1 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-center transition-colors cursor-pointer ${
                   activeTab === 'icon'
                     ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-extrabold'
-                    : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
               >
                 기본 아이콘
@@ -692,7 +692,7 @@ export function ProfileEditModal({
                 className={`flex-1 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-center transition-colors cursor-pointer ${
                   activeTab === 'image'
                     ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-extrabold'
-                    : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
               >
                 1:1 이미지 등록
@@ -714,10 +714,10 @@ export function ProfileEditModal({
                       key={cat.id}
                       type="button"
                       onClick={() => setSelectedCategory(cat.id as any)}
-                      className={`px-2 py-0.5 text-[10px] font-mono font-bold border cursor-pointer transition-colors ${
+                      className={`px-2 py-0.5 text-meta font-mono font-bold border cursor-pointer transition-colors ${
                         selectedCategory === cat.id
                           ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                          : 'border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                          : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                       }`}
                     >
                       {cat.label}
@@ -746,7 +746,7 @@ export function ProfileEditModal({
                         }`}
                       >
                         <IconComponent className="w-6 h-6 stroke-[2]" />
-                        <span className="text-[8.5px] font-mono mt-1 truncate max-w-full">
+                        <span className="text-micro font-mono mt-1 truncate max-w-full">
                           {item.label}
                         </span>
                       </button>
@@ -786,11 +786,11 @@ export function ProfileEditModal({
                     </div>
                   ) : (
                     <>
-                      <Upload className="w-5 h-5 mb-1.5 text-black/50 dark:text-white/50" />
+                      <Upload className="w-5 h-5 mb-1.5 text-black/60 dark:text-white/60" />
                       <span className="text-xs font-mono font-bold text-black dark:text-white">
                         클릭하여 이미지 선택 또는 여기에 드래그
                       </span>
-                      <span className="text-[10px] font-mono text-black/40 dark:text-white/40 mt-1">
+                      <span className="text-meta font-mono text-black/60 dark:text-white/60 mt-1">
                         * 기존 이미지가 있어도 덮어쓰기 교체 가능 · 1:1 권장
                       </span>
                     </>

@@ -32,7 +32,7 @@ export const PROFILE_PRESET_ICONS: PresetIconItem[] = [
 ];
 
 const SIZE_MAP = {
-  xs: 'w-5 h-5 text-[9px]',
+  xs: 'w-5 h-5 text-micro',
   sm: 'w-7 h-7 text-[11px]',
   md: 'w-9 h-9 text-xs',
   lg: 'w-12 h-12 text-sm',
@@ -108,7 +108,7 @@ export function UserProfileAvatar({
   }
 
   return (
-    <div className={`relative flex items-center justify-center shrink-0 aspect-square rounded-none bg-black/[0.04] dark:bg-white/[0.06] text-black/50 dark:text-white/50 ${containerSize} ${borderClass} ${className}`}>
+    <div className={`relative flex items-center justify-center shrink-0 aspect-square rounded-none bg-black/[0.04] dark:bg-white/[0.06] text-black/60 dark:text-white/60 ${containerSize} ${borderClass} ${className}`}>
       <DefaultUserIcon className={`${iconSize} stroke-[2]`} />
     </div>
   );
