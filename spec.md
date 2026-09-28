@@ -323,6 +323,22 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [ ] 여행 경비 영수증 다중 파일 실시간 OCR 정산 모듈 고도화.
 - [ ] 날씨 API 실시간 연동을 통한 여정 일자별 예보 자동 업데이트.
 
+### V1.3 디자인 리뉴얼 진행 현황 (2026.09.28 기준, 다른 PC에서 이어가기용)
+- [x] **P0 기반 정비**: 버전 1.3.0 단일 소스, AGENTS.md 5장 버전 지침, 모션 토큰 v2 · `src/motion/`.
+- [x] **P1 카드 · 홈**: `JourneyCard` · `IssueCard` · 포켓 카드, 홈 `JourneyPhaseStrip`.
+- [x] **P2 날씨 · 지도**: `WeatherParticleCanvas` · `WeatherGlass`, 지도 황혼 마스크 · 헤어라인 경계선 · 마커 묶음/겹침 해소.
+- [x] **P3 매거진**: 카드 → 이슈 확장 전환, 제목 마스크 오프너(`IssueTextWindow`), Memory Reel, 행 높이 보정. (배경 오브제는 요청으로 제거)
+- [x] **P4 여행지 뽑기**: `DepartureBoard` + `LobbyScene`, 티켓 보관 · 오늘의 티켓(Firestore `users/{uid}/departure/tickets`), 아이콘 독 `QuickActionBar`, 홈 `DepartureTeaser`, 도시 좌표 보충(`cityCoordsSupplement`).
+- [ ] **P5 워크플로우 확장** (다음 작업, 착수 전 계획서 승인 필요):
+  - 예약 지갑: 항공 · 숙소 · 교통 예약을 한 화면에 모으고 체크인 D-day 표시, 딥링크 날짜 · 인원 프리필 강화(`utils/bookingDeepLinks.ts`, `FlightCard` · `StayCard` · `TransitCard`). 빠른 실행 독에 지갑 버튼과 Cmd+K 팔레트 추가.
+  - 여행 중 Today 모드: 현재 시각 진행선, 다음 장소까지 남은 시간, 오늘 동선 애니메이션(여정 상세 타임라인).
+  - 달력 날씨: 캘린더 셀에 여정 일자별 예보 글리프, 날짜 선택 시 날씨 상세(`CalendarHub`, `utils/weatherApi.ts`).
+  - 여정 Remix: 지난 여정에서 장소만 골라 새 여정 초안에 담기(단순 복제 대체).
+  - 인스타 공유 → 포켓: PWA Web Share Target(매니페스트 · 서비스워커 필요), 앱 복귀 시 복사한 링크 감지 제안.
+  - P2에서 남긴 지도 항목: 범례 · 레이어 토글 통합, 모바일 하단 시트, 경계선 현지 시각 · 시간 슬라이더, 줌 단계별 마커 표시, `MapHub.tsx` 파일 분리.
+  - P3에서 남긴 항목: 홈 · 허브 매거진 슬라이드 통합(`MagazineSpread`), 동선 그리기 연출.
+- 작업 메모: 로그인 없이는 허브 화면이 보이지 않아, 검증은 임시 미리보기 페이지(`*-preview.html` + `src/__*Preview.tsx`)로 컴포넌트를 띄워 확인하고 커밋 전에 삭제했습니다. 같은 폴더에서 다른 세션이 5173 포트를 쓰는 경우 `.claude/launch.json`에 5174 포트 설정을 추가해 사용했습니다(이 파일은 저장소에 포함되지 않음).
+
 ## 7. 변경 이력 (Changelog)
 
 ### v1.3.0 (2026.09.28)
