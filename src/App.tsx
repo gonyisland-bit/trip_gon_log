@@ -688,6 +688,9 @@ function App() {
               onClose={() => setIsDepartureOpen(false)}
               onBuildTrip={({ countryEn, cityKo, year, month }) => handleCreateTripForCountry(countryEn, cityKo, departureDate(year, month))}
               onOpenPocket={() => navigateTo('pocket')}
+              isDarkMode={isDarkMode}
+              weatherCode={isGlobalWeatherBgEnabled ? (ambienceOverride?.weatherCode ?? globalWeatherData?.weatherCode) : undefined}
+              precipitationProb={ambienceOverride?.precipitationProb ?? (globalWeatherData?.forecast?.[0]?.precipitationProb ?? 0)}
             />
           </Suspense>
         )}

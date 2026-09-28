@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Ticket, Volume2, VolumeX, X } from 'lucide-r
 import { getSavedPockets } from '../../utils/pocketStorage';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { LobbyScene } from './LobbyScene';
+import { resolveWeatherEffectType } from '../WeatherEffectLayer';
+import { precipitationIntensity } from '../weather/WeatherParticleCanvas';
 import type { DestinationCity } from '../../data/worldDestinations';
 import { confirmDialog, notify } from '../../utils/feedback';
 import { prefersReducedMotion } from '../../motion';
@@ -105,6 +107,10 @@ interface DepartureBoardProps {
   onClose: () => void;
   onBuildTrip: (city: { countryEn: string; cityKo: string; cityEn: string; year: number; month: number }) => void;
   onOpenPocket?: () => void;
+  isDarkMode?: boolean;
+  // Same weather the app ambience shows; undefined draws a clear sky
+  weatherCode?: number;
+  precipitationProb?: number;
 }
 
 // Airport chime: two soft sine notes, like a terminal announcement
@@ -130,7 +136,9 @@ function playChime() {
 
 const MUTE_KEY = 'tgl_departure_muted';
 
-export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: DepartureBoardProps) {
+export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode = true, weatherCode, precipitationProb = 0 }: DepartureBoardProps) {
+  const weatherType = resolveWeatherEffectType(weatherCode, precipitationProb);
+  const weatherIntensity = precipitationIntensity(weatherCode, precipitationProb);
   const [filters, setFilters] = useState<DepartureFilters>(() => defaultFilters());
   const [city, setCity] = useState<DestinationCity | null>(null);
   const [rollKey, setRollKey] = useState(0);
@@ -272,40 +280,40 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
       disabled={disabled}
       aria-pressed={active}
       className={`tgl-press h-8 min-w-[40px] px-2.5 font-mono text-meta uppercase tracking-wider border transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
-        active ? 'bg-[#F2F2EE] text-black border-[#F2F2EE]' : 'border-white/25 text-white/75 hover:border-white hover:text-white'
+        active ? 'bg-[#0B0B0C] text-white border-[#0B0B0C] dark:bg-[#F2F2EE] dark:text-black dark:border-[#F2F2EE]' : 'border-black/25 text-black/75 hover:border-black hover:text-black dark:border-white/25 dark:text-white/75 dark:hover:border-white dark:hover:text-white'
       }`}
     >
       {children}
     </button>
   );
   const Label = ({ children }: { children: React.ReactNode }) => (
-    <span className="font-mono text-micro tracking-[0.16em] uppercase text-white/55">{children}</span>
+    <span className="font-mono text-micro tracking-[0.16em] uppercase text-black/60 dark:text-white/55">{children}</span>
   );
 
   return (
     <div
       role="dialog"
       aria-label="Departure Board"
-      className={`fixed inset-0 z-[190] bg-[#0B0B0C] text-[#F2F2EE] overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
+      className={`fixed inset-0 z-[190] bg-[#F2F2EE] text-[#0B0B0C] dark:bg-[#0B0B0C] dark:text-[#F2F2EE] transition-colors duration-700 overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
     >
       <div className="h-full flex flex-col" style={{ perspective: '1400px' }}>
         {/* Everything above the lobby; scrolls on its own only on very short screens */}
         <div className={`flex-none w-full max-w-5xl mx-auto px-4 sm:px-8 pt-3 sm:pt-4 flex flex-col gap-3 max-h-[calc(100%-140px)] overflow-y-auto hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
           {/* Top bar */}
-          <div className="flex items-center justify-between gap-3 border-b border-white/15 pb-2">
+          <div className="flex items-center justify-between gap-3 border-b border-black/15 dark:border-white/15 pb-2">
             <div className="flex items-baseline gap-3">
               <span className="font-sans font-extrabold text-lg sm:text-xl tracking-tight">Departures</span>
-              <span className="font-mono text-meta text-white/60 tabular-nums">ICN · {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
+              <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums">ICN · {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <button type="button" onClick={() => setView(v => (v === 'board' ? 'tickets' : 'board'))} className="tgl-press h-8 px-2.5 inline-flex items-center gap-1.5 border border-white/25 hover:border-white font-mono text-meta uppercase tracking-wider cursor-pointer" aria-label={view === 'board' ? '보관한 티켓' : '보드로 돌아가기'}>
+              <button type="button" onClick={() => setView(v => (v === 'board' ? 'tickets' : 'board'))} className="tgl-press h-8 px-2.5 inline-flex items-center gap-1.5 border border-black/25 hover:border-black dark:border-white/25 dark:hover:border-white font-mono text-meta uppercase tracking-wider cursor-pointer" aria-label={view === 'board' ? '보관한 티켓' : '보드로 돌아가기'}>
                 <Ticket className="w-4 h-4" />
                 <span className="tabular-nums">{view === 'board' ? store.items.length : 'Board'}</span>
               </button>
-              <button type="button" onClick={() => setMuted(m => !m)} className="tgl-press tap-target w-8 h-8 grid place-items-center border border-white/25 hover:border-white cursor-pointer" aria-label={muted ? '소리 켜기' : '소리 끄기'}>
+              <button type="button" onClick={() => setMuted(m => !m)} className="tgl-press tap-target w-8 h-8 grid place-items-center border border-black/25 hover:border-black dark:border-white/25 dark:hover:border-white cursor-pointer" aria-label={muted ? '소리 켜기' : '소리 끄기'}>
                 {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
-              <button type="button" onClick={requestClose} className="tgl-press tap-target w-8 h-8 grid place-items-center border border-white/25 hover:bg-white hover:text-black cursor-pointer" aria-label="닫기">
+              <button type="button" onClick={requestClose} className="tgl-press tap-target w-8 h-8 grid place-items-center border border-black/25 hover:bg-black hover:text-white dark:border-white/25 dark:hover:bg-white dark:hover:text-black cursor-pointer" aria-label="닫기">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -333,14 +341,14 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
                 </div>
                 <div className="flex items-center gap-2">
                   <Label>Departs</Label>
-                  <div className="flex items-stretch h-8 border border-white/25">
-                    <button type="button" onClick={() => stepMonth(-1)} disabled={!canStep(-1)} className="tgl-press w-8 grid place-items-center hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
+                  <div className="flex items-stretch h-8 border border-black/25 dark:border-white/25">
+                    <button type="button" onClick={() => stepMonth(-1)} disabled={!canStep(-1)} className="tgl-press w-8 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => stepMonth(1, true)} className="tgl-press px-3 font-mono text-meta tracking-wider tabular-nums border-x border-white/25 hover:bg-white/10 cursor-pointer" aria-label="출발 월 바꾸기">
+                    <button type="button" onClick={() => stepMonth(1, true)} className="tgl-press px-3 font-mono text-meta tracking-wider tabular-nums border-x border-black/25 hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10 cursor-pointer" aria-label="출발 월 바꾸기">
                       {MONTHS[month - 1]} {year}
                     </button>
-                    <button type="button" onClick={() => stepMonth(1)} disabled={!canStep(1)} className="tgl-press w-8 grid place-items-center hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
+                    <button type="button" onClick={() => stepMonth(1)} disabled={!canStep(1)} className="tgl-press w-8 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -348,7 +356,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
               </div>
 
               {/* Board */}
-              <div className="relative border border-white/15 p-3 sm:p-4 flex flex-col gap-3 bg-[#101012] shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
+              <div className="dark relative border border-white/15 p-3 sm:p-4 flex flex-col gap-3 bg-[#101012] text-[#F2F2EE] shadow-[0_24px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
                 <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
                   <div className="flex flex-col gap-1">
                     <Label>Flight</Label>
@@ -407,27 +415,27 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
                   {city ? 'Spin again' : 'Spin'}
                 </button>
                 {!dailyClaimed && (
-                  <button type="button" onClick={claimDaily} disabled={spinning} className="tgl-press h-11 px-4 border border-amber-400/70 text-amber-300 hover:bg-amber-400 hover:text-black font-mono text-meta font-bold uppercase tracking-widest transition-colors cursor-pointer">
+                  <button type="button" onClick={claimDaily} disabled={spinning} className="tgl-press h-11 px-4 border border-amber-600/70 text-amber-700 dark:border-amber-400/70 dark:text-amber-300 hover:bg-amber-400 hover:text-black font-mono text-meta font-bold uppercase tracking-widest transition-colors cursor-pointer">
                     오늘의 티켓
                   </button>
                 )}
                 {city && !spinning && (
                   <>
-                    <button type="button" onClick={() => build({ countryEn: city.countryEn, cityKo: city.nameKo, cityEn: city.nameEn, year, month })} className="tgl-press h-11 px-4 bg-[#F2F2EE] text-black hover:bg-white font-bold text-sm cursor-pointer">
+                    <button type="button" onClick={() => build({ countryEn: city.countryEn, cityKo: city.nameKo, cityEn: city.nameEn, year, month })} className="tgl-press h-11 px-4 bg-[#0B0B0C] text-white hover:bg-black/80 dark:bg-[#F2F2EE] dark:text-black dark:hover:bg-white font-bold text-sm cursor-pointer">
                       이 여정 만들기
                     </button>
-                    <button type="button" onClick={keep} disabled={kept} className="tgl-press h-11 px-4 border border-white/40 hover:border-white text-sm disabled:opacity-60 cursor-pointer">
+                    <button type="button" onClick={keep} disabled={kept} className="tgl-press h-11 px-4 border border-black/40 hover:border-black dark:border-white/40 dark:hover:border-white text-sm disabled:opacity-60 cursor-pointer">
                       {kept ? '보관됨' : '티켓 보관'}
                     </button>
                   </>
                 )}
               </div>
               {others.length > 0 && (
-                <div className="flex items-center gap-3 min-w-0 overflow-hidden whitespace-nowrap border-t border-white/10 pt-2">
+                <div className="flex items-center gap-3 min-w-0 overflow-hidden whitespace-nowrap border-t border-black/10 dark:border-white/10 pt-2">
                   <Label>Also</Label>
                   {others.map((c, i) => (
-                    <button key={`${c.nameEn}-${rollKey}`} type="button" onClick={() => !spinning && land(c)} className="tgl-rise shrink-0 font-mono text-meta uppercase tracking-wider text-white/75 hover:text-red-400 cursor-pointer" style={{ '--i': i } as React.CSSProperties}>
-                      {c.nameEn} <span className={isBestSeason(c, month) ? 'text-amber-400' : 'text-white/45'}>{formatHours(flightHours(c)).replace(' ', '')}</span>
+                    <button key={`${c.nameEn}-${rollKey}`} type="button" onClick={() => !spinning && land(c)} className="tgl-rise shrink-0 font-mono text-meta uppercase tracking-wider text-black/75 hover:text-red-600 dark:text-white/75 dark:hover:text-red-400 cursor-pointer" style={{ '--i': i } as React.CSSProperties}>
+                      {c.nameEn} <span className={isBestSeason(c, month) ? 'text-amber-600 dark:text-amber-400' : 'text-black/50 dark:text-white/45'}>{formatHours(flightHours(c)).replace(' ', '')}</span>
                     </button>
                   ))}
                 </div>
@@ -438,11 +446,11 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
             <div className="flex flex-col gap-3 pb-2">
               <Label>Kept tickets · {store.items.length}</Label>
               {store.items.length === 0 ? (
-                <p className="text-white/60 text-sm py-8 text-center">아직 보관한 티켓이 없습니다.</p>
+                <p className="text-black/60 dark:text-white/60 text-sm py-8 text-center">아직 보관한 티켓이 없습니다.</p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {store.items.map((t, i) => (
-                    <div key={t.id} className="tgl-rise relative bg-[#F2F2EE] text-black flex" style={{ '--i': i } as React.CSSProperties}>
+                    <div key={t.id} className="tgl-rise relative bg-white border border-black/15 dark:border-transparent dark:bg-[#F2F2EE] text-black flex" style={{ '--i': i } as React.CSSProperties}>
                       <div className="flex-1 p-4 flex flex-col gap-1 min-w-0">
                         <span className="font-mono text-micro tracking-[0.16em] uppercase text-black/55">ICN → {t.flightNo} · Gate {t.gate}</span>
                         <span className="font-sans font-extrabold text-2xl tracking-tight uppercase truncate">{t.cityEn}</span>
@@ -468,7 +476,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
 
         {/* The lobby fills the rest of the screen: glass wall, planes, travelers */}
         <div className="tgl-lobby-scene relative flex-1 min-h-[140px] w-full overflow-hidden mt-3">
-          <LobbyScene />
+          <LobbyScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
         </div>
       </div>
     </div>

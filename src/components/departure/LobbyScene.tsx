@@ -1,10 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Traveler, poseTraveler, drawTraveler, TRAVELER_DARK, TravelerPalette, STRIDE_PER_RAD } from '../splash/travelerRig';
+import type { WeatherEffectType } from '../WeatherEffectLayer';
 
 // Airport lobby (v1.3) under the Departure Board: a flat four-colour scene.
 // Behind a wall of glass, planes roll, rotate and climb away while others glide
 // in to land; in front, travelers cross the concourse pulling their carry-ons.
-// One canvas, paused while the tab is hidden, still under reduced motion.
+// The sky follows the app's day/night mode and the live weather, blending
+// between states instead of cutting. Every plane leaves the frame before it
+// is reused. One canvas, paused while the tab is hidden, still under reduced motion.
 
 const INK = '#0B0B0C';
 const NAVY = '#1C2A4A';
@@ -21,6 +24,35 @@ const PALETTES: TravelerPalette[] = [
   { ...TRAVELER_DARK, top: CREAM, topShade: '#D8CDBB', bottom: RED, bottomFar: '#C23522', shoe: INK, bag: NAVY, bagShade: NAVY_DEEP, hair: '#5A3A22' },
 ];
 
+// ── Colour: every scene colour is blended from four skies (day/night × clear/overcast) ──
+type RGB = [number, number, number];
+const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const css = (c: RGB, alpha = 1) => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${alpha})`;
+
+interface Sky { top: RGB; bottom: RGB; runway: RGB; floor: RGB; cloud: RGB }
+const SKY_DAY: Sky = { top: hex('#8FBEDF'), bottom: hex('#E7EFF1'), runway: hex('#59606B'), floor: hex('#DCD2C0'), cloud: hex('#FFFFFF') };
+const SKY_DAY_GREY: Sky = { top: hex('#9EA7B0'), bottom: hex('#D2D6D8'), runway: hex('#50565E'), floor: hex('#D2CABC'), cloud: hex('#E6E8EA') };
+const SKY_NIGHT: Sky = { top: hex(NAVY_DEEP), bottom: hex(NAVY), runway: hex('#0E1526'), floor: hex(INK), cloud: hex('#2E3A5A') };
+const SKY_NIGHT_GREY: Sky = { top: hex('#171C27'), bottom: hex('#262C3A'), runway: hex('#10141D'), floor: hex(INK), cloud: hex('#3A4252') };
+const blendSky = (night: number, grey: number) => {
+  const day = (k: keyof Sky) => mix(SKY_DAY[k], SKY_DAY_GREY[k], grey);
+  const nite = (k: keyof Sky) => mix(SKY_NIGHT[k], SKY_NIGHT_GREY[k], grey);
+  const pick = (k: keyof Sky) => mix(day(k), nite(k), night);
+  return { top: pick('top'), bottom: pick('bottom'), runway: pick('runway'), floor: pick('floor'), cloud: pick('cloud') };
+};
+
+// How much each weather greys the sky, fills it with cloud, and brings rain, snow or fog
+const WEATHER: Record<WeatherEffectType, { grey: number; cloud: number; clouds: number; rain: number; snow: number; fog: number; storm: number }> = {
+  clear:  { grey: 0,    cloud: 0,    clouds: 0, rain: 0, snow: 0, fog: 0,   storm: 0 },
+  fair:   { grey: 0.15, cloud: 0.8,  clouds: 3, rain: 0, snow: 0, fog: 0,   storm: 0 },
+  clouds: { grey: 0.7,  cloud: 1,    clouds: 7, rain: 0, snow: 0, fog: 0,   storm: 0 },
+  fog:    { grey: 0.6,  cloud: 0.5,  clouds: 4, rain: 0, snow: 0, fog: 1,   storm: 0 },
+  rain:   { grey: 0.8,  cloud: 1,    clouds: 7, rain: 1, snow: 0, fog: 0.2, storm: 0 },
+  snow:   { grey: 0.6,  cloud: 0.9,  clouds: 6, rain: 0, snow: 1, fog: 0.2, storm: 0 },
+  storm:  { grey: 1,    cloud: 1,    clouds: 7, rain: 1, snow: 0, fog: 0.1, storm: 1 },
+};
+
 interface Walker {
   rig: Traveler;
   x: number;          // px
@@ -31,14 +63,15 @@ interface Walker {
 }
 
 interface Plane {
-  t: number;          // 0..1 along its path
+  t: number;          // path time; runs until the plane has left the frame
   speed: number;      // path per second
   kind: 'takeoff' | 'landing';
   delay: number;      // seconds before it starts
   scale: number;
 }
 
-// Flat airliner, nose to the right, ~120 units long, origin at the centre
+// Flat airliner, nose to the right, ~130 units long (-66..62), origin at the centre
+const PLANE_HALF = 70;
 function drawPlane(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, angle: number, blink = false, alpha = 1) {
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -79,10 +112,34 @@ function drawPlane(ctx: CanvasRenderingContext2D, x: number, y: number, s: numbe
   ctx.restore();
 }
 
-const ease = (t: number) => t * t * (3 - 2 * t);
+// Flat cloud: a rounded base with three puffs, ~100 units wide
+function drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, s: number) {
+  ctx.beginPath();
+  ctx.roundRect(x - 50 * s, y - 8 * s, 100 * s, 16 * s, 8 * s);
+  ctx.arc(x - 22 * s, y - 8 * s, 15 * s, 0, Math.PI * 2);
+  ctx.arc(x + 4 * s, y - 14 * s, 20 * s, 0, Math.PI * 2);
+  ctx.arc(x + 28 * s, y - 6 * s, 12 * s, 0, Math.PI * 2);
+  ctx.fill();
+}
 
-export function LobbyScene() {
+const ease = (t: number) => t * t * (3 - 2 * t);
+// Move `v` toward `target` at `rate` per second
+const approach = (v: number, target: number, rate: number, dt: number) => v + (target - v) * Math.min(1, rate * dt);
+
+interface LobbySceneProps {
+  isDarkMode?: boolean;
+  weatherType?: WeatherEffectType;
+  intensity?: number;   // 0..1 precipitation strength
+}
+
+export function LobbyScene({ isDarkMode = true, weatherType = 'clear', intensity = 0.5 }: LobbySceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Read by the frame loop, so a mode or weather change blends in without restarting the scene
+  const targetRef = useRef({ isDarkMode, weatherType, intensity });
+  targetRef.current = { isDarkMode, weatherType, intensity };
+  const redrawRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => { redrawRef.current?.(); }, [isDarkMode, weatherType, intensity]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -100,6 +157,7 @@ export function LobbyScene() {
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (reduced) redrawRef.current?.();
     };
     resize();
 
@@ -123,8 +181,19 @@ export function LobbyScene() {
       { t: 0, speed: 0.08, kind: 'takeoff', delay: 10, scale: 0.62 },
     ];
 
-    // Night sky dots behind the glass
+    // Sky dressing, laid out in unit space and scaled to the glass each frame
     const stars = Array.from({ length: 40 }, () => ({ x: Math.random(), y: Math.random() * 0.5, r: Math.random() * 1.1 + 0.3, p: Math.random() * 6 }));
+    const clouds = Array.from({ length: 7 }, (_, i) => ({ x: (i * 0.37 + 0.1) % 1.2, y: 0.08 + (i % 4) * 0.09, s: 0.7 + (i % 3) * 0.25, v: 0.006 + (i % 3) * 0.004, a: 0 }));
+    const drops = Array.from({ length: 180 }, () => ({ x: Math.random(), y: Math.random(), v: 0.9 + Math.random() * 0.5, l: 0.6 + Math.random() * 0.6 }));
+    const flakes = Array.from({ length: 110 }, () => ({ x: Math.random(), y: Math.random(), v: 0.05 + Math.random() * 0.06, r: 0.8 + Math.random() * 1.6, p: Math.random() * 6 }));
+
+    // Blended state; starts at the target so the page never opens mid-transition
+    const first = targetRef.current;
+    const fw = WEATHER[first.weatherType] || WEATHER.clear;
+    const cur = { night: first.isDarkMode ? 1 : 0, grey: fw.grey, cloud: fw.cloud, rain: fw.rain * first.intensity, snow: fw.snow * first.intensity, fog: fw.fog, storm: fw.storm };
+    clouds.forEach((c, i) => { c.a = i < fw.clouds ? fw.cloud : 0; });
+    let flash = 0;
+    let nextFlash = 3 + Math.random() * 5;
 
     let raf = 0;
     let last = performance.now();
@@ -135,72 +204,173 @@ export function LobbyScene() {
       last = now;
       time += dt;
 
+      const target = targetRef.current;
+      const wx = WEATHER[target.weatherType] || WEATHER.clear;
+      const k = reduced ? 1e3 : 1.4;
+      cur.night = approach(cur.night, target.isDarkMode ? 1 : 0, k, reduced ? 1 : dt);
+      cur.grey = approach(cur.grey, wx.grey, k, reduced ? 1 : dt);
+      cur.cloud = approach(cur.cloud, wx.cloud, k, reduced ? 1 : dt);
+      cur.rain = approach(cur.rain, wx.rain * (0.35 + 0.65 * target.intensity), k, reduced ? 1 : dt);
+      cur.snow = approach(cur.snow, wx.snow * (0.35 + 0.65 * target.intensity), k, reduced ? 1 : dt);
+      cur.fog = approach(cur.fog, wx.fog, k, reduced ? 1 : dt);
+      cur.storm = approach(cur.storm, wx.storm, k, reduced ? 1 : dt);
+
       const floorY = h * 0.78;          // where the glass meets the floor
       const runwayY = floorY - h * 0.1; // runway seen through the glass
+      const sky = blendSky(cur.night, cur.grey);
+      const clearSky = 1 - cur.grey;
 
       ctx.clearRect(0, 0, w, h);
 
       // Sky through the glass
-      const sky = ctx.createLinearGradient(0, 0, 0, floorY);
-      sky.addColorStop(0, NAVY_DEEP);
-      sky.addColorStop(1, NAVY);
-      ctx.fillStyle = sky;
+      const grad = ctx.createLinearGradient(0, 0, 0, floorY);
+      grad.addColorStop(0, css(sky.top));
+      grad.addColorStop(1, css(sky.bottom));
+      ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, floorY);
-      ctx.fillStyle = CREAM;
-      stars.forEach(s => {
-        ctx.globalAlpha = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(time * 1.3 + s.p));
-        ctx.beginPath(); ctx.arc(s.x * w, s.y * floorY, s.r, 0, Math.PI * 2); ctx.fill();
+
+      // Stars and moon at night, the sun by day; both fade behind cloud
+      const starA = cur.night * clearSky;
+      if (starA > 0.01) {
+        ctx.fillStyle = CREAM;
+        stars.forEach(s => {
+          ctx.globalAlpha = starA * (0.25 + 0.35 * (0.5 + 0.5 * Math.sin(time * 1.3 + s.p)));
+          ctx.beginPath(); ctx.arc(s.x * w, s.y * floorY, s.r, 0, Math.PI * 2); ctx.fill();
+        });
+      }
+      const bodyX = w * 0.82, bodyY = floorY * 0.2, bodyR = Math.max(10, Math.min(26, h * 0.06));
+      const sunA = (1 - cur.night) * (1 - cur.grey * 0.85);
+      if (sunA > 0.01) {
+        ctx.globalAlpha = sunA * 0.25;
+        ctx.fillStyle = MUSTARD;
+        ctx.beginPath(); ctx.arc(bodyX, bodyY, bodyR * 1.8, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = sunA;
+        ctx.beginPath(); ctx.arc(bodyX, bodyY, bodyR, 0, Math.PI * 2); ctx.fill();
+      }
+      const moonA = cur.night * (1 - cur.grey * 0.9);
+      if (moonA > 0.01) {
+        ctx.globalAlpha = moonA;
+        ctx.fillStyle = CREAM;
+        ctx.beginPath(); ctx.arc(bodyX, bodyY, bodyR * 0.8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = css(sky.top);
+        ctx.beginPath(); ctx.arc(bodyX + bodyR * 0.38, bodyY - bodyR * 0.2, bodyR * 0.7, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Clouds drift left; each fades in or out as the weather asks for more or fewer
+      ctx.fillStyle = css(sky.cloud);
+      clouds.forEach((c, i) => {
+        c.a = approach(c.a, i < wx.clouds ? wx.cloud : 0, reduced ? 1e3 : 0.8, reduced ? 1 : dt);
+        if (!reduced) c.x -= c.v * dt;
+        if (c.x < -0.2) c.x = 1.2;
+        if (c.a < 0.01) return;
+        ctx.globalAlpha = c.a * (0.55 + 0.35 * cur.grey);
+        drawCloud(ctx, c.x * w, c.y * floorY, c.s * Math.max(0.6, h / 300));
       });
       ctx.globalAlpha = 1;
 
-      // Horizon: a low mustard band of dusk and the runway with its lights
-      ctx.fillStyle = 'rgba(242,179,61,0.18)';
+      // Horizon: dusk glow at night, a pale haze by day, then the runway with its lights
+      ctx.fillStyle = css(mix(hex('#FFFFFF'), hex(MUSTARD), cur.night), (0.28 - cur.night * 0.1) * clearSky);
       ctx.fillRect(0, runwayY - h * 0.08, w, h * 0.08);
-      ctx.fillStyle = '#0E1526';
+      ctx.fillStyle = css(mix(sky.runway, hex('#E8ECEF'), cur.snow * 0.45));
       ctx.fillRect(0, runwayY, w, floorY - runwayY);
-      ctx.fillStyle = MUSTARD;
+      ctx.fillStyle = css(mix(hex(CREAM), hex(MUSTARD), cur.night), 0.55 + cur.night * 0.45);
       for (let x = ((time * 40) % 26) - 26; x < w; x += 26) ctx.fillRect(x, runwayY + 3, 8, 1.6);
 
-      // Planes
+      // Planes: each path runs until the whole airframe is out of frame
       planes.forEach(p => {
         if (p.delay > 0) { p.delay -= dt; return; }
         p.t += dt * p.speed;
-        if (p.t >= 1) { p.t = 0; p.delay = 4 + Math.random() * 5; p.scale = 0.55 + Math.random() * 0.5; }
         const s = p.scale * Math.max(0.5, h / 260);
+        const blink = (time * 1.4 + (p.kind === 'landing' ? 0.5 : 0)) % 1 < 0.12;
+        let gone = false;
         if (p.kind === 'takeoff') {
-          // roll along the runway, rotate, then climb out and shrink
+          // Roll along the runway, rotate, then climb out; the climb keeps going past the edge
           const roll = Math.min(1, p.t / 0.45);
           const climb = Math.max(0, (p.t - 0.35) / 0.65);
-          const x = -140 + ease(roll) * w * 0.55 + climb * w * 0.6;
-          const y = runwayY - 6 * s - ease(climb) * (runwayY - h * 0.08);
+          const size = s * (1 - Math.min(1, climb) * 0.55);
+          const x = -PLANE_HALF * s + ease(roll) * w * 0.55 + climb * w * 0.6;
+          const y = runwayY - 6 * s - Math.pow(climb, 1.6) * (runwayY - h * 0.08);
           const ang = -Math.min(0.32, climb * 1.4);
-          drawPlane(ctx, x, y, s * (1 - climb * 0.55), ang, (time * 1.4) % 1 < 0.12);
+          drawPlane(ctx, x, y, size, ang, blink);
+          gone = x - PLANE_HALF * size > w || y + PLANE_HALF * size < 0;
         } else {
-          // glide in from the right, flare, touch down and roll out
+          // Glide in from the right, flare and touch down, then roll out along the runway and off the left edge
           const glide = Math.min(1, p.t / 0.7);
-          const x = w + 140 - ease(glide) * w * 0.75 - Math.max(0, p.t - 0.7) * w * 0.4;
+          const size = s * (0.55 + glide * 0.45);
+          const approachV = (w * 0.75) / 0.7;
+          const u = Math.max(0, p.t - 0.7);
+          const taxiV = approachV * 0.3;
+          const rollOut = taxiV * u + ((approachV - taxiV) * (1 - Math.exp(-5 * u))) / 5;
+          const x = w + PLANE_HALF * size - Math.min(p.t, 0.7) * approachV - rollOut;
           const y = h * 0.12 + ease(glide) * (runwayY - 6 * s - h * 0.12);
           // Mirrored so the nose points left; nose down on the approach, level at the flare
           const pitch = glide < 0.85 ? 0.1 : Math.max(-0.02, 0.1 * (1 - (glide - 0.85) / 0.15));
-          ctx.save(); ctx.translate(x, y); ctx.scale(-1, 1); drawPlane(ctx, 0, 0, s * (0.55 + glide * 0.45), pitch, (time * 1.4 + 0.5) % 1 < 0.12); ctx.restore();
+          ctx.save(); ctx.translate(x, y); ctx.scale(-1, 1); drawPlane(ctx, 0, 0, size, pitch, blink); ctx.restore();
+          gone = x + PLANE_HALF * size < 0;
         }
+        if (gone) { p.t = 0; p.delay = 4 + Math.random() * 5; p.scale = 0.55 + Math.random() * 0.5; }
       });
+
+      // Weather outside the glass: fog bands, rain, snow and the odd lightning flash
+      if (cur.fog > 0.01) {
+        const fog = ctx.createLinearGradient(0, runwayY - h * 0.35, 0, floorY);
+        const fogC = mix(hex('#E9ECEE'), hex('#5A6272'), cur.night);
+        fog.addColorStop(0, css(fogC, 0));
+        fog.addColorStop(0.6, css(fogC, 0.55 * cur.fog));
+        fog.addColorStop(1, css(fogC, 0.75 * cur.fog));
+        ctx.fillStyle = fog;
+        ctx.fillRect(0, runwayY - h * 0.35, w, floorY - runwayY + h * 0.35);
+      }
+      const rainN = Math.round(drops.length * cur.rain);
+      if (rainN > 0) {
+        ctx.strokeStyle = css(mix(hex('#4A5568'), hex('#C9D3E4'), cur.night), 0.45);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < rainN; i++) {
+          const d = drops[i];
+          if (!reduced) { d.y += d.v * dt * 1.6; if (d.y > 1) { d.y -= 1.05; d.x = Math.random(); } }
+          const x = d.x * (w + 40) - 20, y = d.y * floorY, len = d.l * 14;
+          ctx.moveTo(x, y); ctx.lineTo(x - len * 0.25, y + len);
+        }
+        ctx.stroke();
+      }
+      const snowN = Math.round(flakes.length * cur.snow);
+      if (snowN > 0) {
+        ctx.fillStyle = css(mix(hex('#FFFFFF'), hex(CREAM), cur.night), 0.9);
+        for (let i = 0; i < snowN; i++) {
+          const f = flakes[i];
+          if (!reduced) { f.y += f.v * dt; if (f.y > 1) { f.y -= 1.02; f.x = Math.random(); } }
+          const x = f.x * w + Math.sin(time * 0.8 + f.p) * 8, y = f.y * floorY;
+          ctx.beginPath(); ctx.arc(x, y, f.r, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      if (!reduced && cur.storm > 0.5) {
+        nextFlash -= dt;
+        if (nextFlash <= 0) { flash = 1; nextFlash = 5 + Math.random() * 7; }
+      }
+      if (flash > 0.01) {
+        ctx.fillStyle = `rgba(255,255,255,${0.3 * flash})`;
+        ctx.fillRect(0, 0, w, floorY);
+        flash = approach(flash, 0, 4, dt);
+      }
 
       // Glass wall: mullions and a soft reflection band
       ctx.fillStyle = INK;
       const pane = Math.max(120, w / 7);
       for (let x = 0; x <= w + pane; x += pane) ctx.fillRect(x - 3, 0, 6, floorY);
       ctx.fillRect(0, h * 0.3, w, 4);
-      ctx.fillStyle = 'rgba(243,235,221,0.05)';
+      ctx.fillStyle = `rgba(255,255,255,${0.05 + (1 - cur.night) * 0.07})`;
       ctx.beginPath(); ctx.moveTo(w * 0.1, 0); ctx.lineTo(w * 0.22, 0); ctx.lineTo(w * 0.02, floorY); ctx.lineTo(-w * 0.1, floorY); ctx.closePath(); ctx.fill();
 
       // Concourse floor
-      ctx.fillStyle = INK;
+      ctx.fillStyle = css(sky.floor);
       ctx.fillRect(0, floorY, w, h - floorY);
-      ctx.fillStyle = 'rgba(243,235,221,0.12)';
+      ctx.fillStyle = css(mix(hex(INK), hex(CREAM), cur.night), 0.12 + (1 - cur.night) * 0.1);
       ctx.fillRect(0, floorY, w, 1.5);
 
       // Travelers (far to near), each on its own lane
+      const shadow = `rgba(0,0,0,${0.14 + cur.night * 0.2})`;
       walkers.forEach(t => {
         if (!reduced) t.rig.step(dt * 1000, 1, t.tempo);
         const s = (0.26 + t.depth * 0.22) * Math.max(0.55, h / 260);
@@ -211,14 +381,18 @@ export function LobbyScene() {
         if (t.dir === 1 && t.x > w + margin) t.x = -margin;
         if (t.dir === -1 && t.x < -margin) t.x = w + margin;
         const ground = floorY + 6 + t.depth * (h - floorY - 12);
+        const palette = { ...t.palette, shadow };
         ctx.save();
         if (t.dir === -1) { ctx.translate(t.x * 2, 0); ctx.scale(-1, 1); }
-        drawTraveler(ctx, poseTraveler(t.rig, t.x, ground, s, t.palette), t.palette);
+        drawTraveler(ctx, poseTraveler(t.rig, t.x, ground, s, palette), palette);
         ctx.restore();
       });
 
       if (!reduced) raf = requestAnimationFrame(frame);
     };
+
+    // Under reduced motion the scene is a still frame, redrawn when the mode, weather or size changes
+    redrawRef.current = reduced ? () => frame(performance.now()) : null;
 
     const start = () => { cancelAnimationFrame(raf); last = performance.now(); raf = requestAnimationFrame(frame); };
     const onVisibility = () => { if (document.hidden) cancelAnimationFrame(raf); else start(); };
@@ -230,6 +404,7 @@ export function LobbyScene() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
+      redrawRef.current = null;
     };
   }, []);
 
