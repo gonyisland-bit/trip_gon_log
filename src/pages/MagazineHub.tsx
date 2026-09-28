@@ -29,6 +29,7 @@ import {
   X
 } from 'lucide-react';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
+import { IssueCard } from '../components/cards/IssueCard';
 import { Lightbox } from '../components/Lightbox';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
 
@@ -937,83 +938,18 @@ export function MagazineHubPage({
                 const locationLabel = sec.heroLocation || 'CURATED ARCHIVE';
 
                 return (
-                  <article
+                  <IssueCard
                     key={sec.id}
-                    style={{
-                      animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
-                      animationDelay: `${Math.min(idx * 30, 240)}ms`
-                    }}
-                    onClick={() => handleOpenSection(sec.id)}
-                    className="group relative flex flex-col border border-black/10 dark:border-white/20 bg-white/90 dark:bg-[#181818]/90 backdrop-blur-xs rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/40 cursor-pointer select-none"
-                  >
-                    {/* 1. Photo Frame: 4:3 Aspect Ratio (Nike & Pocket Card Minimal Frame) */}
-                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10">
-                      {coverImg ? (
-                        <img
-                          src={getEffectiveImageUrl(coverImg)}
-                          alt={displayHeroTitle}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-white/60 p-4 text-center">
-                          <Compass className="w-8 h-8 mb-2 stroke-1 opacity-50" />
-                          <span className="font-mono text-meta uppercase tracking-wider">NO COVER IMAGE</span>
-                        </div>
-                      )}
-
-                      {/* Top Left Tag Chip (Best Seller / Issue Chip Style) */}
-                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 dark:bg-black/85 backdrop-blur-md text-black dark:text-white text-micro sm:text-micro font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/15 rounded-full flex items-center gap-1.5 shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                        <span>NO. {formattedNumber} ISSUE</span>
-                      </div>
-
-                      {/* Top Right Circular Badge (Nike Circular Emblem Style) */}
-                      <div 
-                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-meta font-mono font-extrabold text-black dark:text-white shadow-xs"
-                        title={`${itemCount} Stories`}
-                      >
-                        <span>{itemCount}</span>
-                      </div>
-                    </div>
-
-                    {/* 2. Card Body — Typography & Description */}
-                    <div className="p-3.5 sm:p-4 flex-grow flex flex-col justify-between">
-                      <div>
-                        {/* Region & Stories Meta Tag */}
-                        <div className="flex items-center gap-1.5 text-micro sm:text-meta font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5 truncate">
-                          <span>{locationLabel}</span>
-                          <span className="text-black/60 dark:text-white/60">·</span>
-                          <span className="text-black/60 dark:text-white/60 font-semibold">{itemCount} {itemCount === 1 ? 'STORY' : 'STORIES'}</span>
-                        </div>
-
-                        {/* Main Headline Title */}
-                        <h3 className="text-sm sm:text-base font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                          {displayHeroTitle}
-                        </h3>
-
-                        {/* Subtitle / Description */}
-                        {(sec.heroSubtitle || sec.subtitle) && (
-                          <p className="mt-1.5 text-[11px] font-sans text-black/60 dark:text-white/65 leading-relaxed line-clamp-2">
-                            {sec.heroSubtitle || sec.subtitle}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* 3. Bottom Action Bar (Date + Pill Button) */}
-                      <div className="pt-3 mt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
-                        <span className="text-meta font-mono font-semibold text-black/60 dark:text-white/60">
-                          {sec.heroDate || 'VOL. 2026'}
-                        </span>
-                        <div 
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white transition-colors shadow-xs shrink-0"
-                          title="OPEN ISSUE"
-                        >
-                          <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
-                        </div>
-                      </div>
-                    </div>
-                  </article>
+                    index={idx}
+                    coverImg={coverImg ? getEffectiveImageUrl(coverImg) : ''}
+                    issueNumber={formattedNumber}
+                    dateLabel={sec.heroDate || 'VOL. 2026'}
+                    title={displayHeroTitle}
+                    subtitle={sec.heroSubtitle || sec.subtitle}
+                    location={locationLabel}
+                    storyCount={itemCount}
+                    onOpen={() => handleOpenSection(sec.id)}
+                  />
                 );
               })}
             </div>

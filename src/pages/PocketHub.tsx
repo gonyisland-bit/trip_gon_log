@@ -1544,14 +1544,14 @@ export function PocketHubPage({
                         setSelectedSpotForModal(spot);
                       }
                     }}
-                    className={`group flex flex-col border bg-white dark:bg-[#1C1C1E] rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-2xl dark:shadow-[0_8px_30px_rgba(0,0,0,0.6)] cursor-pointer ${
+                    className={`tgl-scrap-card group flex flex-col border bg-white dark:bg-[#1C1C1E] transition-[transform,box-shadow,border-color,opacity] duration-base ease-emphasized overflow-hidden hover:-translate-y-[3px] hover:shadow-[0_8px_18px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)] cursor-pointer ${
                       isDragMode ? 'cursor-grab active:cursor-grabbing' : ''
                     } ${
                       isDraggingThis ? 'opacity-30 scale-[0.98]' : ''
                     } ${
                       isDragOver ? 'ring-2 ring-black dark:ring-white border-transparent' :
                       isSelected ? 'ring-2 ring-black dark:ring-white bg-black/[0.02] dark:bg-white/[0.04]' :
-                      'border-black/10 dark:border-white/20 hover:border-black/30 dark:hover:border-white/40'
+                      'border-black/15 dark:border-white/20 hover:border-black dark:hover:border-white'
                     } ${
                       isDimmed ? 'opacity-35 hover:opacity-75 transition-opacity' : 'opacity-100'
                     }`}
@@ -1563,13 +1563,13 @@ export function PocketHubPage({
                       </div>
                     )}
 
-                    {/* Top Media Frame (Clean 4:3 Aspect Ratio) */}
-                    <div className="relative aspect-[4/3] w-full bg-black/5 dark:bg-white/5 overflow-hidden border-b border-black/10 dark:border-white/10">
+                    {/* Photo (16:10) with category label and favorite star */}
+                    <div className="relative aspect-[16/10] w-full bg-black/5 dark:bg-white/5 overflow-hidden">
                       {spot.thumbnailUrl ? (
                         <img
                           src={spot.thumbnailUrl}
                           alt={spot.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover transition-transform duration-hero ease-emphasized group-hover:scale-[1.04]"
                           loading="lazy"
                           onError={(e) => {
                             (e.currentTarget as HTMLElement).style.display = 'none';
@@ -1577,24 +1577,23 @@ export function PocketHubPage({
                         />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-black/60 dark:text-white/60">
-                          <Icon className="w-10 h-10 mb-1" />
-                          <span className="text-micro font-mono tracking-widest uppercase font-normal">{meta.label}</span>
+                          <Icon className="w-9 h-9 mb-1 stroke-[1.5]" />
                         </div>
                       )}
 
-                      {/* Category Chip Overlay (Top-Left) */}
-                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 dark:bg-black/85 backdrop-blur-md text-black dark:text-white text-micro sm:text-micro font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/15 rounded-full flex items-center gap-1.5 shadow-xs">
+                      {/* Category */}
+                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 bg-white dark:bg-black text-black dark:text-white text-micro font-mono font-bold tracking-wider uppercase flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
                         <span>{meta.label}</span>
                       </div>
 
-                      {/* Header Right Actions Overlay (Top-Right) */}
-                      <div className="absolute top-3 right-3 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
+                      {/* Selection check or favorite star */}
+                      <div className="absolute top-2 right-2 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
                         {isSelectionMode ? (
                           <button
                             type="button"
                             onClick={(e) => handleToggleSelectSpot(spot.id, e)}
-                            className={`tap-target w-7 h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm ${
+                            className={`tap-target w-7 h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
                               isSelected
                                 ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
                                 : 'bg-white/90 dark:bg-black/90 border-black/20 dark:border-white/20 text-transparent hover:border-black dark:hover:border-white'
@@ -1603,114 +1602,80 @@ export function PocketHubPage({
                             <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
                           </button>
                         ) : (
-                          <>
-                            {/* Favorite Star Button */}
-                            <button
-                              type="button"
-                              onClick={(e) => handleToggleFavorite(spot.id, e)}
-                              className="tap-target w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer shadow-xs"
-                              title={spot.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
-                            >
-                              <Star className={`w-3.5 h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : ''}`} />
-                            </button>
-                          </>
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleFavorite(spot.id, e)}
+                            className="tgl-press tap-target w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md flex items-center justify-center text-black/60 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer"
+                            title={spot.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+                          >
+                            <Star key={spot.isFavorite ? 'on' : 'off'} className={`w-3.5 h-3.5 ${spot.isFavorite ? 'tgl-pop text-amber-400 fill-amber-400' : ''}`} />
+                          </button>
                         )}
                       </div>
                     </div>
 
-                    {/* Card Body — Full-width Hero Title (No Truncation) & Editorial Meta */}
-                    <div className="p-3.5 sm:p-4 flex-grow flex flex-col justify-between">
-                      <div>
-                        {/* Region & Platform Meta Tag */}
-                        <div className="flex items-center gap-1.5 text-micro sm:text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 mb-1.5 truncate">
-                          <MapPin className="w-3 h-3 text-red-500 shrink-0" />
-                          <span>{locationLabel}</span>
-                          {spot.platform && (
-                            <>
-                              <span className="text-black/60 dark:text-white/60">·</span>
-                              <span className="text-black/60 dark:text-white/60 font-semibold">@{spot.platform}</span>
-                            </>
-                          )}
-                        </div>
+                    {/* Body: place, location, memo */}
+                    <div className="px-3 pt-3 pb-2.5 sm:px-3.5 sm:pt-3.5 flex-grow flex flex-col">
+                      <h3 className="text-sm sm:text-[15px] font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors duration-base group-hover:text-red-600 dark:group-hover:text-red-400">
+                        {spot.title}
+                      </h3>
+                      <p
+                        className="mt-1 text-micro sm:text-meta font-mono uppercase tracking-wide text-black/60 dark:text-white/60 truncate"
+                        title={spot.address || locationLabel}
+                      >
+                        {locationLabel}
+                      </p>
+                      {spot.memo && (
+                        <p className="mt-1.5 text-meta sm:text-[13px] text-black/60 dark:text-white/65 leading-relaxed line-clamp-2 break-words">
+                          {spot.memo}
+                        </p>
+                      )}
 
-                        {/* Main Spot Title (Hero Headline, Full Width, Wrap without truncation) */}
-                        <h3 className="text-sm sm:text-base font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 sm:line-clamp-3 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                          {spot.title}
-                        </h3>
-
-                        {/* Memo */}
-                        {spot.memo && (
-                          <p className="mt-2 text-[11px] sm:text-[11.5px] font-sans text-black/60 dark:text-white/65 leading-relaxed line-clamp-2 font-normal break-words">
-                            {spot.memo}
-                          </p>
-                        )}
-
-                        {/* Address */}
-                        {spot.address && (
-                          <p className="mt-1.5 text-micro sm:text-micro text-black/60 dark:text-white/60 font-mono truncate font-normal">
-                            {spot.address}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* SNS Action Bar (1-Row Toolbar) */}
-                      <div className="pt-2.5 sm:pt-3 mt-2.5 sm:mt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-                          {/* Likes Toggle Button */}
+                      {/* Footer: like, comments, source on the left / add to trip on the right */}
+                      <div className="mt-auto pt-2.5 border-t border-black/15 dark:border-white/15 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-3 min-w-0 font-mono text-micro sm:text-meta">
                           <button
                             type="button"
                             onClick={() => handleToggleLike(spot.id)}
-                            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 h-6.5 sm:h-7 rounded-full border text-micro sm:text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
-                              isLiked
-                                ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
-                                : 'border-black/10 dark:border-white/15 text-black/65 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                            className={`tgl-press tap-target flex items-center gap-1.5 cursor-pointer transition-colors ${
+                              isLiked ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/65 hover:text-black dark:hover:text-white'
                             }`}
-                            title="좋아요 관심사 체크"
+                            title="좋아요"
                           >
-                            <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
-                            <span className="leading-none">{spot.likes || 0}</span>
+                            <Heart key={isLiked ? 'on' : 'off'} className={`w-3.5 h-3.5 shrink-0 ${isLiked ? 'tgl-pop fill-current' : ''}`} />
+                            <span className="tabular-nums leading-none">{spot.likes || 0}</span>
                           </button>
-
-                          {/* Comment Trigger with Count Badge: Opens Detail Modal */}
                           <button
                             type="button"
                             onClick={() => setSelectedSpotForModal(spot)}
-                            className={`flex items-center gap-1 sm:gap-1.5 h-6.5 sm:h-7 rounded-full border text-micro sm:text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
-                              spot.comments && spot.comments.length > 0
-                                ? 'px-1.5 py-0.5 sm:px-2 sm:py-1 bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20 text-black dark:text-white shadow-xs'
-                                : 'w-6.5 h-6.5 sm:w-7 sm:h-7 !p-0 justify-center border-black/10 dark:border-white/15 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-                            }`}
-                            title={`댓글 ${spot.comments?.length || 0}개 (클릭하여 보기/작성)`}
+                            className="tgl-press tap-target flex items-center gap-1.5 cursor-pointer text-black/60 dark:text-white/65 hover:text-black dark:hover:text-white transition-colors"
+                            title={`댓글 ${spot.comments?.length || 0}개`}
                           >
-                            <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                            {spot.comments && spot.comments.length > 0 && (
-                              <span className="leading-none">{spot.comments.length}</span>
-                            )}
+                            <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                            <span className="tabular-nums leading-none">{spot.comments?.length || 0}</span>
                           </button>
-
-                          {/* Add to Trip (USE IN TRIP) */}
-                          <button
-                            type="button"
-                            onClick={() => setSpotToUseInTrip(spot)}
-                            className="tap-target w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer shrink-0"
-                            title="여정 타임라인에 추가"
-                          >
-                            <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                          </button>
+                          {spot.sourceUrl && (
+                            <a
+                              href={spot.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="tap-target flex items-center text-black/60 dark:text-white/65 hover:text-black dark:hover:text-white transition-colors"
+                              title={`${spot.platform || '원문 출처'} 바로가기`}
+                            >
+                              {renderPlatformIcon(spot.platform)}
+                            </a>
+                          )}
                         </div>
 
-                        {/* Platform Simple Icon Link (Clean, No text truncation!) */}
-                        {spot.sourceUrl && (
-                          <a
-                            href={spot.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer shrink-0"
-                            title={`${spot.platform || '원문 출처'} 바로가기`}
-                          >
-                            {renderPlatformIcon(spot.platform)}
-                          </a>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSpotToUseInTrip(spot)}
+                          className="tgl-press tap-target w-8 h-8 rounded-full border border-black dark:border-white flex items-center justify-center text-black dark:text-white transition-colors duration-base group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black cursor-pointer shrink-0"
+                          title="여정 타임라인에 추가"
+                          aria-label="여정 타임라인에 추가"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </div>

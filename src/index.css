@@ -1057,6 +1057,22 @@ input[type="range"]:focus-visible {
 /* Pop: an icon swap (plus to check) lands with a small overshoot */
 @keyframes tglPop { 0% { transform: scale(.4) rotate(-90deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
 .tgl-pop { animation: tglPop var(--motion-emph) var(--ease-spring) both; }
+/* Journey card: photo drifts away from the pointer (--mx/--my set by JourneyCard) */
+.tgl-journey-photo { transition: transform var(--motion-hero) var(--ease-emphasized); }
+.tgl-journey-card:hover .tgl-journey-photo,
+.tgl-journey-card:focus-visible .tgl-journey-photo { transform: scale(1.05) translate(var(--mx, 0px), var(--my, 0px)); }
+.tgl-journey-media { transition: filter var(--motion-emph) var(--ease-standard); }
+/* Issue card: the cover opens a little on its spine */
+.tgl-issue-card { perspective: 900px; }
+.tgl-issue-cover {
+  transform-origin: left center;
+  transition: transform 500ms var(--ease-emphasized), box-shadow 500ms var(--ease-emphasized);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .08);
+}
+@media (hover: hover) {
+  .tgl-issue-card:hover .tgl-issue-cover { transform: rotateY(-14deg); box-shadow: 14px 10px 24px rgba(0, 0, 0, .25); }
+}
+.tgl-issue-card:focus-visible .tgl-issue-cover { transform: rotateY(-14deg); box-shadow: 14px 10px 24px rgba(0, 0, 0, .25); }
 /* Rise: list items enter in sequence, delayed by --i (capped at 8 steps) */
 @keyframes tglRise { from { opacity: 0; transform: translateY(12px); } }
 .tgl-rise { animation: tglRise var(--motion-emph) var(--ease-emphasized) both; animation-delay: calc(min(var(--i, 0), 8) * var(--motion-stagger)); }

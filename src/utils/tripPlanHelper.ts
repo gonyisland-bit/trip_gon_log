@@ -78,3 +78,45 @@ export function getUpcomingPlanInfo(trip: {
     isPlanOrFuture: isExplicitPlan || isFuture,
   };
 }
+
+// Helper to detect if today is within the trip date range
+export function getLiveTripStatus(dateRangeStr?: string): { isLive: boolean; currentDay: number; totalDays: number } {
+  if (!dateRangeStr) return { isLive: false, currentDay: 0, totalDays: 0 };
+  const parts = dateRangeStr.split(/\s*[-—–~]\s*/).map(p => p.trim());
+  const yearMatch = dateRangeStr.match(/(\d{4})/);
+  const commonYear = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
+
+  const parsePart = (str: string, fallbackYear: string) => {
+    if (!str) return null;
+    const ymdMatch = str.match(/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (ymdMatch) {
+      return new Date(parseInt(ymdMatch[1], 10), parseInt(ymdMatch[2], 10) - 1, parseInt(ymdMatch[3], 10));
+    }
+    const mdMatch = str.match(/(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (mdMatch) {
+      return new Date(parseInt(fallbackYear, 10), parseInt(mdMatch[1], 10) - 1, parseInt(mdMatch[2], 10));
+    }
+    return null;
+  };
+
+  const startDate = parts[0] ? parsePart(parts[0], commonYear) : null;
+  const endDate = parts[1] ? parsePart(parts[1], startDate ? String(startDate.getFullYear()) : commonYear) : startDate;
+
+  if (!startDate) return { isLive: false, currentDay: 0, totalDays: 0 };
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const startOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endOnly = endDate ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()) : startOnly;
+
+  if (today >= startOnly && today <= endOnly) {
+    const diffTime = today.getTime() - startOnly.getTime();
+    const currentDay = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const totalTime = endOnly.getTime() - startOnly.getTime();
+    const totalDays = Math.max(1, Math.floor(totalTime / (1000 * 60 * 60 * 24)) + 1);
+    return { isLive: true, currentDay, totalDays };
+  }
+
+  return { isLive: false, currentDay: 0, totalDays: 0 };
+}

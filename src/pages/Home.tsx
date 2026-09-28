@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, MapPin, ArrowUpRight, Coins, Clock, Sliders } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, Coins, Clock, Sliders } from 'lucide-react';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig } from '../types';
@@ -9,8 +9,10 @@ import { cleanAdministrativeDistricts, generateJourneyMessage } from '../compone
 import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getKoreanHolidays } from '../utils/koreanHolidays';
 import { HomeWeatherWidget } from '../components/HomeWeatherWidget';
-import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
+import { getUpcomingPlanInfo, getLiveTripStatus } from '../utils/tripPlanHelper';
 import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
+import { JourneyCard } from '../components/cards/JourneyCard';
+import { JourneyPhaseStrip } from '../components/home/JourneyPhaseStrip';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -167,47 +169,7 @@ export function formatNonRepeatingDate(dateRangeStr?: string): string {
   return dateRangeStr;
 }
 
-// Helper to detect if today is within the trip date range
-export function getLiveTripStatus(dateRangeStr?: string): { isLive: boolean; currentDay: number; totalDays: number } {
-  if (!dateRangeStr) return { isLive: false, currentDay: 0, totalDays: 0 };
-  const parts = dateRangeStr.split(/\s*[-—–~]\s*/).map(p => p.trim());
-  const yearMatch = dateRangeStr.match(/(\d{4})/);
-  const commonYear = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
-
-  const parsePart = (str: string, fallbackYear: string) => {
-    if (!str) return null;
-    const ymdMatch = str.match(/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
-    if (ymdMatch) {
-      return new Date(parseInt(ymdMatch[1], 10), parseInt(ymdMatch[2], 10) - 1, parseInt(ymdMatch[3], 10));
-    }
-    const mdMatch = str.match(/(\d{1,2})\s*[-./]\s*(\d{1,2})/);
-    if (mdMatch) {
-      return new Date(parseInt(fallbackYear, 10), parseInt(mdMatch[1], 10) - 1, parseInt(mdMatch[2], 10));
-    }
-    return null;
-  };
-
-  const startDate = parts[0] ? parsePart(parts[0], commonYear) : null;
-  const endDate = parts[1] ? parsePart(parts[1], startDate ? String(startDate.getFullYear()) : commonYear) : startDate;
-
-  if (!startDate) return { isLive: false, currentDay: 0, totalDays: 0 };
-
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  const startOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-  const endOnly = endDate ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()) : startOnly;
-
-  if (today >= startOnly && today <= endOnly) {
-    const diffTime = today.getTime() - startOnly.getTime();
-    const currentDay = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const totalTime = endOnly.getTime() - startOnly.getTime();
-    const totalDays = Math.max(1, Math.floor(totalTime / (1000 * 60 * 60 * 24)) + 1);
-    return { isLive: true, currentDay, totalDays };
-  }
-
-  return { isLive: false, currentDay: 0, totalDays: 0 };
-}
+export { getLiveTripStatus } from '../utils/tripPlanHelper';
 
 const COUNTRY_NAME_EN: Record<string, string> = {
   '대한민국': 'KOREA',
@@ -802,64 +764,6 @@ function HeroMedia({ journey, isActive, onMediaReady }: HeroMediaProps) {
   );
 }
 
-interface CardMediaProps {
-  img: string;
-  title: string;
-  videoUrl?: string;
-  isActive: boolean;
-}
-
-function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [autoplayEnabled, setAutoplayEnabled] = useState(() => localStorage.getItem('playVideoOnActivate') !== 'false');
-
-  useEffect(() => {
-    const handleConfigChange = () => {
-      setAutoplayEnabled(localStorage.getItem('playVideoOnActivate') !== 'false');
-    };
-    window.addEventListener('playVideoConfigChanged', handleConfigChange);
-    return () => window.removeEventListener('playVideoConfigChanged', handleConfigChange);
-  }, []);
-
-  useEffect(() => {
-    if (autoplayEnabled && videoUrl && videoRef.current) {
-      if (isActive) {
-        videoRef.current.currentTime = 0;
-        const playPromise = videoRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.log("Card video playback prevented or error:", error);
-          });
-        }
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isActive, videoUrl, autoplayEnabled]);
-
-  return (
-    <>
-      <img
-        src={getEffectiveImageUrl(img)}
-        alt={title}
-        className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
-          isActive ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
-        }`}
-      />
-      {videoUrl && autoplayEnabled && isActive && (
-        <video
-          ref={videoRef}
-          src={getEffectiveImageUrl(videoUrl)}
-          loop
-          muted
-          playsInline
-          preload="auto"
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 pointer-events-none scale-105 opacity-100 animate-in fade-in duration-300"
-        />
-      )}
-    </>
-  );
-}
 
 export function HomePage({
   onNavigate,
@@ -1528,38 +1432,9 @@ export function HomePage({
       )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* LIVE TRIP 1-LINE PINNED QUICK BAR (스위스 미니멀 실시간 여정 퀵 바) */}
+      {/* NOW STRIP: live day / countdown / memory (v1.3 Journey Phase Home) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {(() => {
-        const liveTrip = trips.find(t => getLiveTripStatus(t.date).isLive);
-        if (!liveTrip) return null;
-        const liveStatus = getLiveTripStatus(liveTrip.date);
-        return (
-          <aside 
-            aria-label="현재 진행 중인 여행 바로가기"
-            className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-3 sm:pt-4"
-          >
-            <div 
-              onClick={() => onNavigate('detail', liveTrip.id)}
-              className="w-full py-2.5 px-4 sm:px-5 bg-red-600/[0.08] dark:bg-red-500/[0.12] border border-red-600/30 dark:border-red-500/40 rounded-xl sm:rounded-2xl flex items-center justify-between cursor-pointer hover:bg-red-600/[0.14] dark:hover:bg-red-500/[0.18] transition-all group select-none shadow-xs"
-            >
-              <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-                <span className="w-2 h-2 rounded-full bg-red-600 dark:bg-red-500 animate-live-pulse shrink-0" />
-                <span className="text-meta sm:text-xs font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-400 shrink-0">
-                  LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}
-                </span>
-                <span className="text-xs sm:text-sm font-sans font-bold text-black dark:text-white truncate">
-                  {liveTrip.title}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 text-meta sm:text-xs font-mono font-bold text-red-600 dark:text-red-400 shrink-0 group-hover:translate-x-1 transition-transform">
-                <span className="hidden sm:inline">VIEW TRIP</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </div>
-          </aside>
-        );
-      })()}
+      <JourneyPhaseStrip trips={trips} plans={plans} onNavigate={onNavigate} />
 
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 01. TRIP (통합 여정 목록 섹션)                                       */}
@@ -1834,161 +1709,25 @@ export function HomePage({
             : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6 gap-y-8 sm:gap-y-12 md:gap-y-14 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10"
           }>
             {filteredTrips.slice(0, journeyLimit).map((trip, index) => {
-              const { issueNumber, topYearMonth, line2DateDays, line3CountryCity, editorialSubtitle } = getTripCardDisplayData(trip, index);
-              const isCardActive = activeCardId === trip.id;
-              const planInfo = getUpcomingPlanInfo(trip);
-              const isItemPlan = planInfo.isPlanOrFuture;
-              const isWide = cardViewMode === 'wide';
-
-              const [dateRangeOnly, durationBadge] = line2DateDays.includes(',') 
-                ? line2DateDays.split(',').map(s => s.trim()) 
-                : [line2DateDays, ''];
-
+              const display = getTripCardDisplayData(trip, index);
               return (
-                <article
+                <JourneyCard
                   key={trip.id}
-                  onClick={() => onNavigate('detail', trip.id)}
-                  onMouseEnter={preloadDetailPage}
-                  onTouchStart={preloadDetailPage}
-                  className={`group relative flex flex-col border border-black/10 dark:border-white/15 bg-white dark:bg-[#1A1A1C] rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/35 transition-all duration-300 cursor-pointer select-none ${
-                    isCardActive ? 'ring-2 ring-red-600/50 dark:ring-red-500/50' : ''
-                  }`}
+                  trip={trip}
+                  display={display}
+                  index={index}
+                  isActive={activeCardId === trip.id}
+                  isWide={cardViewMode === 'wide'}
+                  onOpen={() => onNavigate('detail', trip.id)}
+                  onPreload={preloadDetailPage}
                   draggable={isLoggedIn}
                   onDragStart={(e) => handleTripDragStart(e, trip.id)}
                   onDragOver={(e) => handleTripDragOver(e, trip.id)}
                   onDrop={handleTripDrop}
                   onDragEnd={() => setDraggedTripId(null)}
-                >
-                  {/* 1. Flush Photo Frame: 상단 32px 곡률에 꽉 차는 일체형 프레임 (이중 라운드 박스 없음) */}
-                  <div className={`relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 shrink-0`}>
-                    <CardMedia
-                      img={trip.img}
-                      title={trip.title}
-                      videoUrl={trip.videoUrl}
-                      isActive={isCardActive}
-                    />
-
-                    {/* 감각적인 에디토리얼 매거진 대형 PLAN 워터마크 오버레이 */}
-                    {planInfo.isPlanOrFuture && (
-                      <div className="absolute inset-0 pointer-events-none flex flex-col justify-end p-3.5 sm:p-5 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-[5]">
-                        <div className="flex items-end justify-between w-full">
-                          <span className="font-sans font-extrabold tracking-tighter text-3xl sm:text-4xl lg:text-5xl text-white/90 drop-shadow-sm select-none leading-none opacity-90 group-hover:opacity-100 transition-opacity">
-                            PLAN
-                          </span>
-                          {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
-                            <span className="font-mono text-micro sm:text-[11px] font-bold text-white px-2 py-0.5 rounded-full bg-blue-600/90 backdrop-blur-md shadow-xs uppercase tracking-widest leading-normal">
-                              {planInfo.dDayLabel}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 좌측 상단 반투명 알약 뱃지: LIVE, NEW, EDITING, PLAN */}
-                    {(() => {
-                      const liveStatus = getLiveTripStatus(trip.date);
-                      if (liveStatus.isLive) {
-                        return (
-                          <div className="absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-micro sm:text-meta font-bold tracking-wider uppercase rounded-full shadow-xs bg-black/85 dark:bg-black/90 text-white border border-red-500/40 flex items-center gap-1.5 z-10">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
-                            <span>LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}</span>
-                          </div>
-                        );
-                      }
-
-                      const isPlanBadge = isItemPlan || trip.statusBadge === 'PLAN';
-                      const isNewBadge = trip.statusBadge === 'NEW';
-                      const isEditingBadge = trip.statusBadge === 'EDITING';
-                      if (!isPlanBadge && !isNewBadge && !isEditingBadge) return null;
-
-                      const badgeText = isPlanBadge 
-                        ? 'PLAN'
-                        : (isNewBadge ? 'NEW' : 'EDITING');
-                      const badgeBg = isPlanBadge 
-                        ? 'bg-blue-600/90 text-white' 
-                        : (isNewBadge ? 'bg-red-600/90 text-white' : 'bg-amber-600/90 text-white');
-
-                      return (
-                        <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-micro sm:text-meta font-bold tracking-wider uppercase rounded-full shadow-xs z-10 ${badgeBg}`}>
-                          <span>{badgeText}</span>
-                        </div>
-                      );
-                    })()}
-
-                    {/* 우측 상단 원형 심볼 뱃지 (해당 여정 년도 표기) */}
-                    {(() => {
-                      const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
-                      return (
-                        <div 
-                          className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-micro sm:text-meta font-extrabold tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
-                          title={`${tripYear}년 여정`}
-                        >
-                          <span>{tripYear}</span>
-                        </div>
-                      );
-                    })()}
-
-                    </div>
-
-                  {/* 2. Card Body: Typography & Description (매거진 스타일 일체화) */}
-                  <div className="p-3.5 sm:p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      {/* Region & Duration Meta Tag */}
-                      <div className={`flex items-center justify-between text-micro sm:text-meta font-mono font-bold uppercase tracking-wider mb-1 truncate ${
-                        isItemPlan ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        <span>{dateRangeOnly || trip.date}</span>
-                        {durationBadge && <span className="text-black/60 dark:text-white/60">{durationBadge}</span>}
-                      </div>
-
-                      {/* 메인 타이틀: 2줄로 다 보이게 표기 (line-clamp-2) */}
-                      <h3 className={`font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors ${
-                        isItemPlan ? 'group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'group-hover:text-red-600 dark:group-hover:text-red-400'
-                      } ${isWide ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'}`}>
-                        {trip.title}
-                      </h3>
-
-                      {/* 에디토리얼 서브타이틀 / 설명 */}
-                      {editorialSubtitle ? (
-                        <p className="mt-1 text-[11px] sm:text-[12px] font-['Noto_Sans_KR',sans-serif] text-black/60 dark:text-white/65 leading-relaxed line-clamp-2">
-                          {editorialSubtitle}
-                        </p>
-                      ) : line3CountryCity ? (
-                        <p className="mt-1 text-[11px] sm:text-[12px] text-black/60 dark:text-white/65 leading-relaxed line-clamp-1">
-                          {line3CountryCity}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    {/* 3. 하단 메타 & 알약 액션 바 */}
-                    <div className="pt-3 mt-3 border-t border-black/8 dark:border-white/10 flex items-center justify-between gap-1.5 sm:gap-2">
-                      {/* 좌측 알약 뱃지: 장소명 웹/모바일 온전 표기 최적화 (생략 방지) */}
-                      <div className="flex-1 min-w-0 mr-1 sm:mr-1.5">
-                        <div className={`min-h-[26px] sm:min-h-[30px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full inline-flex items-center gap-1 font-mono text-micro sm:text-[11px] font-bold max-w-full leading-tight ${
-                          isItemPlan 
-                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
-                            : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
-                        }`}>
-                          <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-black/60 dark:text-white/60" />
-                          <span className="truncate">{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
-                        </div>
-                      </div>
-
-                      {/* 우측 원형 액션 버튼: 웹과 모바일 모두 원형 아이콘 버튼으로 통일하여 좌측 공간 극대화 */}
-                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-colors shadow-xs shrink-0 ${
-                        isItemPlan
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'bg-black dark:bg-white text-white dark:text-black group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white'
-                      }`}
-                      title={isItemPlan ? "PLAN VIEW" : "TRIP LOG"}
-                      >
-                        <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
-                      </div>
-                    </div>
-                  </div>
-                </article>
+                />
               );
-            })}
+              })}
           </div>
         )}
 
