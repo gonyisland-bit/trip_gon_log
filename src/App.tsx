@@ -383,7 +383,7 @@ function App() {
                     onNavigate={navigateTo}
                     onSaveTrip={handleEditTripSave}
                     onDeleteTrip={handleDeleteJourney}
-                    onCloneTrip={openRemix}
+                    onCloneTrip={async (id: number) => openRemix(id)}
                     onMoveToPlans={handleMoveToPlans}
                     onMoveToArchive={handleMoveToArchive}
                     onReorderTrips={async (orderedIds) => {

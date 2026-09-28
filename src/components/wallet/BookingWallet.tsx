@@ -65,7 +65,7 @@ function buildJourneys(
   const seen = new Set<number>();
   return [...trips, ...plans]
     .filter(t => !t.deletedAt && !seen.has(t.id) && seen.add(t.id))
-    .map(trip => {
+    .map((trip): WalletJourney | null => {
       const range = parseTripDateRange(trip.date);
       if (!range || range.end < now) return null;
       const year = range.start.getFullYear();
