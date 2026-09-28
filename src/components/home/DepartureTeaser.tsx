@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { openDepartureBoard } from '../QuickActionBar';
-import { candidates, flightHours, formatHours } from '../departure/departureData';
+import { candidates, defaultFilters, flightHours, formatHours } from '../departure/departureData';
 
 // Home entry to the Departure Board: a one-line board that rolls through
 // destinations that are in season next month.
 
 export function DepartureTeaser() {
-  const pool = useMemo(() => candidates({ stay: 'mid', flight: 6, when: 1 }).slice(0, 12), []);
+  const pool = useMemo(() => candidates(defaultFilters()).slice(0, 12), []);
   const [i, setI] = useState(0);
 
   useEffect(() => {

@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Ticket } from 'lucide-react';
 
-// Quick action bar (v1.3): three shortcuts that cut across hubs.
-//  - 킵하기: open the pocket scrap sheet (from any hub)
-//  - 새 여정: open the Trip Guide
-//  - 여행지 뽑기: open the Departure Board
-// It slides away while scrolling down and returns when scrolling up.
+// Quick action bar (v1.3). One dock, two weights:
+//  - 장소 담기 / 여정 만들기: quiet text actions on the dark dock
+//  - 여행지 뽑기: the red boarding-ticket button (notched edges, perforation,
+//    a light sweep now and then) because it is the one people come back for
+// The dock slides away while scrolling down and returns when scrolling up.
 
 export const OPEN_DEPARTURE_EVENT = 'tgl:open-departure';
 export const POCKET_OPEN_SCRAP_EVENT = 'tgl:pocket-open-scrap';
@@ -36,7 +37,7 @@ export function QuickActionBar({ currentView, onNavigate, onNewTrip }: QuickActi
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const keep = () => {
+  const keepPlace = () => {
     if (currentView === 'pocket') {
       window.dispatchEvent(new Event(POCKET_OPEN_SCRAP_EVENT));
       return;
@@ -45,21 +46,31 @@ export function QuickActionBar({ currentView, onNavigate, onNewTrip }: QuickActi
     onNavigate('pocket');
   };
 
-  const item = 'tgl-press tgl-sweep h-10 px-3.5 sm:px-4 text-[13px] font-bold tracking-tight whitespace-nowrap cursor-pointer transition-colors';
+  const quiet = 'tgl-press tgl-sweep h-11 px-3.5 sm:px-4 text-[13px] font-semibold tracking-tight text-white/85 hover:text-white whitespace-nowrap cursor-pointer transition-colors';
 
   return (
     <nav
       aria-label="빠른 실행"
-      className={`fixed left-1/2 bottom-5 z-40 -translate-x-1/2 flex items-center bg-black/90 dark:bg-white/95 text-white dark:text-black backdrop-blur-md rounded-full shadow-[0_8px_28px_rgba(0,0,0,0.25)] px-1.5 transition-[transform,opacity] duration-emph ease-emphasized ${
-        hidden ? 'translate-y-[140%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+      className={`fixed left-1/2 bottom-5 z-40 -translate-x-1/2 flex items-center gap-1 p-1 bg-[#0B0B0C]/95 backdrop-blur-md rounded-full border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-[transform,opacity] duration-emph ease-emphasized ${
+        hidden ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
       }`}
       style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <button type="button" onClick={keep} className={item}>킵하기</button>
-      <span aria-hidden className="w-px h-4 bg-white/25 dark:bg-black/20" />
-      <button type="button" onClick={onNewTrip} className={item}>새 여정</button>
-      <span aria-hidden className="w-px h-4 bg-white/25 dark:bg-black/20" />
-      <button type="button" onClick={openDepartureBoard} className={`${item} text-red-400 dark:text-red-600`}>여행지 뽑기</button>
+      <button type="button" onClick={keepPlace} className={quiet}>장소 담기</button>
+      <button type="button" onClick={onNewTrip} className={quiet}>여정 만들기</button>
+
+      {/* Boarding-ticket button */}
+      <button
+        type="button"
+        onClick={openDepartureBoard}
+        className="tgl-ticket-btn tgl-press group h-11 flex items-stretch bg-red-600 hover:bg-red-500 text-white rounded-[10px] cursor-pointer transition-colors"
+      >
+        <span className="tgl-ticket-icon flex items-center pl-4 pr-3">
+          <Ticket className="w-[18px] h-[18px]" strokeWidth={2.2} />
+        </span>
+        <span aria-hidden className="my-2 border-l border-dashed border-white/50" />
+        <span className="flex items-center pl-3 pr-4 text-[13px] font-extrabold tracking-tight whitespace-nowrap">여행지 뽑기</span>
+      </button>
     </nav>
   );
 }

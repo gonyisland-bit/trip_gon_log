@@ -1,3 +1,4 @@
+import { CITY_COORDS_SUPPLEMENT } from './cityCoordsSupplement';
 export interface DestinationCountry {
   code: string;
   nameEn: string;
@@ -14128,6 +14129,13 @@ export const WORLD_CITIES: DestinationCity[] = [
     "coverImage": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop"
   }
 ];
+
+// Fill in destinations that have no position yet (lat/lng 0, 0)
+WORLD_CITIES.forEach(c => {
+  if (Math.abs(c.lat) > 0.1 || Math.abs(c.lng) > 0.1) return;
+  const at = CITY_COORDS_SUPPLEMENT[c.nameEn];
+  if (at) { c.lat = at[0]; c.lng = at[1]; }
+});
 
 export const DEFAULT_PRESET_TRIP_PLANS: PresetTripPlan[] = [
   {

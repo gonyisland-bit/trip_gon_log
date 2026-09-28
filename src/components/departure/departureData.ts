@@ -7,13 +7,42 @@ import { WORLD_CITIES, DestinationCity } from '../../data/worldDestinations';
 // render cache only).
 
 export type StayFilter = 'short' | 'mid' | 'long';       // 2–3 / 4–5 / 6+ nights
-export type FlightFilter = 3 | 6 | 99;                     // max hours
-export type WhenFilter = 0 | 1 | 2;                        // months from now
+export type FlightFilter = '3' | '6' | '10+' | 'any';      // up to 3h / up to 6h / 10h and more / anywhere
 
 export interface DepartureFilters {
   stay: StayFilter;
   flight: FlightFilter;
-  when: WhenFilter;
+  year: number;
+  month: number;                                             // 1–12
+}
+
+export const FLIGHT_OPTIONS: { value: FlightFilter; label: string }[] = [
+  { value: '3', label: '3H' },
+  { value: '6', label: '6H' },
+  { value: '10+', label: '10H+' },
+  { value: 'any', label: 'ANY' },
+];
+
+function fitsFlight(hours: number, f: FlightFilter): boolean {
+  if (f === '3') return hours <= 3;
+  if (f === '6') return hours <= 6;
+  if (f === '10+') return hours >= 10;
+  return true;
+}
+
+// Next month by default (this month once it is past the 20th is too close to plan)
+export function defaultFilters(): DepartureFilters {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + 1);
+  return { stay: 'mid', flight: '6', year: d.getFullYear(), month: d.getMonth() + 1 };
+}
+
+// Months that can still be picked for a year: this year only from the current month on
+export function selectableMonths(year: number): number[] {
+  const now = new Date();
+  const from = year === now.getFullYear() ? now.getMonth() + 1 : 1;
+  return Array.from({ length: 12 - from + 1 }, (_, i) => from + i);
 }
 
 export interface DepartureTicket {
@@ -49,11 +78,8 @@ export function formatHours(h: number): string {
   return `${hh}H ${String(mm).padStart(2, '0')}M`;
 }
 
-export function targetMonth(when: WhenFilter): { year: number; month: number } {
-  const d = new Date();
-  d.setDate(1);
-  d.setMonth(d.getMonth() + when);
-  return { year: d.getFullYear(), month: d.getMonth() + 1 };
+export function targetMonth(filters: DepartureFilters): { year: number; month: number } {
+  return { year: filters.year, month: filters.month };
 }
 
 // Stable pseudo-random numbers from a string (flight numbers, gates, the daily pick)
@@ -74,14 +100,15 @@ export function gateFor(city: DestinationCity): string {
 
 // Destinations that fit the filters, best-season cities first
 export function candidates(filters: DepartureFilters): DestinationCity[] {
-  const { month } = targetMonth(filters.when);
+  const { month } = targetMonth(filters);
   const pool = WORLD_CITIES.filter(c =>
     c.countryEn !== 'SOUTH KOREA' &&
-    Number.isFinite(c.lat) && Number.isFinite(c.lng) &&
-    flightHours(c) <= filters.flight &&
+    // Some cities have no coordinates yet (0, 0); they cannot be placed or timed
+    Number.isFinite(c.lat) && Number.isFinite(c.lng) && (Math.abs(c.lat) > 0.1 || Math.abs(c.lng) > 0.1) &&
+    fitsFlight(flightHours(c), filters.flight) &&
     // A short stay keeps the flight short; a long stay goes a little further
-    (filters.stay !== 'short' || flightHours(c) <= 5) &&
-    (filters.stay !== 'long' || flightHours(c) >= 3) &&
+    (filters.stay !== 'short' || filters.flight === '10+' || flightHours(c) <= 5) &&
+    (filters.stay !== 'long' || flightHours(c) >= 3 || filters.flight === '3') &&
     !c.avoidMonths?.some(a => a.months.includes(month))
   );
   const best = pool.filter(c => c.bestMonths?.includes(month));
@@ -106,7 +133,7 @@ export function dailyPick(filters: DepartureFilters): DestinationCity | null {
 }
 
 export function makeTicket(city: DestinationCity, filters: DepartureFilters, daily = false): DepartureTicket {
-  const { year, month } = targetMonth(filters.when);
+  const { year, month } = targetMonth(filters);
   return {
     id: `tk_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     cityEn: city.nameEn,

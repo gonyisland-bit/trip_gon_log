@@ -1163,3 +1163,36 @@ input[type="range"]:focus-visible {
   content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px;
   background: rgba(0, 0, 0, .7); pointer-events: none;
 }
+
+/* Departure Board arrival: the lobby lights up, then you walk up to the board */
+@keyframes tglLobbyIn { from { opacity: 0; } }
+@keyframes tglBoardIn {
+  0% { opacity: 0; transform: translateY(70px) scale(.78) rotateX(14deg); filter: blur(8px); }
+  60% { filter: blur(0); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+@keyframes tglLobbySceneIn { from { opacity: 0; transform: translateY(50px) scale(1.12); } }
+@keyframes tglLobbyOut { to { opacity: 0; transform: scale(1.04); } }
+.tgl-lobby-in { animation: tglLobbyIn 420ms var(--ease-standard) both; }
+.tgl-board-in { transform-origin: 50% 100%; animation: tglBoardIn 1000ms var(--ease-emphasized) 120ms both; }
+.tgl-lobby-in .tgl-lobby-scene { transform-origin: 50% 100%; animation: tglLobbySceneIn 1100ms var(--ease-emphasized) 60ms both; }
+.tgl-lobby-out { animation: tglLobbyOut 420ms var(--ease-standard) both; }
+
+/* Quick bar ticket button: side notches cut out, a light sweep now and then */
+.tgl-ticket-btn {
+  -webkit-mask:
+    radial-gradient(circle 7px at 0 50%, transparent 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 7px at 100% 50%, transparent 97%, #000) right / 51% 100% no-repeat;
+          mask:
+    radial-gradient(circle 7px at 0 50%, transparent 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 7px at 100% 50%, transparent 97%, #000) right / 51% 100% no-repeat;
+  position: relative; overflow: hidden;
+}
+@keyframes tglTicketSweep { 0%, 78% { transform: translateX(-130%) skewX(-18deg); } 100% { transform: translateX(260%) skewX(-18deg); } }
+.tgl-ticket-btn::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .35), transparent);
+  animation: tglTicketSweep 6s var(--ease-standard) 1.5s infinite; pointer-events: none;
+}
+@keyframes tglTicketNudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.tgl-ticket-btn:hover .tgl-ticket-icon { animation: tglTicketNudge 600ms var(--ease-spring); }

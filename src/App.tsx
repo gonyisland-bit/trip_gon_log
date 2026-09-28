@@ -687,6 +687,7 @@ function App() {
             <DepartureBoard
               onClose={() => setIsDepartureOpen(false)}
               onBuildTrip={({ countryEn, cityKo, year, month }) => handleCreateTripForCountry(countryEn, cityKo, departureDate(year, month))}
+              onOpenPocket={() => navigateTo('pocket')}
             />
           </Suspense>
         )}
