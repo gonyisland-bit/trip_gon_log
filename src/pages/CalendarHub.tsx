@@ -17,6 +17,7 @@ import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { WORLD_CITIES, findCityByNameOrAlias } from '../data/worldDestinations';
 import { confirmDialog } from '../utils/feedback';
+import { swipeStart, swipeDirection, SwipeStart } from '../utils/swipe';
 
 export interface CalendarWeatherCity {
   name: string;
@@ -1511,22 +1512,19 @@ export function CalendarHubPage({
   };
 
   // 모바일 좌우 스와이프 제스처 (편집 모드가 아닐 때만 동작)
+  const calSwipeRef = useRef<SwipeStart | null>(null);
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isEditMode) return;
-    touchStartXRef.current = e.touches[0].clientX;
-    touchStartYRef.current = e.touches[0].clientY;
+    calSwipeRef.current = swipeStart(e);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (isEditMode || touchStartXRef.current === null || touchStartYRef.current === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const diffX = touchEndX - touchStartXRef.current;
-    const diffY = touchEndY - touchStartYRef.current;
-
-    // 수평 이동 거리가 수직 이동보다 크고 50px 이상일 때 스와이프 판정
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
-      if (diffX > 0) {
+    if (isEditMode || !calSwipeRef.current) return;
+    // A clear, quick sideways flick with no page scroll in between (see utils/swipe)
+    const dir = swipeDirection(calSwipeRef.current, e, 50);
+    calSwipeRef.current = null;
+    if (dir !== 0) {
+      if (dir === 1) {
         // 우로 스와이프 -> 이전 달
         if (viewMode === 'month') handlePrevMonth();
         else setCurrentYear(prev => prev - 1);
@@ -1536,8 +1534,6 @@ export function CalendarHubPage({
         else setCurrentYear(prev => prev + 1);
       }
     }
-    touchStartXRef.current = null;
-    touchStartYRef.current = null;
   };
 
   // 날짜 마우스 호버 및 모바일 탭 시 툴팁 표시 (뷰포트 클램핑 및 상하 자동 반전)

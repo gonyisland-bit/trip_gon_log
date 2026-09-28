@@ -34,6 +34,7 @@ import { IssueCard } from '../components/cards/IssueCard';
 import { MemoryReel } from '../components/reel/MemoryReel';
 import { IssueTextWindow } from '../components/reel/IssueTextWindow';
 import { MagazineSpread } from '../components/magazine/MagazineSpread';
+import { swipeStart, swipeDirection, SwipeStart } from '../utils/swipe';
 import { Lightbox } from '../components/Lightbox';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
 
@@ -356,23 +357,18 @@ export function MagazineHubPage({
     handleSelectSection(effectiveSections[nextIdx].id);
   };
 
+  // The hero stays pinned while the issue scrolls under it, so only a clear sideways flick changes issue;
+  // the drift of a vertical scroll used to flip issues on real phones
+  const heroSwipeRef = useRef<SwipeStart | null>(null);
   const handleHeroTouchStart = (e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0].clientX;
+    heroSwipeRef.current = swipeStart(e);
   };
 
   const handleHeroTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const deltaX = touchEndX - touchStartXRef.current;
-    touchStartXRef.current = null;
-
-    if (Math.abs(deltaX) > 45) {
-      if (deltaX > 0) {
-        handlePrevSection();
-      } else {
-        handleNextSection();
-      }
-    }
+    const dir = swipeDirection(heroSwipeRef.current, e);
+    heroSwipeRef.current = null;
+    if (dir === 1) handlePrevSection();
+    else if (dir === -1) handleNextSection();
   };
 
   // Current Active Section in Section Detail View

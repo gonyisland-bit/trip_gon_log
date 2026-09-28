@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { MagazineSection } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
+import { swipeStart, swipeDirection, SwipeStart } from '../../utils/swipe';
 
 // Magazine spread (v1.3 P5-7): the three-card preview of a magazine issue with
 // issue tabs, prev/next and swipe. Shared by the home page and the magazine hub
@@ -29,7 +30,7 @@ interface MagazineSpreadProps {
 const navBtn = 'tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white';
 
 export function MagazineSpread({ sections, activeId, onSelect, cardsFor, onOpen, heading, ctaLabel, tabIdPrefix }: MagazineSpreadProps) {
-  const touch = useRef<{ x: number; y: number } | null>(null);
+  const touch = useRef<SwipeStart | null>(null);
   const index = Math.max(0, sections.findIndex(s => s.id === activeId));
   const active = sections[index];
 
@@ -84,13 +85,11 @@ export function MagazineSpread({ sections, activeId, onSelect, cardsFor, onOpen,
       {/* One page per issue, slid sideways; swipe on touch screens */}
       <div
         className="w-full overflow-hidden touch-pan-y"
-        onTouchStart={e => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+        onTouchStart={e => { touch.current = swipeStart(e); }}
         onTouchEnd={e => {
-          if (!touch.current) return;
-          const dx = e.changedTouches[0].clientX - touch.current.x;
-          const dy = e.changedTouches[0].clientY - touch.current.y;
+          const dir = swipeDirection(touch.current, e, 50);
           touch.current = null;
-          if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) select(dx < 0 ? index + 1 : index - 1);
+          if (dir !== 0) select(dir === -1 ? index + 1 : index - 1);
         }}
       >
         <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${index * 100}%)` }}>
