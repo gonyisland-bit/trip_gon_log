@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Ticket, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ticket, Volume2, VolumeX, X } from 'lucide-react';
 import { getSavedPockets } from '../../utils/pocketStorage';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { LobbyScene } from './LobbyScene';
@@ -85,9 +85,9 @@ function FlapRow({ text, cells, rollKey, size = 'md', onFlip, tone = 'ink' }: {
   }, [rollKey, target.join('')]);
 
   const dims = size === 'lg'
-    ? 'w-[clamp(18px,6vw,54px)] h-[clamp(28px,9vw,78px)] text-[clamp(16px,5vw,46px)]'
+    ? 'w-[clamp(18px,min(6vw,5.2vh),50px)] h-[clamp(28px,min(9vw,8vh),72px)] text-[clamp(16px,min(5vw,4.6vh),42px)]'
     : size === 'md'
-      ? 'w-[clamp(14px,3.4vw,26px)] h-[clamp(22px,5vw,38px)] text-[clamp(12px,2.8vw,22px)]'
+      ? 'w-[clamp(14px,min(3.4vw,3vh),24px)] h-[clamp(22px,min(5vw,4.6vh),34px)] text-[clamp(12px,min(2.8vw,2.6vh),20px)]'
       : 'w-[14px] h-[22px] text-[12px]';
   const color = tone === 'amber' ? 'text-amber-400' : tone === 'red' ? 'text-red-500' : 'text-[#F2F2EE]';
   return (
@@ -242,9 +242,19 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
     await persist({ ...store, items: store.items.filter(x => x.id !== t.id) });
   };
 
-  const setYear = (y: number) => setFilters(f => {
-    const months = selectableMonths(y);
-    return { ...f, year: y, month: months.includes(f.month) ? f.month : months[0] };
+  // Month stepper: from this month up to December next year; tapping the label wraps around
+  const monthIndex = (y: number, m: number) => y * 12 + (m - 1);
+  const firstIndex = monthIndex(thisYear, selectableMonths(thisYear)[0]);
+  const lastIndex = monthIndex(thisYear + 1, 12);
+  const canStep = (dir: 1 | -1) => {
+    const next = monthIndex(filters.year, filters.month) + dir;
+    return next >= firstIndex && next <= lastIndex;
+  };
+  const stepMonth = (dir: 1 | -1, wrap = false) => setFilters(f => {
+    let next = monthIndex(f.year, f.month) + dir;
+    if (next > lastIndex) next = wrap ? firstIndex : lastIndex;
+    if (next < firstIndex) next = firstIndex;
+    return { ...f, year: Math.floor(next / 12), month: (next % 12) + 1 };
   });
 
   // Four other departures, reshuffled on every roll
@@ -276,25 +286,26 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
     <div
       role="dialog"
       aria-label="Departure Board"
-      className={`fixed inset-0 z-[190] bg-[#0B0B0C] text-[#F2F2EE] overflow-y-auto overflow-x-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
+      className={`fixed inset-0 z-[190] bg-[#0B0B0C] text-[#F2F2EE] overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
     >
-      <div className="min-h-full flex flex-col" style={{ perspective: '1400px' }}>
-        <div className={`w-full max-w-5xl mx-auto px-4 sm:px-8 pt-5 pb-6 flex flex-col gap-6 ${leaving ? '' : 'tgl-board-in'}`}>
+      <div className="h-full flex flex-col" style={{ perspective: '1400px' }}>
+        {/* Everything above the lobby; scrolls on its own only on very short screens */}
+        <div className={`flex-none w-full max-w-5xl mx-auto px-4 sm:px-8 pt-3 sm:pt-4 flex flex-col gap-3 max-h-[calc(100%-140px)] overflow-y-auto hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
           {/* Top bar */}
-          <div className="flex items-center justify-between gap-3 border-b border-white/15 pb-3">
+          <div className="flex items-center justify-between gap-3 border-b border-white/15 pb-2">
             <div className="flex items-baseline gap-3">
-              <span className="font-sans font-extrabold text-xl sm:text-2xl tracking-tight">Departures</span>
+              <span className="font-sans font-extrabold text-lg sm:text-xl tracking-tight">Departures</span>
               <span className="font-mono text-meta text-white/60 tabular-nums">ICN · {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setView(v => (v === 'board' ? 'tickets' : 'board'))} className="tgl-press h-9 px-3 inline-flex items-center gap-2 border border-white/25 hover:border-white font-mono text-meta uppercase tracking-wider cursor-pointer" aria-label={view === 'board' ? '보관한 티켓' : '보드로 돌아가기'}>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={() => setView(v => (v === 'board' ? 'tickets' : 'board'))} className="tgl-press h-8 px-2.5 inline-flex items-center gap-1.5 border border-white/25 hover:border-white font-mono text-meta uppercase tracking-wider cursor-pointer" aria-label={view === 'board' ? '보관한 티켓' : '보드로 돌아가기'}>
                 <Ticket className="w-4 h-4" />
                 <span className="tabular-nums">{view === 'board' ? store.items.length : 'Board'}</span>
               </button>
-              <button type="button" onClick={() => setMuted(m => !m)} className="tgl-press tap-target w-9 h-9 grid place-items-center border border-white/25 hover:border-white cursor-pointer" aria-label={muted ? '소리 켜기' : '소리 끄기'}>
+              <button type="button" onClick={() => setMuted(m => !m)} className="tgl-press tap-target w-8 h-8 grid place-items-center border border-white/25 hover:border-white cursor-pointer" aria-label={muted ? '소리 켜기' : '소리 끄기'}>
                 {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
-              <button type="button" onClick={requestClose} className="tgl-press tap-target w-9 h-9 grid place-items-center border border-white/25 hover:bg-white hover:text-black cursor-pointer" aria-label="닫기">
+              <button type="button" onClick={requestClose} className="tgl-press tap-target w-8 h-8 grid place-items-center border border-white/25 hover:bg-white hover:text-black cursor-pointer" aria-label="닫기">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -302,51 +313,53 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
 
           {view === 'board' ? (
             <>
-              {/* Filters */}
-              <div className="grid gap-4 lg:grid-cols-[auto_auto_1fr]">
-                <div className="flex flex-col gap-1.5">
+              {/* Filters on one line: stay, flight time, and a month stepper */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <div className="flex items-center gap-2">
                   <Label>Stay</Label>
-                  <div className="flex gap-1.5 flex-wrap">
+                  <div className="flex gap-1">
                     <Chip active={filters.stay === 'short'} onClick={() => setFilters(f => ({ ...f, stay: 'short' }))}>2–3박</Chip>
                     <Chip active={filters.stay === 'mid'} onClick={() => setFilters(f => ({ ...f, stay: 'mid' }))}>4–5박</Chip>
                     <Chip active={filters.stay === 'long'} onClick={() => setFilters(f => ({ ...f, stay: 'long' }))}>6박+</Chip>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label>Flight time</Label>
-                  <div className="flex gap-1.5 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Label>Flight</Label>
+                  <div className="flex gap-1">
                     {FLIGHT_OPTIONS.map(o => (
                       <Chip key={o.value} active={filters.flight === o.value} onClick={() => setFilters(f => ({ ...f, flight: o.value }))}>{o.label}</Chip>
                     ))}
                   </div>
                 </div>
-                <div className="flex flex-col gap-1.5 min-w-0">
+                <div className="flex items-center gap-2">
                   <Label>Departs</Label>
-                  <div className="flex gap-1.5 flex-wrap items-center">
-                    {[thisYear, thisYear + 1].map(y => (
-                      <Chip key={y} active={filters.year === y} onClick={() => setYear(y)}>{y}</Chip>
-                    ))}
-                    <span aria-hidden className="w-px h-5 bg-white/20 mx-1" />
-                    {MONTHS.map((m, i) => (
-                      <Chip key={m} active={filters.month === i + 1} disabled={!selectableMonths(filters.year).includes(i + 1)} onClick={() => setFilters(f => ({ ...f, month: i + 1 }))}>
-                        {m}
-                      </Chip>
-                    ))}
+                  <div className="flex items-stretch h-8 border border-white/25">
+                    <button type="button" onClick={() => stepMonth(-1)} disabled={!canStep(-1)} className="tgl-press w-8 grid place-items-center hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button type="button" onClick={() => stepMonth(1, true)} className="tgl-press px-3 font-mono text-meta tracking-wider tabular-nums border-x border-white/25 hover:bg-white/10 cursor-pointer" aria-label="출발 월 바꾸기">
+                      {MONTHS[month - 1]} {year}
+                    </button>
+                    <button type="button" onClick={() => stepMonth(1)} disabled={!canStep(1)} className="tgl-press w-8 grid place-items-center hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
 
               {/* Board */}
-              <div className="relative border border-white/15 p-3 sm:p-5 flex flex-col gap-4 bg-[#101012] shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
-                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 items-end">
-                  <Label>Flight</Label>
-                  <Label>Destination</Label>
-                  <FlapRow text={city ? flightNumber(city).replace(' ', '') : booted ? 'TG001' : ''} cells={5} rollKey={rollKey} size="md" onFlip={flip} />
-                  <div className="overflow-x-auto hide-scrollbar">
+              <div className="relative border border-white/15 p-3 sm:p-4 flex flex-col gap-3 bg-[#101012] shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
+                <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+                  <div className="flex flex-col gap-1">
+                    <Label>Flight</Label>
+                    <FlapRow text={city ? flightNumber(city).replace(' ', '') : booted ? 'TG001' : ''} cells={5} rollKey={rollKey} size="md" onFlip={flip} />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0 overflow-x-auto hide-scrollbar">
+                    <Label>Destination</Label>
                     <FlapRow text={city ? city.nameEn : booted ? 'WELCOME' : ''} cells={12} rollKey={rollKey} size="lg" onFlip={flip} />
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-x-6 gap-y-3">
+                <div className="flex flex-wrap gap-x-5 gap-y-2">
                   <div className="flex flex-col gap-1">
                     <Label>Time</Label>
                     <FlapRow text={city ? formatHours(flightHours(city)).replace(/ /g, '') : ''} cells={6} rollKey={rollKey} size="md" onFlip={flip} />
@@ -366,23 +379,19 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
                 </div>
 
                 {/* Result: the city, its photo, and what is already in the pocket */}
-                <div className="min-h-[64px] border-t border-white/10 pt-3">
+                <div className="h-12 border-t border-white/10 pt-2 flex items-center">
                   {city && !spinning ? (
-                    <div className="tgl-rise flex gap-4 items-center">
+                    <div className="tgl-rise flex gap-3 items-center min-w-0">
                       {city.coverImage && (
-                        <img src={getEffectiveImageUrl(city.coverImage)} alt={city.nameKo} loading="lazy" className="w-20 h-14 sm:w-28 sm:h-[72px] object-cover shrink-0" />
+                        <img src={getEffectiveImageUrl(city.coverImage)} alt={city.nameKo} loading="lazy" className="w-14 h-10 object-cover shrink-0" />
                       )}
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-lg sm:text-xl font-extrabold tracking-tight">{city.nameKo} <span className="text-white/60 font-medium text-sm">{city.countryKo}</span></span>
-                        {city.iconicSpots?.length > 0 && (
-                          <span className="text-sm text-white/70 break-keep line-clamp-1">{city.iconicSpots.slice(0, 3).join(' · ')}</span>
-                        )}
-                        {pocketCount > 0 && (
-                          <button type="button" onClick={() => { onClose(); onOpenPocket?.(); }} className="tgl-sweep self-start font-mono text-meta text-amber-300 cursor-pointer">
-                            포켓에 담아 둔 장소 {pocketCount}곳
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-base font-extrabold tracking-tight shrink-0">{city.nameKo}</span>
+                      <span className="text-sm text-white/65 truncate">{[city.countryKo, ...(city.iconicSpots || []).slice(0, 2)].join(' · ')}</span>
+                      {pocketCount > 0 && (
+                        <button type="button" onClick={() => { onClose(); onOpenPocket?.(); }} className="tgl-sweep shrink-0 font-mono text-meta text-amber-300 cursor-pointer">
+                          포켓 {pocketCount}곳
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <span className="font-mono text-meta uppercase tracking-widest text-white/45">
@@ -392,38 +401,33 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                <button type="button" onClick={spin} disabled={spinning} className="tgl-press h-12 px-8 bg-red-600 hover:bg-red-500 text-white font-mono font-bold uppercase tracking-[0.2em] disabled:opacity-60 cursor-pointer">
+              {/* Actions, then the other departures on one line */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={spin} disabled={spinning} className="tgl-press h-11 px-7 bg-red-600 hover:bg-red-500 text-white font-mono font-bold uppercase tracking-[0.2em] disabled:opacity-60 cursor-pointer">
                   {city ? 'Spin again' : 'Spin'}
                 </button>
                 {!dailyClaimed && (
-                  <button type="button" onClick={claimDaily} disabled={spinning} className="tgl-press h-12 px-5 border border-amber-400/70 text-amber-300 hover:bg-amber-400 hover:text-black font-mono text-meta font-bold uppercase tracking-widest transition-colors cursor-pointer">
+                  <button type="button" onClick={claimDaily} disabled={spinning} className="tgl-press h-11 px-4 border border-amber-400/70 text-amber-300 hover:bg-amber-400 hover:text-black font-mono text-meta font-bold uppercase tracking-widest transition-colors cursor-pointer">
                     오늘의 티켓
                   </button>
                 )}
                 {city && !spinning && (
                   <>
-                    <button type="button" onClick={() => build({ countryEn: city.countryEn, cityKo: city.nameKo, cityEn: city.nameEn, year, month })} className="tgl-press h-12 px-5 bg-[#F2F2EE] text-black hover:bg-white font-bold text-sm cursor-pointer">
+                    <button type="button" onClick={() => build({ countryEn: city.countryEn, cityKo: city.nameKo, cityEn: city.nameEn, year, month })} className="tgl-press h-11 px-4 bg-[#F2F2EE] text-black hover:bg-white font-bold text-sm cursor-pointer">
                       이 여정 만들기
                     </button>
-                    <button type="button" onClick={keep} disabled={kept} className="tgl-press h-12 px-5 border border-white/40 hover:border-white text-sm disabled:opacity-60 cursor-pointer">
+                    <button type="button" onClick={keep} disabled={kept} className="tgl-press h-11 px-4 border border-white/40 hover:border-white text-sm disabled:opacity-60 cursor-pointer">
                       {kept ? '보관됨' : '티켓 보관'}
                     </button>
                   </>
                 )}
               </div>
-
-              {/* Other departures */}
               {others.length > 0 && (
-                <div className="flex flex-col">
-                  <span className="pb-2 border-b border-white/15"><Label>Also departing</Label></span>
+                <div className="flex items-center gap-3 min-w-0 overflow-hidden whitespace-nowrap border-t border-white/10 pt-2">
+                  <Label>Also</Label>
                   {others.map((c, i) => (
-                    <button key={`${c.nameEn}-${rollKey}`} type="button" onClick={() => !spinning && land(c)} className="tgl-rise group grid grid-cols-[64px_1fr_auto] sm:grid-cols-[80px_1fr_90px_auto] gap-3 items-center py-2.5 border-b border-white/10 text-left hover:bg-white/[0.04] cursor-pointer" style={{ '--i': i } as React.CSSProperties}>
-                      <span className="font-mono text-meta text-white/60">{flightNumber(c)}</span>
-                      <span className="font-mono text-sm uppercase tracking-wider truncate group-hover:text-red-400">{c.nameEn}<span className="ml-2 font-sans normal-case tracking-normal text-white/55">{c.nameKo}</span></span>
-                      <span className="hidden sm:block font-mono text-meta text-white/60">{formatHours(flightHours(c))}</span>
-                      <span className={`font-mono text-micro uppercase tracking-wider ${isBestSeason(c, month) ? 'text-amber-400' : 'text-white/50'}`}>{isBestSeason(c, month) ? 'Best' : 'On time'}</span>
+                    <button key={`${c.nameEn}-${rollKey}`} type="button" onClick={() => !spinning && land(c)} className="tgl-rise shrink-0 font-mono text-meta uppercase tracking-wider text-white/75 hover:text-red-400 cursor-pointer" style={{ '--i': i } as React.CSSProperties}>
+                      {c.nameEn} <span className={isBestSeason(c, month) ? 'text-amber-400' : 'text-white/45'}>{formatHours(flightHours(c)).replace(' ', '')}</span>
                     </button>
                   ))}
                 </div>
@@ -431,10 +435,10 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
             </>
           ) : (
             /* Kept tickets */
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 pb-2">
               <Label>Kept tickets · {store.items.length}</Label>
               {store.items.length === 0 ? (
-                <p className="text-white/60 text-sm py-10 text-center">아직 보관한 티켓이 없습니다.</p>
+                <p className="text-white/60 text-sm py-8 text-center">아직 보관한 티켓이 없습니다.</p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {store.items.map((t, i) => (
@@ -462,8 +466,8 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket }: Departure
           )}
         </div>
 
-        {/* The lobby: glass wall, planes, travelers */}
-        <div className="tgl-lobby-scene relative mt-auto h-[190px] sm:h-[250px] w-full overflow-hidden">
+        {/* The lobby fills the rest of the screen: glass wall, planes, travelers */}
+        <div className="tgl-lobby-scene relative flex-1 min-h-[140px] w-full overflow-hidden mt-3">
           <LobbyScene />
         </div>
       </div>

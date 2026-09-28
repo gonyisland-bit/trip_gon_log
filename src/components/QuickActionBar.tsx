@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Ticket } from 'lucide-react';
+import { Bookmark, Plane, Ticket } from 'lucide-react';
 
-// Quick action bar (v1.3). One dock, two weights:
-//  - 장소 담기 / 여정 만들기: quiet text actions on the dark dock
-//  - 여행지 뽑기: the red boarding-ticket button (notched edges, perforation,
-//    a light sweep now and then) because it is the one people come back for
-// The dock slides away while scrolling down and returns when scrolling up.
+// Quick action bar (v1.3): a small dock of three icons. The label shows on
+// hover or keyboard focus; the ticket stays red because it is the one people
+// come back for. The dock slides away while scrolling down.
 
 export const OPEN_DEPARTURE_EVENT = 'tgl:open-departure';
 export const POCKET_OPEN_SCRAP_EVENT = 'tgl:pocket-open-scrap';
@@ -19,6 +17,28 @@ interface QuickActionBarProps {
   currentView: string;
   onNavigate: (view: string) => void;
   onNewTrip: () => void;
+}
+
+function DockButton({ label, onClick, accent, children }: { label: string; onClick: () => void; accent?: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`tgl-press group relative w-9 h-9 rounded-full grid place-items-center cursor-pointer transition-colors ${
+        accent ? 'bg-red-600 text-white hover:bg-red-500' : 'text-white/80 hover:text-white hover:bg-white/10'
+      }`}
+    >
+      {children}
+      {/* Label on hover / focus */}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-1 bg-black text-white text-meta font-semibold opacity-0 translate-y-1 transition-[opacity,transform] duration-base ease-emphasized group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0"
+      >
+        {label}
+      </span>
+    </button>
+  );
 }
 
 export function QuickActionBar({ currentView, onNavigate, onNewTrip }: QuickActionBarProps) {
@@ -46,31 +66,17 @@ export function QuickActionBar({ currentView, onNavigate, onNewTrip }: QuickActi
     onNavigate('pocket');
   };
 
-  const quiet = 'tgl-press tgl-sweep h-11 px-3.5 sm:px-4 text-[13px] font-semibold tracking-tight text-white/85 hover:text-white whitespace-nowrap cursor-pointer transition-colors';
-
   return (
     <nav
       aria-label="빠른 실행"
-      className={`fixed left-1/2 bottom-5 z-40 -translate-x-1/2 flex items-center gap-1 p-1 bg-[#0B0B0C]/95 backdrop-blur-md rounded-full border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-[transform,opacity] duration-emph ease-emphasized ${
+      className={`fixed left-1/2 bottom-5 z-40 -translate-x-1/2 flex items-center gap-1 p-1 bg-[#0B0B0C]/90 backdrop-blur-md rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-[transform,opacity] duration-emph ease-emphasized ${
         hidden ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
       }`}
       style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <button type="button" onClick={keepPlace} className={quiet}>장소 담기</button>
-      <button type="button" onClick={onNewTrip} className={quiet}>여정 만들기</button>
-
-      {/* Boarding-ticket button */}
-      <button
-        type="button"
-        onClick={openDepartureBoard}
-        className="tgl-ticket-btn tgl-press group h-11 flex items-stretch bg-red-600 hover:bg-red-500 text-white rounded-[10px] cursor-pointer transition-colors"
-      >
-        <span className="tgl-ticket-icon flex items-center pl-4 pr-3">
-          <Ticket className="w-[18px] h-[18px]" strokeWidth={2.2} />
-        </span>
-        <span aria-hidden className="my-2 border-l border-dashed border-white/50" />
-        <span className="flex items-center pl-3 pr-4 text-[13px] font-extrabold tracking-tight whitespace-nowrap">여행지 뽑기</span>
-      </button>
+      <DockButton label="포켓" onClick={keepPlace}><Bookmark className="w-4 h-4" /></DockButton>
+      <DockButton label="신규여행" onClick={onNewTrip}><Plane className="w-4 h-4" /></DockButton>
+      <DockButton label="여행지뽑기" onClick={openDepartureBoard} accent><Ticket className="w-4 h-4" /></DockButton>
     </nav>
   );
 }
