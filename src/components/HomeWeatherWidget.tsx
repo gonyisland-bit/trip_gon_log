@@ -9,6 +9,8 @@ import {
   X
 } from 'lucide-react';
 import { Trip, CityWeatherConfig } from '../types';
+import { WeatherGlass } from './weather/WeatherGlass';
+import { resolveWeatherEffectType } from './WeatherEffectLayer';
 import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
 
 interface HomeWeatherWidgetProps {
@@ -242,13 +244,17 @@ export function HomeWeatherWidget({
                 key={`${city.nameEn}-${idx}`}
                 type="button"
                 onClick={() => setSelectedCityEn(isSelected ? null : city.nameEn)}
-                className={`p-3.5 sm:p-4 md:p-4.5 rounded-2xl flex flex-col justify-between gap-3 text-left transition-all duration-200 cursor-pointer relative ${
+                className={`p-3.5 sm:p-4 md:p-4.5 rounded-2xl flex flex-col justify-between gap-3 text-left transition-all duration-200 cursor-pointer relative overflow-hidden [&>div]:relative [&>div]:z-[1] ${
                   isSelected
                     ? 'bg-white dark:bg-[#141414] border border-black dark:border-white shadow-md ring-1 ring-black dark:ring-white scale-[1.01]'
                     : 'bg-black/[0.025] dark:bg-white/[0.035] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] shadow-xs'
                 }`}
                 title="클릭하여 1주일 예보 확인"
               >
+                {/* Weather Glass: beads and runs on rainy glass, frost on snow, a sheen on clear days */}
+                <span className="absolute inset-0 pointer-events-none" aria-hidden>
+                  <WeatherGlass type={resolveWeatherEffectType(weatherCode, precipProb)} isDarkMode={document.documentElement.classList.contains('dark')} />
+                </span>
                 {/* 1. Header: City Name & Country Pill Badge */}
                 <div className="flex items-center justify-between gap-2 w-full">
                   <span className="text-xs sm:text-sm font-extrabold font-sans uppercase tracking-tight text-black dark:text-white leading-tight">

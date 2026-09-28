@@ -1119,3 +1119,16 @@ input[type="range"]:focus-visible {
 /* ── Map markers (v1.3): a marker covered by a higher-priority one steps aside ── */
 .leaflet-marker-icon { transition: opacity var(--motion-base) var(--ease-standard); }
 .tgl-marker-yield { opacity: 0 !important; pointer-events: none !important; }
+
+/* ── Weather Glass sheen (clear days): a slow band of light crosses the card ── */
+@keyframes tglGlassSheen {
+  0%, 55% { transform: translateX(-120%) skewX(-18deg); }
+  100% { transform: translateX(220%) skewX(-18deg); }
+}
+.tgl-glass-sheen { overflow: hidden; }
+.tgl-glass-sheen::before {
+  content: ''; position: absolute; top: -10%; bottom: -10%; left: 0; width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 244, 214, .7), transparent);
+  animation: tglGlassSheen 7s var(--ease-standard) infinite;
+}
+.dark .tgl-glass-sheen::before { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .08), transparent); }
