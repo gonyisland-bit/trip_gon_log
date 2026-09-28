@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { memo, useRef } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { MagazineSection } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
@@ -29,7 +29,7 @@ interface MagazineSpreadProps {
 
 const navBtn = 'tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white';
 
-export function MagazineSpread({ sections, activeId, onSelect, cardsFor, onOpen, heading, ctaLabel, tabIdPrefix }: MagazineSpreadProps) {
+export const MagazineSpread = memo(function MagazineSpread({ sections, activeId, onSelect, cardsFor, onOpen, heading, ctaLabel, tabIdPrefix }: MagazineSpreadProps) {
   const touch = useRef<SwipeStart | null>(null);
   const index = Math.max(0, sections.findIndex(s => s.id === activeId));
   const active = sections[index];
@@ -94,15 +94,17 @@ export function MagazineSpread({ sections, activeId, onSelect, cardsFor, onOpen,
       >
         <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${index * 100}%)` }}>
           {sections.map((sec, si) => {
-            const cards = cardsFor(sec).slice(0, 3);
+            // Only the open page and its neighbours carry cards; the rest stay empty until reached
+            const near = Math.abs(si - index) <= 1;
+            const cards = near ? cardsFor(sec).slice(0, 3) : [];
             return (
               <div key={sec.id || si} className="w-full shrink-0" aria-hidden={si !== index}>
-                {cards.length > 0 ? (
+                {!near ? null : cards.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
                     {cards.map((c, ci) => (
                       <article key={c.key} onClick={() => onOpen(sec.id)} className="group flex flex-col justify-between cursor-pointer">
                         <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                          <img src={getEffectiveImageUrl(c.img)} alt={c.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none" />
+                          <img src={getEffectiveImageUrl(c.img)} alt={c.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none" />
                           <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-micro font-bold px-1.5 py-0.5 uppercase tracking-widest">
                             {String(ci + 1).padStart(2, '0')}
                           </div>
@@ -145,4 +147,4 @@ export function MagazineSpread({ sections, activeId, onSelect, cardsFor, onOpen,
       )}
     </div>
   );
-}
+});

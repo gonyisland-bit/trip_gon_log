@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { memo, useRef, useState } from 'react';
 import { prefersReducedMotion } from '../../motion';
 import { BookOpen } from 'lucide-react';
 
@@ -17,7 +17,7 @@ interface IssueCardProps {
   onOpen: () => void;
 }
 
-export function IssueCard({ coverImg, issueNumber, dateLabel, title, subtitle, location, storyCount, index = 0, onOpen }: IssueCardProps) {
+export const IssueCard = memo(function IssueCard({ coverImg, issueNumber, dateLabel, title, subtitle, location, storyCount, index = 0, onOpen }: IssueCardProps) {
   // Opening: the cover grows from its place in the grid to fill the screen and
   // dims to black, which is exactly where the issue opener starts.
   const coverRef = useRef<HTMLDivElement>(null);
@@ -78,7 +78,7 @@ export function IssueCard({ coverImg, issueNumber, dateLabel, title, subtitle, l
 
       <div ref={coverRef} className="tgl-issue-cover relative aspect-[3/4] w-full overflow-hidden bg-zinc-900 text-white">
         {coverImg ? (
-          <img src={coverImg} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+          <img src={coverImg} alt={title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-white/60">
             <BookOpen className="w-8 h-8 stroke-1" />
@@ -107,4 +107,4 @@ export function IssueCard({ coverImg, issueNumber, dateLabel, title, subtitle, l
       </div>
     </article>
   );
-}
+});

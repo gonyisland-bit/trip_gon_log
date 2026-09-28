@@ -87,6 +87,21 @@ function parseDateScore(dateStr?: string): number {
   return 99999999;
 }
 
+/** Timeline items in reading order: Date -> Time (in minutes) -> ID */
+export function sortTimelineChronologically(items: TimelineItem[]): TimelineItem[] {
+  return [...items].sort((a, b) => {
+    const dScoreA = parseDateScore(a.date);
+    const dScoreB = parseDateScore(b.date);
+    if (dScoreA !== dScoreB) return dScoreA - dScoreB;
+
+    const tMinutesA = parseTimeToMinutes(a.time);
+    const tMinutesB = parseTimeToMinutes(b.time);
+    if (tMinutesA !== tMinutesB) return tMinutesA - tMinutesB;
+
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
+}
+
 /**
  * Resolves the display location string for a timeline item in magazine context:
  * 1. If the item has a valid location distinct from empty and from place name, use it.
@@ -99,7 +114,8 @@ function parseDateScore(dateStr?: string): number {
 export function resolveTimelinePlaceName(
   item: TimelineItem,
   allTimelineItemsForTrip: TimelineItem[],
-  parentTrip?: Trip
+  parentTrip?: Trip,
+  alreadySorted = false
 ): string {
   const pName = (item.place || '').trim().toLowerCase();
 
@@ -109,17 +125,7 @@ export function resolveTimelinePlaceName(
   }
 
   // 2. Sort all timeline items chronologically: Date -> Time (in minutes) -> ID
-  const sorted = [...allTimelineItemsForTrip].sort((a, b) => {
-    const dScoreA = parseDateScore(a.date);
-    const dScoreB = parseDateScore(b.date);
-    if (dScoreA !== dScoreB) return dScoreA - dScoreB;
-
-    const tMinutesA = parseTimeToMinutes(a.time);
-    const tMinutesB = parseTimeToMinutes(b.time);
-    if (tMinutesA !== tMinutesB) return tMinutesA - tMinutesB;
-
-    return (Number(a.id) || 0) - (Number(b.id) || 0);
-  });
+  const sorted = alreadySorted ? allTimelineItemsForTrip : sortTimelineChronologically(allTimelineItemsForTrip);
 
   const currentIndex = sorted.findIndex(t => Number(t.id) === Number(item.id));
   

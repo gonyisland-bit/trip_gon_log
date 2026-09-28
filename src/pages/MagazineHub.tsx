@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue } from 'react';
 import { 
   Trip, 
   Plan, 
@@ -33,10 +33,10 @@ import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { IssueCard } from '../components/cards/IssueCard';
 import { MemoryReel } from '../components/reel/MemoryReel';
 import { IssueTextWindow } from '../components/reel/IssueTextWindow';
-import { MagazineSpread } from '../components/magazine/MagazineSpread';
+import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { swipeStart, swipeDirection, SwipeStart } from '../utils/swipe';
 import { Lightbox } from '../components/Lightbox';
-import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
+import { resolveTimelinePlaceName, buildDefaultMagazineSections, sortTimelineChronologically } from '../utils/magazineHelper';
 
 // Helper for minimal date + day format (e.g. 2024.07.19 FRI)
 function formatSimpleDateWithDay(dateStr?: string): string {
@@ -138,21 +138,26 @@ export function MagazineHubPage({
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [magSortBy, setMagSortBy] = useState<'user' | 'newest' | 'oldest' | 'title'>('user');
 
-  // Available Locations for filter dropdown
-  const availableLocations = useMemo(() => {
+  // Available Locations for filter dropdown, with their issue counts
+  const { availableLocations, locationCounts } = useMemo(() => {
+    const counts = new Map<string, number>();
     const locSet = new Set<string>();
     effectiveSections.forEach(s => {
       const loc = (s.heroLocation || '').trim();
       if (loc) locSet.add(loc);
+      if (s.heroLocation) counts.set(s.heroLocation, (counts.get(s.heroLocation) || 0) + 1);
     });
-    return Array.from(locSet).sort();
+    return { availableLocations: Array.from(locSet).sort(), locationCounts: counts };
   }, [effectiveSections]);
+
+  // Typing stays instant; the grid filters a beat behind
+  const deferredSearchQuery = useDeferredValue(magSearchQuery);
 
   // Filtered & Sorted sections
   const filteredSections = useMemo(() => {
     let list = effectiveSections.filter(sec => {
-      if (magSearchQuery.trim()) {
-        const q = magSearchQuery.toLowerCase().trim();
+      if (deferredSearchQuery.trim()) {
+        const q = deferredSearchQuery.toLowerCase().trim();
         const matchesTitle = (sec.title || '').toLowerCase().includes(q);
         const matchesHero = (sec.heroTitle || '').toLowerCase().includes(q);
         const matchesLoc = (sec.heroLocation || '').toLowerCase().includes(q);
@@ -171,7 +176,7 @@ export function MagazineHubPage({
       list = [...list].reverse();
     }
     return list;
-  }, [effectiveSections, magSearchQuery, magLocationFilter, magSortBy]);
+  }, [effectiveSections, deferredSearchQuery, magLocationFilter, magSortBy]);
 
   // Lightbox state for high-res photo viewing
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -267,6 +272,16 @@ export function MagazineHubPage({
     );
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
+
+  // Stable identities so memoized issue cards and the spread don't re-render with the hub
+  const openSectionRef = useRef(handleOpenSection);
+  openSectionRef.current = handleOpenSection;
+  const openSection = useCallback((id: string) => openSectionRef.current(id), []);
+  const openHandlers = useMemo(() => {
+    const map = new Map<string, () => void>();
+    effectiveSections.forEach(sec => map.set(sec.id, () => openSection(sec.id)));
+    return map;
+  }, [effectiveSections, openSection]);
 
   const handleBackToHub = () => {
     setViewMode('hub');
@@ -426,8 +441,23 @@ export function MagazineHubPage({
     return { timelineByUrl: byUrl, timelineById: byId, allTimelineList: list };
   }, [timelineData]);
 
-  // Helper to sync items for any section
-  const getSynchronizedItems = (sec: MagazineSection | null): MagazineItem[] => {
+  const tripById = useMemo(() => new Map(trips.map(t => [t.id, t])), [trips]);
+
+  // Each trip's timeline sorted once, so place resolution doesn't re-sort it per card
+  const sortedTimelineByTrip = useMemo(() => {
+    const grouped = new Map<number | string | undefined, TimelineItem[]>();
+    allTimelineList.forEach(t => {
+      const list = grouped.get(t.tripId);
+      if (list) list.push(t);
+      else grouped.set(t.tripId, [t]);
+    });
+    const sorted = new Map<number | string | undefined, TimelineItem[]>();
+    grouped.forEach((list, key) => sorted.set(key, sortTimelineChronologically(list)));
+    return sorted;
+  }, [allTimelineList]);
+
+  // Sync items for any section
+  const synchronizeItems = (sec: MagazineSection | null): MagazineItem[] => {
     if (!sec || !sec.items) return [];
 
     return [...sec.items]
@@ -452,13 +482,13 @@ export function MagazineHubPage({
         }
 
         const targetTripId = matched?.tripId || item.tripId;
-        const parentTrip = trips.find(t => t.id === targetTripId);
-        const tripTimeline = allTimelineList.filter(t => t.tripId === targetTripId);
+        const parentTrip = targetTripId !== undefined ? tripById.get(targetTripId) : undefined;
 
         if (matched) {
           const pName = matched.place?.trim() || '';
           const jTitle = parentTrip?.title?.replace(/\s*\(Plan\)$/i, '') || '';
-          const resolvedLocation = resolveTimelinePlaceName(matched, tripTimeline, parentTrip);
+          const tripTimeline = sortedTimelineByTrip.get(targetTripId) || [];
+          const resolvedLocation = resolveTimelinePlaceName(matched, tripTimeline, parentTrip, true);
 
           return {
             ...item,
@@ -485,10 +515,25 @@ export function MagazineHubPage({
       });
   };
 
+  // Every section synced once per data change; the hub, preview and issue view all read from here
+  const syncedItemsBySection = useMemo(() => {
+    const map = new Map<string, MagazineItem[]>();
+    effectiveSections.forEach(sec => map.set(sec.id, synchronizeItems(sec)));
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveSections, timelineById, timelineByUrl, allTimelineList, tripById, sortedTimelineByTrip]);
+
+  const getSynchronizedItems = (sec: MagazineSection | null): MagazineItem[] =>
+    sec ? (syncedItemsBySection.get(sec.id) || synchronizeItems(sec)) : [];
+
   // Items for the current active section in Section Detail View
   const sectionItems: MagazineItem[] = useMemo(() => {
     return getSynchronizedItems(currentSection);
-  }, [currentSection, timelineById, timelineByUrl, allTimelineList, trips]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSection, syncedItemsBySection]);
+
+  // O(1) lookups for card numbering and lightbox index
+  const sectionIndexById = useMemo(() => new Map(sectionItems.map((it, i) => [it.id, i])), [sectionItems]);
 
   const [isReelOpen, setIsReelOpen] = useState(false);
 
@@ -496,6 +541,7 @@ export function MagazineHubPage({
   const photoItems = useMemo(() => {
     return sectionItems.filter(item => !item.isTextOnly && !!item.img);
   }, [sectionItems]);
+  const photoIndexById = useMemo(() => new Map(photoItems.map((it, i) => [it.id, i])), [photoItems]);
 
   // Prepare images for Lightbox
   const lightboxImages = useMemo(() => {
@@ -508,11 +554,31 @@ export function MagazineHubPage({
     }));
   }, [photoItems]);
 
-  // Preview items for Hub lower showcase
-  const previewItems: MagazineItem[] = useMemo(() => {
-    const raw = getSynchronizedItems(currentPreviewSection);
-    return raw.filter(it => !it.isTextOnly && Boolean(it.img)).slice(0, 3);
-  }, [currentPreviewSection, timelineById, timelineByUrl, allTimelineList, trips]);
+  // Spread cards for the hub preview, built once per data change
+  const spreadCardsBySection = useMemo(() => {
+    const map = new Map<string, SpreadCard[]>();
+    syncedItemsBySection.forEach((items, secId) => {
+      map.set(secId, items.filter(it => !it.isTextOnly && Boolean(it.img)).slice(0, 3).map((item, i) => {
+        const parentTrip = item.tripId !== undefined ? tripById.get(item.tripId) : undefined;
+        let place = item.placeName || item.location || '';
+        if (!place.trim() || place.trim().toLowerCase() === (item.title || '').trim().toLowerCase()) {
+          place = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
+        }
+        return { key: String(item.id || i), img: item.img, title: item.title, place, date: formatSimpleDateWithDay(item.date) };
+      }));
+    });
+    return map;
+  }, [syncedItemsBySection, tripById]);
+  const previewTitle = currentPreviewSection?.title || 'FEATURED STORIES';
+  const previewHeading = useMemo(() => (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs sm:text-[13px] font-bold tracking-tight text-red-600 dark:text-red-400">Magazine preview</span>
+      <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white">
+        {previewTitle}
+      </h2>
+    </div>
+  ), [previewTitle]);
+  const spreadCardsFor = useCallback((sec: MagazineSection) => spreadCardsBySection.get(sec.id) || [], [spreadCardsBySection]);
 
   // Find linked trip for hero (search trips first, then plans)
   const heroTrip = useMemo(() => {
@@ -588,11 +654,10 @@ export function MagazineHubPage({
       isMatchedHeight?: boolean;
     } = {}
   ) => {
-    const globalIdx = sectionItems.findIndex(x => x.id === item.id);
-    const itemIndex = globalIdx !== -1 ? globalIdx : 0;
+    const itemIndex = sectionIndexById.get(item.id) ?? 0;
     const isLand = isLandscapeItem(item);
     const isTextCard = item.isTextOnly || !item.img;
-    const parentTrip = trips.find(t => t.id === item.tripId);
+    const parentTrip = item.tripId !== undefined ? tripById.get(item.tripId) : undefined;
 
     let visualFrameClass = 'aspect-[3/4] w-full';
     if (options.isMatchedHeight) {
@@ -635,7 +700,7 @@ export function MagazineHubPage({
       displayPlace = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
     }
 
-    const photoIdx = photoItems.findIndex(p => p.id === item.id);
+    const photoIdx = photoIndexById.get(item.id) ?? -1;
     const openLightbox = () => {
       if (photoIdx !== -1) {
         setLightboxIndex(photoIdx);
@@ -891,7 +956,7 @@ export function MagazineHubPage({
                             All ({effectiveSections.length})
                           </button>
                           {availableLocations.map(loc => {
-                            const count = effectiveSections.filter(s => s.heroLocation === loc).length;
+                            const count = locationCounts.get(loc) || 0;
                             return (
                               <button
                                 key={loc}
@@ -965,7 +1030,7 @@ export function MagazineHubPage({
                     subtitle={sec.heroSubtitle || sec.subtitle}
                     location={locationLabel}
                     storyCount={itemCount}
-                    onOpen={() => handleOpenSection(sec.id)}
+                    onOpen={openHandlers.get(sec.id)!}
                   />
                 );
               })}
@@ -980,23 +1045,9 @@ export function MagazineHubPage({
                 sections={effectiveSections}
                 activeId={currentPreviewSection?.id || hubPreviewSectionId}
                 onSelect={setHubPreviewSectionId}
-                cardsFor={(sec) => getSynchronizedItems(sec).filter(it => !it.isTextOnly && Boolean(it.img)).map((item, i) => {
-                  const parentTrip = trips.find(t => t.id === item.tripId);
-                  let place = item.placeName || item.location || '';
-                  if (!place.trim() || place.trim().toLowerCase() === (item.title || '').trim().toLowerCase()) {
-                    place = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
-                  }
-                  return { key: String(item.id || i), img: item.img, title: item.title, place, date: formatSimpleDateWithDay(item.date) };
-                })}
-                onOpen={handleOpenSection}
-                heading={
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs sm:text-[13px] font-bold tracking-tight text-red-600 dark:text-red-400">Magazine preview</span>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white">
-                      {currentPreviewSection?.title || 'FEATURED STORIES'}
-                    </h2>
-                  </div>
-                }
+                cardsFor={spreadCardsFor}
+                onOpen={openSection}
+                heading={previewHeading}
                 ctaLabel="READ FULL"
                 tabIdPrefix="mag-hub-preview-tab"
               />
@@ -1374,6 +1425,8 @@ export function MagazineHubPage({
                             <img
                               src={getEffectiveImageUrl(coverImg)}
                               alt={displayHeroTitle}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
