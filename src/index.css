@@ -1032,7 +1032,34 @@ input[type="range"]:focus-visible {
   --motion-hero: 900ms;
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
   --ease-emphasized: cubic-bezier(.16, 1, .3, 1);
+  /* v1.3: springy settle for presses, pops and landings (falls back to a back-out curve) */
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --motion-stagger: 40ms;
 }
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1);
+  }
+}
+
+/* ── Interactive buttons (v1.3) ── */
+/* Press: a short squeeze that springs back */
+.tgl-press { transition: transform var(--motion-fast) var(--ease-standard); }
+.tgl-press:active { transform: scale(.97); }
+/* Sweep: a red hairline that draws in under text on hover/focus */
+.tgl-sweep { position: relative; }
+.tgl-sweep::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px;
+  background: #dc2626; transform: scaleX(0); transform-origin: left;
+  transition: transform var(--motion-base) var(--ease-emphasized);
+}
+.tgl-sweep:hover::after, .tgl-sweep:focus-visible::after { transform: scaleX(1); }
+/* Pop: an icon swap (plus to check) lands with a small overshoot */
+@keyframes tglPop { 0% { transform: scale(.4) rotate(-90deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.tgl-pop { animation: tglPop var(--motion-emph) var(--ease-spring) both; }
+/* Rise: list items enter in sequence, delayed by --i (capped at 8 steps) */
+@keyframes tglRise { from { opacity: 0; transform: translateY(12px); } }
+.tgl-rise { animation: tglRise var(--motion-emph) var(--ease-emphasized) both; animation-delay: calc(min(var(--i, 0), 8) * var(--motion-stagger)); }
 
 /* ── Hub changes: View Transitions (header stays put, page content cross-fades up) ── */
 .tgl-site-header { view-transition-name: site-header; }

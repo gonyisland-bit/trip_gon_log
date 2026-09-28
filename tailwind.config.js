@@ -33,6 +33,7 @@ export default {
       transitionTimingFunction: {
         standard: 'cubic-bezier(.2, 0, 0, 1)',
         emphasized: 'cubic-bezier(.16, 1, .3, 1)',
+        spring: 'var(--ease-spring)',
       },
     },
   },
