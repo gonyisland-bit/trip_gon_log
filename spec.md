@@ -329,14 +329,15 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [x] **P2 날씨 · 지도**: `WeatherParticleCanvas` · `WeatherGlass`, 지도 황혼 마스크 · 헤어라인 경계선 · 마커 묶음/겹침 해소.
 - [x] **P3 매거진**: 카드 → 이슈 확장 전환, 제목 마스크 오프너(`IssueTextWindow`), Memory Reel, 행 높이 보정. (배경 오브제는 요청으로 제거)
 - [x] **P4 여행지 뽑기**: `DepartureBoard` + `LobbyScene`, 티켓 보관 · 오늘의 티켓(Firestore `users/{uid}/departure/tickets`), 아이콘 독 `QuickActionBar`, 홈 `DepartureTeaser`, 도시 좌표 보충(`cityCoordsSupplement`).
-- [ ] **P5 워크플로우 확장** (다음 작업, 착수 전 계획서 승인 필요):
-  - 예약 지갑: 항공 · 숙소 · 교통 예약을 한 화면에 모으고 체크인 D-day 표시, 딥링크 날짜 · 인원 프리필 강화(`utils/bookingDeepLinks.ts`, `FlightCard` · `StayCard` · `TransitCard`). 빠른 실행 독에 지갑 버튼과 Cmd+K 팔레트 추가.
-  - 여행 중 Today 모드: 현재 시각 진행선, 다음 장소까지 남은 시간, 오늘 동선 애니메이션(여정 상세 타임라인).
-  - 달력 날씨: 캘린더 셀에 여정 일자별 예보 글리프, 날짜 선택 시 날씨 상세(`CalendarHub`, `utils/weatherApi.ts`).
-  - 여정 Remix: 지난 여정에서 장소만 골라 새 여정 초안에 담기(단순 복제 대체).
-  - 인스타 공유 → 포켓: PWA Web Share Target(매니페스트 · 서비스워커 필요), 앱 복귀 시 복사한 링크 감지 제안.
-  - P2에서 남긴 지도 항목: 범례 · 레이어 토글 통합, 모바일 하단 시트, 경계선 현지 시각 · 시간 슬라이더, 줌 단계별 마커 표시, `MapHub.tsx` 파일 분리.
-  - P3에서 남긴 항목: 홈 · 허브 매거진 슬라이드 통합(`MagazineSpread`), 동선 그리기 연출.
+- [x] **P5 워크플로우 확장** (P5-1 ~ P5-7, 단계별 커밋):
+  - P5-1 예약 지갑 `wallet/BookingWallet`(다가오는 여정의 항공 · 숙소 · 교통, 예약별 D-day, 예약번호 복사, 빈 항목 딥링크), `bookingContextFromTrip` 프리필, 독 지갑 버튼, Cmd/Ctrl+K `CommandPalette`(마지막 줄에서 전체 검색 `SearchModal`로 이어짐).
+  - P5-2 Today 모드 `detail/useTodayMode`: 진행 중 여정은 오늘 날짜로 열림, TODAY 바(다음 장소 · 남은 시간), NOW 진행선, 지난 항목 흐림, 지도에 오늘 동선(지난 구간 실선 · 남은 구간 행진 점선). 기기 시각 기준.
+  - P5-3 달력 날씨: 여정 날짜는 그 여정 목적지 날씨, 예보 범위 밖은 평년값을 옅게 표시, 상세에 예보/평년 태그.
+  - P5-4 여정 Remix `RemixSheet`: 장소 · 숙소를 골라 새 계획 생성(시간 · 비용 제외, 출발일부터 연속 배치). 기존 복제 진입점은 모두 Remix로 연결.
+  - P5-5 공유 → 포켓: 매니페스트 `share_target`(GET `/pocket`), `utils/shareTarget`가 부팅 시 링크를 받아 포켓 스크랩으로 연결. 붙여넣기 · SCRAP 버튼은 기존 기능 유지(백그라운드 클립보드 읽기 없음).
+  - P5-6 지도: 데이터 · 헬퍼를 `pages/map/mapData.ts`로 분리, `map/MapLayerPanel`(레이어 · 범례 통합, 데스크톱 팝오버 · 모바일 하단 시트), 낮과 밤 ±12시간 미리 보기 슬라이더, 줌 단계별 핀 묶음 반경과 이름표.
+  - P5-7 매거진: 홈 · 허브 슬라이드를 `magazine/MagazineSpread`로 통합, 이슈 화면에 스크롤로 그려지는 동선 `magazine/RouteSketch`.
+- [ ] **다음 후보**: MapHub 상태 훅 · 섹션 컴포넌트 분리(현재 데이터만 분리), 공유 대상 실기기(안드로이드) 확인, Today 모드 현지 시간대 지원, Remix에 포켓 장소 포함.
 - 작업 메모: 로그인 없이는 허브 화면이 보이지 않아, 검증은 임시 미리보기 페이지(`*-preview.html` + `src/__*Preview.tsx`)로 컴포넌트를 띄워 확인하고 커밋 전에 삭제했습니다. 같은 폴더에서 다른 세션이 5173 포트를 쓰는 경우 `.claude/launch.json`에 5174 포트 설정을 추가해 사용했습니다(이 파일은 저장소에 포함되지 않음).
 
 ## 7. 변경 이력 (Changelog)
@@ -348,3 +349,5 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - 날씨 캔버스 엔진과 Weather Glass, 지도 황혼 그라데이션 · 경계선 · 마커 겹침 개선.
 - 매거진 표지 넘김 진입, 글자 창문 오프너, 스크롤 등장 · 읽기 진행선, Memory Reel.
 - Departure Board 여행지 뽑기, 티켓 보관 · 오늘의 티켓, 빠른 실행 바, 홈 티저.
+- 여행지 뽑기 로비의 낮 · 밤과 날씨 반영, 비행기가 화면 밖으로 퇴장.
+- 예약 지갑 · 명령 팔레트, 여정 Today 모드, 달력 여정 목적지 날씨, 여정 Remix, 공유 대상(포켓), 지도 레이어 패널 · 시간 미리 보기, 매거진 스프레드 통합 · 동선 스케치.
