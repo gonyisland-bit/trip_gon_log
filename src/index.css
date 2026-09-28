@@ -1141,12 +1141,9 @@ input[type="range"]:focus-visible {
 @keyframes tglReelProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes tglReelCaption { from { opacity: 0; transform: translateY(14px); } }
 .tgl-reel-caption { animation: tglReelCaption 700ms var(--ease-emphasized) 200ms both; }
-/* Issue card: the cover swings fully open before the issue view */
-.tgl-issue-card.tgl-issue-opening .tgl-issue-cover {
-  transform: rotateY(-105deg) !important;
-  box-shadow: 30px 10px 40px rgba(0, 0, 0, .3) !important;
-  transition: transform 460ms cubic-bezier(.6, 0, .4, 1), box-shadow 460ms;
-}
+/* Issue opener letters fade in as the card-to-issue stage lifts */
+@keyframes tglOpenerIn { from { opacity: 0; filter: blur(14px); } }
+.tgl-opener-letters { animation: tglOpenerIn 900ms var(--ease-emphasized) 120ms backwards; }
 
 /* Issue view: a red hairline tracks how far you have read */
 .tgl-read-progress { display: none; }

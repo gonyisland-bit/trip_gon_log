@@ -585,7 +585,8 @@ export function MagazineHubPage({
 
     let visualFrameClass = 'aspect-[3/4] w-full';
     if (options.isMatchedHeight) {
-      visualFrameClass = 'aspect-[4/3] md:aspect-[16/10] w-full';
+      // Beside a portrait: take the portrait's height instead of a fixed ratio, so both rows line up
+      visualFrameClass = 'aspect-[4/3] md:aspect-auto md:flex-1 md:min-h-0 w-full';
     } else if (isLand) {
       visualFrameClass = 'aspect-[4/3] md:aspect-[16/10] w-full';
     }
@@ -666,7 +667,7 @@ export function MagazineHubPage({
             alt={displayTitle}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out select-none"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out select-none"
           />
 
           <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -680,11 +681,11 @@ export function MagazineHubPage({
           </div>
         </div>
 
-        <div className={`pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif] ${isLand ? 'px-4 sm:px-8 md:px-0' : ''}`}>
+        <div className={`pt-3.5 ${options.isMatchedHeight ? 'flex-none' : 'flex-1'} flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif] ${isLand ? 'px-4 sm:px-8 md:px-0' : ''}`}>
           <div className="flex flex-col">
             <h3
               onClick={openLightbox}
-              className="text-base sm:text-lg md:text-xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors cursor-pointer"
+              className="text-base sm:text-lg md:text-xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug md:min-h-[2.75em] group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors cursor-pointer"
             >
               {displayTitle}
             </h3>
@@ -1190,19 +1191,88 @@ export function MagazineHubPage({
           {/* Reading progress for the open issue */}
           <div aria-hidden className="tgl-read-progress" />
 
-          {/* 2-0. OPENER: the place name as a window onto the cover photo (v1.3) */}
-          {currentSection?.heroImg && (
-            <IssueTextWindow
-              key={currentSection.id}
-              word={(currentSection.heroLocation || currentSection.heroTitle || currentSection.title).split(/[,·/|]/)[0].trim()}
-              img={getEffectiveImageUrl(currentSection.heroImg)}
-              eyebrow={`NO. ${String(effectiveSections.findIndex(s => s.id === currentSection.id) + 1).padStart(2, '0')}${currentSection.heroDate ? ' · ' + currentSection.heroDate : ''}`}
-              caption={currentSection.heroSubtitle || currentSection.subtitle}
-            />
-          )}
+          {/* 2-0. OPENER + HERO: the magazine title as a window onto the cover photo, then the hero details (v1.3) */}
+          {currentSection?.heroImg && (() => {
+            const issueNo = String(effectiveSections.findIndex(s => s.id === currentSection.id) + 1).padStart(2, '0');
+            return (
+              <IssueTextWindow
+                key={currentSection.id}
+                word={currentSection.title}
+                img={getEffectiveImageUrl(currentSection.heroImg)}
+                eyebrow={`NO. ${issueNo}${currentSection.heroDate ? ' · ' + currentSection.heroDate : ''}`}
+                onTouchStart={handleHeroTouchStart}
+                onTouchEnd={handleHeroTouchEnd}
+                overlay={
+                  <>
+                    {effectiveSections.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handlePrevSection(); }}
+                          className="tgl-press tap-target absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+                          aria-label="이전 매거진"
+                        >
+                          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleNextSection(); }}
+                          className="tgl-press tap-target absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+                          aria-label="다음 매거진"
+                        >
+                          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      </>
+                    )}
 
-          {/* 2-1. HERO SECTION (Editorial Large Hero Banner with Typography) */}
-          {currentSection && (
+                    <div className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-[21%] flex flex-col gap-2.5 sm:gap-3 text-white max-w-4xl">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-micro sm:text-meta tracking-widest uppercase text-white/85">
+                        <span className="bg-white text-black font-extrabold px-2 py-0.5">ISSUE N°{issueNo}</span>
+                        {currentSection.heroDate && <span>{currentSection.heroDate}</span>}
+                        {currentSection.heroLocation && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-red-400" />{currentSection.heroLocation}</span>}
+                        <span>{currentSection.items?.length || 0} STORIES</span>
+                      </div>
+                      <h1 className="text-3xl sm:text-5xl md:text-6xl font-satoshi font-light tracking-tight leading-[1.05] uppercase break-keep">
+                        {currentSection.title}
+                      </h1>
+                      {(currentSection.heroSubtitle || currentSection.subtitle) && (
+                        <p className="max-w-2xl text-sm sm:text-base text-white/85 leading-relaxed break-keep line-clamp-2">
+                          {currentSection.heroSubtitle || currentSection.subtitle}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">
+                        {photoItems.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setIsReelOpen(true)}
+                            className="tgl-press group/reel inline-flex items-center gap-3 h-10 pl-1.5 pr-4 rounded-full bg-white text-black hover:bg-red-600 hover:text-white transition-colors duration-base cursor-pointer"
+                          >
+                            <span className="w-7 h-7 rounded-full bg-black text-white group-hover/reel:bg-white group-hover/reel:text-red-600 flex items-center justify-center transition-colors duration-base">
+                              <Play className="w-3.5 h-3.5 fill-current translate-x-[1px]" />
+                            </span>
+                            <span className="font-mono text-meta font-bold uppercase tracking-widest">Memory Reel · {photoItems.length}</span>
+                          </button>
+                        )}
+                        {heroTrip && (
+                          <button
+                            type="button"
+                            onClick={() => onNavigate('detail', heroTrip.id)}
+                            className="tgl-sweep inline-flex items-center gap-2 text-xs sm:text-sm font-mono font-bold uppercase tracking-widest text-white cursor-pointer"
+                          >
+                            <span className="truncate max-w-[60vw]">{heroTrip.title}</span>
+                            <ArrowRight className="w-4 h-4 shrink-0" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                }
+              />
+            );
+          })()}
+
+          {/* 2-1. HERO SECTION (issues without a cover photo) */}
+          {currentSection && !currentSection.heroImg && (
             <section 
               onTouchStart={handleHeroTouchStart}
               onTouchEnd={handleHeroTouchEnd}
@@ -1558,11 +1628,11 @@ export function MagazineHubPage({
                 )}
               </div>
             ) : (
-              <div className="flex flex-col gap-10 sm:gap-14">
+              <div className="flex flex-col gap-10 md:gap-12">
                 {magazineRows.map((row, rowIdx) => {
                   if (row.type === 'PPP') {
                     return (
-                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 md:gap-x-10 md:gap-y-0 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[2], { spanClass: 'md:col-span-1' })}
@@ -1571,7 +1641,7 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'PL') {
                     return (
-                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 md:gap-x-10 md:gap-y-0 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-2', isMatchedHeight: true })}
                       </div>
@@ -1579,7 +1649,7 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'LP') {
                     return (
-                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 md:gap-x-10 md:gap-y-0 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-2', isMatchedHeight: true })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                       </div>
@@ -1587,7 +1657,7 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'LL') {
                     return (
-                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10 md:gap-x-10 md:gap-y-0 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                       </div>
@@ -1595,14 +1665,14 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'SINGLE_LANDSCAPE') {
                     return (
-                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10 md:gap-x-10 md:gap-y-0 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                       </div>
                     );
                   }
                   if (row.type === 'PP') {
                     return (
-                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 md:gap-x-10 md:gap-y-0 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                       </div>
@@ -1610,7 +1680,7 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'SINGLE_PORTRAIT') {
                     return (
-                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 md:gap-x-10 md:gap-y-0 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                       </div>
                     );

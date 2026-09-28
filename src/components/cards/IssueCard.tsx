@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { prefersReducedMotion } from '../../motion';
 import { BookOpen } from 'lucide-react';
 
@@ -18,13 +18,49 @@ interface IssueCardProps {
 }
 
 export function IssueCard({ coverImg, issueNumber, dateLabel, title, subtitle, location, storyCount, index = 0, onOpen }: IssueCardProps) {
-  // The cover swings open on its spine before the issue opens
+  // Opening: the cover grows from its place in the grid to fill the screen and
+  // dims to black, which is exactly where the issue opener starts.
+  const coverRef = useRef<HTMLDivElement>(null);
   const [opening, setOpening] = useState(false);
   const open = () => {
     if (opening) return;
-    if (prefersReducedMotion()) { onOpen(); return; }
+    const cover = coverRef.current;
+    if (prefersReducedMotion() || !cover) { onOpen(); return; }
     setOpening(true);
-    window.setTimeout(onOpen, 460);
+    const r = cover.getBoundingClientRect();
+    const stage = document.createElement('div');
+    Object.assign(stage.style, {
+      position: 'fixed', left: '0', top: '0', width: '100vw', height: '100vh', zIndex: '150',
+      background: '#000', pointerEvents: 'none', overflow: 'hidden',
+      clipPath: `inset(${r.top}px ${window.innerWidth - r.right}px ${window.innerHeight - r.bottom}px ${r.left}px)`,
+    });
+    const photo = document.createElement('img');
+    photo.src = coverImg;
+    Object.assign(photo.style, { position: 'absolute', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', objectFit: 'cover' });
+    if (coverImg) stage.appendChild(photo);
+    document.body.appendChild(stage);
+
+    const ease = 'cubic-bezier(.7, 0, .2, 1)';
+    const grow = stage.animate([{}, { clipPath: 'inset(0px 0px 0px 0px)' }], { duration: 560, easing: ease, fill: 'forwards' });
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const s = Math.max(vw / r.width, vh / r.height);
+    const toCenter = `translate(${vw / 2 - (r.left + r.width / 2)}px, ${vh / 2 - (r.top + r.height / 2)}px) scale(${s})`;
+    photo.animate(
+      [
+        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+        { transform: toCenter, opacity: 0.25, offset: 0.8 },
+        { transform: toCenter, opacity: 0 },
+      ],
+      { duration: 560, easing: ease, fill: 'forwards' }
+    );
+    grow.finished.then(() => {
+      onOpen();
+      // Let the issue paint under the black stage, then lift the stage
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        stage.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, easing: 'cubic-bezier(.2, 0, 0, 1)', fill: 'forwards' })
+          .finished.finally(() => stage.remove());
+      }));
+    }).catch(() => { stage.remove(); onOpen(); });
   };
 
   return (
@@ -33,14 +69,14 @@ export function IssueCard({ coverImg, issueNumber, dateLabel, title, subtitle, l
       onKeyDown={(e) => { if (e.key === 'Enter') open(); }}
       tabIndex={0}
       aria-label={`NO. ${issueNumber} ${title}`}
-      className={`tgl-issue-card tgl-rise group ${opening ? 'tgl-issue-opening' : ''} relative pr-2.5 pb-2.5 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-[#141414]`}
+      className={`tgl-issue-card tgl-rise group ${opening ? 'pointer-events-none' : ''} relative pr-2.5 pb-2.5 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-[#141414]`}
       style={{ '--i': index } as React.CSSProperties}
     >
       {/* Sheets behind the cover */}
       <div aria-hidden className="absolute left-2.5 top-2.5 right-0 bottom-0 border border-black/15 dark:border-white/20 bg-white dark:bg-[#1A1A1A]" />
       <div aria-hidden className="absolute left-1.5 top-1.5 right-1 bottom-1 border border-black/15 dark:border-white/20 bg-white dark:bg-[#1A1A1A]" />
 
-      <div className="tgl-issue-cover relative aspect-[3/4] w-full overflow-hidden bg-zinc-900 text-white">
+      <div ref={coverRef} className="tgl-issue-cover relative aspect-[3/4] w-full overflow-hidden bg-zinc-900 text-white">
         {coverImg ? (
           <img src={coverImg} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
