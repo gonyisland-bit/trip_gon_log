@@ -194,6 +194,13 @@
 - 토큰: `duration-fast`(120ms), `duration-base`(220ms), `duration-emph`(420ms), `duration-hero`(900ms+) / `ease-standard`, `ease-emphasized`.
 - 허브 간 이동은 View Transition으로 교차 전환합니다(헤더 고정). 여정 상세 탭은 활성 블록이 미끄러져 이동합니다. Trip Guide 목적지가 바뀌면 이름이 롤링되고 헤더에 빨간 선이 스칩니다. 타임라인 날짜 헤더는 스크롤에 맞춰 드러나고, 요약 숫자는 0에서 올라갑니다.
 - `prefers-reduced-motion`이면 모든 애니메이션과 전환을 즉시 처리합니다.
+- v1.3 추가 토큰: `ease-spring`(스프링 안착), `--motion-stagger`(40ms). 인터랙션 클래스: `tgl-press`(누름 축소), `tgl-sweep`(레드 밑줄), `tgl-pop`(아이콘 교체), `tgl-rise`(순차 등장). 헬퍼: `src/motion/`(공유 요소 전환, fly-to, bump).
+
+### 4.9 카드 (v1.3)
+- 여정(`JourneyCard`): 사진 좌상단에 대형 연도와 월. 사진 아래 기간 → 타이틀 → 멘트 → 헤어라인 아래 장소. 계획 여정은 흑백 + 점선 테두리 + 앰버 D-day(출발 30일 전부터 컬러 복원). 목록은 전체 정렬 유지.
+- 매거진(`IssueCard`): 3:4 표지가 카드 전체, 뒤에 종이 2장. 호버 시 표지가 책등을 축으로 열림.
+- 포켓: 분류 라벨, 장소명 → 위치 → 메모, 하단 왼쪽 좋아요 · 댓글 말풍선 · 출처, 오른쪽 아래 여정 추가 버튼.
+- 홈 상단 `JourneyPhaseStrip`: 여행 중 LIVE, 출발 60일 이내 D-n, 그 외 지난 해 같은 주의 여정 회상.
 
 ---
 
@@ -293,3 +300,10 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [ ] 여정 링크 공유 시 비회원 전용 읽기 모드(Guest Read-only Mode) 최적화.
 - [ ] 여행 경비 영수증 다중 파일 실시간 OCR 정산 모듈 고도화.
 - [ ] 날씨 API 실시간 연동을 통한 여정 일자별 예보 자동 업데이트.
+
+## 7. 변경 이력 (Changelog)
+
+### v1.3.0 (2026.09.28)
+- 버전 단일 소스(package.json)와 버전 관리 지침 추가.
+- 모션 토큰 v2와 인터랙션 클래스, `src/motion/` 헬퍼.
+- 여정 · 매거진 · 포켓 카드 리디자인, 홈 상단 시점별 모듈.
