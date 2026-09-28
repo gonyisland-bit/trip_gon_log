@@ -154,7 +154,11 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                   <span className="text-black/60 dark:text-white/60">{todayMode.lastPassedId !== null ? '오늘 일정을 모두 지났습니다.' : '오늘은 시간이 정해진 일정이 없습니다.'}</span>
                 )}
               </span>
-              <span className="font-mono text-meta font-bold tabular-nums shrink-0">{todayMode.nowLabel}</span>
+              <span className="font-mono text-meta font-bold tabular-nums shrink-0" title={todayMode.offsetLabel ? '여행지 현지 시각' : undefined}>
+                {todayMode.offsetLabel && <span className="font-normal text-black/55 dark:text-white/55">현지 </span>}
+                {todayMode.nowLabel}
+                {todayMode.offsetLabel && <span className="ml-1 font-normal text-black/55 dark:text-white/55">{todayMode.offsetLabel}</span>}
+              </span>
             </div>
           )}
 

@@ -29,6 +29,7 @@ import {
 } from './detailUtils';
 import { notify, confirmDialog } from '../../utils/feedback';
 import { useTodayMode, useOpenOnToday } from './useTodayMode';
+import { findCountryForGroup, COUNTRY_TIMEZONE_MAP } from '../map/mapData';
 
 export interface JourneyDetailPageProps {
   isLoggedIn: boolean;
@@ -1826,7 +1827,17 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   }, [baseTimeline, selectedDate]);
 
   // Today mode: a live journey opens on today and tracks the clock
-  const todayMode = useTodayMode(allTripDates, currentTimeline);
+  // The journey's own time zone, found from its country, city or coordinates
+  const tripTimeZone = useMemo(() => {
+    if (!tripToUse) return null;
+    const parts = (tripToUse.locationStr || '').split(',').map(p => p.trim()).filter(Boolean);
+    const city = tripToUse.locations?.[0]?.name || parts[0];
+    const country = tripToUse.country || tripToUse.locations?.[0]?.country || parts[parts.length - 1];
+    const coords = typeof tripToUse.lat === 'number' && typeof tripToUse.lng === 'number' ? { lat: tripToUse.lat, lng: tripToUse.lng } : undefined;
+    const found = findCountryForGroup(country, city, coords);
+    return found ? COUNTRY_TIMEZONE_MAP[found.code] || null : null;
+  }, [tripToUse]);
+  const todayMode = useTodayMode(allTripDates, currentTimeline, tripTimeZone);
   useOpenOnToday(tripToUse?.id, todayMode.todayKey, selectedDate, setSelectedDate, !!searchFocusTab || isEditing);
 
   // Handle pending detail jump (e.g. from Magazine moment click on Home page)
