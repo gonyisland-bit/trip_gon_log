@@ -15,7 +15,7 @@ import { collection, doc, setDoc, deleteDoc, getDoc, onSnapshot } from 'firebase
 import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem, cleanCityDisplayName } from '../utils/weatherApi';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
-import { WORLD_CITIES } from '../data/worldDestinations';
+import { WORLD_CITIES, findCityByNameOrAlias } from '../data/worldDestinations';
 import { confirmDialog } from '../utils/feedback';
 
 export interface CalendarWeatherCity {
@@ -516,6 +516,7 @@ export function CalendarHubPage({
     dateStr: string;
     city: CalendarWeatherCity;
     weather: DailyForecastItem;
+    isForecast?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -706,6 +707,57 @@ export function CalendarHubPage({
     }[];
   }, [trips, plans]);
 
+  // P5-3: each journey's destination, so its days show the weather where the journey is
+  const journeyWeatherCities = useMemo(() => {
+    return parsedJourneys.map(({ journey, range }) => {
+      const names = [journey.locations?.[0]?.name, (journey.locationStr || '').split(',')[0], journey.country].filter(Boolean) as string[];
+      let city: CalendarWeatherCity | null = null;
+      for (const n of names) {
+        const found = findCityByNameOrAlias(n);
+        if (found) {
+          city = { name: found.nameKo, nameEn: found.nameEn.toUpperCase(), country: found.countryEn, lat: found.lat, lng: found.lng, timezone: 'UTC' };
+          break;
+        }
+      }
+      if (!city && typeof journey.lat === 'number' && typeof journey.lng === 'number' && (journey.lat || journey.lng)) {
+        const label = cleanCityDisplayName(names[0] || journey.title);
+        city = { name: label, nameEn: label.toUpperCase(), country: journey.country || '', lat: journey.lat, lng: journey.lng, timezone: 'UTC' };
+      }
+      return city ? { tripId: journey.id, range, city } : null;
+    }).filter(Boolean) as { tripId: number; range: { start: string; end: string }; city: CalendarWeatherCity }[];
+  }, [parsedJourneys]);
+
+  // Forecasts (about five days ahead) for journeys under way or starting soon; fetchCityWeather caches per day
+  const [journeyForecasts, setJourneyForecasts] = useState<Record<number, CityWeatherData>>({});
+  useEffect(() => {
+    if (!isWeatherMode) return;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const t = new Date();
+    const from = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+    const u = new Date(t.getTime() + 6 * 86400000);
+    const to = `${u.getFullYear()}-${pad(u.getMonth() + 1)}-${pad(u.getDate())}`;
+    let cancelled = false;
+    journeyWeatherCities
+      .filter(j => j.range.end >= from && j.range.start <= to)
+      .forEach(j => {
+        fetchCityWeather(j.city.lat, j.city.lng, j.city.timezone, j.city.nameEn, j.city.country)
+          .then(data => { if (!cancelled) setJourneyForecasts(prev => ({ ...prev, [j.tripId]: data })); })
+          .catch(() => {});
+      });
+    return () => { cancelled = true; };
+  }, [isWeatherMode, journeyWeatherCities]);
+
+  // The weather to show for a date: the journey's destination on its days, otherwise the chosen city
+  const weatherForDate = useCallback((dateStr: string): { weather: DailyForecastItem; city: CalendarWeatherCity; isForecast: boolean } => {
+    const j = journeyWeatherCities.find(x => dateStr >= x.range.start && dateStr <= x.range.end);
+    if (j) {
+      const exact = journeyForecasts[j.tripId]?.forecast?.find(f => f.date === dateStr);
+      return { weather: exact || getSimulatedWeatherForDate(j.city.nameEn, dateStr), city: j.city, isForecast: !!exact };
+    }
+    const exact = cityWeatherData?.forecast?.find(f => f.date === dateStr);
+    return { weather: exact || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, dateStr), city: selectedWeatherCity, isForecast: !!exact };
+  }, [journeyWeatherCities, journeyForecasts, cityWeatherData, selectedWeatherCity]);
+
   // 현재 연도의 한국 공휴일 계산 (메모이제이션)
   const currentHolidays = useMemo(() => {
     return getKoreanHolidays(currentYear);
@@ -743,13 +795,13 @@ export function CalendarHubPage({
 
     // 날씨 모드인 경우 오늘 날씨 항목으로 선택 동기화하여 날씨 선택 링과 카드가 오늘로 즉시 이동
     if (isWeatherMode) {
-      const exact = cityWeatherData?.forecast?.find(f => f.date === todayStr);
-      const w = exact || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, todayStr);
+      const { weather: w, city: wCity, isForecast } = weatherForDate(todayStr);
       if (w) {
         setSelectedWeatherDay({
           dateStr: todayStr,
-          city: selectedWeatherCity,
-          weather: w
+          city: wCity,
+          weather: w,
+          isForecast
         });
         window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', {
           detail: { weatherCode: w.weatherCode, precipitationProb: w.precipitationProb }
@@ -1349,8 +1401,7 @@ export function CalendarHubPage({
         setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
         setDragAnchorDate(cell.dateStr);
 
-        const exact = cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
-        const w = exact || (isWeatherMode ? getSimulatedWeatherForDate(selectedWeatherCity.nameEn, cell.dateStr) : undefined);
+        const w = isWeatherMode ? weatherForDate(cell.dateStr).weather : cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
 
         if (w) {
           window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', {
@@ -1387,13 +1438,13 @@ export function CalendarHubPage({
 
     // 날씨 모드일 때 클릭한 일자의 상세 일기예보 데이터 세팅
     if (isWeatherMode && cell.isCurrentMonth) {
-      const exact = cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
-      const w = exact || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, cell.dateStr);
+      const { weather: w, city: wCity, isForecast } = weatherForDate(cell.dateStr);
       if (w) {
         setSelectedWeatherDay({
           dateStr: cell.dateStr,
-          city: selectedWeatherCity,
-          weather: w
+          city: wCity,
+          weather: w,
+          isForecast
         });
         window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', {
           detail: { weatherCode: w.weatherCode, precipitationProb: w.precipitationProb }
@@ -2393,8 +2444,7 @@ export function CalendarHubPage({
                     >
                       {/* Weather Mode 3-Tier Layout (실시간 예보는 OpenWeatherMap 사용, 타월/예보외 구간은 실제 기후 통계 시뮬레이터 연동) */}
                       {isWeatherMode && cell.isCurrentMonth ? (() => {
-                        const exact = cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
-                        const weatherItem = exact || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, cell.dateStr);
+                        const { weather: weatherItem, isForecast } = weatherForDate(cell.dateStr);
 
                         if (!weatherItem) {
                           return <span className={textClasses}>{cell.dayNum}</span>;
@@ -2419,7 +2469,7 @@ export function CalendarHubPage({
                             </span>
 
                             {/* 2. 중앙 메인: 날씨 아이콘 */}
-                            <div className="my-auto flex items-center justify-center">
+                            <div className={`my-auto flex items-center justify-center ${isForecast ? '' : 'opacity-60'}`}>
                               <WeatherIconComponent className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
                                 isOrangeBg 
                                   ? 'text-white stroke-[2.4] drop-shadow-xs' 
@@ -2505,6 +2555,9 @@ export function CalendarHubPage({
                         </span>
                         <span className="text-meta font-bold text-red-600 dark:text-red-400 uppercase truncate">
                           {selectedWeatherDay.city.name} ({selectedWeatherDay.city.nameEn})
+                        </span>
+                        <span className="shrink-0 text-micro font-bold uppercase tracking-widest px-1 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60">
+                          {selectedWeatherDay.isForecast ? '예보' : '평년'}
                         </span>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-black/60 dark:text-white/60 mt-0.5 truncate">
@@ -2898,8 +2951,8 @@ export function CalendarHubPage({
                       const hasNextTrip = day.hasTrip && dIdx < m.days.length - 1 && m.days[dIdx + 1]?.hasTrip && (!day.tripId || !m.days[dIdx + 1]?.tripId || day.tripId === m.days[dIdx + 1]?.tripId);
 
                       // 날씨 데이터 획득 (예보 및 기후 통계 시뮬레이터)
-                      const exactWeather = isWeatherMode ? cityWeatherData?.forecast?.find(f => f.date === day.dateStr) : null;
-                      const cellWeather = isWeatherMode ? (exactWeather || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, day.dateStr)) : null;
+                      const cellForecast = isWeatherMode ? weatherForDate(day.dateStr) : null;
+                      const cellWeather = cellForecast?.weather ?? null;
                       const weatherMeta = cellWeather ? getWeatherMeta(cellWeather.weatherCode, cellWeather.precipitationProb) : null;
                       const WeatherIcon = weatherMeta?.icon;
 
@@ -2998,7 +3051,7 @@ export function CalendarHubPage({
                                 }`}>
                                   {day.dayNum}
                                 </span>
-                                <WeatherIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${
+                                <WeatherIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${cellForecast?.isForecast ? '' : 'opacity-60'} ${
                                   day.hasTrip
                                     ? 'text-white stroke-[2.4]'
                                     : day.isToday
