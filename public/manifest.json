@@ -25,5 +25,14 @@
       "sizes": "32x32",
       "type": "image/png"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/pocket",
+    "method": "GET",
+    "params": {
+      "title": "share_title",
+      "text": "share_text",
+      "url": "share_url"
+    }
+  }
 }

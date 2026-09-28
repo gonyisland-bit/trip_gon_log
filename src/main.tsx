@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
+import { captureSharedLink } from './utils/shareTarget'
+
+// A link shared into the installed app (Android share sheet) lands on /pocket?share_url=…
+captureSharedLink()
 
 // Global suppression for Pinterest extension on all images
 if (typeof document !== 'undefined') {

@@ -16,6 +16,7 @@ import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
 import { PocketScrapModal } from '../components/PocketScrapModal';
 import { POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG } from '../components/QuickActionBar';
+import { takeSharedLink } from '../utils/shareTarget';
 import { scrapeSnsMetadata, ScrapedSpotData, inferCategory, detectCityAndCountry } from '../utils/snsScraper';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
@@ -281,8 +282,13 @@ export function PocketHubPage({
   const [scrapedResult, setScrapedResult] = useState<ScrapedSpotData | null>(null);
   const [isScrapModalOpen, setIsScrapModalOpen] = useState<boolean>(false);
 
-  // Quick action "킵하기": open the scrap sheet on arrival, or right away when already here
+  // Quick action "킵하기": open the scrap sheet on arrival, or right away when already here.
+  // A link shared into the app from another one goes straight to the scrap flow.
   useEffect(() => {
+    const shared = takeSharedLink();
+    if (shared) {
+      handleQuickScrapSubmit(shared);
+    }
     try {
       if (sessionStorage.getItem(POCKET_OPEN_SCRAP_FLAG) === '1') {
         sessionStorage.removeItem(POCKET_OPEN_SCRAP_FLAG);
