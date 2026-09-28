@@ -8,6 +8,7 @@ import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
 import { QuickActionBar, OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './components/QuickActionBar';
 import { TOGGLE_PALETTE_EVENT, OPEN_REMIX_EVENT, openRemix } from './app/layerEvents';
+import { getSavedPockets } from './utils/pocketStorage';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
@@ -737,6 +738,10 @@ function App() {
                 journey={source}
                 timeline={timeline}
                 stays={staysByTrip[source.id] || []}
+                pockets={(() => {
+                  const city = ((source.locations?.[0]?.name || source.locationStr || '').split(',')[0] || '').trim().toLowerCase();
+                  return getSavedPockets().filter(p => p.tripId === source.id || (!!city && (p.city || '').trim().toLowerCase() === city));
+                })()}
                 onClose={() => setRemixSourceId(null)}
                 onCreate={(payload) => handleRemixJourney(source.id, payload)}
               />

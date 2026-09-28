@@ -1754,6 +1754,7 @@ export function useAppState() {
     const dotted = (d: Date) => `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
     const start = new Date(`${payload.startDate}T00:00:00`);
     const dayCount = Math.max(1, payload.days.length);
+    const pocketDay = Math.min(Math.max(0, payload.pocketDay || 0), dayCount - 1);
     const end = new Date(start);
     end.setDate(end.getDate() + dayCount - 1);
     const dateRange = dayCount > 1 ? `${dotted(start)} - ${dotted(end).slice(5)}` : dotted(start);
@@ -1799,6 +1800,17 @@ export function useAppState() {
             cost: '-', vehicleType: item.vehicleType ?? null,
           }));
         });
+      });
+      payload.pockets.forEach((p, i) => {
+        const day = new Date(start);
+        day.setDate(day.getDate() + pocketDay);
+        const id = newId + 800000 + i;
+        batch.set(doc(db, 'users', 'public', 'timeline', String(id)), cleanForFirestore({
+          id, date: dotted(day), tripId: newId,
+          time: '', type: p.category === 'food' || p.category === 'cafe' ? 'food' : 'activity',
+          place: p.title, title: p.title, location: p.address || p.title, lat: p.lat, lng: p.lng,
+          memo: p.memo || '', link: p.linkUrl || p.sourceUrl, img: p.thumbnailUrl || null, cost: '-',
+        }));
       });
       payload.stays.forEach((st, i) => {
         const id = newId + 900000 + i;
