@@ -8,6 +8,7 @@ import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
 import { QuickActionBar, OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './components/QuickActionBar';
 import { TOGGLE_PALETTE_EVENT } from './components/CommandPalette';
+import { OPEN_REMIX_EVENT, openRemix } from './components/RemixSheet';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
@@ -38,6 +39,7 @@ import { useAppState } from './app/useAppState';
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
 const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
 const CommandPalette = lazyWithRetry(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
+const RemixSheet = lazyWithRetry(() => import('./components/RemixSheet').then(m => ({ default: m.RemixSheet })));
 
 // A departure date for the Trip Guide: a week out this month, otherwise the first Friday of the month
 function departureDate(year: number, month: number): string {
@@ -81,21 +83,25 @@ function App() {
     handleConfirmDeleteJourney, handleRestoreJourney, handlePermanentDeleteJourney,
     handleDeleteMagazineSection, handleRestoreMagazineSection, handlePermanentDeleteMagazineSection,
     handleBatchPermanentDelete, activeFlights, activeStays, activeTransits, existingTags,
-    isHomeGradientActive, appGradientStyle, handleCycleNightMode
+    isHomeGradientActive, appGradientStyle, handleCycleNightMode, handleRemixJourney
   } = s;
 
   const [isDepartureOpen, setIsDepartureOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
+  const [remixSourceId, setRemixSourceId] = useState<number | null>(null);
   useEffect(() => {
     const openDeparture = () => setIsDepartureOpen(true);
     const openWallet = () => setIsWalletOpen(true);
     const togglePalette = () => setIsPaletteOpen(v => !v);
+    const openRemixSheet = (e: Event) => { const id = (e as CustomEvent<number>).detail; if (typeof id === 'number') setRemixSourceId(id); };
     window.addEventListener(OPEN_DEPARTURE_EVENT, openDeparture);
     window.addEventListener(OPEN_WALLET_EVENT, openWallet);
     window.addEventListener(TOGGLE_PALETTE_EVENT, togglePalette);
+    window.addEventListener(OPEN_REMIX_EVENT, openRemixSheet);
     return () => {
+      window.removeEventListener(OPEN_REMIX_EVENT, openRemixSheet);
       window.removeEventListener(OPEN_DEPARTURE_EVENT, openDeparture);
       window.removeEventListener(OPEN_WALLET_EVENT, openWallet);
       window.removeEventListener(TOGGLE_PALETTE_EVENT, togglePalette);
@@ -280,8 +286,8 @@ function App() {
                     plans={plans} 
                     handleMoveToArchive={handleMoveToArchive}
                     onMoveToPlans={handleMoveToPlans}
-                    onCloneTrip={handleCloneJourney}
-                    onClonePlan={handleCloneJourney}
+                    onCloneTrip={openRemix}
+                    onClonePlan={openRemix}
                     homeTitle={homeTitle}
                     homeSubtitle={homeSubtitle}
                     heroJourneyIds={heroJourneyIds}
@@ -334,7 +340,7 @@ function App() {
                     isLoggedIn={isLoggedIn}
                     onDeleteTrip={handleDeleteJourney}
                     onEditTrip={(id) => setEditingTripId(id)}
-                    onCloneTrip={handleCloneJourney}
+                    onCloneTrip={openRemix}
                     onMoveToPlans={handleMoveToPlans}
                     onMoveToArchive={handleMoveToArchive}
                     onReorderTrips={async (orderedIds) => {
@@ -377,7 +383,7 @@ function App() {
                     onNavigate={navigateTo}
                     onSaveTrip={handleEditTripSave}
                     onDeleteTrip={handleDeleteJourney}
-                    onCloneTrip={handleCloneJourney}
+                    onCloneTrip={openRemix}
                     onMoveToPlans={handleMoveToPlans}
                     onMoveToArchive={handleMoveToArchive}
                     onReorderTrips={async (orderedIds) => {
@@ -719,6 +725,26 @@ function App() {
           </Suspense>
         )}
 
+        {/* Journey Remix: pick places from a journey into a new plan (v1.3 P5) */}
+        {remixSourceId !== null && isLoggedIn && (() => {
+          const source = [...trips, ...plans].find(j => j.id === remixSourceId);
+          if (!source) return null;
+          const timeline = Object.entries(timelineData || {}).flatMap(([d, list]) =>
+            (list || []).filter(i => i.tripId === source.id).map(i => ({ ...i, date: i.date || d }))
+          );
+          return (
+            <Suspense fallback={null}>
+              <RemixSheet
+                journey={source}
+                timeline={timeline}
+                stays={staysByTrip[source.id] || []}
+                onClose={() => setRemixSourceId(null)}
+                onCreate={(payload) => handleRemixJourney(source.id, payload)}
+              />
+            </Suspense>
+          );
+        })()}
+
         {/* Command palette: Cmd/Ctrl+K (v1.3 P5) */}
         {isPaletteOpen && isLoggedIn && (
           <Suspense fallback={null}>
@@ -733,6 +759,7 @@ function App() {
               onKeepPlace={keepPlace}
               onCycleNightMode={handleCycleNightMode}
               onFullSearch={(q) => { setSearchInitialQuery(q); setIsSearchOpen(true); }}
+              onRemix={openRemix}
             />
           </Suspense>
         )}

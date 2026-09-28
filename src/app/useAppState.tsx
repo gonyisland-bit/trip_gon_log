@@ -27,6 +27,7 @@ import {
   NightModeSetting, isNightTimeNow, runViewTransition
 } from './appUtils';
 import { notify } from '../utils/feedback';
+import type { RemixPayload } from '../components/RemixSheet';
 
 export function useAppState() {
   const [initialNavState] = useState(() => getInitialNavigationState());
@@ -1733,6 +1734,84 @@ export function useAppState() {
     }
   };
 
+  // Journey Remix (P5-4): a new plan made of places and stays picked from another journey
+  const handleRemixJourney = async (sourceId: number, payload: RemixPayload) => {
+    const user = auth.currentUser;
+    if (!isLoggedIn || !user) { notify('로그인 후 이용 가능합니다.'); return; }
+    const source = [...trips, ...plans].find(j => j.id === sourceId);
+    if (!source) { notify('여정을 찾을 수 없습니다.'); return; }
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dotted = (d: Date) => `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+    const start = new Date(`${payload.startDate}T00:00:00`);
+    const dayCount = Math.max(1, payload.days.length);
+    const end = new Date(start);
+    end.setDate(end.getDate() + dayCount - 1);
+    const dateRange = dayCount > 1 ? `${dotted(start)} - ${dotted(end).slice(5)}` : dotted(start);
+
+    const newId = Date.now();
+    const newPlan: any = {
+      id: newId,
+      title: payload.title,
+      date: dateRange,
+      tags: [...(source.tags || []).filter(t => t !== 'Plan' && t !== 'plan'), 'Plan'],
+      img: source.img,
+      mapImg: source.mapImg,
+      locationStr: source.locationStr,
+      lat: source.lat,
+      lng: source.lng,
+      locations: source.locations || [],
+      country: source.country || '',
+      gallery: [],
+      members: [],
+      statusBadge: 'PLAN',
+      isPlan: true,
+      displayOrder: 0,
+      ownerId: user.uid,
+      ownerEmail: user.email || '',
+      allowedEditors: [],
+    };
+
+    try {
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'users', 'public', 'plans', String(newId)), cleanForFirestore(newPlan));
+      payload.days.forEach((items, dayIdx) => {
+        const day = new Date(start);
+        day.setDate(day.getDate() + dayIdx);
+        const date = dotted(day);
+        items.forEach((item, i) => {
+          const id = newId + (dayIdx + 1) * 1000 + i;
+          // Keep where and what; leave the old times, costs and payers behind
+          batch.set(doc(db, 'users', 'public', 'timeline', String(id)), cleanForFirestore({
+            id, date, tripId: newId,
+            time: '', type: item.type || 'activity', place: item.place, title: item.place,
+            location: item.location || item.place, lat: item.lat, lng: item.lng,
+            memo: item.memo || '', link: item.link, hours: item.hours, img: item.img || null,
+            cost: '-', vehicleType: item.vehicleType ?? null,
+          }));
+        });
+      });
+      payload.stays.forEach((st, i) => {
+        const id = newId + 900000 + i;
+        batch.set(doc(db, 'users', 'public', 'stays', String(id)), cleanForFirestore({
+          id, tripId: newId, status: 'PLANNED', title: st.title, dateRange: '', address: st.address,
+          memo: st.memo || '', confNo: '', img: st.img, lat: st.lat, lng: st.lng, additionalImages: st.additionalImages || [],
+        }));
+      });
+      await batch.commit();
+      try {
+        const saved = localStorage.getItem('journey_order');
+        const order: number[] = saved ? JSON.parse(saved) : [];
+        localStorage.setItem('journey_order', JSON.stringify([newId, ...order.filter(id => id !== newId)]));
+      } catch (_) {}
+      notify(`"${payload.title}" 계획을 만들었습니다.`, 'success');
+      navigateTo('detail', newId, true, null, true);
+    } catch (err) {
+      console.error('Error remixing journey:', err);
+      notify('Remix에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+    }
+  };
+
   const handleSaveSettings = async (
     title: string,
     subtitle: string,
@@ -2894,7 +2973,7 @@ export function useAppState() {
     handleCancelUnsavedModal, currentUserEmail, isSuperAdmin, isGuest, isAdmin, canEditTrip,
     canDeleteTrip, activeTrip, displayMarqueeText, marqueeTrips, seedUserData, navigateTo,
     handleFlightHalfway, handleFlightComplete, handleSearchResultClick, handleUpdateTrip,
-    handleMoveToArchive, handleMoveToPlans, handleCloneJourney, handleSaveSettings,
+    handleMoveToArchive, handleMoveToPlans, handleCloneJourney, handleRemixJourney, handleSaveSettings,
     handleSaveMagazineMoments, handleSaveMagazineHubConfig, handleSaveArchiveHubConfig,
     handleSaveMagazineSections, handleUpdateMagazineSections, handleSaveBgmSettings,
     generateDateList, handleEditTripSave, handleAddArchive, handleCreateTripForCountry,

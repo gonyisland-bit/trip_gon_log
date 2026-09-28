@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Archive, BookOpen, Bookmark, CalendarDays, CornerDownLeft, Home, Map as MapIcon, MapPin, Moon, Plane, Search, Ticket, Wallet,
+  Archive, BookOpen, Bookmark, CalendarDays, CornerDownLeft, Home, Map as MapIcon, MapPin, Moon, Plane, Search, Shuffle, Ticket, Wallet,
 } from 'lucide-react';
 import { Trip, Plan, SpotPocketItem } from '../types';
 import { getSavedPockets } from '../utils/pocketStorage';
@@ -33,6 +33,7 @@ interface CommandPaletteProps {
   onKeepPlace: () => void;
   onCycleNightMode: () => void;
   onFullSearch: (query: string) => void;
+  onRemix?: (tripId: number) => void;
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '');
@@ -53,7 +54,7 @@ function score(query: string, text: string): number {
   return Math.max(1, 40 - gaps);
 }
 
-export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, onOpenDeparture, onOpenWallet, onKeepPlace, onCycleNightMode, onFullSearch }: CommandPaletteProps) {
+export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, onOpenDeparture, onOpenWallet, onKeepPlace, onCycleNightMode, onFullSearch, onRemix }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,18 +86,23 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
         keywords: [t.title, t.locationStr, t.country, t.date, ...(t.tags || [])].filter(Boolean).join(' '),
         icon: Plane, run: () => onNavigate('detail', t.id),
       }));
+    // "remix" + a journey name offers a Remix of that journey
+    const remixes: Entry[] = onRemix ? journeys.map(j => {
+      const id = Number(j.id.slice(5));
+      return { ...j, id: `remix-${id}`, group: '명령' as const, label: `${j.label} Remix`, keywords: `remix 리믹스 ${j.keywords}`, icon: Shuffle, run: () => onRemix(id) };
+    }) : [];
     const places: Entry[] = pockets.map(p => ({
       id: `pocket-${p.id}`, group: '포켓' as const, label: p.title,
       hint: [p.city, p.country].filter(Boolean).join(' · '),
       keywords: [p.title, p.city, p.country, p.address, p.memo, ...(p.tags || [])].filter(Boolean).join(' '),
       icon: MapPin, run: () => onNavigate('pocket'),
     }));
-    return [...commands, ...journeys, ...places];
-  }, [trips, plans, pockets, onNavigate, onNewTrip, onOpenDeparture, onOpenWallet, onKeepPlace, onCycleNightMode]);
+    return [...commands, ...journeys, ...places, ...remixes];
+  }, [trips, plans, pockets, onNavigate, onNewTrip, onOpenDeparture, onOpenWallet, onKeepPlace, onCycleNightMode, onRemix]);
 
   // With no query: commands and the five nearest journeys. With one: the best 30 matches, grouped
   const results = useMemo(() => {
-    if (!query.trim()) return [...entries.filter(e => e.group === '명령'), ...entries.filter(e => e.group === '여정').slice(0, 5)];
+    if (!query.trim()) return [...entries.filter(e => e.group === '명령' && !e.id.startsWith('remix-')), ...entries.filter(e => e.group === '여정').slice(0, 5)];
     const order: Group[] = ['명령', '여정', '포켓'];
     return entries
       .map(e => ({ e, s: score(query, e.keywords) }))

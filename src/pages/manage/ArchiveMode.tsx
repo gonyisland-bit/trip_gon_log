@@ -1,6 +1,6 @@
 import {
   ChevronUp, ChevronDown, Save, Trash2, Copy, ClipboardPaste, ArrowRightLeft, Upload, Calendar,
-  MapPin, Check, Sliders, Globe, X, ExternalLink, GripVertical, Loader2, Edit
+  MapPin, Check, Sliders, Globe, X, ExternalLink, GripVertical, Loader2, Edit, Shuffle
 } from 'lucide-react';
 import { Trip, Plan } from '../../types';
 import { PlaceAutocompleteInput } from '../../components/PlaceAutocompleteInput';
@@ -955,8 +955,8 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     onClick={() => onCloneTrip(selectedJourney.id)}
                     className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-extrabold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
                   >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>복제 (CLONE)</span>
+                    <Shuffle className="w-3.5 h-3.5" />
+                    <span>Remix</span>
                   </button>
 
                   <button
