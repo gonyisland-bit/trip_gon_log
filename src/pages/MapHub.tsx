@@ -8,7 +8,8 @@ import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { TripBuilderPanel } from '../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
-import { getNightTerminatorPolygon, shiftPolygonCoordinates, isLocationInNight, getContinuousNightPolygon } from '../utils/solarTerminator';
+import { resolveMarkerOverlaps, clusterByPixel } from '../utils/mapMarkerOverlap';
+import { getNightTerminatorPolygon, shiftPolygonCoordinates, getContinuousNightPolygon, getSolarAltitude, nightAlphaForAltitude, paintNightMask, getSubsolarPoint } from '../utils/solarTerminator';
 import { notify } from '../utils/feedback';
 
 export interface CountryInfo {
@@ -1873,7 +1874,7 @@ export function MapHubPage({
       while (diff < -180) { effLng += 360; diff += 360; }
 
       const dotHtml = `
-        <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 22px; height: 22px;">
+        <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 32px; height: 32px;">
           <!-- Hover Tooltip -->
           <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px; pointer-events: none; white-space: nowrap; z-index: 1500;" class="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
@@ -1881,15 +1882,15 @@ export function MapHubPage({
             </span>
           </div>
           <!-- Mini City Dot: 6.5px with clean contrast border -->
-          <div style="width: 6.5px; height: 6.5px; border-radius: 9999px; background-color: ${isDarkMode ? '#38BDF8' : '#0284C7'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; box-shadow: 0 0 0 1px ${isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'};" class="group-hover:scale-150 transition-all duration-150"></div>
+          <div style="width: 6.5px; height: 6.5px; border-radius: 9999px; background-color: ${isDarkMode ? '#FFFFFF' : '#111111'}; border: 1.5px solid ${isDarkMode ? '#000000' : '#FFFFFF'}; box-shadow: 0 0 0 1px ${isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'};" class="group-hover:scale-150 transition-all duration-150"></div>
         </div>
       `;
 
       const icon = L.divIcon({
         className: 'custom-country-city-dot',
         html: dotHtml,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
       });
 
       const dotMarker = L.marker([lat, effLng], { icon, zIndexOffset: 1200 }).addTo(map);
@@ -1903,6 +1904,7 @@ export function MapHubPage({
       });
       countryCityDotsRef.current.push(dotMarker);
     });
+    requestAnimationFrame(() => resolveOverlapsRef.current());
 
     return () => {
       countryCityDotsRef.current.forEach(m => {
@@ -3217,6 +3219,8 @@ export function MapHubPage({
         }).addTo(map);
       }
     }
+    // Re-align the night mask with the freshly added night tile layer
+    updateNightClipRef.current?.();
   }, [isDarkMode, mapTileStyle, isDayNightEnabled]);
 
   // Render Day/Night Solar Terminator Layer & Night City Lights (controlled by isDayNightEnabled)
@@ -3243,9 +3247,65 @@ export function MapHubPage({
       '마드리드', '베를린', '토론토', '밴쿠버', '이스탄불', '타이베이', '오사카'
     ]);
 
-    // 1. Function to update CSS clipPath polygon projection directly using Leaflet LayerPoints
+    // 1. Night tiles are revealed through a soft twilight mask (v1.3). The mask is a small canvas of
+    //    night opacity per cell, placed in layer coordinates and upscaled by the browser, so the day/night
+    //    edge fades over the twilight band instead of cutting sharply. A mask only paints inside its element's
+    //    box, so the pane is moved and sized to the mask area and its layers are shifted back by the same amount.
+    //    Browsers without CSS masks fall back to the previous hard clip-path polygon.
+    const supportsSoftMask = typeof CSS !== 'undefined' && (CSS.supports('mask-image', 'url("a.png")') || CSS.supports('-webkit-mask-image', 'url("a.png")'));
+    const maskCanvas = document.createElement('canvas');
     let cachedContinuousPoints: [number, number][] | null = null;
     let cachedPointsMinute = -1;
+    let maskFrame = 0;
+
+    const applySoftMask = (currentMap: any, nightPane: HTMLElement) => {
+      const size = currentMap.getSize();
+      const padX = size.x * 0.5;
+      const padY = size.y * 0.5;
+      const cell = 6;
+      const cols = Math.max(2, Math.ceil((size.x + padX * 2) / cell));
+      const rows = Math.max(2, Math.ceil((size.y + padY * 2) / cell));
+      const lats: number[] = [];
+      const lngs: number[] = [];
+      for (let r = 0; r < rows; r++) lats.push(currentMap.containerPointToLatLng([0, -padY + (r + 0.5) * cell]).lat);
+      for (let c = 0; c < cols; c++) lngs.push(currentMap.containerPointToLatLng([-padX + (c + 0.5) * cell, 0]).lng);
+      paintNightMask(maskCanvas, lats, lngs, new Date());
+      const origin = currentMap.containerPointToLayerPoint([-padX, -padY]);
+      const ox = Math.round(origin.x);
+      const oy = Math.round(origin.y);
+      const s = nightPane.style as any;
+      s.left = `${ox}px`;
+      s.top = `${oy}px`;
+      s.width = `${cols * cell}px`;
+      s.height = `${rows * cell}px`;
+      Array.from(nightPane.children).forEach(child => {
+        (child as HTMLElement).style.left = `${-ox}px`;
+        (child as HTMLElement).style.top = `${-oy}px`;
+      });
+      const url = `url(${maskCanvas.toDataURL()})`;
+      for (const prefix of ['mask', 'webkitMask']) {
+        s[`${prefix}Image`] = url;
+        s[`${prefix}Size`] = '100% 100%';
+        s[`${prefix}Position`] = '0 0';
+        s[`${prefix}Repeat`] = 'no-repeat';
+      }
+      s.clipPath = 'none';
+      s.webkitClipPath = 'none';
+    };
+
+    const resetNightPaneMask = (nightPane: HTMLElement) => {
+      const s = nightPane.style as any;
+      s.maskImage = 'none';
+      s.webkitMaskImage = 'none';
+      s.left = '';
+      s.top = '';
+      s.width = '';
+      s.height = '';
+      Array.from(nightPane.children).forEach(child => {
+        (child as HTMLElement).style.left = '';
+        (child as HTMLElement).style.top = '';
+      });
+    };
 
     const updateNightClip = () => {
       const currentMap = mapRef.current;
@@ -3256,101 +3316,84 @@ export function MapHubPage({
       if (!isDayNightEnabled) {
         nightPane.style.clipPath = 'none';
         nightPane.style.webkitClipPath = 'none';
+        resetNightPaneMask(nightPane);
         return;
       }
 
-      // 비행기 활공 중 60fps 불필요한 고비용 clipPath 재계산 및 GPU 재래스터화 원천 차단
+      // 비행기 활공 중 60fps 불필요한 고비용 마스크 재계산 및 GPU 재래스터화 원천 차단
       if (isFlyingToCountryRef.current) return;
+
+      if (supportsSoftMask) {
+        cancelAnimationFrame(maskFrame);
+        maskFrame = requestAnimationFrame(() => applySoftMask(currentMap, nightPane));
+        return;
+      }
 
       const now = new Date();
       const currentMinute = Math.floor(now.getTime() / 60000);
       if (!cachedContinuousPoints || cachedPointsMinute !== currentMinute) {
-        // Generate wide continuous polygon covering -540 to +540 degrees (3 full world spans)
         cachedContinuousPoints = getContinuousNightPolygon(now, 2, -540, 540);
         cachedPointsMinute = currentMinute;
       }
-
-      // Convert geo-coordinates to Leaflet LayerPoint (matches nightTilePane's local coordinate system)
       const layerPoints = cachedContinuousPoints.map(([lat, lng]) => {
         const pt = currentMap.latLngToLayerPoint([lat, lng]);
         return `${Math.round(pt.x)}px ${Math.round(pt.y)}px`;
       });
-
       const polygonCss = `polygon(${layerPoints.join(', ')})`;
       nightPane.style.clipPath = polygonCss;
       nightPane.style.webkitClipPath = polygonCss;
     };
     updateNightClipRef.current = updateNightClip;
 
+    // One canvas renderer for the terminator line, the sun point and the city lights (no DOM marker per light)
+    const lightRenderer = L.canvas({ padding: 0.5 });
+
     const renderTerminatorAndLights = () => {
       const currentMap = mapRef.current;
       if (!currentMap) return;
 
       const now = new Date();
-      const basePoints = getNightTerminatorPolygon(now, 2);
-      const pointsEast = shiftPolygonCoordinates(basePoints, 360);
-      const pointsWest = shiftPolygonCoordinates(basePoints, -360);
+      // Drop the two pole-closing points: only the terminator line itself is drawn
+      const linePoints = getNightTerminatorPolygon(now, 2).slice(0, -2);
+      const wraps = [linePoints, shiftPolygonCoordinates(linePoints, 360), shiftPolygonCoordinates(linePoints, -360)];
 
-      // 1. Soft Twilight Borderline (Night tiles already dark, so gentle ambient atmospheric tint)
-      const terminatorStyle = {
-        color: '#F59E0B',     // Warm twilight golden amber edge
-        weight: 3.5,
-        opacity: 0.5,
-        fillColor: '#020617', // Deep midnight tint
-        fillOpacity: 0.08,    // Ultra-light overlay so actual dark tiles are crystal clear
-        className: 'leaflet-terminator-soft',
-        interactive: false,
-      };
+      // 2. Terminator: a crisp hairline with a light halo so it reads on both the day and the night side
+      const layers: any[] = [];
+      wraps.forEach(points => {
+        layers.push(L.polyline(points, { renderer: lightRenderer, color: '#FFFFFF', weight: 3, opacity: 0.55, interactive: false }));
+        layers.push(L.polyline(points, { renderer: lightRenderer, color: '#111111', weight: 1, opacity: 0.85, interactive: false }));
+      });
 
-      const polyLayers = [
-        L.polygon(basePoints, terminatorStyle),
-        L.polygon(pointsEast, terminatorStyle),
-        L.polygon(pointsWest, terminatorStyle),
-      ];
+      // 3. Subsolar point: where the sun is overhead right now
+      const [sunLat, sunLng] = getSubsolarPoint(now);
+      [-360, 0, 360].forEach(offset => {
+        layers.push(L.circleMarker([sunLat, sunLng + offset], { renderer: lightRenderer, radius: 9, stroke: false, fillColor: '#F59E0B', fillOpacity: 0.18, interactive: false }));
+        layers.push(L.circleMarker([sunLat, sunLng + offset], { renderer: lightRenderer, radius: 4, color: '#FFFFFF', weight: 1.5, fillColor: '#F59E0B', fillOpacity: 1, interactive: false }));
+      });
 
       if (terminatorLayerRef.current) {
         try { currentMap.removeLayer(terminatorLayerRef.current); } catch (_) {}
       }
+      terminatorLayerRef.current = L.layerGroup(layers).addTo(currentMap);
 
-      const fg = L.featureGroup(polyLayers).addTo(currentMap);
-      if (fg.bringToBack) {
-        fg.bringToBack();
-      }
-      terminatorLayerRef.current = fg;
-
-      // 2. Night Earth City Lights on Continents (Excludes invalid 0,0 null coordinates)
-      const nightCities = WORLD_CITIES.filter(c => 
-        (Math.abs(c.lat) > 0.1 || Math.abs(c.lng) > 0.1) && 
-        c.lat >= -90 && c.lat <= 90 && 
-        isLocationInNight(c.lat, c.lng, now, -3)
-      );
-      const lightMarkers: any[] = [];
-
-      nightCities.forEach(city => {
+      // 4. City lights fade in through twilight (opacity follows the same night curve as the mask)
+      const lightLayers: any[] = [];
+      WORLD_CITIES.forEach(city => {
+        if (!(Math.abs(city.lat) > 0.1 || Math.abs(city.lng) > 0.1) || city.lat < -90 || city.lat > 90) return;
+        const alpha = nightAlphaForAltitude(getSolarAltitude(city.lat, city.lng, now));
+        if (alpha < 0.05) return;
         const isHub = MAJOR_NIGHT_HUBS.has(city.nameKo);
-        const iconHtml = `<div class="${isHub ? 'night-city-light-hub' : 'night-city-light'}"></div>`;
-        const icon = L.divIcon({
-          className: '',
-          html: iconHtml,
-          iconSize: isHub ? [10, 10] : [6, 6],
-          iconAnchor: isHub ? [5, 5] : [3, 3],
-        });
-
-        // Add to main longitude and wrapped copies (-360, +360)
         [-360, 0, 360].forEach(offsetLng => {
-          const marker = L.marker([city.lat, city.lng + offsetLng], {
-            icon,
-            interactive: false,
-          });
-          lightMarkers.push(marker);
+          const at: [number, number] = [city.lat, city.lng + offsetLng];
+          lightLayers.push(L.circleMarker(at, { renderer: lightRenderer, radius: isHub ? 7 : 4.5, stroke: false, fillColor: '#F59E0B', fillOpacity: 0.22 * alpha, interactive: false }));
+          lightLayers.push(L.circleMarker(at, { renderer: lightRenderer, radius: isHub ? 2.6 : 1.8, stroke: false, fillColor: '#FDE047', fillOpacity: 0.95 * alpha, interactive: false }));
         });
       });
 
       if (nightLightsLayerRef.current) {
         try { currentMap.removeLayer(nightLightsLayerRef.current); } catch (_) {}
       }
-      const lightsGroup = L.layerGroup(lightMarkers).addTo(currentMap);
-      nightLightsLayerRef.current = lightsGroup;
+      nightLightsLayerRef.current = L.layerGroup(lightLayers).addTo(currentMap);
     };
 
     renderTerminatorAndLights();
@@ -3369,6 +3412,7 @@ export function MapHubPage({
 
     return () => {
       clearInterval(interval);
+      cancelAnimationFrame(maskFrame);
       map.off('move', updateNightClip);
       map.off('zoom', updateNightClip);
       map.off('viewreset', updateNightClip);
@@ -3410,7 +3454,31 @@ export function MapHubPage({
     }
   };
 
-  // Render Red Pins for registered journeys (controlled by showVisitedPins and showPinLabels)
+  // Track the zoom level so journey pins can cluster, and keep stacked markers tappable (v1.3)
+  const [mapZoomLevel, setMapZoomLevel] = useState<number>(3);
+  const resolveOverlapsRef = useRef<() => void>(() => {});
+  resolveOverlapsRef.current = () => {
+    resolveMarkerOverlaps(mapRef.current, [
+      { markers: countryCityDotsRef.current, yields: false },
+      { markers: markersRef.current, yields: false },
+      { markers: yellowMarkersRef.current, yields: true },
+      { markers: countryDotsRef.current, yields: true },
+    ]);
+  };
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const onZoomEnd = () => {
+      setMapZoomLevel(Math.round(map.getZoom()));
+      resolveOverlapsRef.current();
+    };
+    onZoomEnd();
+    map.on('zoomend', onZoomEnd);
+    return () => { map.off('zoomend', onZoomEnd); };
+  }, []);
+
+  // Render Red Pins for registered journeys (controlled by showVisitedPins and showPinLabels).
+  // Pins closer than 40px at the current zoom merge into one pin with a total count; tapping it zooms in.
   useEffect(() => {
     const L = (window as any).L;
     const map = mapRef.current;
@@ -3422,25 +3490,33 @@ export function MapHubPage({
 
     if (!showVisitedPins) return;
 
-    pinGroups.forEach(group => {
+    const clusters = clusterByPixel(map, pinGroups, mapZoomLevel, 40);
+
+    clusters.forEach(cluster => {
+      const group = cluster[0];
+      const isCluster = cluster.length > 1;
+      const journeyCount = cluster.reduce((sum, g) => sum + g.journeys.length, 0);
+      const label = isCluster ? group.city + ' +' + (cluster.length - 1) : group.city;
+      const lat = cluster.reduce((s, g) => s + g.lat, 0) / cluster.length;
+      const lng = cluster.reduce((s, g) => s + g.lng, 0) / cluster.length;
+
       const pinHtml = `
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${showPinLabels ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
-                ${group.city}
+              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+                ${label}
               </span>
             </div>
           ` : ''}
-          <!-- Red SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
           <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
             <svg viewBox="0 0 24 34" width="26" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" class="block">
               <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#DC2626"/>
               <circle cx="12" cy="11" r="4.5" fill="#FFFFFF"/>
             </svg>
-            ${group.journeys.length > 1 ? `
-              <span class="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-micro w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
-                ${group.journeys.length}
+            ${journeyCount > 1 ? `
+              <span class="absolute -top-1.5 -right-1.5 bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-micro min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border border-white dark:border-black">
+                ${journeyCount}
               </span>
             ` : ''}
           </div>
@@ -3454,9 +3530,14 @@ export function MapHubPage({
         iconAnchor: [13, 34],
       });
 
-      const addPinMarkerAt = (lat: number, lng: number) => {
-        const marker = L.marker([lat, lng], { icon }).addTo(map);
+      const addPinMarkerAt = (pinLat: number, pinLng: number, lngOffset: number) => {
+        const marker = L.marker([pinLat, pinLng], { icon, zIndexOffset: 900 }).addTo(map);
         marker.on('click', () => {
+          if (isCluster) {
+            const bounds = L.latLngBounds(cluster.map(g => [g.lat, g.lng + lngOffset]));
+            map.flyToBounds(bounds, { padding: [80, 80], maxZoom: Math.max(mapZoomLevel + 2, 6), duration: 0.8 });
+            return;
+          }
           const c = findCountryForGroup(group.country, group.city, { lat: group.lat, lng: group.lng });
           if (c) {
             handleSelectCountryRef.current(c);
@@ -3467,12 +3548,13 @@ export function MapHubPage({
         markersRef.current.push(marker);
       };
 
-      addPinMarkerAt(group.lat, group.lng);
+      addPinMarkerAt(lat, lng, 0);
       // World wrap replication: Americas/Atlantic/Pacific
-      if (group.lng < 60) addPinMarkerAt(group.lat, group.lng + 360);
-      if (group.lng > 0) addPinMarkerAt(group.lat, group.lng - 360);
+      if (lng < 60) addPinMarkerAt(lat, lng + 360, 360);
+      if (lng > 0) addPinMarkerAt(lat, lng - 360, -360);
     });
-  }, [pinGroups, showVisitedPins, showPinLabels, isDarkMode]);
+    requestAnimationFrame(() => resolveOverlapsRef.current());
+  }, [pinGroups, showVisitedPins, showPinLabels, isDarkMode, mapZoomLevel]);
 
   // Render Yellow Pins for favorite countries (Wishlist, controlled by showWishlistPins and showPinLabels)
   useEffect(() => {
@@ -3494,14 +3576,14 @@ export function MapHubPage({
           ${showPinLabels ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
               <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
-                ★ ${country.name}
+                ${country.name}
               </span>
             </div>
           ` : ''}
           <!-- Yellow SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
           <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
             <svg viewBox="0 0 24 34" width="26" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" class="block">
-              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#EAB308"/>
+              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#D97706"/>
               <polygon points="12,6.5 13.6,9.8 17.2,10.3 14.6,12.8 15.2,16.5 12,14.8 8.8,16.5 9.4,12.8 6.8,10.3 10.4,9.8" fill="#FFFFFF"/>
             </svg>
           </div>
@@ -3527,6 +3609,7 @@ export function MapHubPage({
       if (country.center[1] < 60) addYellowMarkerAt(country.center[0], country.center[1] + 360);
       if (country.center[1] > 0) addYellowMarkerAt(country.center[0], country.center[1] - 360);
     });
+    requestAnimationFrame(() => resolveOverlapsRef.current());
   }, [favoriteCountries, showWishlistPins, showPinLabels, isDarkMode]);
 
   // Render Faint Minimal Dot Markers for all travelable countries (Visual hint for clickable countries)
@@ -3572,6 +3655,7 @@ export function MapHubPage({
       if (country.center[1] < 60) addCountryDotAt(country.center[0], country.center[1] + 360);
       if (country.center[1] > 0) addCountryDotAt(country.center[0], country.center[1] - 360);
     });
+    requestAnimationFrame(() => resolveOverlapsRef.current());
   }, [isDarkMode]);
 
   // Filtered countries for search (Supports continent search e.g. "아시아", "유럽", "아프리카", "남미" and Korean city search e.g. "뉴욕", "파리", "로스앤젤레스")

@@ -870,12 +870,6 @@ div[data-pin-hover],
   background-color: currentColor;
 }
 
-/* Solar Terminator Soft Twilight Boundary & Night Shadow */
-.leaflet-terminator-soft path {
-  filter: blur(8px);
-  transition: opacity 0.5s ease-out;
-}
-
 /* Night Earth City Lights Glow & Ambient Lighting - Static high-performance glow without frame repaints */
 .night-city-light {
   width: 5px;
@@ -1121,3 +1115,7 @@ input[type="range"]:focus-visible {
     animation: none !important;
   }
 }
+
+/* ── Map markers (v1.3): a marker covered by a higher-priority one steps aside ── */
+.leaflet-marker-icon { transition: opacity var(--motion-base) var(--ease-standard); }
+.tgl-marker-yield { opacity: 0 !important; pointer-events: none !important; }

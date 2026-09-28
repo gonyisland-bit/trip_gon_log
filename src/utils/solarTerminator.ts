@@ -158,3 +158,56 @@ export function getContinuousNightPolygon(
 
   return points;
 }
+
+/**
+ * Night opacity for a solar altitude: 0 in daylight, 1 in full night, with a smooth
+ * twilight ramp in between (v1.3). The ramp starts just before sunset and reaches
+ * full darkness around nautical twilight.
+ */
+export function nightAlphaForAltitude(altitudeDeg: number, dayAlt = 0.8, nightAlt = -10): number {
+  const t = Math.max(0, Math.min(1, (dayAlt - altitudeDeg) / (dayAlt - nightAlt)));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * Paints a low-resolution night alpha mask into `canvas`. `lats[row]` and `lngs[col]`
+ * give the geographic coordinate of each cell centre (Web Mercator keeps latitude a
+ * function of y and longitude a function of x). The browser's bilinear upscaling of
+ * the small canvas produces the soft twilight band.
+ */
+export function paintNightMask(canvas: HTMLCanvasElement, lats: number[], lngs: number[], date: Date = new Date()) {
+  const cols = lngs.length;
+  const rows = lats.length;
+  canvas.width = cols;
+  canvas.height = rows;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const { delta, gha } = getSolarPosition(date);
+  const sinD = Math.sin(delta);
+  const cosD = Math.cos(delta);
+  const cosH = lngs.map(lng => Math.cos((lng * Math.PI) / 180 + gha));
+  const img = ctx.createImageData(cols, rows);
+  for (let r = 0; r < rows; r++) {
+    const latRad = (lats[r] * Math.PI) / 180;
+    const a = sinD * Math.sin(latRad);
+    const b = cosD * Math.cos(latRad);
+    for (let c = 0; c < cols; c++) {
+      const sinAlt = Math.max(-1, Math.min(1, a + b * cosH[c]));
+      const alt = (Math.asin(sinAlt) * 180) / Math.PI;
+      const i = (r * cols + c) * 4;
+      img.data[i] = 255;
+      img.data[i + 1] = 255;
+      img.data[i + 2] = 255;
+      img.data[i + 3] = Math.round(nightAlphaForAltitude(alt) * 255);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/** Longitude/latitude of the point where the sun is directly overhead. */
+export function getSubsolarPoint(date: Date = new Date()): [number, number] {
+  const { delta, gha } = getSolarPosition(date);
+  let lng = (-gha * 180) / Math.PI;
+  lng = ((((lng + 180) % 360) + 360) % 360) - 180;
+  return [(delta * 180) / Math.PI, lng];
+}
