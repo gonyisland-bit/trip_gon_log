@@ -3,6 +3,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig } from '../types';
+import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
@@ -1795,223 +1796,60 @@ export function HomePage({
 
           if (availableSections.length === 0) return null;
 
+          // Cards for an issue: its photo stories, else the loose moments, else the latest journeys
+          const cardsFor = (sec: MagazineSection): SpreadCard[] => {
+            let secMoments: MagazineMoment[] = [];
+            if (sec.items && sec.items.length > 0) {
+              secMoments = sec.items.filter(item => !item.isTextOnly && Boolean(item.img));
+            } else if (magazineMoments && magazineMoments.length > 0) {
+              secMoments = magazineMoments.filter(item => !item.isTextOnly && Boolean(item.img));
+            } else {
+              secMoments = trips.slice(0, 3).map((t, idx) => ({
+                id: `fallback-${t.id}`, tripId: t.id, title: t.title, date: t.date, location: t.locationStr,
+                placeName: (t.locations && t.locations[0]?.name) || '', caption: '', quote: '', img: t.img, order: idx,
+              })).filter(item => Boolean(item.img));
+            }
+            return secMoments.slice(0, 3).map((moment, idx) => {
+              const parentTrip = trips.find(t => t.id === moment.tripId);
+              let matched: any = null;
+              if (allTimelineItems.length > 0 && moment.img) {
+                const eff = getEffectiveImageUrl(moment.img);
+                matched = allTimelineItems.find(it => it.img && (it.img === moment.img || getEffectiveImageUrl(it.img) === eff));
+              }
+              let googlePlace = '';
+              if (typeof matched?.location === 'string' && matched.location.trim()) googlePlace = matched.location.trim().split(',')[0].trim();
+              else if (matched?.location?.name) googlePlace = matched.location.name;
+              return {
+                key: String(moment.id || idx),
+                img: moment.img,
+                title: matched?.place?.trim() || moment.title || 'UNTITLED MOMENT',
+                place: googlePlace || moment.placeName || moment.location || parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE',
+                date: formatSimpleDateWithDay(matched?.date || moment.date),
+              };
+            });
+          };
+
           return (
-            <div className="w-full max-w-[1920px] mx-auto border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-6">
-              {/* Section Header: Pure Swiss Minimal Magazine Header */}
-              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-4 border-b border-black/15 dark:border-white/15">
-                <div className="flex items-baseline gap-4 flex-wrap">
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
-                    MAGAZINE
-                  </h2>
-                  {selectedSection && (
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70">
-                      {selectedSection.title}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleGoToMagazineSection()}
-                    className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white underline decoration-1 underline-offset-4 cursor-pointer transition-colors"
-                  >
-                    VIEW MAGAZINE HUB →
-                  </button>
-                </div>
-
-                {/* Section Selector Tabs & Adjacent Minimal Prev/Next Navigation Controls */}
-                <div className="flex items-center gap-3 max-w-full lg:max-w-2xl shrink-0 self-start sm:self-auto">
-                  {/* Section Tabs Scrollable Container */}
-                  {availableSections.length > 1 && (
-                    <div
-                      ref={homeMagTabsRef}
-                      className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 scroll-smooth"
-                    >
-                      {availableSections.map((sec) => {
-                        const isSelected = sec.id === (selectedSection?.id || activeHomeSectionId);
-                        return (
-                          <button
-                            key={sec.id}
-                            id={`home-mag-tab-${sec.id}`}
-                            type="button"
-                            onClick={() => handleSelectSection(sec.id)}
-                            className={`px-3.5 py-1.5 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
-                              isSelected
-                                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                                : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-                            }`}
-                          >
-                            {sec.title}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Adjacent Left / Right Section Navigation Buttons (Classic Home Preview Style) */}
-                  {availableSections.length > 1 && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={handlePrevSection}
-                        disabled={safeSecIndex <= 0}
-                        className="tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
-                        title="이전 섹션"
-                      >
-                        <ChevronLeft className="w-4 h-4 stroke-[2]" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleNextSection}
-                        disabled={safeSecIndex >= availableSections.length - 1}
-                        className="tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
-                        title="다음 섹션"
-                      >
-                        <ChevronRight className="w-4 h-4 stroke-[2]" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Sliding 3-Card Visual Container (Smooth Horizontal Slide & Touch Swipe) */}
-              <div
-                className="w-full overflow-hidden touch-pan-y"
-                onTouchStart={handleMagazineTouchStart}
-                onTouchMove={handleMagazineTouchMove}
-                onTouchEnd={(e) => {
-                  if (touchStartXRef.current === null || touchStartYRef.current === null) return;
-                  const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
-                  const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
-                  touchStartXRef.current = null;
-                  touchStartYRef.current = null;
-                  if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
-                    if (deltaX < 0) {
-                      handleNextSection();
-                    } else {
-                      handlePrevSection();
-                    }
-                  }
-                  setTimeout(() => {
-                    isSwipingRef.current = false;
-                  }, 80);
-                }}
-              >
-                <div
-                  className="flex transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-${safeSecIndex * 100}%)` }}
-                >
-                  {availableSections.map((sec, secIdx) => {
-                    let secMoments: MagazineMoment[] = [];
-                    if (sec.items && sec.items.length > 0) {
-                      secMoments = sec.items.filter(item => !item.isTextOnly && Boolean(item.img));
-                    } else if (magazineMoments && magazineMoments.length > 0) {
-                      secMoments = magazineMoments.filter(item => !item.isTextOnly && Boolean(item.img));
-                    } else {
-                      secMoments = trips.slice(0, 3).map((t, idx) => ({
-                        id: `fallback-${t.id}`,
-                        tripId: t.id,
-                        title: t.title,
-                        date: t.date,
-                        location: t.locationStr,
-                        placeName: (t.locations && t.locations[0]?.name) || '',
-                        caption: '',
-                        quote: '',
-                        img: t.img,
-                        order: idx,
-                      })).filter(item => Boolean(item.img));
-                    }
-
-                    const displayMoments = secMoments.slice(0, 3);
-
-                    return (
-                      <div key={sec.id || secIdx} className="w-full shrink-0">
-                        {displayMoments.length > 0 ? (
-                          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
-                            {displayMoments.map((moment, idx) => {
-                              const parentTrip = trips.find(t => t.id === moment.tripId);
-                              let matchedTimelineItem: any = null;
-                              if (allTimelineItems.length > 0 && moment.img) {
-                                const momentEffImg = getEffectiveImageUrl(moment.img);
-                                matchedTimelineItem = allTimelineItems.find(it => {
-                                  if (!it.img) return false;
-                                  if (it.img === moment.img) return true;
-                                  return getEffectiveImageUrl(it.img) === momentEffImg;
-                                });
-                              }
-
-                              const displayTitle = matchedTimelineItem?.place?.trim() || moment.title || 'UNTITLED MOMENT';
-                              const rawDate = matchedTimelineItem?.date || moment.date;
-                              const dateWithDay = formatSimpleDateWithDay(rawDate);
-
-                              let resolvedGoogleLocation = '';
-                              if (matchedTimelineItem?.location) {
-                                if (typeof matchedTimelineItem.location === 'string' && matchedTimelineItem.location.trim()) {
-                                  resolvedGoogleLocation = matchedTimelineItem.location.trim().split(',')[0].trim();
-                                } else if (typeof matchedTimelineItem.location === 'object' && (matchedTimelineItem.location as any)?.name) {
-                                  resolvedGoogleLocation = (matchedTimelineItem.location as any).name;
-                                }
-                              }
-                              const displayPlace = resolvedGoogleLocation || moment.placeName || moment.location || parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
-
-                              return (
-                                <article
-                                  key={moment.id || idx}
-                                  onClick={() => handleGoToMagazineSection(sec.id)}
-                                  className="group flex flex-col justify-between cursor-pointer"
-                                >
-                                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                                    <img
-                                      src={getEffectiveImageUrl(moment.img)}
-                                      alt={displayTitle}
-                                      loading="lazy"
-                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
-                                    />
-                                    <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-micro font-bold px-1.5 py-0.5 uppercase tracking-widest">
-                                      {String(idx + 1).padStart(2, '0')}
-                                    </div>
-                                  </div>
-
-                                  <div className="pt-2.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
-                                    <div>
-                                      <h3 className="text-sm sm:text-base font-bold uppercase tracking-tight text-black dark:text-white line-clamp-1 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                                        {displayTitle}
-                                      </h3>
-                                      {dateWithDay && (
-                                        <div className="text-meta font-mono font-medium text-black/60 dark:text-white/60 uppercase tracking-wider mt-0.5">
-                                          {dateWithDay}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="pt-2 mt-auto flex items-center justify-between text-[11px] sm:text-xs font-sans text-black/70 dark:text-white/70 border-t border-black/10 dark:border-white/10">
-                                      <span className="font-semibold tracking-tight truncate max-w-[85%]">{displayPlace}</span>
-                                      <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform">→</span>
-                                    </div>
-                                  </div>
-                                </article>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/20 dark:border-white/20 p-6">
-                            NO PREVIEW MOMENTS AVAILABLE IN THIS ISSUE
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* EXPLORE MAGAZINE HUB Button */}
-              <div className="flex justify-center pt-6 pb-2 w-full">
-                <button
-                  type="button"
-                  onClick={() => handleGoToMagazineSection()}
-                  className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md font-sans"
-                >
-                  <span>EXPLORE MAGAZINE HUB</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+            <div className="w-full max-w-[1920px] mx-auto border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12">
+              <MagazineSpread
+                sections={availableSections}
+                activeId={selectedSection?.id || activeHomeSectionId}
+                onSelect={(id) => { setActiveHomeSectionId(id); setMagazineSpreadIndex(0); }}
+                cardsFor={cardsFor}
+                onOpen={(id) => handleGoToMagazineSection(id)}
+                heading={
+                  <div className="flex items-baseline gap-4 flex-wrap">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">MAGAZINE</h2>
+                    {selectedSection && (
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70">
+                        {selectedSection.title}
+                      </span>
+                    )}
+                  </div>
+                }
+                ctaLabel="EXPLORE MAGAZINE HUB"
+                tabIdPrefix="home-mag-tab"
+              />
             </div>
           );
         })()}

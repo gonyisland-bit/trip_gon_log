@@ -33,6 +33,9 @@ import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { IssueCard } from '../components/cards/IssueCard';
 import { MemoryReel } from '../components/reel/MemoryReel';
 import { IssueTextWindow } from '../components/reel/IssueTextWindow';
+import { MagazineSpread } from '../components/magazine/MagazineSpread';
+import { RouteSketch, RoutePoint } from '../components/magazine/RouteSketch';
+import { parseTimeToMinutes } from './detail/detailUtils';
 import { Lightbox } from '../components/Lightbox';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
 
@@ -509,6 +512,25 @@ export function MagazineHubPage({
     return trips.find(t => t.id === currentSection.heroTripId) || plans.find(p => p.id === currentSection.heroTripId) || null;
   }, [currentSection, trips, plans]);
 
+  // The issue's journey route: the hero journey, else the journey most of its stories come from (P5-7)
+  const routePoints = useMemo<RoutePoint[]>(() => {
+    let tripId = heroTrip?.id ?? null;
+    if (tripId === null) {
+      const counts = new Map<number, number>();
+      (currentSection?.items || []).forEach(it => { if (it.tripId) counts.set(it.tripId, (counts.get(it.tripId) || 0) + 1); });
+      tripId = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    }
+    if (tripId === null) return [];
+    const items = Object.entries(timelineData || {}).flatMap(([d, list]) => (list || []).map(i => ({ ...i, date: i.date || d })))
+      .filter(i => i.tripId === tripId && !i.excludeFromMap && Number.isFinite(Number(i.lat)) && Number.isFinite(Number(i.lng)) && (Number(i.lat) || Number(i.lng)))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time) || a.id - b.id);
+    const days = [...new Set(items.map(i => i.date))];
+    // Drop repeats of the same spot in a row
+    return items
+      .map(i => ({ lat: Number(i.lat), lng: Number(i.lng), label: (i.place || '').trim(), day: days.indexOf(i.date) + 1 }))
+      .filter((p, idx, arr) => idx === 0 || p.lat !== arr[idx - 1].lat || p.lng !== arr[idx - 1].lng);
+  }, [heroTrip, currentSection, timelineData]);
+
   // Jump to Manage Hub for this section
   const handleEditThisSection = () => {
     const secId = currentSection?.id || 'main';
@@ -962,210 +984,35 @@ export function MagazineHubPage({
           )}
         </section>
 
-          {/* 1-3. Lower Selected Magazine Preview Section (Curated Preview Spread) */}
-          {(() => {
-            const curPreviewIdx = effectiveSections.findIndex(s => s.id === (currentPreviewSection?.id || hubPreviewSectionId));
-            const safePreviewIdx = Math.max(0, curPreviewIdx);
-
-            const handleSelectPreviewSection = (sectionId: string) => {
-              setHubPreviewSectionId(sectionId);
-              const tabBtn = document.getElementById(`mag-hub-preview-tab-${sectionId}`);
-              if (tabBtn) {
-                tabBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-              }
-            };
-
-            const handlePrevPreviewSection = () => {
-              if (safePreviewIdx > 0) {
-                handleSelectPreviewSection(effectiveSections[safePreviewIdx - 1].id);
-              }
-            };
-
-            const handleNextPreviewSection = () => {
-              if (safePreviewIdx < effectiveSections.length - 1) {
-                handleSelectPreviewSection(effectiveSections[safePreviewIdx + 1].id);
-              }
-            };
-
-            return (
-              <section className="w-full bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/10 dark:border-white/10 py-12 sm:py-20">
-                <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 flex flex-col gap-8">
-                  
-                  {/* Header with Section Switching Tabs & Read Full Issue CTA */}
-                  <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-4">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs sm:text-[13px] font-bold tracking-tight text-red-600 dark:text-red-400 font-['Inter',sans-serif]">
-                        Magazine preview
-                      </span>
-                      <h2 className="text-2xl sm:text-3xl font-extrabold uppercase font-['Noto_Sans_KR',sans-serif] tracking-tight text-black dark:text-white">
-                        {currentPreviewSection?.title || 'FEATURED STORIES'}
-                      </h2>
-                    </div>
-
-                    {/* Section Selector Tabs & Adjacent Minimal Prev/Next Navigation Controls */}
-                    <div className="flex items-center gap-3 max-w-full lg:max-w-2xl shrink-0 self-start sm:self-auto">
-                      {/* Section Tabs Scrollable Container */}
-                      {effectiveSections.length > 1 && (
-                        <div 
-                          ref={previewTabsRef}
-                          className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 scroll-smooth"
-                        >
-                          {effectiveSections.map((sec) => {
-                            const isSelected = sec.id === (currentPreviewSection?.id || hubPreviewSectionId);
-                            return (
-                              <button
-                                key={sec.id}
-                                id={`mag-hub-preview-tab-${sec.id}`}
-                                type="button"
-                                onClick={() => handleSelectPreviewSection(sec.id)}
-                                className={`px-3.5 py-1.5 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
-                                  isSelected
-                                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                                    : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-                                }`}
-                              >
-                                {sec.title}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Adjacent Left / Right Section Navigation Buttons */}
-                      {effectiveSections.length > 1 && (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={handlePrevPreviewSection}
-                            disabled={safePreviewIdx <= 0}
-                            className="tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
-                            title="이전 섹션"
-                          >
-                            <ChevronLeft className="w-4 h-4 stroke-[2]" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleNextPreviewSection}
-                            disabled={safePreviewIdx >= effectiveSections.length - 1}
-                            className="tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
-                            title="다음 섹션"
-                          >
-                            <ChevronRight className="w-4 h-4 stroke-[2]" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
+          {/* 1-3. Selected issue preview, shared with the home page (P5-7) */}
+          <section className="w-full bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/10 dark:border-white/10 py-12 sm:py-20">
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12">
+              <MagazineSpread
+                sections={effectiveSections}
+                activeId={currentPreviewSection?.id || hubPreviewSectionId}
+                onSelect={setHubPreviewSectionId}
+                cardsFor={(sec) => getSynchronizedItems(sec).filter(it => !it.isTextOnly && Boolean(it.img)).map((item, i) => {
+                  const parentTrip = trips.find(t => t.id === item.tripId);
+                  let place = item.placeName || item.location || '';
+                  if (!place.trim() || place.trim().toLowerCase() === (item.title || '').trim().toLowerCase()) {
+                    place = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
+                  }
+                  return { key: String(item.id || i), img: item.img, title: item.title, place, date: formatSimpleDateWithDay(item.date) };
+                })}
+                onOpen={handleOpenSection}
+                heading={
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs sm:text-[13px] font-bold tracking-tight text-red-600 dark:text-red-400">Magazine preview</span>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white">
+                      {currentPreviewSection?.title || 'FEATURED STORIES'}
+                    </h2>
                   </div>
-
-                  {/* Sliding 3:4 Preview Cards (Smooth Horizontal Slide & Touch Swipe) */}
-                  <div
-                    className="w-full overflow-hidden touch-pan-y"
-                    onTouchStart={(e) => {
-                      previewTouchStartXRef.current = e.touches[0].clientX;
-                      previewTouchStartYRef.current = e.touches[0].clientY;
-                    }}
-                    onTouchEnd={(e) => {
-                      if (previewTouchStartXRef.current === null || previewTouchStartYRef.current === null) return;
-                      const deltaX = e.changedTouches[0].clientX - previewTouchStartXRef.current;
-                      const deltaY = e.changedTouches[0].clientY - previewTouchStartYRef.current;
-                      previewTouchStartXRef.current = null;
-                      previewTouchStartYRef.current = null;
-                      if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
-                        if (deltaX < 0) {
-                          handleNextPreviewSection();
-                        } else {
-                          handlePrevPreviewSection();
-                        }
-                      }
-                    }}
-                  >
-                    <div
-                      className="flex transition-transform duration-500 ease-out"
-                      style={{ transform: `translateX(-${safePreviewIdx * 100}%)` }}
-                    >
-                      {effectiveSections.map((sec, sIdx) => {
-                        const secItems = getSynchronizedItems(sec).filter(it => !it.isTextOnly && Boolean(it.img)).slice(0, 3);
-
-                        return (
-                          <div key={sec.id || sIdx} className="w-full shrink-0">
-                            {secItems.length > 0 ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
-                                {secItems.map((item, pIdx) => {
-                                  const displayTitle = item.title;
-                                  const dateWithDay = formatSimpleDateWithDay(item.date);
-                                  let displayPlace = item.placeName || item.location || '';
-                                  const parentTrip = trips.find(t => t.id === item.tripId);
-                                  if (!displayPlace || displayPlace.trim() === '' || displayPlace.trim().toLowerCase() === displayTitle.trim().toLowerCase()) {
-                                    displayPlace = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
-                                  }
-
-                                  return (
-                                    <article
-                                      key={item.id || pIdx}
-                                      onClick={() => handleOpenSection(sec.id)}
-                                      className="group flex flex-col justify-between cursor-pointer"
-                                    >
-                                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                                        <img
-                                          src={getEffectiveImageUrl(item.img)}
-                                          alt={displayTitle}
-                                          loading="lazy"
-                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
-                                        />
-                                        <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-micro font-bold px-1.5 py-0.5 uppercase tracking-widest">
-                                          {String(pIdx + 1).padStart(2, '0')}
-                                        </div>
-                                      </div>
-
-                                      <div className="pt-2.5 flex-1 flex flex-col justify-between text-black dark:text-white">
-                                        <div>
-                                          <div className="text-meta font-mono font-bold uppercase tracking-[0.15em] text-red-600 dark:text-red-400 truncate">
-                                            {displayPlace}
-                                          </div>
-                                          <h3 className="text-sm sm:text-base font-bold uppercase tracking-tight text-black dark:text-white line-clamp-1 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors mt-0.5 font-['Noto_Sans_KR',sans-serif]">
-                                            {displayTitle}
-                                          </h3>
-                                        </div>
-                                        <div className="pt-2 mt-auto flex items-center justify-between text-meta font-mono text-black/60 dark:text-white/60 border-t border-black/10 dark:border-white/10 tracking-wider">
-                                          <span>{dateWithDay}</span>
-                                          <span className="font-bold text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                                            <span>VIEW</span>
-                                            <span>→</span>
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </article>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/20 dark:border-white/20 p-6">
-                                NO PREVIEW MOMENTS AVAILABLE IN THIS ISSUE
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Read Full Issue Button */}
-                  {currentPreviewSection && (
-                    <div className="pt-4 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenSection(currentPreviewSection.id)}
-                        className="px-8 py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 hover:text-white dark:hover:text-white transition-all shadow-md cursor-pointer flex items-center gap-2 group"
-                      >
-                        <span>READ FULL</span>
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </section>
-            );
-          })()}
+                }
+                ctaLabel="READ FULL"
+                tabIdPrefix="mag-hub-preview-tab"
+              />
+            </div>
+          </section>
         </div>
       ) : (
         /* ═════════════════════════════════════════════════════════════════ */
@@ -1412,6 +1259,11 @@ export function MagazineHubPage({
                 </div>
               </div>
             </section>
+          )}
+
+          {/* 2-1.5 Route: the journey's places drawn in order as the reader scrolls (P5-7) */}
+          {currentSection && routePoints.length >= 2 && (
+            <RouteSketch key={currentSection.id} points={routePoints} title={heroTrip?.title || currentSection.title} />
           )}
 
           {/* 2-2. SECTION NAVIGATOR / SELECTOR */}
