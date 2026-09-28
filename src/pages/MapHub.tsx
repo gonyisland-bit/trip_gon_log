@@ -365,7 +365,7 @@ export function MapHubPage({
       while (diff < -180) { effLng += 360; diff += 360; }
 
       const dotHtml = `
-        <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 32px; height: 32px;">
+        <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 40px; height: 40px;">
           <!-- Hover Tooltip -->
           <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px; pointer-events: none; white-space: nowrap; z-index: 1500;" class="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
@@ -373,15 +373,15 @@ export function MapHubPage({
             </span>
           </div>
           <!-- Mini City Dot: 6.5px with clean contrast border -->
-          <div style="width: 6.5px; height: 6.5px; border-radius: 9999px; background-color: ${isDarkMode ? '#FFFFFF' : '#111111'}; border: 1.5px solid ${isDarkMode ? '#000000' : '#FFFFFF'}; box-shadow: 0 0 0 1px ${isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'};" class="group-hover:scale-150 transition-all duration-150"></div>
+          <div style="width: 6.5px; height: 6.5px; border-radius: 9999px; background-color: ${isDarkMode ? '#FFFFFF' : '#111111'}; border: 1.5px solid ${isDarkMode ? '#000000' : '#FFFFFF'}; box-shadow: 0 0 0 1px ${isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'};" class="tgl-map-dot"></div>
         </div>
       `;
 
       const icon = L.divIcon({
         className: 'custom-country-city-dot',
         html: dotHtml,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
       });
 
       const dotMarker = L.marker([lat, effLng], { icon, zIndexOffset: 1200 }).addTo(map);
@@ -1749,6 +1749,18 @@ export function MapHubPage({
     let cachedPointsMinute = -1;
     let maskFrame = 0;
 
+    // The mask is painted with half a screen of margin around the view and pinned in layer coordinates,
+    // so a pan inside that margin needs no repaint. Repainting on every move frame made phones flash
+    // the night side bright while each new mask image decoded.
+    let maskRect: { x: number; y: number; w: number; h: number } | null = null;
+    let maskToken = 0;
+    const viewInsideMask = (currentMap: any) => {
+      if (!maskRect) return false;
+      const size = currentMap.getSize();
+      const tl = currentMap.containerPointToLayerPoint([0, 0]);
+      return tl.x >= maskRect.x && tl.y >= maskRect.y && tl.x + size.x <= maskRect.x + maskRect.w && tl.y + size.y <= maskRect.y + maskRect.h;
+    };
+
     const applySoftMask = (currentMap: any, nightPane: HTMLElement) => {
       const size = currentMap.getSize();
       const padX = size.x * 0.5;
@@ -1764,16 +1776,29 @@ export function MapHubPage({
       const origin = currentMap.containerPointToLayerPoint([-padX, -padY]);
       const ox = Math.round(origin.x);
       const oy = Math.round(origin.y);
+      const url = `url(${maskCanvas.toDataURL()})`;
+      const token = ++maskToken;
+      const commit = () => {
+        if (token !== maskToken) return;
+        maskRect = { x: ox, y: oy, w: cols * cell, h: rows * cell };
+        applyMaskStyles(nightPane, ox, oy, cols * cell, rows * cell, url);
+      };
+      // Decode first so the old mask stays until the new one can paint
+      const img = new Image();
+      img.src = url.slice(4, -1);
+      (img.decode ? img.decode() : Promise.resolve()).then(commit, commit);
+    };
+
+    const applyMaskStyles = (nightPane: HTMLElement, ox: number, oy: number, w: number, h: number, url: string) => {
       const s = nightPane.style as any;
       s.left = `${ox}px`;
       s.top = `${oy}px`;
-      s.width = `${cols * cell}px`;
-      s.height = `${rows * cell}px`;
+      s.width = `${w}px`;
+      s.height = `${h}px`;
       Array.from(nightPane.children).forEach(child => {
         (child as HTMLElement).style.left = `${-ox}px`;
         (child as HTMLElement).style.top = `${-oy}px`;
       });
-      const url = `url(${maskCanvas.toDataURL()})`;
       for (const prefix of ['mask', 'webkitMask']) {
         s[`${prefix}Image`] = url;
         s[`${prefix}Size`] = '100% 100%';
@@ -1785,6 +1810,8 @@ export function MapHubPage({
     };
 
     const resetNightPaneMask = (nightPane: HTMLElement) => {
+      maskRect = null;
+      maskToken++;
       const s = nightPane.style as any;
       s.maskImage = 'none';
       s.webkitMaskImage = 'none';
@@ -1798,9 +1825,10 @@ export function MapHubPage({
       });
     };
 
-    const updateNightClip = () => {
+    const updateNightClip = (e?: { type?: string }) => {
       const currentMap = mapRef.current;
       if (!currentMap) return;
+      const live = e?.type === 'move' || e?.type === 'zoom';
       const nightPane = currentMap.getPane('nightTilePane');
       if (!nightPane) return;
 
@@ -1815,6 +1843,8 @@ export function MapHubPage({
       if (isFlyingToCountryRef.current) return;
 
       if (supportsSoftMask) {
+        // Mid-gesture: keep the painted mask unless the view has run past its margin; pinch zoom waits for zoomend
+        if (live && (e?.type === 'zoom' || viewInsideMask(currentMap))) return;
         cancelAnimationFrame(maskFrame);
         maskFrame = requestAnimationFrame(() => applySoftMask(currentMap, nightPane));
         return;
@@ -1889,15 +1919,18 @@ export function MapHubPage({
 
     renderTerminatorAndLights();
     updateNightClip();
-    redrawDayNightRef.current = () => { renderTerminatorAndLights(); updateNightClip(); };
+    redrawDayNightRef.current = () => { maskRect = null; renderTerminatorAndLights(); updateNightClip(); };
 
     // Bind real-time viewport projection listeners
     map.on('move', updateNightClip);
+    map.on('moveend', updateNightClip);
+    map.on('zoomend', updateNightClip);
     map.on('zoom', updateNightClip);
     map.on('viewreset', updateNightClip);
     map.on('resize', updateNightClip);
 
     const interval = setInterval(() => {
+      maskRect = null;
       renderTerminatorAndLights();
       updateNightClip();
     }, 60000); // 1분마다 태양 위치 및 밤 조명 갱신
@@ -1907,6 +1940,8 @@ export function MapHubPage({
       clearInterval(interval);
       cancelAnimationFrame(maskFrame);
       map.off('move', updateNightClip);
+      map.off('moveend', updateNightClip);
+      map.off('zoomend', updateNightClip);
       map.off('zoom', updateNightClip);
       map.off('viewreset', updateNightClip);
       map.off('resize', updateNightClip);
@@ -2124,7 +2159,7 @@ export function MapHubPage({
 
     COUNTRIES_DATA.forEach(country => {
       const dotHtml = `
-        <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 24px; height: 24px;">
+        <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 32px; height: 32px;">
           <!-- Hover Tooltip -->
           <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; pointer-events: none; white-space: nowrap; z-index: 1000;" class="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <span style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block;">
@@ -2132,15 +2167,15 @@ export function MapHubPage({
             </span>
           </div>
           <!-- Faint Dot: 7px with subtle contrast ring -->
-          <div style="width: 7px; height: 7px; border-radius: 9999px; background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)'}; border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'};" class="group-hover:scale-150 transition-all duration-150 shadow-2xs"></div>
+          <div style="width: 7px; height: 7px; border-radius: 9999px; background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)'}; border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'};" class="tgl-map-dot shadow-2xs"></div>
         </div>
       `;
 
       const icon = L.divIcon({
         className: 'custom-country-dot',
         html: dotHtml,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
       });
 
       const addCountryDotAt = (lat: number, lng: number) => {
@@ -2519,8 +2554,8 @@ export function MapHubPage({
   return (
     <main className={`relative w-full h-[calc(100vh-56px)] h-[calc(100dvh-56px)] flex flex-col lg:flex-row bg-white dark:bg-[#141414] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
-      {/* MAP VIEW CONTAINER (Full screen or Split 58% on Desktop / 38vh on Mobile) */}
-      <div className={`relative transition-all duration-300 ease-in-out ${
+      {/* MAP VIEW CONTAINER (Full screen or Split 58% on Desktop / 38vh on Mobile). isolate keeps Leaflet's z-indexes inside it */}
+      <div className={`relative isolate ${isBuilderOpen ? 'tgl-map-picking' : ''} transition-all duration-300 ease-in-out ${
         isBuilderOpen 
           ? 'w-full lg:w-[58%] h-[38vh] lg:h-full shrink-0 border-b lg:border-b-0 lg:border-r border-black/15 dark:border-white/15' 
           : 'w-full h-full'

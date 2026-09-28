@@ -1201,3 +1201,32 @@ input[type="range"]:focus-visible {
 .tgl-route-ahead { animation: tglRouteMarch 1.1s linear infinite; }
 @keyframes tglRouteMarch { to { stroke-dashoffset: -22; } }
 @media (prefers-reduced-motion: reduce) { .tgl-route-ahead { animation: none; } }
+
+/* Maps: an arrow over the map (a hand made picking a place feel imprecise), grabbing only while dragging,
+   a crosshair while the trip builder is choosing places, a pointer over anything clickable */
+.leaflet-container.leaflet-grab,
+.leaflet-container .leaflet-grab { cursor: default; }
+.leaflet-container.leaflet-dragging .leaflet-grab,
+.leaflet-container.leaflet-dragging.leaflet-grab { cursor: grabbing; }
+.tgl-map-picking .leaflet-container.leaflet-grab { cursor: crosshair; }
+.leaflet-container .leaflet-interactive,
+.leaflet-container .leaflet-marker-icon { cursor: pointer; }
+
+/* Map points: the one under the pointer comes to the front, grows and turns red */
+.custom-map-pin:hover,
+.custom-country-city-dot:hover,
+.custom-country-dot:hover { z-index: 100000 !important; }
+.tgl-map-dot { transition: transform 150ms var(--ease-standard, ease), background-color 150ms, box-shadow 150ms; }
+.custom-country-city-dot:hover .tgl-map-dot,
+.custom-country-dot:hover .tgl-map-dot {
+  transform: scale(2);
+  background-color: #DC2626 !important;
+  border-color: #FFFFFF !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.28) !important;
+}
+.custom-map-pin:hover svg { filter: drop-shadow(0 0 0 #DC2626) drop-shadow(0 4px 8px rgba(220, 38, 38, 0.45)); }
+.custom-map-pin > div > div { transition: transform 150ms var(--ease-standard, ease); }
+.custom-map-pin:hover > div > div:last-child { transform: scale(1.22); }
+@media (prefers-reduced-motion: reduce) {
+  .tgl-map-dot, .custom-map-pin > div > div { transition: none; }
+}

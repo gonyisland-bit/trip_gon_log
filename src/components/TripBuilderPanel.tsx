@@ -3192,8 +3192,8 @@ export function TripBuilderPanel({
 
       {/* ─── INTEGRATED TEMPLATES DRAWER / MODAL ─── */}
       {isTemplateDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-lg max-h-[85vh] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col overflow-hidden text-black dark:text-white">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn" onClick={() => setIsTemplateDrawerOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} className="w-full max-w-lg max-h-[85dvh] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col overflow-hidden text-black dark:text-white">
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
               <div className="flex items-center gap-2">
