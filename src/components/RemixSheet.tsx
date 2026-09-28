@@ -2,15 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BedDouble, Check, MapPin, X } from 'lucide-react';
 import { Trip, Plan, TimelineItem, StayItem } from '../types';
 import { confirmDialog } from '../utils/feedback';
+import { useBackToClose } from '../utils/overlayHistory';
 
 // Journey Remix (v1.3 P5): pick places and stays from a journey and start a
 // new plan with them. Times, costs and who-paid are left behind; days keep
 // their order and move to the new start date.
 
-export const OPEN_REMIX_EVENT = 'tgl:open-remix';
-export function openRemix(tripId: number) {
-  window.dispatchEvent(new CustomEvent(OPEN_REMIX_EVENT, { detail: tripId }));
-}
 
 export interface RemixPayload {
   title: string;
@@ -47,6 +44,7 @@ export function RemixSheet({ journey, timeline, stays, onClose, onCreate }: Remi
   const [title, setTitle] = useState(`${journey.title} Remix`);
   const [startDate, setStartDate] = useState(() => isoDay(new Date(Date.now() + 30 * 86400000)));
   const [busy, setBusy] = useState(false);
+  useBackToClose(true, onClose);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busy) onClose(); };

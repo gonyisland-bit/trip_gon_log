@@ -4,12 +4,12 @@ import {
 } from 'lucide-react';
 import { Trip, Plan, SpotPocketItem } from '../types';
 import { getSavedPockets } from '../utils/pocketStorage';
+import { useBackToClose } from '../utils/overlayHistory';
 
 // Command palette (v1.3 P5): Cmd/Ctrl+K. Jump to a journey or a pocket place,
 // or run an app command, from the keyboard alone. The last row hands the
 // query to the full search, which also looks inside timelines and bookings.
 
-export const TOGGLE_PALETTE_EVENT = 'tgl:toggle-palette';
 
 type Group = '명령' | '여정' | '포켓';
 interface Entry {
@@ -60,6 +60,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [pockets] = useState<SpotPocketItem[]>(() => getSavedPockets());
+  useBackToClose(true, onClose);
 
   const entries = useMemo<Entry[]>(() => {
     const cmd = (id: string, label: string, keywords: string, icon: Entry['icon'], run: () => void, hint?: string): Entry =>
@@ -140,13 +141,13 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
   let lastGroup: Group | null = null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[12vh] px-4 bg-black/40 backdrop-blur-[2px]" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[max(0.5rem,env(safe-area-inset-top,0px))] sm:pt-[12vh] px-2 sm:px-4 bg-black/40 backdrop-blur-[2px]" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-label="명령 팔레트"
         onMouseDown={e => e.stopPropagation()}
         onKeyDown={onKeyDown}
-        className="tgl-rise w-full max-w-xl bg-white dark:bg-[#161616] text-black dark:text-white border border-black/20 dark:border-white/20 shadow-[0_24px_64px_rgba(0,0,0,0.3)] flex flex-col max-h-[70vh]"
+        className="tgl-rise w-full max-w-xl bg-white dark:bg-[#161616] text-black dark:text-white border border-black/20 dark:border-white/20 shadow-[0_24px_64px_rgba(0,0,0,0.3)] flex flex-col max-h-[55dvh] sm:max-h-[70vh]"
       >
         <div className="flex items-center gap-3 px-4 h-14 border-b border-black/15 dark:border-white/15">
           <Search className="w-4 h-4 shrink-0 text-black/60 dark:text-white/60" />

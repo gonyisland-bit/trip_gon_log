@@ -28,6 +28,8 @@ import {
 } from './appUtils';
 import { notify } from '../utils/feedback';
 import type { RemixPayload } from '../components/RemixSheet';
+import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
+import { TOGGLE_PALETTE_EVENT } from './layerEvents';
 
 export function useAppState() {
   const [initialNavState] = useState(() => getInitialNavigationState());
@@ -631,7 +633,7 @@ export function useAppState() {
       // 1. Command palette Ctrl+K / Cmd+K (its last row opens the full search)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
-        if (isLoggedIn) window.dispatchEvent(new Event('tgl:toggle-palette'));
+        if (isLoggedIn) window.dispatchEvent(new Event(TOGGLE_PALETTE_EVENT));
         else setIsSearchOpen(prev => !prev);
         return;
       }
@@ -1429,6 +1431,11 @@ export function useAppState() {
   }, [isDetailEditing, isManageDirty, currentView, activeTripId]);
 
   const navigateTo = (view: string, tripId: number | null = null, pushHistory = true, tagFilter: string | null = null, force = false) => {
+    // A layer closed by its own button is still stepping history back; navigate once that has landed
+    if (isLayerBackPending()) {
+      afterLayerBack(() => navigateTo(view, tripId, pushHistory, tagFilter, force));
+      return;
+    }
     const isUnsaved = (currentView === 'manage' && isManageDirty) || (currentView === 'detail' && isDetailEditing);
     if (!force && isUnsaved && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
       setPendingNavigation({ view, tripId });
@@ -1538,7 +1545,9 @@ export function useAppState() {
       }
 
       const currentPath = window.location.pathname + window.location.search;
-      if (currentPath === path) {
+      // Leaving from inside a layer: the new page replaces the layer's history entry
+      const fromLayer = takeOverLayerEntry();
+      if (currentPath === path || fromLayer) {
         window.history.replaceState({ 
           view: effectiveView, 
           mode: effectiveView === 'magazine' ? 'hub' : undefined, 

@@ -8,6 +8,7 @@ import { precipitationIntensity } from '../weather/WeatherParticleCanvas';
 import type { DestinationCity } from '../../data/worldDestinations';
 import { confirmDialog, notify } from '../../utils/feedback';
 import { prefersReducedMotion } from '../../motion';
+import { useBackToClose } from '../../utils/overlayHistory';
 import {
   DepartureFilters, DepartureTicket, FLIGHT_OPTIONS, candidates, dailyPick, defaultFilters, flightHours, flightNumber,
   formatHours, gateFor, isBestSeason, loadTickets, makeTicket, readCachedTickets, saveTickets, selectableMonths, targetMonth, todayKey,
@@ -151,6 +152,8 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
   const [kept, setKept] = useState(false);
   const [clock, setClock] = useState(() => new Date());
   const flip = useFlapSound(muted);
+  // The back gesture steps out of the lobby (straight away: the exit animation is for the close button)
+  useBackToClose(true, onClose);
 
   const pool = useMemo(() => candidates(filters), [filters]);
   const { year, month } = targetMonth(filters);
@@ -296,7 +299,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
       aria-label="Departure Board"
       className={`fixed inset-0 z-[190] bg-[#F2F2EE] text-[#0B0B0C] dark:bg-[#0B0B0C] dark:text-[#F2F2EE] transition-colors duration-700 overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
     >
-      <div className="h-full flex flex-col" style={{ perspective: '1400px' }}>
+      <div className="h-full flex flex-col" style={{ perspective: '1400px', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         {/* Everything above the lobby; scrolls on its own only on very short screens */}
         <div className={`flex-none w-full max-w-5xl mx-auto px-4 sm:px-8 pt-3 sm:pt-4 flex flex-col gap-3 max-h-[calc(100%-140px)] overflow-y-auto hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
           {/* Top bar */}

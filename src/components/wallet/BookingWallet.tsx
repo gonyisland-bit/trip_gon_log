@@ -5,6 +5,7 @@ import { parseTripDateRange } from '../../utils/tripPlanHelper';
 import { bookingContextFromTrip, buildAgodaUrl, buildBookingComUrl, buildNaverFlightUrl, buildSkyscannerFlightUrl } from '../../utils/bookingDeepLinks';
 import { notify } from '../../utils/feedback';
 import { prefersReducedMotion } from '../../motion';
+import { useBackToClose } from '../../utils/overlayHistory';
 
 // Booking Wallet (v1.3 P5): every flight, stay and transit booking of the
 // journeys still ahead, on one screen, with a D-day on each check-in.
@@ -115,6 +116,7 @@ interface BookingWalletProps {
 }
 
 export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transitByTrip, onClose, onOpenBooking, onNewTrip }: BookingWalletProps) {
+  useBackToClose(true, onClose);
   const journeys = useMemo(() => buildJourneys(trips, plans, flightsByTrip, staysByTrip, transitByTrip), [trips, plans, flightsByTrip, staysByTrip, transitByTrip]);
   const now = today0();
 
@@ -151,7 +153,7 @@ export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transi
     >
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-8 pt-4 pb-28 flex flex-col gap-8">
         {/* Top bar */}
-        <div className="sticky top-0 z-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-1 pb-3 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-sm border-b border-black/15 dark:border-white/15 flex items-center justify-between gap-3">
+        <div style={{ paddingTop: 'max(0.25rem, env(safe-area-inset-top, 0px))' }} className="sticky top-0 z-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pb-3 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-sm border-b border-black/15 dark:border-white/15 flex items-center justify-between gap-3">
           <div className="flex items-baseline gap-3">
             <span className="font-sans font-extrabold text-xl tracking-tight">Wallet</span>
             <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums">
