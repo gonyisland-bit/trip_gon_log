@@ -1591,17 +1591,17 @@ export function Lightbox({
               data-pin-nopin="true"
               style={{
                 maxHeight: isSlideshow
-                  ? '100vh'
+                  ? '100dvh'
                   : isMobile
-                    ? 'calc(100vh - 85px)'
-                    : 'calc(100vh - 145px)',
+                    ? 'calc(100dvh - 85px)'
+                    : 'calc(100dvh - 145px)',
                 maxWidth: isSlideshow
                   ? '100vw'
                   : isMobile
                     ? 'calc(100vw - 8px)'
                     : 'min(96vw, calc(100vw - 100px))',
                 width: isSlideshow ? '100vw' : undefined,
-                height: isSlideshow ? '100vh' : undefined,
+                height: isSlideshow ? '100dvh' : undefined,
                 objectFit: 'contain',
                 userSelect: 'none',
                 display: 'block',

@@ -32,7 +32,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
   return (
       <div
         onScroll={handleContainerScroll}
-        className="flex-1 flex flex-col w-full overflow-y-auto max-h-[calc(100vh-60px)]"
+        className="flex-1 flex flex-col w-full overflow-y-auto max-h-[calc(100dvh-60px)]"
       >
 
         {/* Top Bar with Header */}
@@ -182,7 +182,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
         {/* Left: Journey Edit Form */}
         <div
           onScroll={handleContainerScroll}
-          className={`w-full lg:w-3/5 border-b lg:border-b-0 lg:border-r border-black/15 dark:border-white/15 p-4 sm:p-8 overflow-y-auto max-h-[calc(100vh-110px)] lg:max-h-[calc(100vh-60px)] ${
+          className={`w-full lg:w-3/5 border-b lg:border-b-0 lg:border-r border-black/15 dark:border-white/15 p-4 sm:p-8 overflow-y-auto max-h-[calc(100dvh-110px)] lg:max-h-[calc(100dvh-60px)] ${
             mobileArchiveTab === 'EDIT' ? 'block' : 'hidden lg:block'
           }`}
         >
@@ -1002,7 +1002,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
         {/* Right: Reorderable Journey List with Drag & Drop + [▲] / [▼] buttons */}
         <div
           onScroll={handleContainerScroll}
-          className={`w-full lg:w-2/5 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-110px)] lg:max-h-[calc(100vh-60px)] bg-black/[0.01] dark:bg-white/[0.01] ${
+          className={`w-full lg:w-2/5 p-4 sm:p-6 overflow-y-auto max-h-[calc(100dvh-110px)] lg:max-h-[calc(100dvh-60px)] bg-black/[0.01] dark:bg-white/[0.01] ${
             mobileArchiveTab === 'LIST' ? 'block' : 'hidden lg:block'
           }`}
         >

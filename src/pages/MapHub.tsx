@@ -217,7 +217,7 @@ export function MapHubPage(props: MapHubPageProps) {
 
       {/* 4. INLINE SPLIT TRIP BUILDER PANEL (42% on Desktop / remaining height on Mobile) */}
       {isBuilderOpen && (
-        <div className="w-full lg:w-[42%] h-[calc(100%-38vh)] lg:h-full flex-1 overflow-hidden z-20 bg-white dark:bg-[#121212] flex flex-col min-h-0 animate-in fade-in duration-200">
+        <div className="w-full lg:w-[42%] h-[calc(100%-38vh)] lg:h-full flex-1 min-h-0 overflow-hidden z-20 bg-white dark:bg-[#121212] flex flex-col min-h-0 animate-in fade-in duration-200">
           <TripBuilderPanel
             isOpen={true}
             onClose={handleCloseTripBuilder}

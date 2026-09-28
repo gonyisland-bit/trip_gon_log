@@ -18,7 +18,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
   return (
     <div
       onScroll={handleContainerScroll}
-      className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+      className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100dvh-60px)] animate-in fade-in duration-200"
     >
       {/* Header */}
       <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">

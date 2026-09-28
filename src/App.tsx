@@ -258,7 +258,7 @@ function App() {
             </div>
           ) : !isLoggedIn && !isShareMode ? (
             <Suspense fallback={
-              <div className="w-full h-screen bg-black flex items-center justify-center">
+              <div className="w-full h-screen h-[100dvh] bg-black flex items-center justify-center">
                 <div className="w-7 h-7 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               </div>
             }>

@@ -103,7 +103,7 @@ export function RemixSheet({ journey, timeline, stays, pockets = [], onClose, on
         role="dialog"
         aria-label="여정 Remix"
         onMouseDown={e => e.stopPropagation()}
-        className="tgl-rise w-full sm:max-w-xl max-h-[88dvh] flex flex-col bg-white dark:bg-[#161616] text-black dark:text-white border border-black/20 dark:border-white/20 shadow-[0_24px_64px_rgba(0,0,0,0.3)]"
+        className="tgl-rise w-full sm:max-w-xl max-sm:h-[88dvh] max-h-[88dvh] flex flex-col bg-white dark:bg-[#161616] text-black dark:text-white border border-black/20 dark:border-white/20 shadow-[0_24px_64px_rgba(0,0,0,0.3)]"
       >
         <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-black/15 dark:border-white/15">
           <div className="min-w-0">
@@ -136,7 +136,7 @@ export function RemixSheet({ journey, timeline, stays, pockets = [], onClose, on
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
           {days.length === 0 && stays.length === 0 && pockets.length === 0 && (
             <p className="px-5 py-10 text-sm text-center text-black/60 dark:text-white/60">가져올 장소가 없습니다.</p>
           )}

@@ -1230,3 +1230,21 @@ input[type="range"]:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .tgl-map-dot, .custom-map-pin > div > div { transition: none; }
 }
+
+/* iOS Safari (v1.3): a scroll area inside a column flex box shrinks to fit only when its min-height is 0.
+   Safari otherwise grows it to its content and the box's overflow clips it, so the sheet cannot scroll. */
+.flex-col > .overflow-y-auto,
+.flex-col > .overflow-auto { min-height: 0; }
+
+/* Date and time inputs: iOS keeps a native minimum width that pushed two-column forms off screen */
+input[type="date"],
+input[type="time"],
+input[type="month"],
+input[type="datetime-local"] { min-width: 0; max-width: 100%; }
+@supports (-webkit-touch-callout: none) {
+  input[type="date"],
+  input[type="time"],
+  input[type="month"],
+  input[type="datetime-local"] { -webkit-appearance: none; appearance: none; }
+  input::-webkit-date-and-time-value { text-align: left; }
+}

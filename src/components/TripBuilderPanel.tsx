@@ -1837,7 +1837,7 @@ export function TripBuilderPanel({
   if (!isOpen) return null;
 
   return (
-    <aside className="w-full h-full flex flex-col bg-white dark:bg-[#121212] border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 text-black dark:text-white overflow-hidden font-sans select-none z-30 shadow-2xl">
+    <aside className="w-full h-full flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121212] border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 text-black dark:text-white overflow-hidden font-sans select-none z-30 shadow-2xl">
       {/* Panel Header (Nou producte Reference Style); re-keyed on destination change to replay the accent */}
       <div
         key={`guide-header-${guideDestinationLabel}`}
@@ -1900,7 +1900,7 @@ export function TripBuilderPanel({
       </div>
 
       {/* Scrollable Form Body */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-5 space-y-4">
         {error && (
           <p className="text-red-600 dark:text-red-400 text-xs font-mono border-l-2 border-red-500 pl-3">{error}</p>
         )}
@@ -3002,7 +3002,7 @@ export function TripBuilderPanel({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <label className={fieldLabelCls}>
                   START DATE <span className="text-red-500 font-bold">*</span>
                 </label>
@@ -3011,10 +3011,10 @@ export function TripBuilderPanel({
                   required
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className={softInputCls}
+                  className={`${softInputCls} min-w-0 max-sm:px-3`}
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <label className={fieldLabelCls}>
                   END DATE <span className="text-red-500 font-bold">*</span>
                 </label>
@@ -3023,7 +3023,7 @@ export function TripBuilderPanel({
                   required
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className={softInputCls}
+                  className={`${softInputCls} min-w-0 max-sm:px-3`}
                 />
               </div>
             </div>
@@ -3193,7 +3193,7 @@ export function TripBuilderPanel({
       {/* ─── INTEGRATED TEMPLATES DRAWER / MODAL ─── */}
       {isTemplateDrawerOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn" onClick={() => setIsTemplateDrawerOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} className="w-full max-w-lg max-h-[85dvh] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col overflow-hidden text-black dark:text-white">
+          <div onClick={(e) => e.stopPropagation()} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} className="w-full max-w-lg max-sm:h-[85dvh] max-h-[85dvh] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col overflow-hidden text-black dark:text-white">
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
               <div className="flex items-center gap-2">
@@ -3212,7 +3212,7 @@ export function TripBuilderPanel({
             </div>
 
             {/* Drawer Content */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 divide-y divide-black/10 dark:divide-white/10">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-5 divide-y divide-black/10 dark:divide-white/10">
               {/* 1. Rough Quick Templates */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">

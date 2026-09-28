@@ -168,7 +168,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
           <kbd className="shrink-0 font-mono text-micro px-1.5 py-0.5 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60">ESC</kbd>
         </div>
 
-        <div ref={listRef} id="command-palette-list" role="listbox" className="overflow-y-auto overscroll-contain py-1">
+        <div ref={listRef} id="command-palette-list" role="listbox" className="min-h-0 overflow-y-auto overscroll-contain py-1 max-h-[calc(55dvh-3.5rem)] sm:max-h-[calc(70vh-3.5rem)]">
           {rows.length === 0 && <p className="px-4 py-8 text-sm text-center text-black/60 dark:text-white/60">결과가 없습니다.</p>}
           {rows.map((e, i) => {
             const header = e.id !== 'full-search' && e.group !== lastGroup ? e.group : null;
