@@ -26,10 +26,13 @@ import {
   Search,
   ArrowUpDown,
   Check,
-  X
+  X,
+  Play
 } from 'lucide-react';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { IssueCard } from '../components/cards/IssueCard';
+import { MemoryReel } from '../components/reel/MemoryReel';
+import { IssueTextWindow } from '../components/reel/IssueTextWindow';
 import { Lightbox } from '../components/Lightbox';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
 
@@ -475,6 +478,8 @@ export function MagazineHubPage({
   const sectionItems: MagazineItem[] = useMemo(() => {
     return getSynchronizedItems(currentSection);
   }, [currentSection, timelineById, timelineByUrl, allTimelineList, trips]);
+
+  const [isReelOpen, setIsReelOpen] = useState(false);
 
   // Filter only items with actual photos for Lightbox
   const photoItems = useMemo(() => {
@@ -1182,6 +1187,20 @@ export function MagazineHubPage({
             </span>
           </div>
 
+          {/* Reading progress for the open issue */}
+          <div aria-hidden className="tgl-read-progress" />
+
+          {/* 2-0. OPENER: the place name as a window onto the cover photo (v1.3) */}
+          {currentSection?.heroImg && (
+            <IssueTextWindow
+              key={currentSection.id}
+              word={(currentSection.heroLocation || currentSection.heroTitle || currentSection.title).split(/[,·/|]/)[0].trim()}
+              img={getEffectiveImageUrl(currentSection.heroImg)}
+              eyebrow={`NO. ${String(effectiveSections.findIndex(s => s.id === currentSection.id) + 1).padStart(2, '0')}${currentSection.heroDate ? ' · ' + currentSection.heroDate : ''}`}
+              caption={currentSection.heroSubtitle || currentSection.subtitle}
+            />
+          )}
+
           {/* 2-1. HERO SECTION (Editorial Large Hero Banner with Typography) */}
           {currentSection && (
             <section 
@@ -1289,6 +1308,22 @@ export function MagazineHubPage({
                       >
                         <span>EXPLORE FULL JOURNEY ({heroTrip.title})</span>
                         <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Memory Reel: the issue as a photo film with music */}
+                  {photoItems.length > 1 && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsReelOpen(true)}
+                        className="tgl-press group/reel inline-flex items-center gap-3 h-10 pl-1.5 pr-4 rounded-full bg-white text-black hover:bg-red-600 hover:text-white transition-colors duration-base cursor-pointer"
+                      >
+                        <span className="w-7 h-7 rounded-full bg-black text-white group-hover/reel:bg-white group-hover/reel:text-red-600 flex items-center justify-center transition-colors duration-base">
+                          <Play className="w-3.5 h-3.5 fill-current translate-x-[1px]" />
+                        </span>
+                        <span className="font-mono text-meta font-bold uppercase tracking-widest">Memory Reel · {photoItems.length}</span>
                       </button>
                     </div>
                   )}
@@ -1527,7 +1562,7 @@ export function MagazineHubPage({
                 {magazineRows.map((row, rowIdx) => {
                   if (row.type === 'PPP') {
                     return (
-                      <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[2], { spanClass: 'md:col-span-1' })}
@@ -1536,7 +1571,7 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'PL') {
                     return (
-                      <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-2', isMatchedHeight: true })}
                       </div>
@@ -1544,7 +1579,7 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'LP') {
                     return (
-                      <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-2', isMatchedHeight: true })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                       </div>
@@ -1552,7 +1587,7 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'LL') {
                     return (
-                      <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                       </div>
@@ -1560,14 +1595,14 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'SINGLE_LANDSCAPE') {
                     return (
-                      <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                       </div>
                     );
                   }
                   if (row.type === 'PP') {
                     return (
-                      <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                         {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                       </div>
@@ -1575,7 +1610,7 @@ export function MagazineHubPage({
                   }
                   if (row.type === 'SINGLE_PORTRAIT') {
                     return (
-                      <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                      <div key={rowIdx} className="tgl-reveal grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
                         {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                       </div>
                     );
@@ -1591,6 +1626,23 @@ export function MagazineHubPage({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 3. LIGHTBOX MODAL (Full Resolution View)                            */}
       {/* ─────────────────────────────────────────────────────────────────── */}
+      {isReelOpen && currentSection && (
+        <MemoryReel
+          title={currentSection.heroTitle || currentSection.title}
+          subtitle={currentSection.heroSubtitle || currentSection.subtitle}
+          location={currentSection.heroLocation}
+          dateLabel={currentSection.heroDate}
+          shots={photoItems.map(item => ({
+            src: getEffectiveImageUrl(item.img),
+            place: item.title,
+            location: item.placeName || item.location,
+            date: item.date,
+            line: item.quote || item.caption || item.textContent || '',
+          }))}
+          onClose={() => setIsReelOpen(false)}
+        />
+      )}
+
       {lightboxIndex !== null && (
         <Lightbox
           isOpen={lightboxIndex !== null}

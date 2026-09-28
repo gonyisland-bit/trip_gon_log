@@ -1132,3 +1132,31 @@ input[type="range"]:focus-visible {
   animation: tglGlassSheen 7s var(--ease-standard) infinite;
 }
 .dark .tgl-glass-sheen::before { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .08), transparent); }
+
+/* ── Memory Reel (v1.3) ── */
+@keyframes tglKenBurns {
+  from { transform: scale(1.08); translate: 0 0; }
+  to { transform: scale(1.16); translate: var(--kb-shift, 0 0); }
+}
+@keyframes tglReelProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes tglReelCaption { from { opacity: 0; transform: translateY(14px); } }
+.tgl-reel-caption { animation: tglReelCaption 700ms var(--ease-emphasized) 200ms both; }
+/* Issue card: the cover swings fully open before the issue view */
+.tgl-issue-card.tgl-issue-opening .tgl-issue-cover {
+  transform: rotateY(-105deg) !important;
+  box-shadow: 30px 10px 40px rgba(0, 0, 0, .3) !important;
+  transition: transform 460ms cubic-bezier(.6, 0, .4, 1), box-shadow 460ms;
+}
+
+/* Issue view: a red hairline tracks how far you have read */
+.tgl-read-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  @keyframes tglReadProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .tgl-read-progress {
+    display: block; position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 60;
+    background: #dc2626; transform-origin: left;
+    animation: tglReadProgress linear both; animation-timeline: scroll(root);
+  }
+}
+@keyframes tglScrollCue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+.tgl-scroll-cue { animation: tglScrollCue 1.8s var(--ease-standard) infinite; }

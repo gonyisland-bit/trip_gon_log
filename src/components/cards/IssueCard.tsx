@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { prefersReducedMotion } from '../../motion';
 import { BookOpen } from 'lucide-react';
 
 // Magazine issue card (v1.3): the cover is the whole card. Two sheets behind it
@@ -17,13 +18,22 @@ interface IssueCardProps {
 }
 
 export function IssueCard({ coverImg, issueNumber, dateLabel, title, subtitle, location, storyCount, index = 0, onOpen }: IssueCardProps) {
+  // The cover swings open on its spine before the issue opens
+  const [opening, setOpening] = useState(false);
+  const open = () => {
+    if (opening) return;
+    if (prefersReducedMotion()) { onOpen(); return; }
+    setOpening(true);
+    window.setTimeout(onOpen, 460);
+  };
+
   return (
     <article
-      onClick={onOpen}
-      onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
+      onClick={open}
+      onKeyDown={(e) => { if (e.key === 'Enter') open(); }}
       tabIndex={0}
       aria-label={`NO. ${issueNumber} ${title}`}
-      className="tgl-issue-card tgl-rise group relative pr-2.5 pb-2.5 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-[#141414]"
+      className={`tgl-issue-card tgl-rise group ${opening ? 'tgl-issue-opening' : ''} relative pr-2.5 pb-2.5 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-[#141414]`}
       style={{ '--i': index } as React.CSSProperties}
     >
       {/* Sheets behind the cover */}

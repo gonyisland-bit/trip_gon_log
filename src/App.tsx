@@ -90,7 +90,7 @@ function App() {
 
       <div 
         style={appGradientStyle}
-        className={`relative min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen h-[100dvh] overflow-hidden overscroll-none' : ''}`}
+        className={`relative min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-clip flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen h-[100dvh] overflow-hidden overscroll-none' : ''}`}
       >
         {/* Global Live Weather Background Ambience Layer (Home, Trip, Magazine, Pocket, Calendar, Detail) */}
         {isLoggedIn && isGlobalWeatherBgEnabled && globalWeatherData && currentView !== 'map' && (
