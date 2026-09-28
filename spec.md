@@ -337,7 +337,8 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
   - P5-5 공유 → 포켓: 매니페스트 `share_target`(GET `/pocket`), `utils/shareTarget`가 부팅 시 링크를 받아 포켓 스크랩으로 연결. 붙여넣기 · SCRAP 버튼은 기존 기능 유지(백그라운드 클립보드 읽기 없음).
   - P5-6 지도: 데이터 · 헬퍼를 `pages/map/mapData.ts`로 분리, `map/MapLayerPanel`(레이어 · 범례 통합, 데스크톱 팝오버 · 모바일 하단 시트), 낮과 밤 ±12시간 미리 보기 슬라이더, 줌 단계별 핀 묶음 반경과 이름표.
   - P5-7 매거진: 홈 · 허브 슬라이드를 `magazine/MagazineSpread`로 통합, 이슈 화면에 스크롤로 그려지는 동선 `magazine/RouteSketch`.
-- [ ] **다음 후보**: MapHub 상태 훅 · 섹션 컴포넌트 분리(현재 데이터만 분리), 공유 대상 실기기(안드로이드) 확인, Today 모드 현지 시간대 지원, Remix에 포켓 장소 포함.
+- [x] **P5 이후 정리**: 모바일 개선(슬라이드쇼 · 캘린더 · 지도 깜빡임 · 템플릿 · 커서 · 포인트 강조, 매거진 Route 제거 · 뒤로가기), 뒤로가기로 전체 화면 레이어 닫기(`utils/overlayHistory`), 스와이프 판정 공용화(`utils/swipe`, 스크롤 중 이슈 넘김 버그 수정), Today 모드 현지 시간대, Remix 포켓 장소, MapHub 쉘 + `map/useMapHubState` + 섹션(`MapTopBar` · `SelectedCountryCard` · `MapModals`) 분리.
+- [ ] **실기기 확인 필요**: 안드로이드 공유 대상 노출, 지도 팬 깜빡임, 뒤로가기 제스처, 템플릿 서랍, 매거진 히어로 스와이프.
 - 작업 메모: 로그인 없이는 허브 화면이 보이지 않아, 검증은 임시 미리보기 페이지(`*-preview.html` + `src/__*Preview.tsx`)로 컴포넌트를 띄워 확인하고 커밋 전에 삭제했습니다. 같은 폴더에서 다른 세션이 5173 포트를 쓰는 경우 `.claude/launch.json`에 5174 포트 설정을 추가해 사용했습니다(이 파일은 저장소에 포함되지 않음).
 
 ## 7. 변경 이력 (Changelog)
@@ -351,3 +352,4 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - Departure Board 여행지 뽑기, 티켓 보관 · 오늘의 티켓, 빠른 실행 바, 홈 티저.
 - 여행지 뽑기 로비의 낮 · 밤과 날씨 반영, 비행기가 화면 밖으로 퇴장.
 - 예약 지갑 · 명령 팔레트, 여정 Today 모드, 달력 여정 목적지 날씨, 여정 Remix, 공유 대상(포켓), 지도 레이어 패널 · 시간 미리 보기, 매거진 스프레드 통합 · 동선 스케치.
+- 모바일 사용성 정리: 슬라이드쇼 컨트롤, 캘린더 상단, 지도 깜빡임 · 커서 · 포인트 강조, 뒤로가기로 레이어 닫기, 스크롤 중 스와이프 오작동 수정. Today 모드 현지 시간대, Remix 포켓 장소, MapHub 구조 분리.
