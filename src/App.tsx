@@ -9,6 +9,7 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { QuickActionBar, OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './components/QuickActionBar';
 import { TOGGLE_PALETTE_EVENT, OPEN_REMIX_EVENT, openRemix } from './app/layerEvents';
 import { getSavedPockets } from './utils/pocketStorage';
+import { LayerBoundary } from './components/LayerBoundary';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
@@ -26,7 +27,7 @@ const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m =>
 const SettingsModal = lazyWithRetry(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const SearchModal = lazyWithRetry(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
 const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
-const ConfirmModal = lazyWithRetry(() => import('./components/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
+import { ConfirmModal } from './components/ConfirmModal';
 const LandingGuestView = lazyWithRetry(() => import('./components/LandingGuestView').then(m => ({ default: m.LandingGuestView })));
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Trip, TimelineData } from './types';
@@ -711,6 +712,7 @@ function App() {
 
         {/* Booking Wallet: every upcoming booking with its D-day (v1.3 P5) */}
         {isWalletOpen && (
+          <LayerBoundary name="예약 지갑" onClose={() => setIsWalletOpen(false)}>
           <Suspense fallback={null}>
             <BookingWallet
               trips={trips}
@@ -723,6 +725,7 @@ function App() {
               onNewTrip={() => handleCreateTripForCountry('', '')}
             />
           </Suspense>
+          </LayerBoundary>
         )}
 
         {/* Journey Remix: pick places from a journey into a new plan (v1.3 P5) */}
@@ -733,6 +736,7 @@ function App() {
             (list || []).filter(i => i.tripId === source.id).map(i => ({ ...i, date: i.date || d }))
           );
           return (
+            <LayerBoundary name="Remix" onClose={() => setRemixSourceId(null)}>
             <Suspense fallback={null}>
               <RemixSheet
                 journey={source}
@@ -746,11 +750,13 @@ function App() {
                 onCreate={(payload) => handleRemixJourney(source.id, payload)}
               />
             </Suspense>
+            </LayerBoundary>
           );
         })()}
 
         {/* Command palette: Cmd/Ctrl+K (v1.3 P5) */}
         {isPaletteOpen && isLoggedIn && (
+          <LayerBoundary name="명령 팔레트" onClose={() => setIsPaletteOpen(false)}>
           <Suspense fallback={null}>
             <CommandPalette
               trips={trips}
@@ -766,10 +772,12 @@ function App() {
               onRemix={openRemix}
             />
           </Suspense>
+          </LayerBoundary>
         )}
 
         {/* Departure Board: the destination picker game (v1.3) */}
         {isDepartureOpen && (
+          <LayerBoundary name="여행지 뽑기" onClose={() => setIsDepartureOpen(false)}>
           <Suspense fallback={null}>
             <DepartureBoard
               onClose={() => setIsDepartureOpen(false)}
@@ -780,6 +788,7 @@ function App() {
               precipitationProb={ambienceOverride?.precipitationProb ?? (globalWeatherData?.forecast?.[0]?.precipitationProb ?? 0)}
             />
           </Suspense>
+          </LayerBoundary>
         )}
 
         {/* Global Floating Scroll To Top Navigator (Hidden on Detail, Map, and Guest Landing View) */}
