@@ -1196,3 +1196,8 @@ input[type="range"]:focus-visible {
 }
 @keyframes tglTicketNudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 .tgl-ticket-btn:hover .tgl-ticket-icon { animation: tglTicketNudge 600ms var(--ease-spring); }
+
+/* Today mode (P5-2): the route still ahead marches toward the next stop */
+.tgl-route-ahead { animation: tglRouteMarch 1.1s linear infinite; }
+@keyframes tglRouteMarch { to { stroke-dashoffset: -22; } }
+@media (prefers-reduced-motion: reduce) { .tgl-route-ahead { animation: none; } }

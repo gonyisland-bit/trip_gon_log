@@ -14,6 +14,18 @@ import {
   dayColors, getDayOfWeek, minutesToTimeStr, parseTimeToMinutes, timeStrTo24h, time24hTo12h
 } from './detailUtils';
 import type { JourneyDetailState } from './useJourneyDetailState';
+import { formatCountdown } from './useTodayMode';
+
+// The red hairline that marks the current time between today's items
+function NowLine({ label }: { label: string }) {
+  return (
+    <div className="tgl-now-line relative flex items-center gap-2 px-4 md:px-6 h-7" aria-label={`현재 시각 ${label}`}>
+      <span className="w-2 h-2 rounded-full bg-red-600 animate-live-pulse shrink-0" />
+      <span className="font-mono text-micro font-bold tracking-widest text-red-600 dark:text-red-500 tabular-nums">NOW {label}</span>
+      <span className="flex-1 h-px bg-red-600 dark:bg-red-500" />
+    </div>
+  );
+}
 
 export function TimelineTab({ s }: { s: JourneyDetailState }) {
   const {
@@ -27,8 +39,13 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
     handleDropTimelineItem, handleGenerateDefaultTemplate, allTripDates, dynamicDates,
     currentTimeline, handleAddTimelineItemRelativeTo, updateTimelineItem, updateTimelineItemFields,
     toggleFrequentPlace, isFrequent, handleSelectFrequent, handleToggleExcludeFromMap,
-    handleAddTimelineItem, handleDeleteTimelineItem, handleWeatherChange
+    handleAddTimelineItem, handleDeleteTimelineItem, handleWeatherChange, todayMode
   } = s;
+
+  // Today mode shows on today's page and on ALL, never while editing
+  const live = !!todayMode.todayKey && !isEditing && (selectedDate === todayMode.todayKey || selectedDate === 'ALL');
+  const nowAfterId = live ? todayMode.lastPassedId : null;
+  const nowBeforeId = live && nowAfterId === null ? todayMode.next?.id ?? null : null;
 
   return (
     <>
@@ -106,6 +123,38 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
           {!isLoggedIn && (
             <div className="bg-black/5 dark:bg-white/10 px-4 py-1.5 text-micro md:text-meta uppercase font-bold tracking-widest text-center flex items-center justify-center gap-2 shrink-0 w-full">
               <User className="w-3 h-3 shrink-0" /> <span className="truncate">로그인 후 기록을 수정하거나 새 일정을 추가할 수 있습니다.</span>
+            </div>
+          )}
+
+          {/* Today mode: what is next, and how long until it starts */}
+          {live && (
+            <div className="tgl-rise flex items-center gap-3 px-4 md:px-6 py-2.5 border-b border-black/15 dark:border-white/15 shrink-0 w-full">
+              <span className="flex items-center gap-1.5 font-mono text-micro font-bold uppercase tracking-widest text-red-600 dark:text-red-500 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500 animate-live-pulse" />
+                Today · Day {todayMode.dayIndex}
+              </span>
+              <span className="flex-1 min-w-0 text-sm truncate">
+                {todayMode.next ? (
+                  <>
+                    <span className="text-black/60 dark:text-white/60">다음 </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const id = todayMode.next!.id;
+                        setExpandedItemId(id);
+                        itemRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      className="font-bold hover:text-red-600 dark:hover:text-red-500 transition-colors cursor-pointer"
+                    >
+                      {todayMode.next.place || '다음 일정'}
+                    </button>
+                    <span className="font-mono text-meta text-black/70 dark:text-white/70 tabular-nums"> · {formatCountdown(todayMode.minutesToNext ?? 0)}</span>
+                  </>
+                ) : (
+                  <span className="text-black/60 dark:text-white/60">{todayMode.lastPassedId !== null ? '오늘 일정을 모두 지났습니다.' : '오늘은 시간이 정해진 일정이 없습니다.'}</span>
+                )}
+              </span>
+              <span className="font-mono text-meta font-bold tabular-nums shrink-0">{todayMode.nowLabel}</span>
             </div>
           )}
 
@@ -369,6 +418,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         </span>
                       </div>
                     )}
+                    {nowBeforeId === item.id && <NowLine label={todayMode.nowLabel} />}
                     <div 
                       id={`timeline-item-${item.id}`}
                       ref={el => { itemRefs.current[item.id] = el; }} 
@@ -376,7 +426,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         isActive 
                           ? 'bg-black/[0.06] dark:bg-white/[0.09] ring-1 ring-inset ring-black/25 dark:ring-white/30 border-b-black/30 dark:border-b-white/30 shadow-xs' 
                           : 'hover:bg-black/[0.015] dark:hover:bg-white/[0.02]'
-                      } ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
+                      } ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''} ${live && todayMode.pastIds.has(item.id) && !isActive ? 'opacity-60' : ''}`}
                       draggable={isEditing}
                       onDragStart={(e) => {
                         const target = e.target as HTMLElement;
@@ -853,6 +903,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         ) : null}
                       </div>
                     </div>
+                    {nowAfterId === item.id && <NowLine label={todayMode.nowLabel} />}
 
                     {/* Swiss Minimal GAP FILL Bar (Between items of the same date) */}
                     {(() => {

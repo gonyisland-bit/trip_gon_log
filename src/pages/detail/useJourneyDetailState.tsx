@@ -28,6 +28,7 @@ import {
   parseTimeToMinutes, parseDateRange
 } from './detailUtils';
 import { notify, confirmDialog } from '../../utils/feedback';
+import { useTodayMode, useOpenOnToday } from './useTodayMode';
 
 export interface JourneyDetailPageProps {
   isLoggedIn: boolean;
@@ -1823,6 +1824,10 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       return a.id - b.id;
     });
   }, [baseTimeline, selectedDate]);
+
+  // Today mode: a live journey opens on today and tracks the clock
+  const todayMode = useTodayMode(allTripDates, currentTimeline);
+  useOpenOnToday(tripToUse?.id, todayMode.todayKey, selectedDate, setSelectedDate, !!searchFocusTab || isEditing);
 
   // Handle pending detail jump (e.g. from Magazine moment click on Home page)
   useEffect(() => {
@@ -3632,6 +3637,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   );
 
   return {
+    todayMode,
     isLoggedIn, trip, timelineData, flights, stays, transits, onSave, onDelete, isDarkMode,
     onNavigate, searchFocusItemId, searchFocusTab, onClearSearchFocus, onEditModeChange, saveRef,
     allTrips, allPlans, isAdmin, activeTab, setActiveTab, visitedTabs, setVisitedTabs,

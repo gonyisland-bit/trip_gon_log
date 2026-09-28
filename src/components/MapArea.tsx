@@ -34,6 +34,19 @@ interface MapAreaProps {
   radarFocusedSpot?: { lat: number; lng: number; title: string } | null;
   radarRouteTarget?: { lat: number; lng: number; title: string; distance?: number } | null;
   activeGhostSpotId?: string | number | null;
+  // Today mode: today's date key and the minute of the day, to split today's route at the clock
+  todayRoute?: { date: string; nowMin: number } | null;
+}
+
+// "10:30 AM" / "15:30" → minutes since midnight, or null when the item has no time
+function itemMinutes(time?: string): number | null {
+  const m = (time || '').trim().match(/^(d{1,2}):(d{2})s*(AM|PM)?$/i);
+  if (!m) return null;
+  let h = +m[1];
+  const ap = m[3]?.toUpperCase();
+  if (ap === 'PM' && h < 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + +m[2];
 }
 
 const getVehicleDimensions = (type: 'car' | 'train' | 'ship' | 'flight' | null | undefined): { iconSize: [number, number]; iconAnchor: [number, number] } => {
@@ -221,6 +234,7 @@ export function MapArea({
   radarFocusedSpot = null,
   radarRouteTarget = null,
   activeGhostSpotId = null,
+  todayRoute = null,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -235,6 +249,7 @@ export function MapArea({
   const [showPocketPins, setShowPocketPins] = useState<boolean>(true);
   const pocketMarkersRef = useRef<{ [id: string]: any }>({});
   const radarRoutePolylineRef = useRef<any>(null);
+  const todayRouteRef = useRef<any>(null);
   const userMovedMapRef = useRef(false);
   const lastMapCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const lastMapZoomRef = useRef<number | null>(null);
@@ -439,6 +454,38 @@ export function MapArea({
     const bounds = L.latLngBounds([start, end]);
     map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, animate: true });
   }, [radarRouteTarget, mapReady]);
+
+  // ─── Today Route Effect: walked part solid, the rest marching toward the next stop ───
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const L = (window as any).L;
+    if (!L) return;
+    if (todayRouteRef.current) { try { map.removeLayer(todayRouteRef.current); } catch (_) {} todayRouteRef.current = null; }
+    if (!todayRoute || activeTab !== 'timeline' || isEditMode) return;
+    if (selectedDate !== 'ALL' && selectedDate !== todayRoute.date) return;
+
+    const stops = mapPoints.filter((p: any) =>
+      !p.isPhoto && p.date === todayRoute.date &&
+      p.lat !== undefined && p.lng !== undefined && !isNaN(Number(p.lat)) && !isNaN(Number(p.lng))
+    );
+    if (stops.length < 2) return;
+    const coords: [number, number][] = stops.map(p => [Number(p.lat), Number(p.lng)]);
+    let passed = -1;
+    stops.forEach((p, i) => { const m = itemMinutes(p.time); if (m !== null && m <= todayRoute.nowMin) passed = i; });
+
+    const layers: any[] = [];
+    if (passed >= 1) {
+      layers.push(L.polyline(coords.slice(0, passed + 1), { color: '#dc2626', weight: 4, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }));
+    }
+    if (passed < coords.length - 1) {
+      layers.push(L.polyline(coords.slice(Math.max(0, passed)), {
+        color: '#dc2626', weight: 3, opacity: 0.85, dashArray: '2, 9', lineCap: 'round', className: 'tgl-route-ahead',
+      }));
+    }
+    todayRouteRef.current = L.featureGroup(layers).addTo(map);
+    todayRouteRef.current.bringToFront?.();
+  }, [todayRoute?.date, todayRoute?.nowMin, mapPoints, mapReady, activeTab, selectedDate, isEditMode]);
 
   // ─── Active Ghost Spot Focus Effect ───
   useEffect(() => {

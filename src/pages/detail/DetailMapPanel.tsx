@@ -17,7 +17,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
     setCinematicIndex, isCinematicPaused, setIsCinematicPaused, cinematicSpeed, setCinematicSpeed,
     playSwipeStartXRef, mobileSheetSnap, setMobileSheetSnap, setIsPlayFabIdle, resetPlayFabIdleTimer,
     cinematicItems, currentCinematicItem, currentCinematicVehicleType, handleDirectAddFromPocket,
-    handleStartPlaylog, mapPoints, handleItemToggle, renderInfoHeader
+    handleStartPlaylog, mapPoints, handleItemToggle, renderInfoHeader, todayMode
   } = s;
 
   return (
@@ -111,6 +111,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
               radarFocusedSpot={radarFocusedSpot}
               radarRouteTarget={radarRouteTarget}
               activeGhostSpotId={activeGhostSpotId}
+              todayRoute={todayMode.todayKey ? { date: todayMode.todayKey, nowMin: todayMode.nowMin } : null}
             />
           </ErrorBoundary>
 
