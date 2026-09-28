@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Compass, Sun, Moon } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
@@ -6,6 +6,7 @@ import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
+import { QuickActionBar, OPEN_DEPARTURE_EVENT } from './components/QuickActionBar';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
@@ -32,6 +33,20 @@ import { db } from './firebase';
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { lazyWithRetry, cleanForFirestore } from './app/appUtils';
 import { useAppState } from './app/useAppState';
+
+const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
+
+// A departure date for the Trip Guide: a week out this month, otherwise the first Friday of the month
+function departureDate(year: number, month: number): string {
+  const now = new Date();
+  let d = new Date(year, month - 1, 1);
+  if (year === now.getFullYear() && month === now.getMonth() + 1) {
+    d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+  } else {
+    while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
+  }
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function App() {
   const s = useAppState();
@@ -65,6 +80,13 @@ function App() {
     handleBatchPermanentDelete, activeFlights, activeStays, activeTransits, existingTags,
     isHomeGradientActive, appGradientStyle
   } = s;
+
+  const [isDepartureOpen, setIsDepartureOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setIsDepartureOpen(true);
+    window.addEventListener(OPEN_DEPARTURE_EVENT, open);
+    return () => window.removeEventListener(OPEN_DEPARTURE_EVENT, open);
+  }, []);
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-clip w-full`}>
@@ -649,6 +671,25 @@ function App() {
             onCancel={() => setPendingLeaveBuilderModal({ isOpen: false })}
           />
         </Suspense>
+
+        {/* Quick actions across hubs (v1.3) */}
+        {isLoggedIn && ['home', 'archive', 'magazine', 'calendar', 'pocket'].includes(currentView) && (
+          <QuickActionBar
+            currentView={currentView}
+            onNavigate={(view) => navigateTo(view)}
+            onNewTrip={() => handleCreateTripForCountry('', '')}
+          />
+        )}
+
+        {/* Departure Board: the destination picker game (v1.3) */}
+        {isDepartureOpen && (
+          <Suspense fallback={null}>
+            <DepartureBoard
+              onClose={() => setIsDepartureOpen(false)}
+              onBuildTrip={({ countryEn, cityKo, year, month }) => handleCreateTripForCountry(countryEn, cityKo, departureDate(year, month))}
+            />
+          </Suspense>
+        )}
 
         {/* Global Floating Scroll To Top Navigator (Hidden on Detail, Map, and Guest Landing View) */}
         {(isLoggedIn || isShareMode) && currentView !== 'detail' && currentView !== 'map' && <ScrollToTop />}

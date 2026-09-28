@@ -13,6 +13,7 @@ import { getUpcomingPlanInfo, getLiveTripStatus } from '../utils/tripPlanHelper'
 import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
 import { JourneyCard } from '../components/cards/JourneyCard';
 import { JourneyPhaseStrip } from '../components/home/JourneyPhaseStrip';
+import { DepartureTeaser } from '../components/home/DepartureTeaser';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -1435,6 +1436,7 @@ export function HomePage({
       {/* NOW STRIP: live day / countdown / memory (v1.3 Journey Phase Home) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <JourneyPhaseStrip trips={trips} plans={plans} onNavigate={onNavigate} />
+      {isLoggedIn && <DepartureTeaser />}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 01. TRIP (통합 여정 목록 섹션)                                       */}

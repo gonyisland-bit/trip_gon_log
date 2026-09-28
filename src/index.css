@@ -1157,3 +1157,9 @@ input[type="range"]:focus-visible {
 }
 @keyframes tglScrollCue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
 .tgl-scroll-cue { animation: tglScrollCue 1.8s var(--ease-standard) infinite; }
+
+/* ── Departure Board (v1.3): split-flap hinge line ── */
+.tgl-flap::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px;
+  background: rgba(0, 0, 0, .7); pointer-events: none;
+}

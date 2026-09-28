@@ -15,6 +15,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
 import { PocketScrapModal } from '../components/PocketScrapModal';
+import { POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG } from '../components/QuickActionBar';
 import { scrapeSnsMetadata, ScrapedSpotData, inferCategory, detectCityAndCountry } from '../utils/snsScraper';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
@@ -279,6 +280,19 @@ export function PocketHubPage({
   const [isScraping, setIsScraping] = useState<boolean>(false);
   const [scrapedResult, setScrapedResult] = useState<ScrapedSpotData | null>(null);
   const [isScrapModalOpen, setIsScrapModalOpen] = useState<boolean>(false);
+
+  // Quick action "킵하기": open the scrap sheet on arrival, or right away when already here
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(POCKET_OPEN_SCRAP_FLAG) === '1') {
+        sessionStorage.removeItem(POCKET_OPEN_SCRAP_FLAG);
+        setIsScrapModalOpen(true);
+      }
+    } catch (_) {}
+    const open = () => setIsScrapModalOpen(true);
+    window.addEventListener(POCKET_OPEN_SCRAP_EVENT, open);
+    return () => window.removeEventListener(POCKET_OPEN_SCRAP_EVENT, open);
+  }, []);
 
   // Handle direct screenshot/image file to OCR quick scrap
   const handleImageFileToScrap = async (file: File) => {
