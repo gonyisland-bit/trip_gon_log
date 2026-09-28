@@ -33,6 +33,7 @@ import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { IssueCard } from '../components/cards/IssueCard';
 import { MemoryReel } from '../components/reel/MemoryReel';
 import { IssueTextWindow } from '../components/reel/IssueTextWindow';
+import { EditorialBackdrop, BackdropSetting } from '../components/magazine/EditorialBackdrop';
 import { Lightbox } from '../components/Lightbox';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
 
@@ -720,13 +721,16 @@ export function MagazineHubPage({
   const headerVolume = hubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`;
 
   return (
-    <main className="min-h-screen w-full bg-transparent dark:bg-transparent text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
+    <main className="relative isolate min-h-screen w-full bg-transparent dark:bg-transparent text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
+      {/* Flat editorial objects drifting behind the magazine (set in magazine settings) */}
+      <EditorialBackdrop setting={(hubConfig?.backdrop as BackdropSetting) || 'random'} seed={viewMode === 'section' ? (currentSection?.id || 'issue') : 'hub'} />
+
       
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* MODE 1: MAGAZINE DIRECTORY HUB (전체 매거진 이슈 디렉토리 쇼케이스)      */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {viewMode === 'hub' ? (
-        <div className="w-full flex flex-col flex-1 bg-transparent">
+        <div className="relative z-[1] w-full flex flex-col flex-1 bg-transparent">
           {/* 1-1. Editorial Large Headline & Directory Masthead */}
           <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
             {/* Top Barcode & Category Tag */}
@@ -1171,7 +1175,7 @@ export function MagazineHubPage({
         /* ═════════════════════════════════════════════════════════════════ */
         /* MODE 2: SECTION DETAIL VIEW (개별 섹션 풀스토리 에디토리얼 뷰)       */
         /* ═════════════════════════════════════════════════════════════════ */
-        <div className="w-full flex flex-col flex-1 bg-transparent">
+        <div className="relative z-[1] w-full flex flex-col flex-1 bg-transparent">
           
           {/* Back to Hub Floating / Top Navigation Bar */}
           <div className="w-full bg-black/90 backdrop-blur-md text-white px-4 sm:px-8 md:px-12 py-3 flex items-center justify-between text-xs font-mono tracking-wider uppercase z-30 border-b border-white/10">
@@ -1225,7 +1229,7 @@ export function MagazineHubPage({
                       </>
                     )}
 
-                    <div className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-[21%] flex flex-col gap-2.5 sm:gap-3 text-white max-w-4xl">
+                    <div className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-8 sm:bottom-12 flex flex-col gap-2.5 sm:gap-3 text-white max-w-4xl">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-micro sm:text-meta tracking-widest uppercase text-white/85">
                         <span className="bg-white text-black font-extrabold px-2 py-0.5">ISSUE N°{issueNo}</span>
                         {currentSection.heroDate && <span>{currentSection.heroDate}</span>}
@@ -1415,7 +1419,7 @@ export function MagazineHubPage({
           )}
 
           {/* 2-2. SECTION NAVIGATOR / SELECTOR */}
-          <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/40 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-3 sm:px-8 md:px-12 py-2 transition-colors">
+          <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border-b border-black/15 dark:border-white/15 px-3 sm:px-8 md:px-12 py-2.5 transition-colors">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-1 flex-1 min-w-0">
                 <button

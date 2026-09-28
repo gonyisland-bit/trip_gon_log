@@ -1,12 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { prefersReducedMotion } from '../../motion';
 
-// Issue opener (v1.3). One scroll sequence replaces the old separate hero:
-//  1. the magazine title, huge, with the cover photo showing through the letters
-//  2. scrolling pushes into the letters until the photo fills the screen
-//  3. the hero details (title, meta, actions) settle onto the photo
-//  4. the bottom of the photo melts into the page background, so the issue
-//     content that follows continues without a hard edge or a gap
+// Issue opener (v1.3). The hero photo sits underneath at full quality and never
+// moves. A black sheet on top has the magazine title cut out of it, so the photo
+// shows through the letters. Scrolling grows the cut-out until the sheet is gone,
+// the hero details settle on the photo, the photo holds for a while, and then the
+// whole hero scrolls away into the stories below.
 
 interface IssueTextWindowProps {
   word: string;
@@ -22,26 +21,36 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
-// Size the letters so the longest word fits the width and the block fits the height
-function letterSize(word: string): string {
-  const words = word.split(/\s+/).filter(Boolean);
-  const longest = Math.max(4, ...words.map(w => Array.from(w).reduce((n, ch) => n + (/[ㄱ-힝]/.test(ch) ? 1.6 : 1), 0)));
-  const byWidth = Math.round(165 / longest);
-  const byHeight = words.length > 1 ? 30 : 58;
-  return `min(21vw, ${byWidth}vw, ${byHeight}svh, 320px)`;
+const charWidth = (w: string) => Array.from(w).reduce((n, ch) => n + (/[ㄱ-힝]/.test(ch) ? 1.6 : 1), 0);
+
+// Break the title into at most two balanced lines
+function toLines(word: string): string[] {
+  const words = word.toUpperCase().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return words;
+  let best = [words.join(' ')];
+  let bestDiff = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(' ');
+    const b = words.slice(i).join(' ');
+    const diff = Math.abs(charWidth(a) - charWidth(b));
+    if (diff < bestDiff) { bestDiff = diff; best = [a, b]; }
+  }
+  return best;
 }
 
 export function IssueTextWindow({ word, img, eyebrow, overlay, onTouchStart, onTouchEnd }: IssueTextWindowProps) {
   const sectionRef = useRef<HTMLElement>(null);
+  const maskId = `tgl-mask-${useId().replace(/:/g, '')}`;
   const [progress, setProgress] = useState(0);
+  const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   const [reduced] = useState(() => prefersReducedMotion());
 
   useEffect(() => {
-    if (reduced) return;
     let raf = 0;
     const update = () => {
+      setSize({ w: window.innerWidth, h: window.innerHeight });
       const el = sectionRef.current;
-      if (!el) return;
+      if (!el || reduced) return;
       const rect = el.getBoundingClientRect();
       const travel = rect.height - window.innerHeight;
       setProgress(travel > 0 ? Math.max(0, Math.min(1, -rect.top / travel)) : 0);
@@ -57,14 +66,21 @@ export function IssueTextWindow({ word, img, eyebrow, overlay, onTouchStart, onT
     };
   }, [reduced]);
 
+  // Phases: 0–0.5 the letters open up, 0.45–0.62 details arrive, 0.62–1 the photo holds
   const p = reduced ? 1 : progress;
-  const scale = 1 + Math.pow(smooth(0, 0.62, p), 2.2) * 16;
-  const textOpacity = 1 - smooth(0.4, 0.62, p);
-  const photoOpacity = smooth(0.18, 0.6, p);
-  const eyebrowOpacity = 1 - smooth(0, 0.2, p);
-  const overlayIn = smooth(0.62, 0.86, p);
-  const melt = smooth(0.7, 1, p);
-  const bg = `url("${img}")`;
+  const grow = smooth(0, 0.5, p);
+  const scale = 1 + Math.pow(grow, 2.4) * 28;
+  const sheetOpacity = 1 - smooth(0.36, 0.5, p);
+  const chromeOpacity = 1 - smooth(0, 0.18, p);
+  const overlayIn = smooth(0.45, 0.62, p);
+
+  const lines = toLines(word);
+  const longest = Math.max(4, ...lines.map(charWidth));
+  const fontPx = Math.min(size.w * 0.21, (size.w * 1.6) / longest, size.h * (lines.length > 1 ? 0.3 : 0.56), 320);
+  const lineGap = fontPx * 0.96;
+  const cx = size.w / 2;
+  const cy = size.h / 2;
+  const firstBaseline = cy - ((lines.length - 1) * lineGap) / 2 + fontPx * 0.36;
 
   return (
     <section
@@ -72,51 +88,56 @@ export function IssueTextWindow({ word, img, eyebrow, overlay, onTouchStart, onT
       aria-label={word}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      className="relative w-full"
-      style={{ height: reduced ? '100svh' : '210svh' }}
+      className="relative w-full bg-black"
+      style={{ height: reduced ? '100svh' : '240svh' }}
     >
-      <div className="sticky top-0 h-[100svh] w-full overflow-hidden flex items-center justify-center">
-        {/* Black stage that the page background takes over at the end */}
-        <div aria-hidden className="absolute inset-0 bg-black" />
+      <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
+        {/* The hero photo, full quality and still */}
+        <img src={img} alt={word} className="absolute inset-0 w-full h-full object-cover select-none" draggable={false} />
 
-        {/* Cover photo */}
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: bg, opacity: photoOpacity, transform: `scale(${1.1 - photoOpacity * 0.1})` }}
-        />
-        {/* Shade for the hero text */}
-        <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/30" style={{ opacity: overlayIn }} />
+        {/* Shade under the hero details */}
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" style={{ opacity: overlayIn }} />
 
-        {/* Letters as a window onto the photo. Line height 1 plus padding keeps the
-            painted background under every glyph, so nothing is clipped. */}
-        <h2
-          className="tgl-opener-letters relative font-sans font-extrabold uppercase text-center break-keep"
-          style={{
-            fontSize: letterSize(word),
-            lineHeight: 1,
-            letterSpacing: '-0.055em',
-            padding: '0.08em 0.12em',
-            backgroundImage: bg,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent',
-            transform: `scale(${scale})`,
-            opacity: textOpacity,
-            visibility: textOpacity < 0.01 ? 'hidden' : 'visible',
-          }}
-        >
-          {word}
-        </h2>
+        {/* Black sheet with the title cut out */}
+        {sheetOpacity > 0.01 && (
+          <svg
+            aria-hidden
+            className="tgl-opener-letters absolute inset-0 w-full h-full"
+            viewBox={`0 0 ${size.w} ${size.h}`}
+            preserveAspectRatio="none"
+            style={{ opacity: sheetOpacity }}
+          >
+            <defs>
+              <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={size.w} height={size.h}>
+                <rect x="0" y="0" width={size.w} height={size.h} fill="#fff" />
+                <g transform={`translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})`}>
+                  {lines.map((line, i) => (
+                    <text
+                      key={i}
+                      x={cx}
+                      y={firstBaseline + i * lineGap}
+                      textAnchor="middle"
+                      fill="#000"
+                      fontSize={fontPx}
+                      fontWeight={800}
+                      style={{ fontFamily: 'Satoshi, Inter, "Noto Sans KR", sans-serif', letterSpacing: '-0.05em' }}
+                    >
+                      {line}
+                    </text>
+                  ))}
+                </g>
+              </mask>
+            </defs>
+            <rect x="0" y="0" width={size.w} height={size.h} fill="#000" mask={`url(#${maskId})`} />
+          </svg>
+        )}
 
-        <div className="absolute top-20 sm:top-24 inset-x-4 sm:inset-x-10 flex justify-between font-mono text-micro sm:text-meta tracking-[0.18em] uppercase text-white/80 pointer-events-none" style={{ opacity: eyebrowOpacity }}>
+        <div className="absolute top-20 sm:top-24 inset-x-4 sm:inset-x-10 flex justify-between font-mono text-micro sm:text-meta tracking-[0.18em] uppercase text-white/80 pointer-events-none" style={{ opacity: chromeOpacity }}>
           <span>{eyebrow}</span>
           <span>Tripgon Magazine</span>
         </div>
         {!reduced && (
-          <span className="absolute bottom-8 right-4 sm:right-10 flex flex-col items-center gap-2 font-mono text-micro tracking-[0.2em] uppercase text-white/70 pointer-events-none" style={{ opacity: eyebrowOpacity }}>
+          <span className="absolute bottom-8 right-4 sm:right-10 flex flex-col items-center gap-2 font-mono text-micro tracking-[0.2em] uppercase text-white/70 pointer-events-none" style={{ opacity: chromeOpacity }}>
             Scroll
             <span className="block w-px h-8 bg-white/60 origin-top tgl-scroll-cue" />
           </span>
@@ -135,13 +156,6 @@ export function IssueTextWindow({ word, img, eyebrow, overlay, onTouchStart, onT
             {overlay}
           </div>
         )}
-
-        {/* The photo's lower edge melts into the page background */}
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0 h-[28%] pointer-events-none bg-gradient-to-t from-white via-white/70 to-transparent dark:from-[#141414] dark:via-[#141414]/70"
-          style={{ opacity: melt }}
-        />
       </div>
     </section>
   );
