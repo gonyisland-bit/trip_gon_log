@@ -177,7 +177,8 @@
 ### 4.5 로고 (Brand)
 - 정규 로고는 벡터 로고타입 하나만 사용합니다: `public/tripgon-logotype.svg`(이미지용), `BrandLogo` 컴포넌트(인라인, `currentColor`). 원본은 `Logotype_Tripgon log.svg`입니다.
 - 글꼴로 로고를 다시 조판하지 않습니다. 라이트 모드는 검정, 다크 모드는 반전(흰색)으로만 씁니다. 빨강은 로고 밖 포인트에만 씁니다.
-- 스플래시: 정규 로고 16겹 3D 입체 → 빛 스침 → 빨간 헤어라인 → 헤더 로고(`[data-brand-logo]`) 자리로 이어짐. 세션당 1회, 클릭 시 건너뜀.
+- 스플래시(Tiny Planet, 5.8초): 캐리어를 끄는 여성이 빨간 지평선 위를 걷다 카메라가 물러나며 도트 행성이 드러남 → 비행기 궤도 선회 → 행성의 점들이 로고로 재조립, 인물은 헤어라인 끝에 섬 → 헤더 로고(`[data-brand-logo]`) 자리로 이어짐. 점 그리드 배경 없음. 세션당 1회, 클릭 시 건너뜀. 구현: `src/components/splash/`(캐릭터 리그 `travelerRig.ts`, 씬 `tinyPlanetScene.ts`), 도트 데이터 `src/data/worldDots.ts`(`node scripts/build-world-dots.mjs`로 생성).
+- 캐릭터: 긴 흑발, 흰 민소매, 검정 와이드 팬츠, 밝은 피부, 빨간 캐리어. 다크 모드에서는 머리와 바지만 차콜로 밝히고 눈은 검정 유지.
 - favicon과 앱 아이콘은 현재 파일을 유지합니다.
 
 ### 4.6 시인성 (Legibility)

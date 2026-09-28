@@ -71,9 +71,9 @@ function App() {
       {/* Toasts (notify) and confirm dialogs (confirmDialog) */}
       <FeedbackHost />
 
-      {/* Official-logo 3D splash */}
+      {/* Tiny Planet motion splash */}
       {showSplash && (
-        <SplashScreen onFinish={handleFinishSplash} minDurationMs={1700} />
+        <SplashScreen onFinish={handleFinishSplash} />
       )}
 
       {/* Seamless Top Progress Indicator during route transitions (hidden during flight sweep) */}
