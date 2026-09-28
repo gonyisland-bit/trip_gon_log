@@ -34,8 +34,6 @@ import { IssueCard } from '../components/cards/IssueCard';
 import { MemoryReel } from '../components/reel/MemoryReel';
 import { IssueTextWindow } from '../components/reel/IssueTextWindow';
 import { MagazineSpread } from '../components/magazine/MagazineSpread';
-import { RouteSketch, RoutePoint } from '../components/magazine/RouteSketch';
-import { parseTimeToMinutes } from './detail/detailUtils';
 import { Lightbox } from '../components/Lightbox';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
 
@@ -196,6 +194,7 @@ export function MagazineHubPage({
         } else {
           setViewMode('hub');
           sessionStorage.setItem('magazineViewMode', 'hub');
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         }
       } else if (!state && (window.location.pathname === '/magazine' || window.location.hash === '#magazine')) {
         if (secParam) {
@@ -242,6 +241,18 @@ export function MagazineHubPage({
     }
   }, [effectiveSections]);
 
+  // An issue can open without a history entry of its own (from the home page, a shared link or a reload
+  // after navigating away). Put the hub under it so the back gesture returns to the hub, not further back.
+  useEffect(() => {
+    if (viewMode !== 'section') return;
+    const st = window.history.state;
+    if (st?.view === 'magazine' && st?.mode === 'section') return;
+    const sectionId = activeSectionId;
+    window.history.replaceState({ ...(st || {}), view: 'magazine', mode: 'hub' }, '', '/magazine');
+    window.history.pushState({ view: 'magazine', mode: 'section', sectionId }, '', `/magazine?section=${encodeURIComponent(sectionId)}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode]);
+
   const handleOpenSection = (id: string) => {
     setActiveSectionId(id);
     setHubPreviewSectionId(id);
@@ -259,10 +270,11 @@ export function MagazineHubPage({
   const handleBackToHub = () => {
     setViewMode('hub');
     sessionStorage.setItem('magazineViewMode', 'hub');
+    // Every issue entry sits on a hub entry (see above), so stepping back is always the hub
     if (window.history.state?.mode === 'section') {
       window.history.back();
     } else {
-      window.history.pushState({ view: 'magazine', mode: 'hub' }, '', '/magazine');
+      window.history.replaceState({ view: 'magazine', mode: 'hub' }, '', '/magazine');
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
@@ -511,25 +523,6 @@ export function MagazineHubPage({
     if (!currentSection?.heroTripId) return null;
     return trips.find(t => t.id === currentSection.heroTripId) || plans.find(p => p.id === currentSection.heroTripId) || null;
   }, [currentSection, trips, plans]);
-
-  // The issue's journey route: the hero journey, else the journey most of its stories come from (P5-7)
-  const routePoints = useMemo<RoutePoint[]>(() => {
-    let tripId = heroTrip?.id ?? null;
-    if (tripId === null) {
-      const counts = new Map<number, number>();
-      (currentSection?.items || []).forEach(it => { if (it.tripId) counts.set(it.tripId, (counts.get(it.tripId) || 0) + 1); });
-      tripId = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    }
-    if (tripId === null) return [];
-    const items = Object.entries(timelineData || {}).flatMap(([d, list]) => (list || []).map(i => ({ ...i, date: i.date || d })))
-      .filter(i => i.tripId === tripId && !i.excludeFromMap && Number.isFinite(Number(i.lat)) && Number.isFinite(Number(i.lng)) && (Number(i.lat) || Number(i.lng)))
-      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time) || a.id - b.id);
-    const days = [...new Set(items.map(i => i.date))];
-    // Drop repeats of the same spot in a row
-    return items
-      .map(i => ({ lat: Number(i.lat), lng: Number(i.lng), label: (i.place || '').trim(), day: days.indexOf(i.date) + 1 }))
-      .filter((p, idx, arr) => idx === 0 || p.lat !== arr[idx - 1].lat || p.lng !== arr[idx - 1].lng);
-  }, [heroTrip, currentSection, timelineData]);
 
   // Jump to Manage Hub for this section
   const handleEditThisSection = () => {
@@ -1259,11 +1252,6 @@ export function MagazineHubPage({
                 </div>
               </div>
             </section>
-          )}
-
-          {/* 2-1.5 Route: the journey's places drawn in order as the reader scrolls (P5-7) */}
-          {currentSection && routePoints.length >= 2 && (
-            <RouteSketch key={currentSection.id} points={routePoints} title={heroTrip?.title || currentSection.title} />
           )}
 
           {/* 2-2. SECTION NAVIGATOR / SELECTOR */}

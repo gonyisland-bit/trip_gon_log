@@ -1787,11 +1787,12 @@ export function HomePage({
 
           const handleGoToMagazineSection = (secId?: string) => {
             const targetSec = secId || selectedSection?.id;
+            onNavigate('magazine');
+            // navigateTo resets the magazine to its hub; mark the issue after it so the issue opens
             if (targetSec) {
               sessionStorage.setItem('lastMagazineSectionId', String(targetSec));
               sessionStorage.setItem('magazineViewMode', 'section');
             }
-            onNavigate('magazine');
           };
 
           if (availableSections.length === 0) return null;
