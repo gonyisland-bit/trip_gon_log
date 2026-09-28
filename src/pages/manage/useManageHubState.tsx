@@ -172,7 +172,6 @@ export function useManageHubState(props: ManageHubPageProps) {
   const [hubSubtitle, setHubSubtitle] = useState(magazineHubConfig?.subtitle || '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.');
   const [hubBadgeText, setHubBadgeText] = useState(magazineHubConfig?.badgeText || 'CURATED ARCHIVE');
   const [hubVolumeText, setHubVolumeText] = useState(magazineHubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`);
-  const [hubBackdrop, setHubBackdrop] = useState<string>(magazineHubConfig?.backdrop || 'random');
   const [isHubHeaderOpen, setIsHubHeaderOpen] = useState(false);
   const [isSavingHubHeader, setIsSavingHubHeader] = useState(false);
   const [hubHeaderSaveSuccess, setHubHeaderSaveSuccess] = useState(false);
@@ -183,7 +182,6 @@ export function useManageHubState(props: ManageHubPageProps) {
       if (magazineHubConfig.subtitle !== undefined) setHubSubtitle(magazineHubConfig.subtitle);
       if (magazineHubConfig.badgeText !== undefined) setHubBadgeText(magazineHubConfig.badgeText);
       if (magazineHubConfig.volumeText !== undefined) setHubVolumeText(magazineHubConfig.volumeText);
-      if (magazineHubConfig.backdrop !== undefined) setHubBackdrop(magazineHubConfig.backdrop);
     }
   }, [magazineHubConfig]);
 
@@ -196,14 +194,12 @@ export function useManageHubState(props: ManageHubPageProps) {
         subtitle: hubSubtitle,
         badgeText: hubBadgeText,
         volumeText: hubVolumeText,
-        backdrop: hubBackdrop,
       });
       savedMagazineHubHeaderRef.current = {
         mainTitle: hubMainTitle,
         subtitle: hubSubtitle,
         badgeText: hubBadgeText,
         volumeText: hubVolumeText,
-        backdrop: hubBackdrop,
       };
       setHubHeaderSaveSuccess(true);
       setTimeout(() => setHubHeaderSaveSuccess(false), 2000);
@@ -2149,7 +2145,6 @@ export function useManageHubState(props: ManageHubPageProps) {
     subtitle: magazineHubConfig?.subtitle || '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.',
     badgeText: magazineHubConfig?.badgeText || 'CURATED ARCHIVE',
     volumeText: magazineHubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`,
-    backdrop: magazineHubConfig?.backdrop || 'random',
   });
 
   // Helper to normalize journey data for reliable dirty tracking
@@ -2275,10 +2270,9 @@ export function useManageHubState(props: ManageHubPageProps) {
       hubMainTitle !== snap.mainTitle ||
       hubSubtitle !== snap.subtitle ||
       hubBadgeText !== snap.badgeText ||
-      hubVolumeText !== snap.volumeText ||
-      hubBackdrop !== snap.backdrop
+      hubVolumeText !== snap.volumeText
     );
-  }, [hubMainTitle, hubSubtitle, hubBadgeText, hubVolumeText, hubBackdrop, saveRevision]);
+  }, [hubMainTitle, hubSubtitle, hubBadgeText, hubVolumeText, saveRevision]);
 
   // Dirty tracking for BGM playlist & options
   const isBgmDirty = useMemo(() => {
@@ -2319,7 +2313,6 @@ export function useManageHubState(props: ManageHubPageProps) {
       subtitle: hubSubtitle,
       badgeText: hubBadgeText,
       volumeText: hubVolumeText,
-      backdrop: hubBackdrop,
     };
     savedHomeSnapshotRef.current = {
       title,
@@ -2458,7 +2451,6 @@ export function useManageHubState(props: ManageHubPageProps) {
     setHubSubtitle(magSnap.subtitle);
     setHubBadgeText(magSnap.badgeText);
     setHubVolumeText(magSnap.volumeText);
-    setHubBackdrop(magSnap.backdrop);
 
     const bgmSnap = savedBgmSnapshotRef.current;
     if (bgmSnap.tracksJson) {
@@ -3676,7 +3668,6 @@ export function useManageHubState(props: ManageHubPageProps) {
         subtitle: hubSubtitle,
         badgeText: hubBadgeText,
         volumeText: hubVolumeText,
-        backdrop: hubBackdrop,
       };
       syncAllSnapshotsToCurrent();
       setMagazineSaveSuccess(true);
@@ -3838,14 +3829,12 @@ export function useManageHubState(props: ManageHubPageProps) {
             subtitle: hubSubtitle,
             badgeText: hubBadgeText,
             volumeText: hubVolumeText,
-            backdrop: hubBackdrop,
           });
           savedMagazineHubHeaderRef.current = {
             mainTitle: hubMainTitle,
             subtitle: hubSubtitle,
             badgeText: hubBadgeText,
             volumeText: hubVolumeText,
-            backdrop: hubBackdrop,
           };
         } catch (err) {
           console.warn('Magazine hub header save notice:', err);
@@ -3958,7 +3947,6 @@ export function useManageHubState(props: ManageHubPageProps) {
         subtitle: hubSubtitle,
         badgeText: hubBadgeText,
         volumeText: hubVolumeText,
-        backdrop: hubBackdrop,
       };
 
       syncAllSnapshotsToCurrent();
@@ -4120,7 +4108,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     archiveHubConfig, onSaveArchiveHubConfig, timelineData, onSaveMagazineMoments,
     onSaveMagazineSections, onUpdateMagazineSections, onDirtyChange, saveRef, onSaveBgmSettings,
     hubMainTitle, setHubMainTitle, hubSubtitle, setHubSubtitle, hubBadgeText, setHubBadgeText,
-    hubVolumeText, setHubVolumeText, hubBackdrop, setHubBackdrop, isHubHeaderOpen, setIsHubHeaderOpen, isSavingHubHeader,
+    hubVolumeText, setHubVolumeText, isHubHeaderOpen, setIsHubHeaderOpen, isSavingHubHeader,
     setIsSavingHubHeader, hubHeaderSaveSuccess, setHubHeaderSaveSuccess, handleSaveHubHeader,
     archiveHubMainTitle, setArchiveHubMainTitle, archiveHubSubtitle, setArchiveHubSubtitle,
     archiveHubBadgeText, setArchiveHubBadgeText, archiveHubVolumeText, setArchiveHubVolumeText,

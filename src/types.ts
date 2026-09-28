@@ -257,8 +257,6 @@ export interface MagazineHubConfig {
   subtitle?: string;
   badgeText?: string;
   volumeText?: string;
-  // v1.3: flat editorial objects drifting behind the magazine ('off' | 'random' | object name)
-  backdrop?: string;
 }
 
 export interface ArchiveHubConfig {

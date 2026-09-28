@@ -1,11 +1,16 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { prefersReducedMotion } from '../../motion';
 
-// Issue opener (v1.3). The hero photo sits underneath at full quality and never
-// moves. A black sheet on top has the magazine title cut out of it, so the photo
-// shows through the letters. Scrolling grows the cut-out until the sheet is gone,
-// the hero details settle on the photo, the photo holds for a while, and then the
-// whole hero scrolls away into the stories below.
+// Issue opener (v1.3). The hero photo sits underneath at full quality. A black
+// sheet on top has the magazine title cut out of it, so the photo shows through
+// the letters. Scrolling:
+//   0.00–0.50  the cut-out grows until the sheet is gone
+//   0.45–0.62  the hero details settle onto the photo
+//   0.62–1.00  the photo holds
+//   then       the hero slides up with the stories directly below it, the photo
+//              drifting slightly slower and fading into the page as it leaves
+// The frame is pinned with position: sticky; if an ancestor's overflow would
+// defeat sticky, the frame is pinned with a transform instead.
 
 interface IssueTextWindowProps {
   word: string;
@@ -38,22 +43,39 @@ function toLines(word: string): string[] {
   return best;
 }
 
+// True when an ancestor clips or scrolls, which stops position: sticky from pinning to the viewport
+function stickyIsTrapped(el: HTMLElement): boolean {
+  for (let node = el.parentElement; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
+    const s = getComputedStyle(node);
+    if (/(hidden|auto|scroll)/.test(s.overflowX + s.overflowY)) return true;
+  }
+  return false;
+}
+
 export function IssueTextWindow({ word, img, eyebrow, overlay, onTouchStart, onTouchEnd }: IssueTextWindowProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const maskId = `tgl-mask-${useId().replace(/:/g, '')}`;
-  const [progress, setProgress] = useState(0);
+  const [state, setState] = useState({ progress: 0, exit: 0, pin: 0 });
   const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   const [reduced] = useState(() => prefersReducedMotion());
+  const [manualPin, setManualPin] = useState(false);
 
   useEffect(() => {
+    const el = sectionRef.current;
+    const trapped = !!el && stickyIsTrapped(el);
+    setManualPin(trapped);
     let raf = 0;
     const update = () => {
-      setSize({ w: window.innerWidth, h: window.innerHeight });
-      const el = sectionRef.current;
-      if (!el || reduced) return;
+      const vh = window.innerHeight;
+      setSize({ w: window.innerWidth, h: vh });
+      if (!el) return;
       const rect = el.getBoundingClientRect();
-      const travel = rect.height - window.innerHeight;
-      setProgress(travel > 0 ? Math.max(0, Math.min(1, -rect.top / travel)) : 0);
+      const travel = rect.height - vh;
+      const progress = reduced || travel <= 0 ? (reduced ? 1 : 0) : Math.max(0, Math.min(1, -rect.top / travel));
+      // How far the released frame has left the screen (0 = still full, 1 = gone)
+      const exit = Math.max(0, Math.min(1, 1 - rect.bottom / vh));
+      const pin = trapped ? Math.max(0, Math.min(travel, -rect.top)) : 0;
+      setState({ progress, exit, pin });
     };
     const onScroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); };
     update();
@@ -66,13 +88,13 @@ export function IssueTextWindow({ word, img, eyebrow, overlay, onTouchStart, onT
     };
   }, [reduced]);
 
-  // Phases: 0–0.5 the letters open up, 0.45–0.62 details arrive, 0.62–1 the photo holds
-  const p = reduced ? 1 : progress;
+  const { progress: p, exit, pin } = state;
   const grow = smooth(0, 0.5, p);
   const scale = 1 + Math.pow(grow, 2.4) * 28;
-  const sheetOpacity = 1 - smooth(0.36, 0.5, p);
+  const sheetOpacity = reduced ? 0 : 1 - smooth(0.36, 0.5, p);
   const chromeOpacity = 1 - smooth(0, 0.18, p);
-  const overlayIn = smooth(0.45, 0.62, p);
+  const overlayIn = reduced ? 1 : smooth(0.45, 0.62, p);
+  const leave = smooth(0, 1, exit);
 
   const lines = toLines(word);
   const longest = Math.max(4, ...lines.map(charWidth));
@@ -88,15 +110,24 @@ export function IssueTextWindow({ word, img, eyebrow, overlay, onTouchStart, onT
       aria-label={word}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      className="relative w-full bg-black"
-      style={{ height: reduced ? '100svh' : '240svh' }}
+      className="relative w-full"
+      style={{ height: reduced ? '100svh' : '220svh' }}
     >
-      <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
-        {/* The hero photo, full quality and still */}
-        <img src={img} alt={word} className="absolute inset-0 w-full h-full object-cover select-none" draggable={false} />
+      <div
+        className={`${manualPin ? 'absolute left-0 right-0' : 'sticky'} top-0 h-[100svh] w-full overflow-hidden`}
+        style={manualPin ? { transform: `translate3d(0, ${pin}px, 0)` } : undefined}
+      >
+        {/* The hero photo, full quality; it drifts a little slower and fades into the page as it leaves */}
+        <img
+          src={img}
+          alt={word}
+          draggable={false}
+          className="absolute inset-0 w-full h-full object-cover select-none"
+          style={{ opacity: 1 - leave * 0.85, transform: `translate3d(0, ${leave * size.h * 0.22}px, 0)` }}
+        />
 
         {/* Shade under the hero details */}
-        <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" style={{ opacity: overlayIn }} />
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" style={{ opacity: overlayIn * (1 - leave) }} />
 
         {/* Black sheet with the title cut out */}
         {sheetOpacity > 0.01 && (
@@ -148,9 +179,9 @@ export function IssueTextWindow({ word, img, eyebrow, overlay, onTouchStart, onT
           <div
             className="absolute inset-0"
             style={{
-              opacity: overlayIn,
+              opacity: overlayIn * (1 - leave * 1.4),
               transform: `translateY(${(1 - overlayIn) * 24}px)`,
-              pointerEvents: overlayIn > 0.5 ? 'auto' : 'none',
+              pointerEvents: overlayIn > 0.5 && leave < 0.5 ? 'auto' : 'none',
             }}
           >
             {overlay}

@@ -67,7 +67,7 @@ function App() {
   } = s;
 
   return (
-    <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
+    <div className={`${isDarkMode ? 'dark' : ''} overflow-x-clip w-full`}>
       {/* Toasts (notify) and confirm dialogs (confirmDialog) */}
       <FeedbackHost />
 

@@ -33,7 +33,6 @@ import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { IssueCard } from '../components/cards/IssueCard';
 import { MemoryReel } from '../components/reel/MemoryReel';
 import { IssueTextWindow } from '../components/reel/IssueTextWindow';
-import { EditorialBackdrop, BackdropSetting } from '../components/magazine/EditorialBackdrop';
 import { Lightbox } from '../components/Lightbox';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
 
@@ -721,16 +720,13 @@ export function MagazineHubPage({
   const headerVolume = hubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`;
 
   return (
-    <main className="relative isolate min-h-screen w-full bg-transparent dark:bg-transparent text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
-      {/* Flat editorial objects drifting behind the magazine (set in magazine settings) */}
-      <EditorialBackdrop setting={(hubConfig?.backdrop as BackdropSetting) || 'random'} seed={viewMode === 'section' ? (currentSection?.id || 'issue') : 'hub'} />
-
+    <main className="min-h-screen w-full bg-transparent dark:bg-transparent text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
       
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* MODE 1: MAGAZINE DIRECTORY HUB (전체 매거진 이슈 디렉토리 쇼케이스)      */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {viewMode === 'hub' ? (
-        <div className="relative z-[1] w-full flex flex-col flex-1 bg-transparent">
+        <div className="w-full flex flex-col flex-1 bg-transparent">
           {/* 1-1. Editorial Large Headline & Directory Masthead */}
           <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
             {/* Top Barcode & Category Tag */}
@@ -1175,7 +1171,7 @@ export function MagazineHubPage({
         /* ═════════════════════════════════════════════════════════════════ */
         /* MODE 2: SECTION DETAIL VIEW (개별 섹션 풀스토리 에디토리얼 뷰)       */
         /* ═════════════════════════════════════════════════════════════════ */
-        <div className="relative z-[1] w-full flex flex-col flex-1 bg-transparent">
+        <div className="w-full flex flex-col flex-1 bg-transparent">
           
           {/* Back to Hub Floating / Top Navigation Bar */}
           <div className="w-full bg-black/90 backdrop-blur-md text-white px-4 sm:px-8 md:px-12 py-3 flex items-center justify-between text-xs font-mono tracking-wider uppercase z-30 border-b border-white/10">

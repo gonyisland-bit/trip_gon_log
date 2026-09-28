@@ -7,12 +7,11 @@ import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { resolveTimelinePlaceName } from '../../utils/magazineHelper';
 import type { ManageHubState } from './useManageHubState';
 import { notify } from '../../utils/feedback';
-import { BACKDROP_OPTIONS } from '../../components/magazine/EditorialBackdrop';
 
 export function MagazineMode({ s }: { s: ManageHubState }) {
   const {
     trips, timelineData, hubMainTitle, setHubMainTitle, hubSubtitle, setHubSubtitle, hubBadgeText,
-    setHubBadgeText, hubVolumeText, setHubVolumeText, hubBackdrop, setHubBackdrop, isHubHeaderOpen, setIsHubHeaderOpen,
+    setHubBadgeText, hubVolumeText, setHubVolumeText, isHubHeaderOpen, setIsHubHeaderOpen,
     isSavingHubHeader, hubHeaderSaveSuccess, handleSaveHubHeader, selectedMagCardId,
     setSelectedMagCardId, localJourneys, sectionsList, activeMagSectionId, setActiveMagSectionId,
     setMomentsList, selectedTripForMoments, setSelectedTripForMoments, momentSearchQuery,
@@ -103,31 +102,6 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   placeholder="e.g. VOL. 2026"
                   className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
                 />
-              </div>
-            </div>
-
-            {/* Backdrop objects */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
-                BACKDROP OBJECTS (배경 오브제)
-              </span>
-              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="배경 오브제">
-                {BACKDROP_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={hubBackdrop === opt.value}
-                    onClick={() => setHubBackdrop(opt.value)}
-                    className={`tgl-press h-8 px-3 text-xs border transition-colors cursor-pointer ${
-                      hubBackdrop === opt.value
-                        ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                        : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black dark:hover:border-white'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
               </div>
             </div>
 
