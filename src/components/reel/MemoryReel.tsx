@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useBackToClose } from '../../utils/overlayHistory';
 import { Pause, Play, Volume2, VolumeX, X } from 'lucide-react';
 import { getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval } from '../../utils/audioHelper';
 import { prefersReducedMotion } from '../../motion';
@@ -44,6 +45,7 @@ function isSameOrigin(url: string): boolean {
 }
 
 export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose }: MemoryReelProps) {
+  useBackToClose(true, onClose);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
@@ -223,7 +225,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       <div className="absolute inset-0 z-[3] pointer-events-none bg-gradient-to-t from-black/75 via-black/5 to-black/40" />
 
       {/* Progress segments */}
-      <div className="absolute top-0 inset-x-0 z-[5] flex gap-1 px-4 sm:px-8 pt-4">
+      <div className="absolute top-0 inset-x-0 z-[5] flex gap-1 px-4 sm:px-8" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))' }}>
         {shots.map((_, i) => (
           <div key={i} className="h-[2px] flex-1 bg-white/25 overflow-hidden">
             <div
@@ -239,7 +241,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       </div>
 
       {/* Masthead */}
-      <div className="absolute top-8 left-4 right-4 sm:left-8 sm:right-8 z-[5] flex items-center justify-between font-mono text-micro sm:text-meta tracking-[0.18em] uppercase text-white/85">
+      <div style={{ top: 'calc(max(1rem, env(safe-area-inset-top, 0px)) + 1rem)' }} className="absolute left-4 right-4 sm:left-8 sm:right-8 z-[5] flex items-center justify-between font-mono text-micro sm:text-meta tracking-[0.18em] uppercase text-white/85">
         <span>Memory Reel · {title}</span>
         <span className="tabular-nums">{String(Math.min(index + 1, shots.length)).padStart(2, '0')} / {String(shots.length).padStart(2, '0')}</span>
       </div>

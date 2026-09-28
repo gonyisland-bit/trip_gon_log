@@ -1825,9 +1825,9 @@ export function CalendarHubPage({
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-4 sm:pb-6">
         {/* Top Metadata Bar & Pure Typography Year */}
-        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3 mb-4 sm:mb-6">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta tracking-widest font-mono">
+        <div className="flex items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-3 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+            <span className="shrink-0 bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta tracking-widest font-mono">
               CALENDAR
             </span>
 
@@ -1896,15 +1896,17 @@ export function CalendarHubPage({
                 title={`클릭하여 ${nextUpcomingTrip.title} 일정으로 바로 이동`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 group-hover:bg-white animate-pulse shrink-0" />
-                <span className="max-w-[100px] sm:max-w-[150px] truncate">{nextUpcomingTrip.title}</span>
-                <span className="font-extrabold">D-{nextUpcomingTrip.daysLeft === 0 ? 'DAY' : nextUpcomingTrip.daysLeft}</span>
+                {/* Phones show the countdown only; the title joins from sm up */}
+                <span className="hidden sm:inline max-w-[150px] truncate">{nextUpcomingTrip.title}</span>
+                <span className="font-extrabold tabular-nums whitespace-nowrap">D-{nextUpcomingTrip.daysLeft === 0 ? 'DAY' : nextUpcomingTrip.daysLeft}</span>
               </button>
             )}
           </div>
 
-          <div className="text-[11px] sm:text-xs font-mono font-bold tracking-wider text-black/60 dark:text-white/60 flex items-center gap-3">
+          <div className="shrink-0 text-[11px] sm:text-xs font-mono font-bold tracking-wider text-black/60 dark:text-white/60 flex items-center gap-3 whitespace-nowrap">
             <span className="hidden sm:inline">VOL. {currentYear}</span>
-            <span>{trips.length + plans.length} JOURNEYS RECORDED</span>
+            <span className="hidden sm:inline">{trips.length + plans.length} JOURNEYS RECORDED</span>
+            <span className="sm:hidden tabular-nums" title={`${trips.length + plans.length} journeys recorded`}>{trips.length + plans.length} TRIPS</span>
           </div>
         </div>
 
