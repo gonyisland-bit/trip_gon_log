@@ -13,6 +13,7 @@ interface SearchModalProps {
   staysByTrip: { [tripId: number]: StayItem[] };
   transitByTrip: { [tripId: number]: TransitItem[] };
   onResultClick: (tripId: number, tabId: string, itemId: number | null) => void;
+  initialQuery?: string;
 }
 
 interface SearchResult {
@@ -36,6 +37,7 @@ export function SearchModal({
   staysByTrip,
   transitByTrip,
   onResultClick,
+  initialQuery = '',
 }: SearchModalProps) {
   const [query, setQuery] = useState('');
   const [searchCategory, setSearchCategory] = useState<'journeys' | 'timeline'>('journeys');
@@ -44,7 +46,7 @@ export function SearchModal({
 
   useEffect(() => {
     if (isOpen) {
-      setQuery('');
+      setQuery(initialQuery);
       setSearchCategory('journeys');
       setResults([]);
       setTimeout(() => inputRef.current?.focus(), 100);

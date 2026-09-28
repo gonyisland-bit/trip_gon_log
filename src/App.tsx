@@ -6,7 +6,8 @@ import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
-import { QuickActionBar, OPEN_DEPARTURE_EVENT } from './components/QuickActionBar';
+import { QuickActionBar, OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './components/QuickActionBar';
+import { TOGGLE_PALETTE_EVENT } from './components/CommandPalette';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
@@ -35,6 +36,8 @@ import { lazyWithRetry, cleanForFirestore } from './app/appUtils';
 import { useAppState } from './app/useAppState';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
+const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
+const CommandPalette = lazyWithRetry(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
 
 // A departure date for the Trip Guide: a week out this month, otherwise the first Friday of the month
 function departureDate(year: number, month: number): string {
@@ -78,15 +81,33 @@ function App() {
     handleConfirmDeleteJourney, handleRestoreJourney, handlePermanentDeleteJourney,
     handleDeleteMagazineSection, handleRestoreMagazineSection, handlePermanentDeleteMagazineSection,
     handleBatchPermanentDelete, activeFlights, activeStays, activeTransits, existingTags,
-    isHomeGradientActive, appGradientStyle
+    isHomeGradientActive, appGradientStyle, handleCycleNightMode
   } = s;
 
   const [isDepartureOpen, setIsDepartureOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [searchInitialQuery, setSearchInitialQuery] = useState('');
   useEffect(() => {
-    const open = () => setIsDepartureOpen(true);
-    window.addEventListener(OPEN_DEPARTURE_EVENT, open);
-    return () => window.removeEventListener(OPEN_DEPARTURE_EVENT, open);
+    const openDeparture = () => setIsDepartureOpen(true);
+    const openWallet = () => setIsWalletOpen(true);
+    const togglePalette = () => setIsPaletteOpen(v => !v);
+    window.addEventListener(OPEN_DEPARTURE_EVENT, openDeparture);
+    window.addEventListener(OPEN_WALLET_EVENT, openWallet);
+    window.addEventListener(TOGGLE_PALETTE_EVENT, togglePalette);
+    return () => {
+      window.removeEventListener(OPEN_DEPARTURE_EVENT, openDeparture);
+      window.removeEventListener(OPEN_WALLET_EVENT, openWallet);
+      window.removeEventListener(TOGGLE_PALETTE_EVENT, togglePalette);
+    };
   }, []);
+
+  // Open the pocket's scrap sheet, from the pocket itself or from any other hub
+  const keepPlace = () => {
+    if (currentView === 'pocket') { window.dispatchEvent(new Event(POCKET_OPEN_SCRAP_EVENT)); return; }
+    try { sessionStorage.setItem(POCKET_OPEN_SCRAP_FLAG, '1'); } catch {}
+    navigateTo('pocket');
+  };
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-clip w-full`}>
@@ -153,7 +174,7 @@ function App() {
             setShowSettings={setShowSettings}
             openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
             openSettingModal={() => setIsManageModalOpen(true)}
-            onSearchClick={() => setIsSearchOpen(true)}
+            onSearchClick={() => { setSearchInitialQuery(''); setIsSearchOpen(true); }}
             isAdmin={isAdmin}
             isHomeGradientActive={isHomeGradientActive}
             currentUserProfile={currentUserProfile}
@@ -609,6 +630,7 @@ function App() {
             staysByTrip={staysByTrip}
             transitByTrip={transitByTrip}
             onResultClick={handleSearchResultClick}
+            initialQuery={searchInitialQuery}
           />
 
           {/* Save Complete Auto-Dismiss Modal */}
@@ -679,6 +701,40 @@ function App() {
             onNavigate={(view) => navigateTo(view)}
             onNewTrip={() => handleCreateTripForCountry('', '')}
           />
+        )}
+
+        {/* Booking Wallet: every upcoming booking with its D-day (v1.3 P5) */}
+        {isWalletOpen && (
+          <Suspense fallback={null}>
+            <BookingWallet
+              trips={trips}
+              plans={plans}
+              flightsByTrip={flightsByTrip}
+              staysByTrip={staysByTrip}
+              transitByTrip={transitByTrip}
+              onClose={() => setIsWalletOpen(false)}
+              onOpenBooking={handleSearchResultClick}
+              onNewTrip={() => handleCreateTripForCountry('', '')}
+            />
+          </Suspense>
+        )}
+
+        {/* Command palette: Cmd/Ctrl+K (v1.3 P5) */}
+        {isPaletteOpen && isLoggedIn && (
+          <Suspense fallback={null}>
+            <CommandPalette
+              trips={trips}
+              plans={plans}
+              onClose={() => setIsPaletteOpen(false)}
+              onNavigate={(view, tripId) => navigateTo(view, tripId ?? null)}
+              onNewTrip={() => handleCreateTripForCountry('', '')}
+              onOpenDeparture={openDepartureBoard}
+              onOpenWallet={openBookingWallet}
+              onKeepPlace={keepPlace}
+              onCycleNightMode={handleCycleNightMode}
+              onFullSearch={(q) => { setSearchInitialQuery(q); setIsSearchOpen(true); }}
+            />
+          </Suspense>
         )}
 
         {/* Departure Board: the destination picker game (v1.3) */}

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bookmark, Plane, Ticket } from 'lucide-react';
+import { Bookmark, Plane, Ticket, Wallet } from 'lucide-react';
 
-// Quick action bar (v1.3): a small dock of three icons. The label shows on
+// Quick action bar (v1.3): a small dock of four icons. The label shows on
 // hover or keyboard focus; the ticket stays red because it is the one people
 // come back for. The dock slides away while scrolling down.
 
@@ -9,8 +9,14 @@ export const OPEN_DEPARTURE_EVENT = 'tgl:open-departure';
 export const POCKET_OPEN_SCRAP_EVENT = 'tgl:pocket-open-scrap';
 export const POCKET_OPEN_SCRAP_FLAG = 'pocket_open_scrap';
 
+export const OPEN_WALLET_EVENT = 'tgl:open-wallet';
+
 export function openDepartureBoard() {
   window.dispatchEvent(new Event(OPEN_DEPARTURE_EVENT));
+}
+
+export function openBookingWallet() {
+  window.dispatchEvent(new Event(OPEN_WALLET_EVENT));
 }
 
 interface QuickActionBarProps {
@@ -76,6 +82,7 @@ export function QuickActionBar({ currentView, onNavigate, onNewTrip }: QuickActi
     >
       <DockButton label="포켓" onClick={keepPlace}><Bookmark className="w-4 h-4" /></DockButton>
       <DockButton label="신규여행" onClick={onNewTrip}><Plane className="w-4 h-4" /></DockButton>
+      <DockButton label="예약지갑" onClick={openBookingWallet}><Wallet className="w-4 h-4" /></DockButton>
       <DockButton label="여행지뽑기" onClick={openDepartureBoard} accent><Ticket className="w-4 h-4" /></DockButton>
     </nav>
   );

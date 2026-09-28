@@ -627,10 +627,11 @@ export function useAppState() {
   // Global shortcuts: Ctrl+K (Search), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // 1. Search shortcut Ctrl+K / Cmd+K
+      // 1. Command palette Ctrl+K / Cmd+K (its last row opens the full search)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
-        setIsSearchOpen(prev => !prev);
+        if (isLoggedIn) window.dispatchEvent(new Event('tgl:toggle-palette'));
+        else setIsSearchOpen(prev => !prev);
         return;
       }
 

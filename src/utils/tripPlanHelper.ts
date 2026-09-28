@@ -79,6 +79,29 @@ export function getUpcomingPlanInfo(trip: {
   };
 }
 
+/**
+ * Parse a trip date range ("2026.10.15 - 10.19", "2026.10.15 ~ 2026.10.19", "2026.10.15") into
+ * local midnight start and end dates; a single date gives the same start and end.
+ */
+export function parseTripDateRange(dateRangeStr?: string): { start: Date; end: Date } | null {
+  if (!dateRangeStr) return null;
+  // A plain hyphen separates the range only when spaced or between dotted dates, so ISO dates stay whole
+  const parts = dateRangeStr.split(/\s*[—–~]\s*|\s+-\s+|(?<=\.\d{1,2})-(?=\d)/).map(p => p.trim());
+  const yearMatch = dateRangeStr.match(/(\d{4})/);
+  const commonYear = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
+  const parsePart = (str: string, fallbackYear: string) => {
+    const ymd = str.match(/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (ymd) return new Date(+ymd[1], +ymd[2] - 1, +ymd[3]);
+    const md = str.match(/(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (md) return new Date(+fallbackYear, +md[1] - 1, +md[2]);
+    return null;
+  };
+  const start = parts[0] ? parsePart(parts[0], commonYear) : null;
+  if (!start) return null;
+  const end = (parts[1] && parsePart(parts[1], String(start.getFullYear()))) || start;
+  return { start, end: end < start ? start : end };
+}
+
 // Helper to detect if today is within the trip date range
 export function getLiveTripStatus(dateRangeStr?: string): { isLive: boolean; currentDay: number; totalDays: number } {
   if (!dateRangeStr) return { isLive: false, currentDay: 0, totalDays: 0 };

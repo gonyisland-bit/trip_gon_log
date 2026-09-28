@@ -13,7 +13,8 @@ import {
   buildGoogleFlightsUrl, 
   buildAgodaUrl, 
   buildBookingComUrl, 
-  buildAirbnbUrl 
+  buildAirbnbUrl,
+  bookingContextFromTrip
 } from '../utils/bookingDeepLinks';
 
 interface QuickBookingModalProps {
@@ -63,15 +64,11 @@ function QuickBookingModalContent({
   }, [destination, initialToCode]);
   const [depDate, setDepDate] = useState<string>(() => {
     if (startDate) return startDate.replace(/\./g, '-');
-    const today = new Date();
-    today.setDate(today.getDate() + 14);
-    return today.toISOString().split('T')[0];
+    return bookingContextFromTrip({}, null).departDate;
   });
   const [retDate, setRetDate] = useState<string>(() => {
     if (endDate) return endDate.replace(/\./g, '-');
-    const next = new Date();
-    next.setDate(next.getDate() + 18);
-    return next.toISOString().split('T')[0];
+    return bookingContextFromTrip({}, null).returnDate || '';
   });
   const [adults, setAdults] = useState<number>(Math.max(1, memberCount));
 

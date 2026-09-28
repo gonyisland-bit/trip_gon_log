@@ -493,3 +493,31 @@ export function buildAirbnbUrl(ctx: BookingSearchContext): string {
 
   return `https://www.airbnb.co.kr/s/${city}/homes?checkin=${checkIn}&checkout=${checkOut}&adults=${adults}`;
 }
+
+// ── TRIP → SEARCH CONTEXT ─────────────────────────────────────────────────────
+
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/**
+ * Prefill a booking search from a journey: destination from its places, dates from its range
+ * (a one-day journey returns the next day), travellers from its members, airports from its first flight.
+ */
+export function bookingContextFromTrip(
+  trip: { title?: string; locationStr?: string; country?: string; date?: string; members?: string[] },
+  range: { start: Date; end: Date } | null,
+  firstFlight?: { fromCode?: string; toCode?: string },
+): BookingSearchContext {
+  const destination = extractCleanCityName(trip.locationStr || trip.country || trip.title || '') || trip.title || '';
+  const start = range?.start ?? new Date(Date.now() + 14 * 86400000);
+  let end = range?.end ?? new Date(start.getTime() + 4 * 86400000);
+  if (end.getTime() <= start.getTime()) end = new Date(start.getTime() + 86400000);
+  return {
+    destination,
+    originAirport: firstFlight?.fromCode || 'ICN',
+    destinationAirport: firstFlight?.toCode || inferAirportCode(destination),
+    departDate: ymd(start),
+    returnDate: ymd(end),
+    adults: Math.max(1, trip.members?.length || 1),
+    rooms: 1,
+  };
+}
