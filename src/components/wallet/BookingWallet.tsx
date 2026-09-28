@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BedDouble, Copy, ExternalLink, Plane, TrainFront, X } from 'lucide-react';
 import { Trip, Plan, FlightItem, StayItem, TransitItem } from '../../types';
 import { parseTripDateRange } from '../../utils/tripPlanHelper';
@@ -117,6 +117,13 @@ interface BookingWalletProps {
 
 export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transitByTrip, onClose, onOpenBooking, onNewTrip }: BookingWalletProps) {
   useBackToClose(true, onClose);
+  const [leaving, setLeaving] = useState(false);
+  // Close buttons and Escape leave with the lobby exit motion; row taps that navigate close at once
+  const requestClose = useCallback(() => {
+    if (prefersReducedMotion()) { onClose(); return; }
+    setLeaving(true);
+    window.setTimeout(onClose, 380);
+  }, [onClose]);
   const journeys = useMemo(() => buildJourneys(trips, plans, flightsByTrip, staysByTrip, transitByTrip), [trips, plans, flightsByTrip, staysByTrip, transitByTrip]);
   const now = today0();
 
@@ -128,12 +135,12 @@ export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transi
   }, [journeys]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') requestClose(); };
     window.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
-  }, [onClose]);
+  }, [requestClose]);
 
   const copy = async (text: string) => {
     try { await navigator.clipboard.writeText(text); notify(`${text} 복사했습니다.`, 'success'); }
@@ -149,7 +156,7 @@ export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transi
     <div
       role="dialog"
       aria-label="예약 지갑"
-      className={`fixed inset-0 z-[185] bg-white dark:bg-[#111111] text-black dark:text-white overflow-y-auto overscroll-contain ${prefersReducedMotion() ? '' : 'tgl-lobby-in'}`}
+      className={`fixed inset-0 z-[185] bg-white dark:bg-[#111111] text-black dark:text-white overflow-y-auto overscroll-contain ${prefersReducedMotion() ? '' : leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
     >
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-8 pt-4 pb-28 flex flex-col gap-8">
         {/* Top bar */}
@@ -160,7 +167,7 @@ export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transi
               {journeys.length} journeys · {journeys.reduce((n, j) => n + j.rows.length, 0)} bookings
             </span>
           </div>
-          <button type="button" onClick={onClose} className="tgl-press tap-target w-9 h-9 grid place-items-center border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer" aria-label="닫기">
+          <button type="button" onClick={requestClose} className="tgl-press tap-target w-9 h-9 grid place-items-center border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer" aria-label="닫기">
             <X className="w-4 h-4" />
           </button>
         </div>

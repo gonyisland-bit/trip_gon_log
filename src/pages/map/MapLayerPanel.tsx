@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { prefersReducedMotion } from '../../motion';
+import { useBackToClose } from '../../utils/overlayHistory';
 import { Home as HomeIcon, Layers, List, Plane, RotateCcw, Sun, Tag, X } from 'lucide-react';
 
 // Map layers (v1.3 P5-6): one panel for what the map shows and what each mark
@@ -39,16 +41,26 @@ function Switch({ on }: { on: boolean }) {
 
 export function MapLayerPanel(p: MapLayerPanelProps) {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // Close with the shared sheet exit (a slide down on phones, a short fall on desktop)
+  const close = useCallback(() => {
+    if (!open || closing) return;
+    if (prefersReducedMotion()) { setOpen(false); return; }
+    setClosing(true);
+    window.setTimeout(() => { setOpen(false); setClosing(false); }, 220);
+  }, [open, closing]);
+  useBackToClose(open, () => { setOpen(false); setClosing(false); });
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    const onDown = (e: PointerEvent) => { if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    const onDown = (e: PointerEvent) => { if (rootRef.current && !rootRef.current.contains(e.target as Node)) close(); };
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', onDown);
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('pointerdown', onDown); };
-  }, [open]);
+  }, [open, close]);
 
   const layers: LayerToggle[] = [
     { key: 'visited', label: '다녀온 곳', on: p.showVisitedPins, onToggle: p.onToggleVisited, swatch: <PinSwatch color="#DC2626" /> },
@@ -64,7 +76,7 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
     <div ref={rootRef} className="relative shrink-0 self-start h-8 sm:h-9">
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={() => (open ? close() : setOpen(true))}
         aria-expanded={open}
         aria-label="지도 레이어"
         className={`tap-target h-8 sm:h-9 px-2.5 sm:px-3 flex items-center gap-1.5 border shadow-2xl backdrop-blur-md transition-colors cursor-pointer ${
@@ -79,17 +91,17 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
       {open && (
         <>
           {/* Phone: dim the map behind the sheet */}
-          <div className="sm:hidden fixed inset-0 z-[60] bg-black/30" onClick={() => setOpen(false)} />
+          <div className={`sm:hidden fixed inset-0 z-[60] bg-black/30 ${closing ? 'tgl-sheet-backdrop-out' : 'tgl-sheet-backdrop-in'}`} onClick={close} />
           <div
             role="dialog"
             aria-label="지도 레이어"
-            className="tgl-rise z-[61] max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white dark:bg-[#141414] text-black dark:text-white border-t sm:border border-black/20 dark:border-white/20 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] sm:shadow-2xl"
+            className={`${closing ? 'tgl-sheet-out' : 'tgl-sheet-in'} z-[61] max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white dark:bg-[#141414] text-black dark:text-white border-t sm:border border-black/20 dark:border-white/20 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] sm:shadow-2xl`}
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             <div className="sm:hidden w-10 h-1 bg-black/20 dark:bg-white/20 mx-auto mt-2" />
             <div className="flex items-center justify-between px-4 pt-3 pb-2">
               <span className="font-mono text-micro font-bold uppercase tracking-widest text-black/60 dark:text-white/60">Layers</span>
-              <button type="button" onClick={() => setOpen(false)} className="tap-target w-7 h-7 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer" aria-label="닫기">
+              <button type="button" onClick={close} className="tap-target w-7 h-7 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer" aria-label="닫기">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -141,10 +153,10 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
             )}
 
             <div className="grid grid-cols-2 border-t border-black/15 dark:border-white/15">
-              <button type="button" onClick={() => { p.onResetView(); setOpen(false); }} className="h-11 flex items-center justify-center gap-2 text-sm font-semibold hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer">
+              <button type="button" onClick={() => { p.onResetView(); close(); }} className="h-11 flex items-center justify-center gap-2 text-sm font-semibold hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer">
                 <HomeIcon className="w-3.5 h-3.5" /> 전체 보기
               </button>
-              <button type="button" onClick={() => { p.onOpenPlaces(); setOpen(false); }} className="h-11 flex items-center justify-center gap-2 text-sm font-semibold border-l border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer">
+              <button type="button" onClick={() => { p.onOpenPlaces(); close(); }} className="h-11 flex items-center justify-center gap-2 text-sm font-semibold border-l border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer">
                 <List className="w-3.5 h-3.5" /> 장소 목록
               </button>
             </div>

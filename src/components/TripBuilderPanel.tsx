@@ -53,6 +53,7 @@ import { getSavedPockets } from '../utils/pocketStorage';
 import { SpotPocketItem, UserProfile } from '../types';
 import { auth } from '../firebase';
 import { confirmDialog } from '../utils/feedback';
+import { Sheet, SheetCloseButton } from './Sheet';
 
 export interface TripBuilderPanelProps {
   isOpen: boolean;
@@ -3192,23 +3193,18 @@ export function TripBuilderPanel({
 
       {/* ─── INTEGRATED TEMPLATES DRAWER / MODAL ─── */}
       {isTemplateDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn" onClick={() => setIsTemplateDrawerOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} className="w-full max-w-lg max-sm:h-[85dvh] max-h-[85dvh] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col overflow-hidden text-black dark:text-white">
+        <Sheet onClose={() => setIsTemplateDrawerOpen(false)} label="템플릿" zIndex={200} panelClassName="max-w-lg max-sm:h-[85dvh] max-h-[85dvh] overflow-hidden">
             {/* Drawer Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
+            <div className="flex items-center justify-between px-5 pt-1 pb-3 sm:py-4 border-b border-black/10 dark:border-white/10 shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-black dark:text-white" />
                 <span className="text-sm font-extrabold uppercase font-mono tracking-wider">
                   TEMPLATES LIBRARY
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsTemplateDrawerOpen(false)}
-                className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
-              >
+              <SheetCloseButton className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer transition-colors">
                 <X className="w-4 h-4" />
-              </button>
+              </SheetCloseButton>
             </div>
 
             {/* Drawer Content */}
@@ -3340,8 +3336,7 @@ export function TripBuilderPanel({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* Confirmation Modal */}

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BedDouble, Bookmark, Check, MapPin, X } from 'lucide-react';
 import { Trip, Plan, TimelineItem, StayItem, SpotPocketItem } from '../types';
 import { confirmDialog } from '../utils/feedback';
-import { useBackToClose } from '../utils/overlayHistory';
+import { Sheet, useSheetClose } from './Sheet';
 
 // Journey Remix (v1.3 P5): pick places, stays and pocket places from a journey
 // and start a new plan with them. Times, costs and who-paid are left behind; days
@@ -48,15 +48,6 @@ export function RemixSheet({ journey, timeline, stays, pockets = [], onClose, on
   const [startDate, setStartDate] = useState(() => isoDay(new Date(Date.now() + 30 * 86400000)));
   const [busy, setBusy] = useState(false);
   const [pocketDay, setPocketDay] = useState(0);
-  useBackToClose(true, onClose);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busy) onClose(); };
-    window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
-  }, [onClose, busy]);
 
   const allKeys = useMemo(() => [...days.flatMap(d => d.items.map(i => `t-${i.id}`)), ...stays.map(s => `s-${s.id}`), ...pockets.map(p => `p-${p.id}`)], [days, stays, pockets]);
   const count = allKeys.filter(k => picked.has(k)).length;
@@ -98,21 +89,13 @@ export function RemixSheet({ journey, timeline, stays, pockets = [], onClose, on
   );
 
   return (
-    <div className="fixed inset-0 z-[195] flex items-end sm:items-center justify-center bg-black/45 backdrop-blur-[2px]" onMouseDown={() => !busy && onClose()}>
-      <div
-        role="dialog"
-        aria-label="여정 Remix"
-        onMouseDown={e => e.stopPropagation()}
-        className="tgl-rise w-full sm:max-w-xl max-sm:h-[88dvh] max-h-[88dvh] flex flex-col bg-white dark:bg-[#161616] text-black dark:text-white border border-black/20 dark:border-white/20 shadow-[0_24px_64px_rgba(0,0,0,0.3)]"
-      >
-        <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-black/15 dark:border-white/15">
+    <Sheet onClose={onClose} label="여정 Remix" locked={busy} panelClassName="sm:max-w-xl max-sm:h-[88dvh] max-h-[88dvh]">
+        <div className="flex items-start justify-between gap-3 px-5 pt-1 sm:pt-4 pb-3 border-b border-black/15 dark:border-white/15">
           <div className="min-w-0">
             <span className="font-mono text-micro font-bold uppercase tracking-widest text-red-600 dark:text-red-500">Remix</span>
             <h2 className="text-lg font-extrabold tracking-tight truncate">{journey.title}</h2>
           </div>
-          <button type="button" onClick={onClose} disabled={busy} className="tgl-press tap-target w-9 h-9 grid place-items-center border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer" aria-label="닫기">
-            <X className="w-4 h-4" />
-          </button>
+          <SheetCloseButton disabled={busy} />
         </div>
 
         {/* New plan: name and start date */}
@@ -213,12 +196,21 @@ export function RemixSheet({ journey, timeline, stays, pockets = [], onClose, on
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-black/15 dark:border-white/15 flex justify-end" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="px-5 py-3 border-t border-black/15 dark:border-white/15 flex justify-end">
           <button type="button" onClick={create} disabled={busy || !count || !title.trim() || !startDate} className="tgl-press h-11 px-6 bg-black text-white dark:bg-white dark:text-black font-bold text-sm hover:bg-red-600 dark:hover:bg-red-600 dark:hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
             {busy ? '만드는 중…' : `계획 만들기 (${count})`}
           </button>
         </div>
-      </div>
-    </div>
+    </Sheet>
+  );
+}
+
+// Closes through the sheet so the exit motion plays
+function SheetCloseButton({ disabled }: { disabled?: boolean }) {
+  const close = useSheetClose();
+  return (
+    <button type="button" onClick={close} disabled={disabled} className="tgl-press tap-target w-9 h-9 grid place-items-center border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer" aria-label="닫기">
+      <X className="w-4 h-4" />
+    </button>
   );
 }
