@@ -1336,7 +1336,8 @@ html[data-peek] .tgl-tabbar, html[data-peek] .tgl-totop, html[data-peek] .tgl-in
 [data-sheet-snap="half"] [data-sheet-scroll] { overflow-y: hidden; }
 
 /* Anything covering the screen (menu, modal, sheet, terminal, viewer): same, see app/overlayWatcher */
-html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay] .tgl-introtip { opacity: 0 !important; pointer-events: none !important; }
+html[data-map-sheet] .tgl-tabbar,
+html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay] .tgl-introtip {opacity: 0 !important; pointer-events: none !important; }
 
 /* Intro loader: the film's three shapes hop on the 128 BPM beat, then settle when ready */
 .tgl-intro-shapes > span { transform-origin: 50% 100%; animation: tglIntroHop 938ms cubic-bezier(.3, 0, .2, 1) infinite; }

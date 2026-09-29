@@ -731,11 +731,11 @@ function App() {
           />
         </Suspense>
 
-        {/* Phone tab bar across hubs (v1.3.5). Map, detail and manage keep their own bottom controls */}
-        {isLoggedIn && ['home', 'archive', 'magazine', 'calendar', 'pocket'].includes(currentView) && (
+        {/* Phone tab bar across hubs (v1.3.5). On the map it steps aside while a sheet is open; detail and manage keep their own bottom controls */}
+        {isLoggedIn && ['home', 'archive', 'magazine', 'calendar', 'pocket', 'map'].includes(currentView) && (
           <>
-            {/* Room under the page so the bar never sits on its last lines */}
-            <div className="md:hidden shrink-0" style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }} aria-hidden />
+            {/* Room under the page so the bar never sits on its last lines (the map fills the screen instead) */}
+            {currentView !== 'map' && <div className="md:hidden shrink-0" style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }} aria-hidden />}
             <TabBar
               currentView={currentView}
               onNavigate={(view) => navigateTo(view)}

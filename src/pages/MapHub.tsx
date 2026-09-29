@@ -180,7 +180,14 @@ export function MapHubPage(props: MapHubPageProps) {
     handleCreateJourneyFromPanel,
   } = s;
 
-  // Phones: the Trip Guide is a bottom sheet over the map (rests below the 38vh map, opens to the top)
+  // The phone tab bar floats over the map; it steps aside while a country card or the Trip Guide is open
+  useEffect(() => {
+    const open = !!selectedCountry || isBuilderOpen;
+    document.documentElement.toggleAttribute('data-map-sheet', open);
+    return () => document.documentElement.removeAttribute('data-map-sheet');
+  }, [selectedCountry, isBuilderOpen]);
+
+  // Phones: the Trip Guide is a bottom sheet over the map(rests below the 38vh map, opens to the top)
   const mainRef = useRef<HTMLElement>(null);
   const [sheetArea, setSheetArea] = useState({ height: 0, halfTop: 0, phone: false });
   useEffect(() => {
@@ -244,14 +251,14 @@ export function MapHubPage(props: MapHubPageProps) {
         <div
           ref={guideSheet.containerRef}
           data-sheet-snap={guideSheet.panelHeight !== undefined ? guideSheet.snap : undefined}
-          className="max-lg:absolute max-lg:inset-0 max-lg:z-30 max-lg:shadow-[0_-8px_24px_rgba(0,0,0,0.18)] w-full lg:w-[42%] lg:h-full lg:flex-1 min-h-0 overflow-hidden z-20 bg-white dark:bg-[#121212] flex flex-col lg:animate-in lg:fade-in lg:duration-200 will-change-transform"
+          className="max-lg:absolute max-lg:inset-0 max-lg:z-30 max-lg:rounded-t-sheet max-lg:shadow-[0_-8px_24px_rgba(0,0,0,0.18)] w-full lg:w-[42%] lg:h-full lg:flex-1 min-h-0 overflow-hidden z-20 bg-surface dark:bg-surface-dark flex flex-col lg:animate-in lg:fade-in lg:duration-200 will-change-transform"
         >
           {/* Grab bar: drag the sheet, or tap to switch between half and full */}
           <button
             type="button"
             data-sheet-handle
             onClick={guideSheet.toggle}
-            className="lg:hidden w-full h-5 shrink-0 grid place-items-center cursor-grab touch-none"
+            className="lg:hidden w-full h-6 shrink-0 grid place-items-center cursor-grab touch-none"
             aria-label={guideSheet.snap === 'full' ? '가이드 줄이기' : '가이드 펼치기'}
           >
             <span className="block w-10 h-1 rounded-full bg-black/25 dark:bg-white/30" />

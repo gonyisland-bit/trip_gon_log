@@ -209,10 +209,10 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
           ref={countrySheet.containerRef}
           data-sheet-snap={countrySheet.panelHeight !== undefined ? countrySheet.snap : undefined}
           className={phoneSheet
-            ? 'absolute inset-0 z-[500] translate-y-full flex flex-col bg-white dark:bg-[#111111] border-t border-black/15 dark:border-white/15 shadow-[0_-8px_24px_rgba(0,0,0,0.18)] will-change-transform'
+            ? 'absolute inset-0 z-[500] translate-y-full flex flex-col bg-surface dark:bg-surface-dark rounded-t-sheet shadow-[0_-8px_24px_rgba(0,0,0,0.18)] will-change-transform'
             : `${isBuilderOpen ? 'hidden lg:block' : 'block'} fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 ${
               isBuilderOpen ? 'sm:left-6 sm:right-auto' : 'sm:left-auto sm:right-6'
-            } w-full sm:w-[380px] max-h-[65vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
+            } w-full sm:w-[380px] max-h-[65vh] sm:max-h-[82vh] bg-surface dark:bg-surface-dark rounded-t-sheet sm:rounded-card shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
               isBuilderOpen ? 'sm:slide-in-from-left' : 'sm:slide-in-from-right'
             } duration-200`}
         >
@@ -288,10 +288,10 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                         key={group.city}
                         type="button"
                         onClick={() => setSelectedPinGroup(group)}
-                        className="px-2 py-0.5 text-meta font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                        className="h-8 px-3 rounded-full text-meta font-bold uppercase tracking-wider bg-black/[0.06] dark:bg-white/10 hover:bg-ink hover:text-surface dark:hover:bg-ink-dark dark:hover:text-paper-dark text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <span>{group.city}</span>
-                        <span className="text-micro sm:text-micro px-1 py-0.2 bg-black/10 dark:bg-white/20 font-mono font-bold">
+                        <span className="text-micro px-1.5 rounded-full bg-black/10 dark:bg-white/20 font-mono font-bold">
                           {group.journeys.length}
                         </span>
                       </button>
@@ -311,7 +311,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                   const countryCode = selectedCountry.code === 'ES' ? 'SPA' : selectedCountry.code === 'JP' ? 'JPN' : selectedCountry.code === 'KR' ? 'KOR' : selectedCountry.code === 'US' ? 'USA' : selectedCountry.code;
 
                   return (
-                    <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-xl sm:rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center text-center shadow-xs border border-black/5 dark:border-white/10 h-full">
+                    <div className="bg-paper dark:bg-paper-dark rounded-card p-2 sm:p-3 flex flex-col items-center justify-center text-center h-full">
                       <span className="text-micro sm:text-[11px] font-bold text-black/60 dark:text-white/60 lowercase tracking-wider">
                         {liveInfo.ampm}
                       </span>
@@ -331,7 +331,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
               </div>
 
               {/* Col 2: Balanced 50:50 Modern Travel Exchange Widget Card */}
-              <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-xl sm:rounded-2xl p-2 sm:p-3 flex flex-col justify-between shadow-xs border border-black/5 dark:border-white/10 h-full select-none">
+              <div className="bg-paper dark:bg-paper-dark rounded-card p-2 sm:p-3 flex flex-col justify-between h-full select-none">
                 {(() => {
                   const unit = getOptimalCurrencyUnit(selectedCountry.rateToKRW, selectedCountry.currency);
                   const approxKRW = Math.round(selectedCountry.rateToKRW * unit);
@@ -375,7 +375,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
 
             {/* 2.5 Live Weather & 7-Day Forecast Widget Card */}
             <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10 select-none">
-              <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-xs border border-black/5 dark:border-white/10">
+              <div className="bg-paper dark:bg-paper-dark rounded-card p-2 sm:p-3 shadow-xs border border-black/5 dark:border-white/10">
                 <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
