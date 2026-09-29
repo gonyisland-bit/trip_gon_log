@@ -64,7 +64,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
         className={`w-full md:w-1/2 flex flex-col bg-white/80 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-all duration-300 flex-grow md:h-full overflow-hidden overflow-x-hidden max-w-full relative ${
-          mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[64dvh]'
+          mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[62dvh] max-md:flex-1 min-h-0'
         }`}
       >
         {/* Mobile Bottom Sheet Grab Handle */}

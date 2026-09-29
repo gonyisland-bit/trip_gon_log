@@ -28,6 +28,13 @@ interface QuickBookingModalProps {
   initialToCode?: string;
 }
 
+function formatShortDate(d: string): string {
+  if (!d) return '';
+  const parts = d.split('-');
+  if (parts.length >= 3) return `${parts[1]}.${parts[2]}`;
+  return d;
+}
+
 export function QuickBookingModal(props: QuickBookingModalProps) {
   // Mount the content only while open so its hooks always run in the same order
   if (!props.isOpen) return null;
@@ -222,12 +229,13 @@ function QuickBookingModalContent({
 
           {/* Section 1: Flight Booking Links (Native <a> for 100% Popup Block Bypass) */}
           <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5 shrink-0">
                 <Plane className="w-3.5 h-3.5 text-black dark:text-white" />
-                항공권 실시간 비교 예약 (새 탭)
+                <span className="sm:hidden">Flight 항공권</span>
+                <span className="hidden sm:inline">Flight 항공권 실시간 비교</span>
               </span>
-              <span className="text-meta font-mono text-black/60 dark:text-white/60">
+              <span className="text-meta font-mono text-black/60 dark:text-white/60 truncate text-right">
                 {originAirport} ➔ {destAirport} • 성인 {adults}명
               </span>
             </div>
@@ -291,13 +299,15 @@ function QuickBookingModalContent({
 
           {/* Section 2: Accommodation Booking Links (Native <a> for 100% Popup Block Bypass) */}
           <div className="space-y-2.5 pt-2 border-t border-black/10 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5 shrink-0">
                 <Building className="w-3.5 h-3.5 text-black dark:text-white" />
-                숙소 실시간 검색 예약 (새 탭)
+                <span className="sm:hidden">Hotel 숙소</span>
+                <span className="hidden sm:inline">Hotel 숙소 실시간 예약</span>
               </span>
-              <span className="text-meta font-mono text-black/60 dark:text-white/60">
-                {dest} • {depDate} ~ {retDate}
+              <span className="text-meta font-mono text-black/60 dark:text-white/60 truncate text-right">
+                <span className="sm:hidden">{dest} • {formatShortDate(depDate)}~{formatShortDate(retDate)}</span>
+                <span className="hidden sm:inline">{dest} • {depDate} ~ {retDate}</span>
               </span>
             </div>
 

@@ -30,7 +30,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
         className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-all duration-300 md:h-full shrink-0 ${
           mobileSheetSnap === 'expanded' 
             ? 'max-md:h-0 max-md:opacity-0 max-md:border-none overflow-hidden pointer-events-none' 
-            : 'max-md:h-[36dvh]'
+            : 'max-md:h-[38dvh]'
         }`}
         onClick={() => {
           if (window.innerWidth < 768 && mobileSheetSnap === 'expanded') {
@@ -41,7 +41,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
         {renderInfoHeader()}
 
         {/* Dynamic Map Area */}
-        <div className="w-full relative flex flex-col flex-grow h-full overflow-hidden" style={{ contain: 'layout paint', isolation: 'isolate' }}>
+        <div className="w-full relative flex-1 min-h-0 flex flex-col overflow-hidden" style={{ isolation: 'isolate' }}>
           {/* Magazine Cover Typography Overlay (Only in Summary tab) */}
           {activeTab === 'summary' && (() => {
             const loc = tripToUse?.locationStr || '';
@@ -115,6 +115,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
               radarFocusedSpot={radarFocusedSpot}
               radarRouteTarget={radarRouteTarget}
               activeGhostSpotId={activeGhostSpotId}
+              mobileSheetSnap={mobileSheetSnap}
               todayRoute={todayMode.todayKey ? { date: todayMode.todayKey, nowMin: todayMode.nowMin } : null}
             />
           </ErrorBoundary>
