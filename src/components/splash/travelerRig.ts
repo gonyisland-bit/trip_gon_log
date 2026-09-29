@@ -1,5 +1,5 @@
-// Flat, mass-shaded traveler (long black hair, white sleeveless top, wide black trousers)
-// pulling a carry-on. Drawn on a 2D canvas in "units": the figure is ~170 units tall,
+// Flat, curve-drawn traveler (long black hair, white sleeveless top, A-line midi skirt)
+// pulling a carry-on. Joints come from the gait; every outline is a smooth spline through them. Drawn on a 2D canvas in "units": the figure is ~170 units tall,
 // origin at the hip, y pointing down. Scale `s` converts units to pixels.
 
 export interface Pt { x: number; y: number }
@@ -52,8 +52,8 @@ export const TRAVELER_DARK: TravelerPalette = {
 };
 
 type Shape =
-  | { k: 'cap'; a: Pt; b: Pt; ra: number; rb: number; c: string }
-  | { k: 'poly'; p: Pt[]; c: string; round?: number }
+  | { k: 'smooth'; p: Pt[]; c: string }
+  | { k: 'stroke'; p: Pt[]; w: number; c: string }
   | { k: 'circ'; o: Pt; r: number; c: string }
   | { k: 'line'; a: Pt; b: Pt; w: number; c: string };
 
@@ -158,13 +158,14 @@ export function poseTraveler(w: Traveler, x: number, groundY: number, s: number,
   const N = legAt(ph, amp), F = legAt(ph + Math.PI, amp);
   const G = Math.max(N.low, F.low); // hip height: the lower foot always touches the ground
   const T = (p: Pt): Pt => ({ x: x + p.x * s, y: groundY + (p.y - G) * s });
-  const lean = (5 + amp * 1.3 * Math.sin(2 * ph + 0.4)) * DEG;
+  // A springier walk: more lean on the push-off, and the chest settles a beat after the hips
+  const lean = (6 + amp * 2.2 * Math.sin(2 * ph + 0.4)) * DEG;
   const up = { x: Math.sin(lean), y: -Math.cos(lean) }, fw = { x: Math.cos(lean), y: Math.sin(lean) };
   const at = (o: Pt, f: number, u: number): Pt => ({ x: o.x + fw.x * f + up.x * u, y: o.y + fw.y * f + up.y * u });
-  const hip = { x: 0, y: 0 }, sh = at(hip, 0, 50);
+  const settle = amp * 1.1 * Math.sin(2 * ph - 1.1);
+  const hip = { x: 0, y: 0 }, sh = at(hip, 0, 50 + settle * 0.4);
   const S: Shape[] = [];
-  const cap = (a: Pt, b: Pt, ra: number, rb: number, c: string) => S.push({ k: 'cap', a: T(a), b: T(b), ra: ra * s, rb: rb * s, c });
-  const poly = (p: Pt[], c: string, round = 1.6) => S.push({ k: 'poly', p: p.map(T), c, round: round * s });
+  const smooth = (p: Pt[], c: string) => S.push({ k: 'smooth', p: p.map(T), c });
   const circ = (o: Pt, r: number, c: string) => S.push({ k: 'circ', o: T(o), r: r * s, c });
   const line = (a: Pt, b: Pt, wd: number, c: string) => S.push({ k: 'line', a: T(a), b: T(b), w: wd * s, c });
   const dir = (o: Pt, ang: number, len: number): Pt => ({ x: o.x + Math.sin(ang) * len, y: o.y + Math.cos(ang) * len });
@@ -172,7 +173,7 @@ export function poseTraveler(w: Traveler, x: number, groundY: number, s: number,
   // Pulling arm first, so the carry-on can be solved backwards from the hand
   const shN = at(sh, 0.5, -5);
   const ua = (-30 + amp * 2.5 * Math.sin(2 * ph)) * DEG + lean * 0.3;
-  const elN = dir(shN, ua, 27), fa = ua + 7 * DEG;
+  const elN = dir(shN, ua, 27), fa = ua + 9 * DEG;
   const wrN = dir(elN, fa, 23), hand = dir(elN, fa, 26);
   const cw = 30, ch = 46, rod = 56, wr = 3.8;
   const reach = Math.hypot(ch + rod, cw * 0.35), gw = G - wr, dy = gw - hand.y;
@@ -181,43 +182,57 @@ export function poseTraveler(w: Traveler, x: number, groundY: number, s: number,
   const av = { x: Math.sin(th), y: -Math.cos(th) }, pv = { x: Math.cos(th), y: Math.sin(th) };
   const bagPt = (a: number, p: number): Pt => ({ x: pivot.x + av.x * a + pv.x * p, y: pivot.y + av.y * a + pv.y * p });
 
-  // Carry-on
-  poly([pivot, bagPt(0, -cw), bagPt(ch, -cw), bagPt(ch, 0)], P.bag, 2.4);
-  poly([bagPt(1, -cw), bagPt(1, -cw + 6), bagPt(ch - 1, -cw + 6), bagPt(ch - 1, -cw)], P.bagShade, 1);
-  line(bagPt(5, -cw * 0.42), bagPt(ch - 5, -cw * 0.42), 1.6, P.bagShade);
-  line(bagPt(5, -cw * 0.72), bagPt(ch - 5, -cw * 0.72), 1.6, P.bagShade);
+  // Carry-on: a soft rounded shell with a lid band
+  smooth(roundRect(bagPt, 0, -cw, ch, 0, 6), P.bag);
+  smooth(roundRect(bagPt, ch - 7, -cw + 1.5, ch - 1.5, -1.5, 3), P.bagShade);
+  line(bagPt(6, -cw * 0.5), bagPt(ch - 10, -cw * 0.5), 1.4, P.bagShade);
   circ(pivot, wr, P.handle);
   circ(bagPt(0, -cw + 4), wr * 0.9, P.handle);
 
-  // Far arm (swings opposite the near leg)
+  // Far arm (swings opposite the near leg), tapering to the hand
   const shF = at(sh, -2, -5);
-  const ua2 = (amp * 22 * Math.cos(ph) - 3) * DEG + lean * 0.5;
-  const el2 = dir(shF, ua2, 27), fa2 = ua2 + (14 + amp * 18 * Math.max(0, Math.cos(ph))) * DEG;
-  cap(shF, el2, 4.4, 3.7, P.skinShade);
-  cap(el2, dir(el2, fa2, 23), 3.6, 2.9, P.skinShade);
-  circ(dir(el2, fa2, 26), 3.2, P.skinShade);
+  const ua2 = (amp * 24 * Math.cos(ph) - 3) * DEG + lean * 0.5;
+  const el2 = dir(shF, ua2, 26), fa2 = ua2 + (16 + amp * 20 * Math.max(0, Math.cos(ph))) * DEG;
+  const wr2 = dir(el2, fa2, 22);
+  smooth(limb([shF, el2, wr2], [4.3, 3.1, 2.5]), P.skinShade);
+  circ(dir(el2, fa2, 25), 3.1, P.skinShade);
 
-  // Wide-leg trousers: tapered thigh, flared shin panel, small shoe
-  const leg = (L: ReturnType<typeof legAt>, off: number, cloth: string) => {
+  // Legs: shaped calves below the skirt, small rounded flats
+  const leg = (L: ReturnType<typeof legAt>, off: number, skin: string) => {
     const o = (v: Pt): Pt => ({ x: v.x + off, y: v.y });
-    const k = o(L.knee), an = o(L.ank);
-    cap({ x: off, y: 0 }, k, 9, 7.8, cloth);
-    const n = { x: Math.cos(L.shin), y: -Math.sin(L.shin) };
-    const hem = { x: an.x + Math.sin(L.shin) * 1.5, y: an.y + Math.cos(L.shin) * 1.5 };
-    poly([
-      { x: k.x - n.x * 7.8, y: k.y - n.y * 7.8 }, { x: k.x + n.x * 7.8, y: k.y + n.y * 7.8 },
-      { x: hem.x + n.x * 9.8, y: hem.y + n.y * 9.8 }, { x: hem.x - n.x * 9.8, y: hem.y - n.y * 9.8 },
-    ], cloth, 1.2);
-    cap(o(L.heel), o(L.toe), 3.2, 2.5, P.shoe);
+    const calf = o(lerpPt(L.knee, L.ank, 0.35));
+    const calfPush = { x: calf.x - Math.cos(L.shin) * 1.2, y: calf.y + Math.sin(L.shin) * 1.2 };
+    smooth(limb([{ x: off, y: 0 }, o(L.knee), calfPush, o(L.ank)], [8.5, 4.6, 4.4, 2.6]), skin);
+    const heel = o(L.heel), toe = o(L.toe);
+    const n = { x: -(toe.y - heel.y), y: toe.x - heel.x }, nl = Math.hypot(n.x, n.y) || 1;
+    const nx = n.x / nl, ny = n.y / nl;
+    smooth([
+      { x: heel.x - nx * 2.6, y: heel.y - ny * 2.6 }, lerpPt(heel, toe, 0.45), { x: toe.x - nx * 1.8, y: toe.y - ny * 1.8 },
+      { x: toe.x + nx * 0.2, y: toe.y + ny * 0.2 }, lerpPt({ x: heel.x + nx * 1.3, y: heel.y + ny * 1.3 }, toe, 0.5), { x: heel.x + nx * 1.3, y: heel.y + ny * 1.3 },
+    ], P.shoe);
   };
-  leg(F, -1.2, P.bottomFar);
-  leg(N, 1.2, P.bottom);
-  poly([at(hip, -10, 15), at(hip, 9, 15), { x: 10.5, y: 7 }, { x: -11, y: 7 }], P.bottom, 2);
+  leg(F, -1.2, P.skinShade);
+  leg(N, 1.2, P.skin);
 
-  // Long hair hanging down the back (physics chain, drawn behind the torso)
+  // A-line midi skirt: the hem opens with the stride and trails half a beat behind
+  const waistB = at(hip, -9.5, 11), waistF = at(hip, 8.5, 11);
+  const shinPt = (L: ReturnType<typeof legAt>, off: number) => ({ x: lerp(L.knee.x, L.ank.x, 0.26) + off, y: lerp(L.knee.y, L.ank.y, 0.26) });
+  const pn = shinPt(N, 1.2), pf = shinPt(F, -1.2);
+  const front = pn.x > pf.x ? pn : pf, back = pn.x > pf.x ? pf : pn;
+  const trail = -amp * 3.2 * Math.sin(2 * ph - 1.5);
+  const hemY = Math.max(front.y, back.y) + 1.5;
+  const hemF = { x: front.x + 8 + trail * 0.5, y: hemY - 1.5 }, hemB = { x: back.x - 9 + trail, y: hemY + 0.5 };
+  const hipF = at(hip, 11, 0), hipB = at(hip, -12.5, 1);
+  const midHem = { x: lerp(hemB.x, hemF.x, 0.5), y: hemY + 2 + Math.abs(trail) * 0.3 };
+  smooth([waistB, waistF, hipF, { x: lerp(hipF.x, hemF.x, 0.55) + 1.5, y: lerp(hipF.y, hemF.y, 0.55) }, hemF, midHem, hemB, { x: lerp(hipB.x, hemB.x, 0.5) - 2, y: lerp(hipB.y, hemB.y, 0.5) }, hipB], P.bottom);
+  // One soft fold over the forward thigh
+  const kF = pn.x > pf.x ? N.knee : F.knee;
+  S.push({ k: 'stroke', p: [T(at(hip, 1, 8)), T({ x: kF.x * 0.6 + 1, y: kF.y * 0.55 }), T({ x: lerp(midHem.x, hemF.x, 0.35), y: hemY - 0.5 })], w: 1.3 * s, c: P.bottomFar });
+
+  // Long hair down the back (physics chain, drawn behind the torso)
   const hc0 = at(sh, 3.5, 17.5);
-  const hc = { x: hc0.x, y: hc0.y + amp * 0.8 * Math.sin(2 * ph - 0.9) };
-  const shB = at(sh, -9, -5), wB = at(hip, -8.8, 13);
+  const hc = { x: hc0.x, y: hc0.y + amp * 1.1 * Math.sin(2 * ph - 1.3) };
+  const shB = at(sh, -9, -5), wB = at(hip, -8.6, 13);
   const toGround = (p: Pt): Pt => ({ x: p.x, y: p.y - G });
   const backLine = (yg: number) => {
     const a = toGround(shB), b = toGround(wB);
@@ -226,26 +241,29 @@ export function poseTraveler(w: Traveler, x: number, groundY: number, s: number,
   };
   const chain = w.simulateHair(toGround({ x: hc.x - 4.5, y: hc.y - 6.5 }), backLine)
     .map(q => ({ x: x + q.x * s, y: groundY + q.y * s }));
-  S.push({ k: 'poly', p: hairOutline(chain, HAIR_WIDTH.map(v => v * s)), c: P.hair, round: 0 });
+  S.push({ k: 'smooth', p: hairOutline(chain, HAIR_WIDTH.map(v => v * s)), c: P.hair });
 
-  // White sleeveless top
-  const wF = at(hip, 7.6, 13), shFr = at(sh, 7.2, -5);
-  poly([wB, wF, shFr, shB], P.top, 2);
-  circ(at(sh, -2.5, -6), 7.8, P.top);
-  circ(at(sh, 4.6, -14), 4.6, P.top);
-  poly([wB, lerpPt(wB, wF, 0.26), lerpPt(shB, shFr, 0.26), shB], P.topShade, 0.6);
+  // Sleeveless top with a waist: shoulder, bust, nipped waist, into the skirt band
+  const wF = at(hip, 7.4, 12.5), shFr = at(sh, 7, -4.5);
+  const neckB = at(sh, -3, 1.5), neckF = at(sh, 4.5, 0.5);
+  const top = [
+    wB, at(hip, -9.4, 24), at(sh, -9.6, -12), shB, at(sh, -7.5, -1), neckB, neckF, shFr,
+    at(sh, 9.2, -12), at(sh, 7.4, -19), at(hip, 6.6, 22), wF,
+  ];
+  smooth(top, P.top);
+  smooth([wB, at(hip, -9.4, 24), at(sh, -9.6, -12), shB, lerpPt(shB, shFr, 0.22), at(sh, -4.4, -13), at(hip, -5, 23), lerpPt(wB, wF, 0.24)], P.topShade);
 
   // Neck, head, face
-  cap(at(sh, 1.5, -2), at(sh, 2.5, 7), 3.4, 3.2, P.skin);
+  smooth(limb([at(sh, 1.2, -1), at(sh, 2.4, 8)], [3.4, 3.1]), P.skin);
   circ(hc, 10.5, P.skin);
-  poly([{ x: hc.x + 9.6, y: hc.y - 1.5 }, { x: hc.x + 12.6, y: hc.y + 2.6 }, { x: hc.x + 9.4, y: hc.y + 3.8 }], P.skin, 0.8);
+  smooth([{ x: hc.x + 9.4, y: hc.y - 2 }, { x: hc.x + 12.4, y: hc.y + 2.4 }, { x: hc.x + 9.4, y: hc.y + 3.6 }], P.skin);
   const capPts: Pt[] = [];
-  for (let i = 0; i <= 18; i++) {
-    const a = (-46 - i * (214 / 18)) * DEG;
-    capPts.push({ x: hc.x - 0.5 + Math.cos(a) * 11.3, y: hc.y - 0.9 + Math.sin(a) * 11.3 });
+  for (let i = 0; i <= 12; i++) {
+    const a = (-40 - i * (220 / 12)) * DEG;
+    capPts.push({ x: hc.x - 0.5 + Math.cos(a) * 11.4, y: hc.y - 0.9 + Math.sin(a) * 11.4 });
   }
-  capPts.push({ x: hc.x - 4, y: hc.y + 1.5 }, { x: hc.x + 2.8, y: hc.y - 5 });
-  poly(capPts, P.hair, 0.6);
+  capPts.push({ x: hc.x - 4.5, y: hc.y + 2 }, { x: hc.x + 1, y: hc.y - 4.4 }, { x: hc.x + 7, y: hc.y - 5.6 });
+  smooth(capPts, P.hair);
   circ({ x: hc.x - 0.8, y: hc.y + 1.8 }, 2.3, P.skinShade);
   circ({ x: hc.x + 6, y: hc.y - 1 }, 1.15, P.eye);
 
@@ -253,11 +271,39 @@ export function poseTraveler(w: Traveler, x: number, groundY: number, s: number,
   const rb = bagPt(ch, -cw * 0.35);
   line({ x: rb.x - 1.2, y: rb.y }, { x: hand.x - 1.2, y: hand.y }, 1.7, P.handle);
   line({ x: rb.x + 1.4, y: rb.y + 0.6 }, { x: hand.x + 0.6, y: hand.y + 0.4 }, 1.7, P.handle);
-  cap(shN, elN, 4.6, 3.8, P.skin);
-  cap(elN, wrN, 3.7, 3, P.skin);
+  smooth(limb([shN, elN, wrN], [4.5, 3.3, 2.7]), P.skin);
   circ(hand, 3.3, P.skin);
 
   return { shapes: S, s, hip: T(hip), ground: groundY };
+}
+
+// A tapered limb along joints, as a closed outline with rounded ends
+function limb(j: Pt[], r: number[]): Pt[] {
+  const L: Pt[] = [], R: Pt[] = [];
+  for (let i = 0; i < j.length; i++) {
+    const a = j[Math.max(0, i - 1)], b = j[Math.min(j.length - 1, i + 1)];
+    const l = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const nx = -(b.y - a.y) / l, ny = (b.x - a.x) / l;
+    L.push({ x: j[i].x + nx * r[i], y: j[i].y + ny * r[i] });
+    R.push({ x: j[i].x - nx * r[i], y: j[i].y - ny * r[i] });
+  }
+  const cap = (c: Pt, from: Pt, rad: number, toward: Pt): Pt => {
+    const dx = c.x - toward.x, dy = c.y - toward.y, l = Math.hypot(dx, dy) || 1;
+    void from;
+    return { x: c.x + (dx / l) * rad * 0.9, y: c.y + (dy / l) * rad * 0.9 };
+  };
+  const n = j.length;
+  const tip = cap(j[n - 1], L[n - 1], r[n - 1], j[n - 2]);
+  const base = cap(j[0], R[0], r[0], j[1]);
+  return [...L, tip, ...R.reverse(), base];
+}
+
+// Rounded rectangle in the carry-on's own axes (a along the height, p across)
+function roundRect(pt: (a: number, p: number) => Pt, a0: number, p0: number, a1: number, p1: number, r: number): Pt[] {
+  return [
+    pt(a0 + r, p0), pt(a0, p0 + r * 0.3), pt(a0, p1 - r * 0.3), pt(a0 + r, p1),
+    pt(a1 - r, p1), pt(a1, p1 - r * 0.3), pt(a1, p0 + r * 0.3), pt(a1 - r, p0),
+  ];
 }
 
 // Ribbon around the hair chain: front edge down, rounded tip, back edge up
@@ -273,24 +319,32 @@ function hairOutline(pts: Pt[], widths: number[]): Pt[] {
     back.push({ x: pts[i].x + nx * hw, y: pts[i].y + ny * hw });
     front.push({ x: pts[i].x - nx * hw, y: pts[i].y - ny * hw });
   }
-  // sweep from the front edge, through the tangent (down), to the back edge
   const tip = pts[n - 1], r = widths[n - 1] / 2, a0 = Math.atan2(-tx, ty);
   const round: Pt[] = [];
-  for (let i = 1; i < 10; i++) {
-    const a = a0 + (Math.PI * i) / 10;
-    round.push({ x: tip.x + Math.cos(a) * r, y: tip.y + Math.sin(a) * r });
+  for (let i = 1; i < 4; i++) {
+    const a = a0 + (Math.PI * i) / 4;
+    round.push({ x: tip.x + Math.cos(a) * r * 0.8, y: tip.y + Math.sin(a) * r * 0.8 });
   }
   return [...front, ...round, ...back.reverse()];
 }
 
-function capsulePath(ctx: CanvasRenderingContext2D, a: Pt, b: Pt, ra: number, rb: number) {
-  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy);
+// Closed Catmull-Rom spline through the points, as cubic Béziers
+function smoothPath(ctx: CanvasRenderingContext2D, p: Pt[], closed = true) {
+  const n = p.length;
   ctx.beginPath();
-  if (L < 1e-3) { ctx.arc(a.x, a.y, Math.max(ra, rb), 0, TAU); return; }
-  const ang = Math.atan2(dy, dx), d = Math.asin(clamp((ra - rb) / L, -1, 1));
-  ctx.arc(a.x, a.y, ra, ang + Math.PI / 2 + d, ang + Math.PI * 1.5 - d, false);
-  ctx.arc(b.x, b.y, rb, ang - Math.PI / 2 - d, ang + Math.PI / 2 + d, false);
-  ctx.closePath();
+  if (n < 3) { p.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); return; }
+  const get = (i: number) => (closed ? p[(i + n) % n] : p[Math.max(0, Math.min(n - 1, i))]);
+  ctx.moveTo(p[0].x, p[0].y);
+  const last = closed ? n : n - 1;
+  for (let i = 0; i < last; i++) {
+    const p0 = get(i - 1), p1 = get(i), p2 = get(i + 1), p3 = get(i + 2);
+    ctx.bezierCurveTo(
+      p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6,
+      p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6,
+      p2.x, p2.y,
+    );
+  }
+  if (closed) ctx.closePath();
 }
 
 export function drawTraveler(ctx: CanvasRenderingContext2D, pose: TravelerPose, P: TravelerPalette, alpha = 1) {
@@ -307,16 +361,10 @@ export function drawTraveler(ctx: CanvasRenderingContext2D, pose: TravelerPose, 
   for (const sh of pose.shapes) {
     ctx.fillStyle = sh.c;
     ctx.strokeStyle = sh.c;
-    if (sh.k === 'cap') { capsulePath(ctx, sh.a, sh.b, sh.ra, sh.rb); ctx.fill(); }
-    else if (sh.k === 'circ') { ctx.beginPath(); ctx.arc(sh.o.x, sh.o.y, sh.r, 0, TAU); ctx.fill(); }
+    if (sh.k === 'circ') { ctx.beginPath(); ctx.arc(sh.o.x, sh.o.y, sh.r, 0, TAU); ctx.fill(); }
     else if (sh.k === 'line') { ctx.lineWidth = sh.w; ctx.beginPath(); ctx.moveTo(sh.a.x, sh.a.y); ctx.lineTo(sh.b.x, sh.b.y); ctx.stroke(); }
-    else {
-      ctx.beginPath();
-      sh.p.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
-      ctx.closePath();
-      ctx.fill();
-      if (sh.round) { ctx.lineWidth = sh.round; ctx.stroke(); }
-    }
+    else if (sh.k === 'stroke') { ctx.lineWidth = sh.w; smoothPath(ctx, sh.p, false); ctx.stroke(); }
+    else { smoothPath(ctx, sh.p); ctx.fill(); }
   }
   ctx.restore();
 }
