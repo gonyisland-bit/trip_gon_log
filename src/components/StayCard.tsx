@@ -234,7 +234,7 @@ export function StayCard({
       onClick={onClick}
       onPaste={handlePaste}
       tabIndex={isEditMode ? 0 : undefined}
-      className={`mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full outline-none ${
+      className={`tgl-cv-row mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full outline-none ${
         isActive 
           ? 'bg-surface dark:bg-surface-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm' 
           : 'bg-surface dark:bg-surface-dark'

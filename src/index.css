@@ -1317,6 +1317,14 @@ input[type="datetime-local"] { min-width: 0; max-width: 100%; }
   .tgl-sheet-in, .tgl-sheet-out, .tgl-dialog-in, .tgl-dialog-out, .tgl-sheet-backdrop-in, .tgl-sheet-backdrop-out { animation: none; }
 }
 
+/* Long lists (v1.3.5 P5-b2): the browser skips layout and paint for items off screen.
+   The first size is a guess; `auto` then remembers each item's real size so the scrollbar stays put.
+   Only on items whose children never draw outside them (paint containment clips that overflow). */
+.tgl-cv-tile { content-visibility: auto; contain-intrinsic-size: auto 300px; }
+.tgl-cv-card { content-visibility: auto; contain-intrinsic-size: auto 360px; }
+.tgl-cv-row { content-visibility: auto; contain-intrinsic-size: auto 120px; }
+.tgl-cv-month { content-visibility: auto; contain-intrinsic-size: auto 320px; }
+
 /* New trip: the boarding pass rises in while the trip saves, its plane crossing the route */
 .tgl-pass { animation: tglPassIn 520ms var(--ease-spring, cubic-bezier(.2, 1.4, .4, 1)) both; }
 .tgl-pass-plane { animation: tglPassFly 1200ms var(--ease-standard) 200ms both; }

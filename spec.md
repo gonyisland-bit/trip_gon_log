@@ -403,7 +403,8 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [x] 정리: 버튼 · 확인 창 문구 문장형(Cancel · Delete · Save (Y)), Trip Guide 탭 세그먼트 · 입력 알약 · 카드, 선택 상태 흑백 쌍을 ink 토큰으로(112곳), 흰 표면을 `bg-surface`로(122곳, 사진 위 흰 버튼 70곳은 유지). 홈 → 여정 상세 → 지도 시트 → 포켓 → 매거진 → 캘린더 → 모달 바텀시트화. `bg-white`(약 1,100곳)는 화면별로 `bg-surface`로 옮김.
 - [x] P5-a 불투명(90%+) 바탕 뒤의 `backdrop-blur` 24곳 제거, 상태가 크기를 바꾸지 않는 고정 클래스의 `transition-all` 76곳을 `transition`으로(118곳 유지).
 - [x] P5-b1 여정 커버 960px · 갤러리 480px 사본: 쓰기 권한 회원이 볼 때 백그라운드로 목록 8개 · 갤러리 12장씩 만들어 여정 문서에 저장(`app/useJourneyThumbs`), 카드 · 목록 행 · 지금 띠 · 갤러리 격자가 사본 사용(`utils/journeyThumbs`), 우리 R2 원본만 대상. 포켓과 같은 `utils/imageThumbs` 사용.
-- [ ] P5-b 긴 목록(갤러리 · 포켓 · 캘린더) 가상화, 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리 — 로그인 화면 실기기 확인과 함께 진행.
+- [x] P5-b2 긴 목록: 화면 밖 항목의 배치 · 그리기를 브라우저가 건너뛰는 `content-visibility: auto`(`.tgl-cv-tile` 갤러리 사진 · `-row` 일정 · 예약 카드 · 여정 목록 행 · `-card` 포켓 카드 · `-month` 캘린더 연 보기 월 칸, `contain-intrinsic-size: auto`로 실제 높이 기억). 사진 밖으로 점선이 나가는 여정 카드와 끈적 머리가 있는 묶음에는 붙이지 않음.
+- [ ] P5-b3 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리 — 로그인 화면 실기기 확인과 함께 진행.
 
 ### V1.3 디자인 리뉴얼 진행 현황 (2026.09.28 기준, 다른 PC에서 이어가기용)
 - [x] **P0 기반 정비**: 버전 1.3.0 단일 소스, AGENTS.md 5장 버전 지침, 모션 토큰 v2 · `src/motion/`.
@@ -431,6 +432,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - 버튼: `btn` 전체가 굵은 산세리프 알약으로(h-8 / h-10 / h-12), 보조 버튼은 보더 반전 대신 연한 채움, 새 여행 `NewTripButton`은 빨강 알약(`btn-accent`).
 - 공용 컨트롤 `ui/Segment` · `ui/Chip` · `ui/IconButton` · `ui/Card`(`CardRow`) 추가.
 - AGENTS.md 3장 · spec 4.1 · 4.2 · 4.4를 Swiss Soft 기준으로 갱신.
+- 긴 목록(P5-b2): 갤러리 · 일정 · 포켓 · 여정 목록 · 캘린더 연 보기에서 화면 밖 항목은 그리지 않아 스크롤이 가벼워집니다.
 - 여정 이미지 사본(P5-b1): 카드 · 목록은 커버 960px 사본, 갤러리 격자는 480px 사본을 불러 목록 로딩을 줄였습니다. 사본은 볼 때 조금씩 만들어져 모든 기기가 함께 씁니다.
 - 정리 · 성능(P4 마무리 · P5-a): 버튼 문구 문장형, ink · surface 토큰 통일, 보이지 않는 블러 제거, 고정 전환을 필요한 속성만으로.
 - 캘린더 · 모달(P4-e): 확인 · 로그인 등 가운데 모달을 둥근 카드로, 캘린더 컨트롤 · 입력칸 · 날짜 판을 둥근 표면으로.

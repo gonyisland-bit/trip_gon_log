@@ -1603,7 +1603,7 @@ export function PocketHubPage({
                         setSelectedSpotForModal(spot);
                       }
                     }}
-                    className={`tgl-scrap-card group flex flex-col rounded-2xl border bg-white dark:bg-[#1C1C1E] transition-[transform,box-shadow,border-color,opacity] duration-base ease-emphasized overflow-hidden hover:-translate-y-[3px] hover:shadow-[0_8px_18px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)] cursor-pointer ${
+                    className={`tgl-scrap-card tgl-cv-card group flex flex-col rounded-2xl border bg-white dark:bg-[#1C1C1E] transition-[transform,box-shadow,border-color,opacity] duration-base ease-emphasized overflow-hidden hover:-translate-y-[3px] hover:shadow-[0_8px_18px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)] cursor-pointer ${
                       isDragMode ? 'cursor-grab active:cursor-grabbing' : ''
                     } ${
                       isDraggingThis ? 'opacity-30 scale-[0.98]' : ''

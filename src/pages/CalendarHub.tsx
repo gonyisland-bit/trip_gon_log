@@ -2875,7 +2875,7 @@ export function CalendarHubPage({
                 <div
                   key={m.monthIdx}
                   id={`year-month-${m.monthIdx}`}
-                  className="bg-transparent p-2 sm:p-3 md:p-4 flex flex-col group relative"
+                  className="tgl-cv-month bg-transparent p-2 sm:p-3 md:p-4 flex flex-col group relative"
                 >
                   {/* Month Card Header */}
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/10 dark:border-white/10">

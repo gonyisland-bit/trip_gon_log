@@ -429,7 +429,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                     <div 
                       id={`timeline-item-${item.id}`}
                       ref={el => { itemRefs.current[item.id] = el; }} 
-                      className={`flex flex-col transition-colors mx-3 sm:mx-4 my-1 w-auto rounded-card overflow-hidden bg-surface dark:bg-surface-dark ${
+                      className={`tgl-cv-row flex flex-col transition-colors mx-3 sm:mx-4 my-1 w-auto rounded-card overflow-hidden bg-surface dark:bg-surface-dark ${
                         isActive
                           ? 'ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm'
                           : 'hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'

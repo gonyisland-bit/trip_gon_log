@@ -37,7 +37,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                   setExpandedItemId(imgItem.id);
                   setIsLightboxOpen(true);
                 }}
-                className={`h-full flex flex-col group/gallery transition-all duration-200 relative cursor-pointer select-none opacity-100 ${
+                className={`tgl-cv-tile h-full flex flex-col group/gallery transition-all duration-200 relative cursor-pointer select-none opacity-100 ${
                   isPhotoActive 
                     ? 'bg-black/[0.04] dark:bg-white/[0.06] ring-1 ring-inset ring-black/40 dark:ring-white/40 z-10' 
                     : 'bg-white dark:bg-[#0E0E0E] hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'

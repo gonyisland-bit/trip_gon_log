@@ -41,7 +41,7 @@ export function JourneyListRow({ img, title, year, month, meta, badge, dDay, act
       onMouseEnter={onPreload}
       onTouchStart={onPreload}
       style={style}
-      className={`group w-full flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-card bg-surface dark:bg-surface-dark text-left select-none transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
+      className={`tgl-cv-row group w-full flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-card bg-surface dark:bg-surface-dark text-left select-none transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
         active ? 'ring-[1.5px] ring-inset ring-red-600 dark:ring-red-500' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.04]'
       }`}
     >
