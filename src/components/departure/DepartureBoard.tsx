@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Ticket, Volume2, VolumeX, X } from 'lucide-r
 import { getSavedPockets } from '../../utils/pocketStorage';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { LobbyScene } from './LobbyScene';
+import { TerminalWeatherPicker } from './TerminalWeatherPicker';
+import { getWeatherMeta } from '../../utils/weatherApi';
 import { resolveWeatherEffectType } from '../WeatherEffectLayer';
 import { precipitationIntensity } from '../weather/WeatherParticleCanvas';
 import type { DestinationCity } from '../../data/worldDestinations';
@@ -112,6 +114,10 @@ interface DepartureBoardProps {
   // Same weather the app ambience shows; undefined draws a clear sky
   weatherCode?: number;
   precipitationProb?: number;
+  /** This user's weather location, shown and changed from the top bar */
+  weatherCityName?: string;
+  weatherCityEn?: string;
+  weatherTemp?: number;
 }
 
 // Airport chime: two soft sine notes, like a terminal announcement
@@ -137,7 +143,7 @@ function playChime() {
 
 const MUTE_KEY = 'tgl_departure_muted';
 
-export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode = true, weatherCode, precipitationProb = 0 }: DepartureBoardProps) {
+export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode = true, weatherCode, precipitationProb = 0, weatherCityName, weatherCityEn, weatherTemp }: DepartureBoardProps) {
   const weatherType = resolveWeatherEffectType(weatherCode, precipitationProb);
   const weatherIntensity = precipitationIntensity(weatherCode, precipitationProb);
   const [filters, setFilters] = useState<DepartureFilters>(() => defaultFilters());
@@ -152,6 +158,19 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
   const [kept, setKept] = useState(false);
   const [clock, setClock] = useState(() => new Date());
   const [monthOpen, setMonthOpen] = useState(false);
+  // When the window weather changes, name the place and sky on the glass for a moment
+  const [skyNote, setSkyNote] = useState<string | null>(null);
+  const skyKey = `${weatherCityEn || ''}|${weatherCode ?? ''}`;
+  const firstSky = useRef(true);
+  useEffect(() => {
+    if (firstSky.current) { firstSky.current = false; return; }
+    if (weatherCode === undefined) return;
+    const label = getWeatherMeta(weatherCode, precipitationProb, weatherTemp).labelKo;
+    setSkyNote(`${weatherCityName || weatherCityEn || ''} · ${label}${weatherTemp !== undefined ? ` ${weatherTemp}°` : ''}`);
+    const t = window.setTimeout(() => setSkyNote(null), 2800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skyKey]);
   const monthRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   // The month grid closes on an outside tap or Esc
@@ -333,6 +352,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
               <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums">ICN · {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
             </div>
             <div className="flex items-center gap-1.5">
+              <TerminalWeatherPicker name={weatherCityName} nameEn={weatherCityEn} temp={weatherTemp} code={weatherCode} pop={precipitationProb} />
               <button type="button" onClick={() => setView(v => (v === 'board' ? 'tickets' : 'board'))} className="tgl-press h-8 px-2.5 inline-flex items-center gap-1.5 border border-black/25 hover:border-black dark:border-white/25 dark:hover:border-white font-mono text-meta uppercase tracking-wider cursor-pointer" aria-label={view === 'board' ? '보관한 티켓' : '보드로 돌아가기'}>
                 <Ticket className="w-4 h-4" />
                 <span className="tabular-nums">{view === 'board' ? store.items.length : 'Board'}</span>
@@ -536,6 +556,12 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
         {/* The lobby fills the rest of the screen: glass wall, planes, travelers */}
         <div className="tgl-lobby-scene relative flex-1 min-h-[140px] w-full overflow-hidden mt-3">
           <LobbyScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
+          {skyNote && (
+            <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider backdrop-blur-sm pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              {skyNote}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -30,6 +30,7 @@ import { notify } from '../utils/feedback';
 import type { RemixPayload } from '../components/RemixSheet';
 import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
+import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
 
 export function useAppState() {
   const [initialNavState] = useState(() => getInitialNavigationState());
@@ -188,6 +189,7 @@ export function useAppState() {
   const [globalWeatherCity, setGlobalWeatherCity] = useState<CityWeatherConfig | null>(() => {
     try {
       const savedEn = localStorage.getItem('selected_weather_city_en') || 'SEOUL';
+      if (savedEn === CURRENT_LOCATION_EN) { const here = cachedCurrentLocation(); if (here) return here; }
       const cached = localStorage.getItem('cached_calendar_weather_cities');
       if (cached) {
         const parsed: CityWeatherConfig[] = JSON.parse(cached);
@@ -240,6 +242,41 @@ export function useAppState() {
       window.removeEventListener('weatherAmbienceOverride', handleAmbienceOverride);
     };
   }, []);
+
+  // Each account keeps its own weather location, weather background and screen mode (users/{uid}/settings/prefs).
+  // On sign-in the account's choices replace this device's cache; a first sign-in stores the current ones.
+  const applyUserPrefs = (uid: string) => {
+    loadUserPrefs(uid).then(async prefs => {
+      if (!prefs.weatherCity && prefs.weatherBg === undefined && !prefs.nightMode) {
+        let bg = true;
+        try { bg = localStorage.getItem('calendar_weather_bg_enabled') !== 'false'; } catch (_) {}
+        saveUserPref({ weatherCity: localStorage.getItem('selected_weather_city_en') || 'SEOUL', weatherBg: bg, nightMode: (localStorage.getItem('nightModeSetting') as NightModeSetting) || 'auto' });
+        return;
+      }
+      if (prefs.nightMode) setNightModeSetting(prefs.nightMode);
+      if (prefs.weatherBg !== undefined) {
+        setIsGlobalWeatherBgEnabled(prefs.weatherBg);
+        try { localStorage.setItem('calendar_weather_bg_enabled', String(prefs.weatherBg)); } catch (_) {}
+        window.dispatchEvent(new CustomEvent('weatherBgToggled', { detail: prefs.weatherBg }));
+      }
+      if (prefs.weatherCity === CURRENT_LOCATION_EN) {
+        // Resolve on this device without prompting; otherwise keep the last known spot
+        const here = cachedCurrentLocation();
+        if (await locationGranted()) {
+          locateMe().then(selectWeatherCity).catch(() => { if (here) selectWeatherCity(here); });
+        } else if (here) selectWeatherCity(here);
+      } else if (prefs.weatherCity) {
+        try {
+          const list: CityWeatherConfig[] = JSON.parse(localStorage.getItem('cached_calendar_weather_cities') || '[]');
+          const found = list.find(c => c.nameEn.toUpperCase() === prefs.weatherCity!.toUpperCase());
+          if (found) {
+            localStorage.setItem('selected_weather_city_en', found.nameEn);
+            window.dispatchEvent(new CustomEvent('selectedWeatherCityChanged', { detail: found }));
+          }
+        } catch (_) {}
+      }
+    });
+  };
 
   // Reset ambience override when navigating between views/hubs so today's live weather is restored
   useEffect(() => {
@@ -760,6 +797,7 @@ export function useAppState() {
     try {
       localStorage.setItem('nightModeSetting', nightModeSetting);
     } catch (_) {}
+    saveUserPref({ nightMode: nightModeSetting });
 
     if (nightModeSetting === 'dark') {
       setIsDarkMode(true);
@@ -1104,6 +1142,7 @@ export function useAppState() {
         if (isSigningUpRef.current) return;
         setIsLoggedIn(true);
         localStorage.setItem('isLoggedIn', 'true');
+        applyUserPrefs(user.uid);
         if (initialAuthCheckedRef.current) {
           setCurrentView('home');
         }

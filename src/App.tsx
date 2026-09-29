@@ -67,7 +67,7 @@ function App() {
     homeMagazineLimit, magazineHubConfig, archiveHubConfig, showSettings, setShowSettings,
     isAuthModalOpen, setIsAuthModalOpen, isShareMode, isManageModalOpen, setIsManageModalOpen,
     createCountryInitial, createCityInitial, createDateInitial, mapBuilderRequested, authModalMode,
-    setAuthModalMode, isSigningUpRef, globalWeatherData, isGlobalWeatherBgEnabled, ambienceOverride,
+    setAuthModalMode, isSigningUpRef, globalWeatherData, globalWeatherCity, isGlobalWeatherBgEnabled, ambienceOverride,
     trips, setTrips, plans, setPlans, trashedJourneys, trashedSections, selectedTagFilter, dbError,
     tripsLoaded, plansLoaded, setIsMapBuilderActive, pendingLeaveBuilderModal,
     setPendingLeaveBuilderModal, timelineData, setTimelineData, flightsByTrip, staysByTrip,
@@ -824,7 +824,10 @@ function App() {
               onBuildTrip={({ countryEn, cityKo, year, month }) => handleCreateTripForCountry(countryEn, cityKo, departureDate(year, month))}
               onOpenPocket={() => navigateTo('pocket')}
               isDarkMode={isDarkMode}
-              weatherCode={isGlobalWeatherBgEnabled ? (ambienceOverride?.weatherCode ?? globalWeatherData?.weatherCode) : undefined}
+              weatherCode={ambienceOverride?.weatherCode ?? globalWeatherData?.weatherCode}
+              weatherCityName={globalWeatherCity?.name}
+              weatherCityEn={globalWeatherCity?.nameEn}
+              weatherTemp={globalWeatherData?.temp}
               precipitationProb={ambienceOverride?.precipitationProb ?? (globalWeatherData?.forecast?.[0]?.precipitationProb ?? 0)}
             />
           </Suspense>

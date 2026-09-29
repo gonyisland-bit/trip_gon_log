@@ -4,6 +4,8 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CityWeatherConfig } from '../types';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
+import { cachedCurrentLocation, CURRENT_LOCATION_EN, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
+import { CurrentLocationRow } from './weather/CurrentLocationRow';
 
 const DEFAULT_CITIES: CityWeatherConfig[] = [
   { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.9780, country: 'KR', timezone: 'Asia/Seoul' },
@@ -53,6 +55,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
   const [selectedCity, setSelectedCity] = useState<CityWeatherConfig>(() => {
     try {
       const savedEn = localStorage.getItem('selected_weather_city_en');
+      if (savedEn === CURRENT_LOCATION_EN) { const here = cachedCurrentLocation(); if (here) return here; }
       if (savedEn) {
         const found = cities.find(c => c.nameEn.toUpperCase() === savedEn.toUpperCase());
         if (found) return found;
@@ -110,6 +113,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
         localStorage.setItem('calendar_weather_bg_enabled', String(next));
       } catch (_) {}
       window.dispatchEvent(new CustomEvent('weatherBgToggled', { detail: next }));
+      saveUserPref({ weatherBg: next });
       return next;
     });
   };
@@ -162,10 +166,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
   const handleSelectCity = (city: CityWeatherConfig) => {
     setSelectedCity(city);
     setIsOpen(false);
-    try {
-      localStorage.setItem('selected_weather_city_en', city.nameEn);
-    } catch (_) {}
-    window.dispatchEvent(new CustomEvent('selectedWeatherCityChanged', { detail: city }));
+    selectWeatherCity(city);
   };
 
   const todayPop = weatherData?.forecast?.[0]?.precipitationProb ?? 0;
@@ -221,6 +222,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
           </div>
 
           <div className="max-h-56 overflow-y-auto hide-scrollbar py-1">
+            <CurrentLocationRow selected={selectedCity.nameEn === CURRENT_LOCATION_EN} onLocated={handleSelectCity} />
             {cities.map((city) => {
               const isSelected = city.nameEn.toUpperCase() === selectedCity.nameEn.toUpperCase();
               const cityName = city.name || city.nameEn;

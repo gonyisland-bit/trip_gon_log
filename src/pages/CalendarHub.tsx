@@ -1,3 +1,4 @@
+import { saveUserPref, selectWeatherCity } from '../utils/userPrefs';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar as CalendarIcon,
@@ -480,6 +481,7 @@ export function CalendarHubPage({
         localStorage.setItem('calendar_weather_bg_enabled', String(next));
       } catch (_) {}
       window.dispatchEvent(new CustomEvent('weatherBgToggled', { detail: next }));
+      saveUserPref({ weatherBg: next });
       return next;
     });
   };
@@ -505,10 +507,7 @@ export function CalendarHubPage({
 
   const handleSelectCity = (c: CalendarWeatherCity) => {
     setSelectedWeatherCity(c);
-    try {
-      localStorage.setItem('selected_weather_city_en', c.nameEn);
-    } catch (_) {}
-    window.dispatchEvent(new CustomEvent('selectedWeatherCityChanged', { detail: c }));
+    selectWeatherCity(c);
     if (selectedWeatherDay) {
       const exact = cityWeatherData?.forecast?.find(f => f.date === selectedWeatherDay.dateStr);
       const w = exact || getSimulatedWeatherForDate(c.nameEn, selectedWeatherDay.dateStr);
