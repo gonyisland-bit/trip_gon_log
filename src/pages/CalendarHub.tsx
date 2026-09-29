@@ -2352,7 +2352,11 @@ export function CalendarHubPage({
                 const eventCat = eventItem ? EVENT_CATEGORIES.find(c => c.id === eventItem.category) : null;
 
                 // Circular badge styling based on Concept B & Swiss Minimal (웹 반응형 대형 스케일업)
-                let circleClasses = 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer';
+                const wxOn = isWeatherMode && cell.isCurrentMonth;
+                // 날씨 모드 모바일: 세로로 긴 칸(52px)에 숫자 · 아이콘 · 기온을 넉넉히 배치
+                const cellH = wxOn ? 'h-[52px]' : 'h-10';
+                const cellRound = wxOn ? 'rounded-[20px] sm:rounded-full' : 'rounded-full';
+                let circleClasses = `w-10 ${cellH} sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 ${cellRound} sm:aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer`;
                 let textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none';
 
                 const isSelectedDate = !!(selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr);
@@ -2412,16 +2416,16 @@ export function CalendarHubPage({
                       <div className={`absolute inset-0 pointer-events-none z-0 ${cell.isCurrentMonth ? '' : 'opacity-35'}`}>
                         {/* 1. 좌측 연결 바: 어제에도 동일 여정이 있을 때 셀 왼쪽 끝(left-0)부터 중앙까지 확장 */}
                         {hasPrevTrip && (
-                          <div className={`absolute top-1/2 -translate-y-1/2 left-0 right-1/2 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
+                          <div className={`absolute top-1/2 -translate-y-1/2 left-0 right-1/2 ${cellH} sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
                         )}
 
                         {/* 2. 우측 연결 바: 내일에도 동일 여정이 있을 때 중앙부터 셀 오른쪽 끝(right-0)까지 확장 */}
                         {hasNextTrip && (
-                          <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 right-0 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
+                          <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 right-0 ${cellH} sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
                         )}
 
                         {/* 3. 중앙 정원: 날짜 원형 버튼과 100% 일치하는 라운드 베이스 */}
-                        <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 h-10 sm:h-12 md:h-14 lg:h-16 rounded-full ${ribbonColor}`} />
+                        <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 ${cellH} sm:h-12 md:h-14 lg:h-16 ${cellRound} ${ribbonColor}`} />
                       </div>
                     )}
 
@@ -2458,7 +2462,7 @@ export function CalendarHubPage({
                         const isOrangeBg = hasTrip;
 
                         return (
-                          <div className="flex flex-col items-center justify-between h-full w-full py-1 sm:py-1.5 pointer-events-none select-none">
+                          <div className="flex flex-col items-center justify-between h-full w-full pt-1.5 pb-2 sm:py-1.5 pointer-events-none select-none">
                             {/* 1. 상단: 날짜 일자 숫자 */}
                             <span className={`text-micro sm:text-meta font-mono leading-none ${
                               isOrangeBg 
@@ -2474,7 +2478,7 @@ export function CalendarHubPage({
 
                             {/* 2. 중앙 메인: 날씨 아이콘 */}
                             <div className={`my-auto flex items-center justify-center ${isForecast ? '' : 'opacity-60'}`}>
-                              <WeatherIconComponent className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
+                              <WeatherIconComponent className={`w-[15px] h-[15px] sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
                                 isOrangeBg 
                                   ? 'text-white stroke-[2.4] drop-shadow-xs' 
                                   : cell.isToday
