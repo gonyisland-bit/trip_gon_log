@@ -167,7 +167,7 @@ function App() {
 
       <div 
         style={appGradientStyle}
-        className={`relative min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-clip flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen h-[100dvh] overflow-hidden overscroll-none' : ''}`}
+        className={`relative min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-clip flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen supports-[height:100dvh]:h-dvh overflow-hidden overscroll-none' : ''}`}
       >
         {/* Global Live Weather Background Ambience Layer (Home, Trip, Magazine, Pocket, Calendar, Detail) */}
         {isLoggedIn && isGlobalWeatherBgEnabled && globalWeatherData && currentView !== 'map' && (
@@ -286,7 +286,7 @@ function App() {
             </div>
           ) : !isLoggedIn && !isShareMode ? (
             <Suspense fallback={
-              <div className="w-full h-screen h-[100dvh] bg-black flex items-center justify-center">
+              <div className="w-full h-screen supports-[height:100dvh]:h-dvh bg-black flex items-center justify-center">
                 <div className="w-7 h-7 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               </div>
             }>

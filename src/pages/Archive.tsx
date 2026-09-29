@@ -8,6 +8,7 @@ import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { JourneyCard } from '../components/cards/JourneyCard';
 import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
+import { NewTripButton } from '../components/NewTripButton';
 
 
 interface ArchiveHubPageProps {
@@ -930,9 +931,7 @@ export function ArchiveHubPage({
             </div>
             </div>
             {isLoggedIn && (
-              <button onClick={onAddArchive} className="btn btn-secondary btn-sm w-full sm:w-auto flex shrink-0">
-                <Plus className="w-3.5 h-3.5" /> <span>ADD TRIP</span>
-              </button>
+              <NewTripButton size="sm" onClick={onAddArchive} className="w-full sm:w-auto shrink-0" />
             )}
           </div>
         </div>

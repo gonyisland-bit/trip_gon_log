@@ -23,6 +23,7 @@ import { uploadFileToR2 } from '../utils/storageHelper';
 import { extractTextFromImageUrl } from '../utils/ocrHelper';
 import { auth } from '../firebase';
 import { notify } from '../utils/feedback';
+import { NewTripButton } from '../components/NewTripButton';
 
 interface PocketHubPageProps {
   trips: Trip[];
@@ -1797,14 +1798,7 @@ export function PocketHubPage({
                         >
                           DESELECT
                         </button>
-                        <button
-                          type="button"
-                          onClick={handleCreateTripFromSelectedPockets}
-                          className="btn btn-primary btn-sm flex"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>CREATE TRIP</span>
-                        </button>
+                        <NewTripButton size="sm" onClick={handleCreateTripFromSelectedPockets} />
                       </div>
                     </div>
                   )}

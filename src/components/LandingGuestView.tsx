@@ -85,7 +85,7 @@ export function LandingGuestView({
 
   return (
     <div 
-      className="relative w-full h-screen h-[100dvh] min-h-[600px] overflow-hidden bg-black text-white select-none flex flex-col justify-between"
+      className="relative w-full h-screen supports-[height:100dvh]:h-dvh min-h-[600px] overflow-hidden bg-black text-white select-none flex flex-col justify-between"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

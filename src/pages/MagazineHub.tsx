@@ -36,9 +36,16 @@ import { IssueTextWindow } from '../components/reel/IssueTextWindow';
 import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { swipeStart, swipeDirection, SwipeStart } from '../utils/swipe';
 import { Lightbox } from '../components/Lightbox';
+import { Sheet } from '../components/Sheet';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections, sortTimelineChronologically } from '../utils/magazineHelper';
 
 // Helper for minimal date + day format (e.g. 2024.07.19 FRI)
+// Section titles like "OSAKA,KYOTO / FAMILY TOUR" read as their first part in tight navigators
+function shortSectionTitle(title: string): string {
+  const head = (title || '').split(/s*[/|·]s*/)[0].trim();
+  return head || title;
+}
+
 function formatSimpleDateWithDay(dateStr?: string): string {
   if (!dateStr) return '';
   const clean = dateStr.trim();
@@ -294,6 +301,8 @@ export function MagazineHubPage({
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
+
+  const [isSectionPickerOpen, setIsSectionPickerOpen] = useState(false);
 
   const handleSelectSection = (id: string) => {
     setActiveSectionId(id);
@@ -1301,10 +1310,69 @@ export function MagazineHubPage({
             </section>
           )}
 
+          {/* Phones: every section in one list */}
+          {isSectionPickerOpen && (
+            <Sheet onClose={() => setIsSectionPickerOpen(false)} label="섹션 선택" panelClassName="max-w-md max-h-[75dvh]">
+              <div className="flex flex-col min-h-0">
+                <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 font-mono text-micro font-bold uppercase tracking-widest text-black/60 dark:text-white/60">
+                  Issues · {effectiveSections.length}
+                </div>
+                <div className="overflow-y-auto overscroll-contain divide-y divide-black/10 dark:divide-white/10">
+                  {effectiveSections.map((sec, idx) => {
+                    const on = sec.id === (currentSection?.id || activeSectionId);
+                    return (
+                      <button
+                        key={sec.id}
+                        type="button"
+                        onClick={() => { handleSelectSection(sec.id); setIsSectionPickerOpen(false); }}
+                        className={`w-full px-4 py-3 flex items-center gap-3 text-left cursor-pointer transition-colors ${on ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                        aria-current={on}
+                      >
+                        <span className="font-mono text-micro text-black/60 dark:text-white/60 tabular-nums shrink-0">{String(idx + 1).padStart(2, '0')}</span>
+                        <span className="flex-1 min-w-0 text-sm font-bold uppercase tracking-tight break-keep">{sec.title}</span>
+                        {on && <Check className="w-4 h-4 shrink-0 text-red-600 dark:text-red-500" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </Sheet>
+          )}
+
           {/* 2-2. SECTION NAVIGATOR / SELECTOR */}
           <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border-b border-black/15 dark:border-white/15 px-3 sm:px-8 md:px-12 py-2.5 transition-colors">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
-              <div className="flex items-center gap-1 flex-1 min-w-0">
+              {/* Phones: one picker for the current section, with previous / next */}
+              {(() => {
+                const curIdx = Math.max(0, effectiveSections.findIndex(sec => sec.id === (currentSection?.id || activeSectionId)));
+                const cur = effectiveSections[curIdx];
+                const prev = effectiveSections[curIdx - 1];
+                const next = effectiveSections[curIdx + 1];
+                return (
+                  <div className="sm:hidden flex items-center gap-1 flex-1 min-w-0">
+                    <button type="button" onClick={() => prev && handleSelectSection(prev.id)} disabled={!prev} className="tap-target w-8 h-8 grid place-items-center shrink-0 text-black/80 dark:text-white/80 disabled:opacity-25 cursor-pointer" aria-label="이전 섹션">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsSectionPickerOpen(true)}
+                      className="flex-1 min-w-0 h-8 px-2.5 flex items-center justify-between gap-2 border border-black/20 dark:border-white/20 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                      aria-haspopup="dialog"
+                      aria-label="섹션 선택"
+                    >
+                      <span className="truncate">
+                        <span className="font-mono text-micro text-black/60 dark:text-white/60 mr-1.5 tabular-nums">{String(curIdx + 1).padStart(2, '0')}/{String(effectiveSections.length).padStart(2, '0')}</span>
+                        {cur ? shortSectionTitle(cur.title) : ''}
+                      </span>
+                      <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+                    </button>
+                    <button type="button" onClick={() => next && handleSelectSection(next.id)} disabled={!next} className="tap-target w-8 h-8 grid place-items-center shrink-0 text-black/80 dark:text-white/80 disabled:opacity-25 cursor-pointer" aria-label="다음 섹션">
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })()}
+              <div className="hidden sm:flex items-center gap-1 flex-1 min-w-0">
                 <button
                   type="button"
                   onClick={() => handleScrollTab('left')}
@@ -1338,7 +1406,7 @@ export function MagazineHubPage({
                         }`}
                       >
                         <span className="font-mono text-micro opacity-60 mr-1">{String(idx + 1).padStart(2, '0')}.</span>
-                        {sec.title}
+                        <span className="inline-block align-bottom max-w-[14rem] truncate" title={sec.title}>{shortSectionTitle(sec.title)}</span>
                       </button>
                     );
                   })}

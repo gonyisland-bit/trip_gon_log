@@ -16,6 +16,8 @@ import { COUNTRIES_DATA, KNOWN_CITY_COORDS, CITY_KO_MAP, findCountryForGroup, CO
 import type { CountryInfo } from './mapData';
 import { MapLayerPanel } from './MapLayerPanel';
 import type { MapHubState } from './useMapHubState';
+import { NewTripButton } from '../../components/NewTripButton';
+import { useSnapSheet } from '../../components/sheet/useSnapSheet';
 
 // Selected country card: journeys there, local clock, exchange rate, weather and major cities.
 export function SelectedCountryCard({ s }: { s: MapHubState }) {
@@ -173,15 +175,63 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
     handleCreateJourneyFromPanel,
   } = s;
 
+  // Phones: the card is a bottom sheet over the map, like the Trip Guide (half, full over the map, pull down to close)
+  const [isPhone, setIsPhone] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
+  useEffect(() => {
+    const onResize = () => setIsPhone(window.innerWidth < 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const isCardOpen = !!selectedCountry && !isFlyingToCountry && !isBuilderOpen;
+  const [sheetAreaHeight, setSheetAreaHeight] = useState(0);
+  const countrySheet = useSnapSheet({
+    enabled: isCardOpen && isPhone && sheetAreaHeight > 0,
+    halfTop: Math.round(sheetAreaHeight * 0.42),
+    areaHeight: sheetAreaHeight,
+    onClose: handleCloseCountry,
+  });
+  useEffect(() => {
+    const el = countrySheet.containerRef.current;
+    if (!el || !isPhone) return;
+    const measure = () => setSheetAreaHeight(el.clientHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isCardOpen, isPhone, countrySheet.containerRef]);
+  const phoneSheet = isPhone && !isBuilderOpen;
+
   return (
     <>
       {/* 3. Selected Country Card (Swiss Minimal Editorial Style - Slim Lines, Compact Height, No Box Overload) */}
       {selectedCountry && !isFlyingToCountry && (
-        <div className={`${isBuilderOpen ? 'hidden lg:block' : 'block'} fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 ${
-          isBuilderOpen ? 'sm:left-6 sm:right-auto' : 'sm:left-auto sm:right-6'
-        } w-full sm:w-[380px] max-h-[65vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
-          isBuilderOpen ? 'sm:slide-in-from-left' : 'sm:slide-in-from-right'
-        } duration-200`}>
+        <div
+          ref={countrySheet.containerRef}
+          data-sheet-snap={countrySheet.panelHeight !== undefined ? countrySheet.snap : undefined}
+          className={phoneSheet
+            ? 'absolute inset-0 z-[500] translate-y-full flex flex-col bg-white dark:bg-[#111111] border-t border-black/15 dark:border-white/15 shadow-[0_-8px_24px_rgba(0,0,0,0.18)] will-change-transform'
+            : `${isBuilderOpen ? 'hidden lg:block' : 'block'} fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 ${
+              isBuilderOpen ? 'sm:left-6 sm:right-auto' : 'sm:left-auto sm:right-6'
+            } w-full sm:w-[380px] max-h-[65vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
+              isBuilderOpen ? 'sm:slide-in-from-left' : 'sm:slide-in-from-right'
+            } duration-200`}
+        >
+          {phoneSheet && (
+            <button
+              type="button"
+              data-sheet-handle
+              onClick={countrySheet.toggle}
+              className="w-full h-5 shrink-0 grid place-items-center cursor-grab touch-none"
+              aria-label={countrySheet.snap === 'full' ? '카드 줄이기' : '카드 펼치기'}
+            >
+              <span className="block w-10 h-1 rounded-full bg-black/25 dark:bg-white/30" />
+            </button>
+          )}
+          <div
+            data-sheet-scroll={phoneSheet ? '' : undefined}
+            className={phoneSheet ? 'overflow-y-auto overscroll-contain px-3 pb-3' : 'contents'}
+            style={phoneSheet && countrySheet.panelHeight !== undefined ? { height: countrySheet.panelHeight - 20 } : undefined}
+          >
           
           {/* Header: Code + Continent & Country Name */}
           <div className="flex items-center justify-between pb-1.5 sm:pb-2.5 border-b border-black/10 dark:border-white/10 mb-2 sm:mb-3">
@@ -494,23 +544,18 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                 <span>{isCurrentCountryFavorite ? 'SAVED WISH' : 'WISH'}</span>
               </button>
 
-              <button
-                type="button"
+              <NewTripButton
+                size="sm"
+                block
                 onClick={() => {
                   const targetCity = selectedDestCities.length > 0 ? selectedDestCities[0] : undefined;
                   handleOpenTripBuilder(selectedCountry.name, targetCity, undefined, selectedCountry.code, selectedDestCities);
                 }}
-                className="btn btn-primary btn-sm w-full flex"
                 title="선택된 장소 또는 국가 기준으로 새로운 트립 생성"
-              >
-                <Plus className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">
-                  {selectedDestCities.length > 0
-                    ? `TRIP (${selectedDestCities.length})`
-                    : 'CREATE TRIP'}
-                </span>
-              </button>
+                label={selectedDestCities.length > 0 ? `New trip (${selectedDestCities.length})` : 'New trip'}
+              />
             </div>
+          </div>
           </div>
         </div>
       )}

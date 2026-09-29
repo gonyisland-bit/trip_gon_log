@@ -15,6 +15,7 @@ import {
   DepartureFilters, DepartureTicket, FLIGHT_OPTIONS, candidates, dailyPick, defaultFilters, flightHours, flightNumber,
   formatHours, gateFor, isBestSeason, loadTickets, makeTicket, readCachedTickets, saveTickets, selectableMonths, targetMonth, todayKey,
 } from './departureData';
+import { NewTripButton } from '../NewTripButton';
 
 // Airport terminal (v1.3, renamed from Departure Board): a split-flap board that picks the next trip.
 // Filters narrow the pool, SPIN rolls the letters to a destination, and a result
@@ -517,9 +518,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
                 )}
                 {city && !spinning && (
                   <>
-                    <button type="button" onClick={() => build({ countryEn: city.countryEn, cityKo: city.nameKo, cityEn: city.nameEn, year, month })} className="tgl-press h-8.5 sm:h-10 px-3 sm:px-4 bg-[#0B0B0C] text-white hover:bg-black/80 dark:bg-[#F2F2EE] dark:text-black dark:hover:bg-white font-bold text-xs sm:text-sm cursor-pointer">
-                      이 여정 만들기
-                    </button>
+                    <NewTripButton size="lg" className="max-sm:h-9" onClick={() => build({ countryEn: city.countryEn, cityKo: city.nameKo, cityEn: city.nameEn, year, month })} />
                     <button type="button" onClick={keep} disabled={kept} className="tgl-press h-8.5 sm:h-10 px-3 sm:px-4 border border-black/40 hover:border-black dark:border-white/40 dark:hover:border-white text-xs sm:text-sm disabled:opacity-60 cursor-pointer">
                       {kept ? '보관됨' : '티켓 보관'}
                     </button>
@@ -552,7 +551,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
                         <span className="font-sans font-extrabold text-2xl tracking-tight uppercase truncate">{t.cityEn}</span>
                         <span className="text-sm text-black/65">{t.cityKo} · {t.countryKo}</span>
                         <div className="flex gap-2 pt-2">
-                          <button type="button" onClick={() => build({ countryEn: t.countryEn, cityKo: t.cityKo, cityEn: t.cityEn, year: t.year, month: t.month })} className="tgl-press h-8 px-3 bg-black text-white text-meta font-bold cursor-pointer hover:bg-red-600">여정 만들기</button>
+                          <NewTripButton size="sm" onClick={() => build({ countryEn: t.countryEn, cityKo: t.cityKo, cityEn: t.cityEn, year: t.year, month: t.month })} />
                           <button type="button" onClick={() => removeTicket(t)} className="tgl-press h-8 px-3 border border-black/25 text-meta cursor-pointer hover:border-black">삭제</button>
                         </div>
                       </div>

@@ -507,7 +507,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
               </a>
             )}
 
-            {/* ADD TRIP Button */}
+            {/* Add this place to a trip (not a new trip) */}
             <button
               type="button"
               onClick={() => {
@@ -517,7 +517,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
               className="btn btn-primary btn-sm inline-flex shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>ADD TRIP</span>
+              <span>Add to trip</span>
             </button>
           </div>
         </div>

@@ -54,6 +54,7 @@ import { SpotPocketItem, UserProfile } from '../types';
 import { auth } from '../firebase';
 import { confirmDialog } from '../utils/feedback';
 import { Sheet, SheetCloseButton } from './Sheet';
+import { NewTripButton, StickyTripAction } from './NewTripButton';
 
 export interface TripBuilderPanelProps {
   isOpen: boolean;
@@ -2071,15 +2072,10 @@ export function TripBuilderPanel({
                   {renderMembersSection()}
                 </div>
 
-                {/* Create Trip Action Button */}
-                <button
-                  type="button"
-                  onClick={() => handleConfirmPresetGeneration(selectedPresetObj)}
-                  className="btn btn-primary btn-lg w-full flex mt-3"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>CREATE TRIP</span>
-                </button>
+                {/* Create Trip Action Button: stays in view at the bottom */}
+                <StickyTripAction>
+                  <NewTripButton kind="create" size="lg" block onClick={() => handleConfirmPresetGeneration(selectedPresetObj)} />
+                </StickyTripAction>
               </div>
             )}
           </div>
@@ -2608,17 +2604,10 @@ export function TripBuilderPanel({
                 {/* Trip Members */}
                 {renderMembersSection()}
 
-                {/* Bottom Action Submit Button (Crear producte reference style) */}
-                <div className="pt-3">
-                  <button
-                    type="button"
-                    onClick={() => handleProposeTrips()}
-                    className="w-full py-3.5 bg-neutral-900 hover:bg-black dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black rounded-xl font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4 text-red-400" />
-                    <span>CREATE TRIP</span>
-                  </button>
-                </div>
+                {/* Bottom action: stays in view at the bottom */}
+                <StickyTripAction>
+                  <NewTripButton kind="create" size="lg" block onClick={() => handleProposeTrips()} />
+                </StickyTripAction>
               </>
             ) : (
               <>
@@ -2755,17 +2744,13 @@ export function TripBuilderPanel({
                             )}
                           </button>
 
-                          <button
-                            type="button"
+                          <NewTripButton
+                            kind="create"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleConfirmProposalGeneration(prop);
                             }}
-                            className="btn btn-primary flex"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>CREATE TRIP</span>
-                          </button>
+                          />
                         </div>
                       </div>
                     );
@@ -3181,13 +3166,9 @@ export function TripBuilderPanel({
             {/* Trip Members */}
             {renderMembersSection()}
 
-            <button
-              type="submit"
-              className="w-full py-3.5 bg-neutral-900 hover:bg-black dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black rounded-xl font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Check className="w-4 h-4" />
-              <span>CREATE TRIP</span>
-            </button>
+            <StickyTripAction>
+              <NewTripButton kind="create" size="lg" block type="submit" />
+            </StickyTripAction>
           </form>
         )}
       </div>

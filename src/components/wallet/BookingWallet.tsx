@@ -6,6 +6,7 @@ import { bookingContextFromTrip, buildAgodaUrl, buildBookingComUrl, buildNaverFl
 import { notify } from '../../utils/feedback';
 import { prefersReducedMotion } from '../../motion';
 import { useBackToClose } from '../../utils/overlayHistory';
+import { NewTripButton } from '../NewTripButton';
 
 // Booking Wallet (v1.3 P5): every flight, stay and transit booking of the
 // journeys still ahead, on one screen, with a D-day on each check-in.
@@ -197,9 +198,7 @@ export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transi
         {journeys.length === 0 && (
           <div className="py-16 flex flex-col items-center gap-4 text-center">
             <p className="text-black/60 dark:text-white/60">다가오는 여정이 없습니다.</p>
-            <button type="button" onClick={() => { onClose(); onNewTrip(); }} className="btn btn-primary btn-lg tgl-press">
-              새 여정 만들기
-            </button>
+            <NewTripButton size="lg" onClick={() => { onClose(); onNewTrip(); }} />
           </div>
         )}
 

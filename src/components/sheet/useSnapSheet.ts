@@ -24,8 +24,16 @@ interface Options {
 const DECIDE_PX = 1;  // decide on the first move: later moves may no longer be cancelable
 const OPEN_PULL = 40;     // pull up this far (or flick) from half to open fully
 const HALF_PULL = 60;     // pull down this far (or flick) from full to come back to half
-const CLOSE_PULL = 140;   // pull down this far past half (or flick hard) to close
+const CLOSE_MIN = 220;    // closing needs a long pull below half: at least this far…
+const CLOSE_SHARE = 0.45; // …or this share of the sheet's half height, whichever is larger
+const FLICK_CLOSE_MIN = 120; // a fast flick closes only after this much pull
 const FLICK = 0.6;        // px per ms
+
+// Below the half position the sheet gets heavier the further it is pulled (rubber band)
+function rubber(distance: number, range: number): number {
+  if (distance <= 0 || range <= 0) return distance;
+  return range * (1 - 1 / ((distance * 0.55) / range + 1));
+}
 const EASE = 'transform 320ms cubic-bezier(.2, .8, .2, 1)';
 
 // The nearest ancestor (inside the sheet) that can scroll vertically
@@ -58,6 +66,8 @@ export function useSnapSheet({ enabled, halfTop, areaHeight, onClose }: Options)
     const el = containerRef.current;
     if (!enabled || !el) {
       shownRef.current = false;
+      // Next time it opens, it opens half way
+      if (snapRef.current !== 'half') setSnap('half');
       if (el) { el.style.transform = ''; el.style.transition = ''; }
       return;
     }
@@ -69,15 +79,20 @@ export function useSnapSheet({ enabled, halfTop, areaHeight, onClose }: Options)
     place(baseTop, true);
   }, [enabled, baseTop, areaHeight, place]);
 
+  // Latest sizes and callback for the touch handlers, so they are registered once per opening
+  // (callers often pass a new onClose on every render, e.g. a card that re-renders with a live clock)
+  const liveRef = useRef({ halfTop, areaHeight, onClose });
+  liveRef.current = { halfTop, areaHeight, onClose };
+
   const closeWithSlide = useCallback(() => {
-    place(areaHeight, true);
+    place(liveRef.current.areaHeight, true);
     window.setTimeout(() => {
-      onClose();
+      liveRef.current.onClose();
       // If closing was cancelled (e.g. a confirm), come back to rest
       setSnap('half');
-      place(halfTop, true);
+      place(liveRef.current.halfTop, true);
     }, 240);
-  }, [areaHeight, halfTop, onClose, place]);
+  }, [place]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -115,24 +130,30 @@ export function useSnapSheet({ enabled, halfTop, areaHeight, onClose }: Options)
       const now = performance.now();
       velocity = (t.clientY - lastY) / Math.max(1, now - lastT);
       lastY = t.clientY; lastT = now;
+      const { halfTop, areaHeight } = liveRef.current;
       const base = snapRef.current === 'full' ? 0 : halfTop;
-      // Resist a little above the top
-      const top = base + dy < 0 ? (base + dy) * 0.25 : base + dy;
+      const raw = base + dy;
+      // Resist a little above the top, and increasingly below the half position
+      const top = raw < 0 ? raw * 0.25 : raw > halfTop ? halfTop + rubber(raw - halfTop, areaHeight - halfTop) : raw;
       place(top, false);
     };
 
     const onEnd = () => {
       if (mode !== 'drag') { mode = 'idle'; return; }
       mode = 'idle';
+      const { halfTop, areaHeight } = liveRef.current;
       const dy = lastY - startY;
       const half = snapRef.current === 'half';
-      if (half) {
+      // How far the finger went below the half position, and whether that is enough to close
+      const belowHalf = (half ? halfTop : 0) + dy - halfTop;
+      const closeAt = Math.max(CLOSE_MIN, (areaHeight - halfTop) * CLOSE_SHARE);
+      const closes = belowHalf > closeAt || (belowHalf > FLICK_CLOSE_MIN && velocity > FLICK * 1.8);
+      if (closes) closeWithSlide();
+      else if (half) {
         if (dy < -OPEN_PULL || velocity < -FLICK) { setSnap('full'); place(0, true); }
-        else if (dy > CLOSE_PULL || velocity > FLICK * 1.5) closeWithSlide();
         else place(halfTop, true);
       } else {
-        if (dy > halfTop + CLOSE_PULL || (dy > HALF_PULL && velocity > FLICK * 2.5)) closeWithSlide();
-        else if (dy > HALF_PULL || velocity > FLICK) { setSnap('half'); place(halfTop, true); }
+        if (dy > HALF_PULL || velocity > FLICK) { setSnap('half'); place(halfTop, true); }
         else place(0, true);
       }
     };
@@ -147,7 +168,7 @@ export function useSnapSheet({ enabled, halfTop, areaHeight, onClose }: Options)
       el.removeEventListener('touchend', onEnd);
       el.removeEventListener('touchcancel', onEnd);
     };
-  }, [enabled, halfTop, place, closeWithSlide]);
+  }, [enabled, place, closeWithSlide]);
 
   const toggle = useCallback(() => setSnap(s => (s === 'half' ? 'full' : 'half')), []);
 

@@ -19,6 +19,7 @@ import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { WORLD_CITIES, findCityByNameOrAlias } from '../data/worldDestinations';
 import { confirmDialog } from '../utils/feedback';
 import { swipeStart, swipeDirection, SwipeStart } from '../utils/swipe';
+import { NewTripButton } from '../components/NewTripButton';
 
 export interface CalendarWeatherCity {
   name: string;
@@ -2152,24 +2153,18 @@ export function CalendarHubPage({
               </button>
             )}
 
-            {/* 4. Swiss Minimal NEW TRIP Button - 모바일에서는 + 아이콘만 컴팩트 노출 */}
+            {/* New trip for this month (icon only on phones, pill like the rest of this toolbar) */}
             {onCreateTrip && (
-              <button
-                type="button"
-                onClick={() => {
-                  const yyyy = currentYear;
-                  const mm = String(currentMonth + 1).padStart(2, '0');
-                  const dd = '01';
-                  onCreateTrip(`${yyyy}-${mm}-${dd}`);
-                }}
-                className="w-7 h-7 sm:w-auto sm:h-8 sm:px-3.5 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-meta sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center sm:gap-1.5 shrink-0 shadow-xs"
+              <NewTripButton
+                size="sm"
+                compact
+                className="rounded-full max-sm:!h-7 max-sm:!w-7"
                 title="이 달을 기준으로 새로운 트립 생성"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  <span className="hidden md:inline">NEW </span>TRIP
-                </span>
-              </button>
+                onClick={() => {
+                  const mm = String(currentMonth + 1).padStart(2, '0');
+                  onCreateTrip(`${currentYear}-${mm}-01`);
+                }}
+              />
             )}
           </div>
         </div>
