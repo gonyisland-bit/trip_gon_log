@@ -297,7 +297,7 @@ export function FlightCard({
   return (
     <div 
       onClick={onClick}
-      className={`tgl-cv-row mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full group/ticket ${
+      className={`tgl-cv-row mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-auto min-w-0 group/ticket ${
         isActive 
           ? 'bg-surface dark:bg-surface-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm' 
           : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'

@@ -190,7 +190,7 @@ export function TransitCard({
   return (
     <div 
       onClick={onClick}
-      className={`tgl-cv-row mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 w-full group/ticket ${
+      className={`tgl-cv-row mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 w-auto min-w-0 group/ticket ${
         !isEditMode ? 'cursor-pointer' : ''
       } ${
         isActive 
