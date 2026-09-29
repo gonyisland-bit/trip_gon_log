@@ -324,15 +324,15 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
-      className={`tgl-press h-7 sm:h-7.5 px-2 sm:px-2.5 font-mono text-[11px] sm:text-meta uppercase tracking-wider border transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 whitespace-nowrap shrink-0 ${
+      className={`tgl-press h-7 sm:h-7.5 px-1.5 sm:px-2.5 font-mono text-[10.5px] sm:text-meta uppercase tracking-wider border transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 whitespace-nowrap shrink-0 ${
         active ? 'bg-[#0B0B0C] text-white border-[#0B0B0C] dark:bg-[#F2F2EE] dark:text-black dark:border-[#F2F2EE]' : 'border-black/25 text-black/75 hover:border-black hover:text-black dark:border-white/25 dark:text-white/75 dark:hover:border-white dark:hover:text-white'
       }`}
     >
       {children}
     </button>
   );
-  const Label = ({ children }: { children: React.ReactNode }) => (
-    <span className="font-mono text-[10px] sm:text-micro tracking-[0.14em] sm:tracking-[0.16em] uppercase text-black/60 dark:text-white/55 shrink-0 select-none">{children}</span>
+  const Label = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <span className={`font-mono text-[10px] sm:text-micro tracking-[0.14em] sm:tracking-[0.16em] uppercase text-black/60 dark:text-white/55 shrink-0 select-none ${className}`}>{children}</span>
   );
 
   return (
@@ -368,34 +368,43 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
 
           {view === 'board' ? (
             <>
-              {/* Filters: strictly single line, no multi-row wrapping, smooth horizontal scroll on small screens */}
-              <div className="flex flex-nowrap items-center gap-2.5 sm:gap-4 overflow-x-auto hide-scrollbar py-0.5 w-full">
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <Label>Stay</Label>
-                  <div className="flex gap-1">
+              {/* Filters: strictly single line, no horizontal scroll, fit to container */}
+              <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-4 py-0.5 w-full">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0" aria-label="체류 기간">
+                  <Label className="hidden sm:inline-block">Stay</Label>
+                  <div className="flex gap-0.5 sm:gap-1">
                     <Chip active={filters.stay === 'short'} onClick={() => setFilters(f => ({ ...f, stay: 'short' }))}>2–3박</Chip>
                     <Chip active={filters.stay === 'mid'} onClick={() => setFilters(f => ({ ...f, stay: 'mid' }))}>4–5박</Chip>
                     <Chip active={filters.stay === 'long'} onClick={() => setFilters(f => ({ ...f, stay: 'long' }))}>6박+</Chip>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <Label>Flight</Label>
-                  <div className="flex gap-1">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0" aria-label="비행 시간">
+                  <Label className="hidden sm:inline-block">Flight</Label>
+                  <div className="flex gap-0.5 sm:gap-1">
                     {FLIGHT_OPTIONS.map(o => (
-                      <Chip key={o.value} active={filters.flight === o.value} onClick={() => setFilters(f => ({ ...f, flight: o.value }))}>{o.label}</Chip>
+                      <Chip key={o.value} active={filters.flight === o.value} onClick={() => setFilters(f => ({ ...f, flight: o.value }))}>
+                        {o.value === '10+' ? (
+                          <>
+                            <span className="sm:hidden">10H</span>
+                            <span className="hidden sm:inline">10H+</span>
+                          </>
+                        ) : (
+                          o.label
+                        )}
+                      </Chip>
                     ))}
                   </div>
                 </div>
-                <div className="relative flex items-center gap-1.5 sm:gap-2 shrink-0" ref={monthRef}>
-                  <Label>Departs</Label>
+                <div className="relative flex items-center gap-1 sm:gap-2 shrink-0" ref={monthRef} aria-label="출발 시기">
+                  <Label className="hidden sm:inline-block">Departs</Label>
                   <div className="flex items-stretch h-7 sm:h-7.5 border border-black/25 dark:border-white/25">
-                    <button type="button" onClick={() => stepMonth(-1)} disabled={!canStep(-1)} className="tgl-press w-7 sm:w-7.5 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
+                    <button type="button" onClick={() => stepMonth(-1)} disabled={!canStep(-1)} className="tgl-press w-6 sm:w-7.5 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
-                    <button type="button" onClick={() => setMonthOpen(o => !o)} aria-expanded={monthOpen} aria-haspopup="dialog" className="tgl-press px-2 sm:px-2.5 font-mono text-[11px] sm:text-meta tracking-wider tabular-nums border-x border-black/25 hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10 cursor-pointer" aria-label="출발 월 바꾸기">
-                      {MONTHS[month - 1]} {year}
+                    <button type="button" onClick={() => setMonthOpen(o => !o)} aria-expanded={monthOpen} aria-haspopup="dialog" className="tgl-press px-1.5 sm:px-2.5 font-mono text-[10.5px] sm:text-meta tracking-tight sm:tracking-wider tabular-nums border-x border-black/25 hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10 cursor-pointer" aria-label="출발 월 바꾸기">
+                      {MONTHS[month - 1]} <span className="sm:hidden">{String(year).slice(2)}</span><span className="hidden sm:inline">{year}</span>
                     </button>
-                    <button type="button" onClick={() => stepMonth(1)} disabled={!canStep(1)} className="tgl-press w-7 sm:w-7.5 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
+                    <button type="button" onClick={() => stepMonth(1)} disabled={!canStep(1)} className="tgl-press w-6 sm:w-7.5 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
