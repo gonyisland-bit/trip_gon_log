@@ -396,7 +396,8 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [x] P4-a 홈 · 여정 목록 · 여정 카드: 둥근 카드 · 알약 상태, 목록 행 카드화(`JourneyListRow`), 보기 전환 `ViewModeSegment`, 필터 · 검색 · 정렬 알약, 홈 히어로 사진 · 게스트 버튼 · D-day(앰버) · 환율 · 지금 띠 카드화.
 - [x] P4-b 여정 상세: 기록 판은 paper 바탕 · 폰에서 둥근 윗모서리로 지도 위에 겹침, 탭은 흰 알약이 미끄러지는 세그먼트, 날짜 칩, 타임라인 · 항공 · 숙소 · 교통 항목은 surface 카드(둥근 썸네일), 날짜 빠른 이동은 먹색 알약.
 - [x] P4-c 지도: 폰 탭바를 지도에도 띄우고 국가 카드 · Trip Guide 시트가 열리면 비킴(`html[data-map-sheet]`), 국가 카드는 surface 시트(폰 둥근 윗모서리 · 데스크톱 둥근 카드) · paper 통계 타일 · 알약 도시 칩, Trip Guide 판은 surface · 둥근 윗모서리. Trip Guide 안쪽 화면 정리는 남음.
-- [ ] P4 화면 적용(나머지 d~e): 홈 → 여정 상세 → 지도 시트 → 포켓 → 매거진 → 캘린더 → 모달 바텀시트화. `bg-white`(약 1,100곳)는 화면별로 `bg-surface`로 옮김.
+- [x] P4-d 포켓 · 매거진: 필터 · 검색 · 정렬 · 순서 바꾸기를 알약으로, 필터 판은 surface 둥근 카드, 포켓 선택 바는 먹색 알약("n곳 선택 · 선택 해제 · New trip"), 즐겨찾기 필터는 앰버, 매거진 이슈 카드 표지 · 뒤 종이 둥글게(열림 전환도 둥근 모서리에서 시작), 섹션 바는 paper, 섹션 선택은 알약.
+- [ ] P4 화면 적용(나머지 e): 홈 → 여정 상세 → 지도 시트 → 포켓 → 매거진 → 캘린더 → 모달 바텀시트화. `bg-white`(약 1,100곳)는 화면별로 `bg-surface`로 옮김.
 - [ ] P5 성능: `backdrop-blur` · `transition-all` 정리, 이미지 사본 확대, 긴 목록 가상화, 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리.
 
 ### V1.3 디자인 리뉴얼 진행 현황 (2026.09.28 기준, 다른 PC에서 이어가기용)
@@ -425,6 +426,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - 버튼: `btn` 전체가 굵은 산세리프 알약으로(h-8 / h-10 / h-12), 보조 버튼은 보더 반전 대신 연한 채움, 새 여행 `NewTripButton`은 빨강 알약(`btn-accent`).
 - 공용 컨트롤 `ui/Segment` · `ui/Chip` · `ui/IconButton` · `ui/Card`(`CardRow`) 추가.
 - AGENTS.md 3장 · spec 4.1 · 4.2 · 4.4를 Swiss Soft 기준으로 갱신.
+- 포켓 · 매거진(P4-d): 컨트롤을 알약으로, 포켓 선택 바를 먹색 알약으로, 매거진 이슈 카드를 둥글게.
 - 지도(P4-c): 폰 탭바가 지도에도 뜨고 시트가 열리면 비킵니다. 국가 카드와 Trip Guide 판을 둥근 시트로.
 - 여정 상세(P4-b): 기록 판 · 탭 · 날짜 칩 · 일정 카드 · 예약 카드를 Swiss Soft로.
 - 홈 · 여정 목록(P4-a): 여정 카드 둥글게, 상태 알약은 사진 왼쪽 아래, 목록 보기는 카드 행, 보기 전환 · 필터 · 검색 · 정렬은 알약. 홈 D-day 배지는 의미 색상표대로 앰버.

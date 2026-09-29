@@ -859,10 +859,10 @@ export function MagazineHubPage({
                     <button 
                       type="button"
                       onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                      className={`text-meta px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
+                      className={`h-9 px-3.5 rounded-full text-[13px] font-bold border transition-colors flex items-center gap-1.5 cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
                         magLocationFilter !== 'All'
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                          : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
+                          : 'border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black dark:text-white'
                       }`}
                       title="FILTER (LOCATION)"
                     >
@@ -880,10 +880,10 @@ export function MagazineHubPage({
                         setIsSearchInputOpen(v => !v);
                         if (isSearchInputOpen) setMagSearchQuery('');
                       }}
-                      className={`p-2 border transition-colors flex items-center justify-center rounded-none cursor-pointer relative ${
+                      className={`w-9 h-9 border transition-colors grid place-items-center rounded-full cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
                         isSearchInputOpen || magSearchQuery
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                          : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
+                          : 'border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black dark:text-white'
                       }`}
                       title="매거진 검색"
                     >
@@ -902,7 +902,7 @@ export function MagazineHubPage({
                           value={magSearchQuery}
                           onChange={(e) => setMagSearchQuery(e.target.value)}
                           placeholder="매거진 검색..."
-                          className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 rounded-none"
+                          className="w-32 sm:w-48 h-9 pl-3.5 pr-8 text-[13px] bg-black/[0.05] dark:bg-white/[0.08] rounded-full font-medium outline-none focus-visible:ring-2 focus-visible:ring-red-600 text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 "
                         />
                         {magSearchQuery && (
                           <button
@@ -950,17 +950,15 @@ export function MagazineHubPage({
                   {isTagDropdownOpen && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
-                      <div className="absolute left-0 mt-1.5 w-64 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 shadow-2xl z-20 rounded-none p-3 flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-1 duration-150 text-black dark:text-white">
+                      <div className="absolute left-0 mt-1.5 w-64 bg-surface dark:bg-surface-dark shadow-[0_12px_32px_rgba(0,0,0,0.14)] z-20 rounded-card p-4 flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-1 duration-150 text-black dark:text-white">
                         <span className="text-micro font-mono font-extrabold uppercase tracking-wider text-black/60 dark:text-white/60">
-                          LOCATION (지역)
+                          Place
                         </span>
-                        <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
+                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
                           <button
                             type="button"
                             onClick={() => { setMagLocationFilter('All'); setIsTagDropdownOpen(false); }}
-                            className={`text-meta px-2 py-0.5 uppercase font-mono font-bold border transition-colors cursor-pointer ${
-                              magLocationFilter === 'All' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
-                            }`}
+                            className={`h-8 px-3 rounded-full text-meta font-bold border transition-colors cursor-pointer ${magLocationFilter === 'All' ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                           >
                             All ({effectiveSections.length})
                           </button>
@@ -971,9 +969,7 @@ export function MagazineHubPage({
                                 key={loc}
                                 type="button"
                                 onClick={() => { setMagLocationFilter(loc === magLocationFilter ? 'All' : loc); setIsTagDropdownOpen(false); }}
-                                className={`text-meta px-2 py-0.5 uppercase font-mono font-bold border transition-colors cursor-pointer ${
-                                  magLocationFilter === loc ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
-                                }`}
+                                className={`h-8 px-3 rounded-full text-meta font-bold border transition-colors cursor-pointer ${magLocationFilter === loc ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                               >
                                 {loc} ({count})
                               </button>
@@ -991,11 +987,12 @@ export function MagazineHubPage({
                   <select
                     value={magSortBy}
                     onChange={(e) => setMagSortBy(e.target.value as any)}
-                    className="bg-transparent text-meta sm:text-xs font-extrabold uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
+                    aria-label="정렬"
+                    className="h-9 bg-black/[0.06] dark:bg-white/10 text-[13px] font-bold px-3.5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 cursor-pointer font-sans"
                   >
-                    <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
-                    <option value="newest" className="bg-[#F9F8F6] dark:bg-[#111111]">NEWEST</option>
-                    <option value="title" className="bg-[#F9F8F6] dark:bg-[#111111]">TITLE</option>
+                    <option value="user">My order</option>
+                    <option value="newest">Newest</option>
+                    <option value="title">Title</option>
                   </select>
                 </div>
               </div>
@@ -1340,7 +1337,7 @@ export function MagazineHubPage({
           )}
 
           {/* 2-2. SECTION NAVIGATOR / SELECTOR */}
-          <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 dark:bg-[#11110F]/95 backdrop-blur-md border-b border-black/15 dark:border-white/15 px-3 sm:px-8 md:px-12 py-2.5 transition-colors">
+          <div className="sticky top-14 sm:top-16 z-30 w-full bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-md border-b border-black/[0.06] dark:border-white/10 px-3 sm:px-8 md:px-12 py-2.5 transition-colors">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               {/* Phones: one picker for the current section, with previous / next */}
               {(() => {
@@ -1356,7 +1353,7 @@ export function MagazineHubPage({
                     <button
                       type="button"
                       onClick={() => setIsSectionPickerOpen(true)}
-                      className="flex-1 min-w-0 h-8 px-2.5 flex items-center justify-between gap-2 border border-black/20 dark:border-white/20 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                      className="flex-1 min-w-0 h-9 px-3.5 flex items-center justify-between gap-2 rounded-full bg-black/[0.06] dark:bg-white/10 text-xs font-bold uppercase tracking-wider cursor-pointer"
                       aria-haspopup="dialog"
                       aria-label="섹션 선택"
                     >
