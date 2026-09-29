@@ -10,6 +10,7 @@ import { QuickActionBar, OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SC
 import { TOGGLE_PALETTE_EVENT, OPEN_REMIX_EVENT, openRemix } from './app/layerEvents';
 import { getSavedPockets } from './utils/pocketStorage';
 import { LayerBoundary } from './components/LayerBoundary';
+import { watchFullScreenOverlays } from './app/overlayWatcher';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
@@ -111,6 +112,8 @@ function App() {
     return () => window.removeEventListener(OPEN_INTRO_EVENT, open);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Floating chrome (quick dock, TOP, intro tip) steps aside while anything covers the screen
+  useEffect(() => watchFullScreenOverlays(), []);
   // Watching the intro from anywhere retires the first-visit hint (kept per account)
   useEffect(() => {
     const uid = auth.currentUser?.uid;
@@ -727,11 +730,15 @@ function App() {
 
         {/* Quick actions across hubs (v1.3) */}
         {isLoggedIn && ['home', 'archive', 'magazine', 'calendar', 'pocket'].includes(currentView) && (
-          <QuickActionBar
-            currentView={currentView}
-            onNavigate={(view) => navigateTo(view)}
-            onNewTrip={() => handleCreateTripForCountry('', '')}
-          />
+          <>
+            {/* Phones: room under the page so the dock never sits on its last lines */}
+            <div className="md:hidden h-20 shrink-0" aria-hidden />
+            <QuickActionBar
+              currentView={currentView}
+              onNavigate={(view) => navigateTo(view)}
+              onNewTrip={() => handleCreateTripForCountry('', '')}
+            />
+          </>
         )}
 
         {/* Booking Wallet: every upcoming booking with its D-day (v1.3 P5) */}

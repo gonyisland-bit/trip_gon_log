@@ -19,6 +19,7 @@ import { useMapHubState, MapHubPageProps } from './map/useMapHubState';
 import { MapTopBar } from './map/MapTopBar';
 import { SelectedCountryCard } from './map/SelectedCountryCard';
 import { MapModals } from './map/MapModals';
+import { useSnapSheet } from '../components/sheet/useSnapSheet';
 
 // Map hub (v1.3): the page shell. State lives in useMapHubState; the top bar, the country card
 // and the modals are sections that read it through `s`.
@@ -179,8 +180,31 @@ export function MapHubPage(props: MapHubPageProps) {
     handleCreateJourneyFromPanel,
   } = s;
 
+  // Phones: the Trip Guide is a bottom sheet over the map (rests below the 38vh map, opens to the top)
+  const mainRef = useRef<HTMLElement>(null);
+  const [sheetArea, setSheetArea] = useState({ height: 0, halfTop: 0, phone: false });
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main) return;
+    const measure = () => setSheetArea({
+      height: main.clientHeight,
+      halfTop: Math.round(window.innerHeight * 0.38),
+      phone: window.innerWidth < 1024,
+    });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(main);
+    return () => ro.disconnect();
+  }, []);
+  const guideSheet = useSnapSheet({
+    enabled: isBuilderOpen && sheetArea.phone && sheetArea.height > 0,
+    halfTop: sheetArea.halfTop,
+    areaHeight: sheetArea.height,
+    onClose: handleCloseTripBuilder,
+  });
+
   return (
-    <main className={`relative w-full h-[calc(100vh-56px)] h-[calc(100dvh-56px)] flex flex-col lg:flex-row bg-white dark:bg-[#141414] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
+    <main ref={mainRef} className={`relative w-full h-[calc(100vh-56px)] h-[calc(100dvh-56px)] flex flex-col lg:flex-row bg-white dark:bg-[#141414] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
       {/* MAP VIEW CONTAINER (Full screen or Split 58% on Desktop / 38vh on Mobile). isolate keeps Leaflet's z-indexes inside it */}
       <div className={`relative isolate ${isBuilderOpen ? 'tgl-map-picking' : ''} transition-all duration-300 ease-in-out ${
@@ -217,7 +241,22 @@ export function MapHubPage(props: MapHubPageProps) {
 
       {/* 4. INLINE SPLIT TRIP BUILDER PANEL (42% on Desktop / remaining height on Mobile) */}
       {isBuilderOpen && (
-        <div className="w-full lg:w-[42%] h-[calc(100%-38vh)] lg:h-full flex-1 min-h-0 overflow-hidden z-20 bg-white dark:bg-[#121212] flex flex-col min-h-0 animate-in fade-in duration-200">
+        <div
+          ref={guideSheet.containerRef}
+          data-sheet-snap={guideSheet.panelHeight !== undefined ? guideSheet.snap : undefined}
+          className="max-lg:absolute max-lg:inset-0 max-lg:z-30 max-lg:shadow-[0_-8px_24px_rgba(0,0,0,0.18)] w-full lg:w-[42%] lg:h-full lg:flex-1 min-h-0 overflow-hidden z-20 bg-white dark:bg-[#121212] flex flex-col lg:animate-in lg:fade-in lg:duration-200 will-change-transform"
+        >
+          {/* Grab bar: drag the sheet, or tap to switch between half and full */}
+          <button
+            type="button"
+            data-sheet-handle
+            onClick={guideSheet.toggle}
+            className="lg:hidden w-full h-5 shrink-0 grid place-items-center cursor-grab touch-none"
+            aria-label={guideSheet.snap === 'full' ? '가이드 줄이기' : '가이드 펼치기'}
+          >
+            <span className="block w-10 h-1 rounded-full bg-black/25 dark:bg-white/30" />
+          </button>
+          <div className="flex flex-col min-h-0 flex-1 lg:h-full" style={guideSheet.panelHeight !== undefined ? { height: guideSheet.panelHeight - 20, flex: 'none' } : undefined}>
           <TripBuilderPanel
             isOpen={true}
             onClose={handleCloseTripBuilder}
@@ -231,6 +270,7 @@ export function MapHubPage(props: MapHubPageProps) {
             currentUserProfile={currentUserProfile}
             onFocusLocationChange={handleBuilderFocusChange}
           />
+          </div>
         </div>
       )}
 

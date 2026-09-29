@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Ticket, Volume2, VolumeX, X } from 'lucide-react';
+import { BedDouble, CalendarDays, ChevronLeft, ChevronRight, Plane, Ticket, Volume2, VolumeX, X } from 'lucide-react';
 import { getSavedPockets } from '../../utils/pocketStorage';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { LobbyScene } from './LobbyScene';
@@ -22,6 +22,8 @@ import {
 
 const FLAP_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:';
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+// How many years after this one the departure month can reach
+const DEPART_YEARS_AHEAD = 3;
 
 // ── Flap sound: short filtered noise clicks, synthesised on demand ──
 function useFlapSound(muted: boolean) {
@@ -284,29 +286,22 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
     await persist({ ...store, items: store.items.filter(x => x.id !== t.id) });
   };
 
-  // Month stepper: from this month up to December next year; tapping the label wraps around
+  // Departure month: from this month up to December three years ahead, picked by year then month
   const monthIndex = (y: number, m: number) => y * 12 + (m - 1);
   const firstIndex = monthIndex(thisYear, selectableMonths(thisYear)[0]);
-  const lastIndex = monthIndex(thisYear + 1, 12);
-  const canStep = (dir: 1 | -1) => {
-    const next = monthIndex(filters.year, filters.month) + dir;
-    return next >= firstIndex && next <= lastIndex;
-  };
-  const months = useMemo(() => {
-    const out: { year: number; month: number; best: number }[] = [];
-    for (let i = firstIndex; i <= lastIndex; i++) {
-      const y = Math.floor(i / 12), m = (i % 12) + 1;
-      const best = candidates({ ...filters, year: y, month: m }).filter(c => isBestSeason(c, m)).length;
-      out.push({ year: y, month: m, best });
-    }
-    return out;
+  const lastYear = thisYear + DEPART_YEARS_AHEAD;
+  const lastIndex = monthIndex(lastYear, 12);
+  const [gridYear, setGridYear] = useState(filters.year);
+  useEffect(() => { if (monthOpen) setGridYear(filters.year); }, [monthOpen, filters.year]);
+  // Best-season count per calendar month (it depends on the month, not the year)
+  const bestByMonth = useMemo(
+    () => MONTHS.map((_, i) => candidates({ ...filters, month: i + 1 }).filter(c => isBestSeason(c, i + 1)).length),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.stay, filters.flight, firstIndex, lastIndex]);
-  const topBest = Math.max(1, ...months.map(m => m.best));
-  const stepMonth = (dir: 1 | -1, wrap = false) => setFilters(f => {
-    let next = monthIndex(f.year, f.month) + dir;
-    if (next > lastIndex) next = wrap ? firstIndex : lastIndex;
-    if (next < firstIndex) next = firstIndex;
+    [filters.stay, filters.flight],
+  );
+  const topBest = Math.max(1, ...bestByMonth);
+  const stepMonth = (dir: 1 | -1) => setFilters(f => {
+    const next = Math.min(lastIndex, Math.max(firstIndex, monthIndex(f.year, f.month) + dir));
     return { ...f, year: Math.floor(next / 12), month: (next % 12) + 1 };
   });
 
@@ -318,14 +313,22 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
   }, [pool, city, rollKey]);
   const status = city ? (isBestSeason(city, month) ? 'BEST SEASON' : 'ON TIME') : booted ? 'BOARDING' : '';
 
-  const Chip = ({ active, disabled, onClick, children }: { active: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) => (
+  // One filter = one bordered segmented control, so Stay / Flight / Departs read as three separate groups
+  const Segments = ({ label, icon: Icon, children }: { label: string; icon: React.ElementType; children: React.ReactNode }) => (
+    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" role="group" aria-label={label}>
+      <Icon className="hidden sm:block w-3.5 h-3.5 text-black/60 dark:text-white/60" aria-hidden />
+      <div className="flex h-7 sm:h-8 border border-black/30 dark:border-white/30 divide-x divide-black/15 dark:divide-white/15">
+        {children}
+      </div>
+    </div>
+  );
+  const Seg = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
       aria-pressed={active}
-      className={`tgl-press h-7 sm:h-7.5 px-1.5 sm:px-2.5 font-mono text-[10.5px] sm:text-meta uppercase tracking-wider border transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 whitespace-nowrap shrink-0 ${
-        active ? 'bg-[#0B0B0C] text-white border-[#0B0B0C] dark:bg-[#F2F2EE] dark:text-black dark:border-[#F2F2EE]' : 'border-black/25 text-black/75 hover:border-black hover:text-black dark:border-white/25 dark:text-white/75 dark:hover:border-white dark:hover:text-white'
+      className={`tgl-press h-full px-1.5 sm:px-2.5 font-mono text-[11px] sm:text-meta uppercase tracking-wide sm:tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
+        active ? 'bg-[#0B0B0C] text-white dark:bg-[#F2F2EE] dark:text-black' : 'text-black/70 hover:bg-black/5 hover:text-black dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white'
       }`}
     >
       {children}
@@ -369,78 +372,76 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
           {view === 'board' ? (
             <>
               {/* Filters: strictly single line, no horizontal scroll, fit to container */}
-              <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-4 py-0.5 w-full">
-                <div className="flex items-center gap-1 sm:gap-2 shrink-0" aria-label="체류 기간">
-                  <Label className="hidden sm:inline-block">Stay</Label>
-                  <div className="flex gap-0.5 sm:gap-1">
-                    <Chip active={filters.stay === 'short'} onClick={() => setFilters(f => ({ ...f, stay: 'short' }))}>2–3박</Chip>
-                    <Chip active={filters.stay === 'mid'} onClick={() => setFilters(f => ({ ...f, stay: 'mid' }))}>4–5박</Chip>
-                    <Chip active={filters.stay === 'long'} onClick={() => setFilters(f => ({ ...f, stay: 'long' }))}>6박+</Chip>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-2 shrink-0" aria-label="비행 시간">
-                  <Label className="hidden sm:inline-block">Flight</Label>
-                  <div className="flex gap-0.5 sm:gap-1">
-                    {FLIGHT_OPTIONS.map(o => (
-                      <Chip key={o.value} active={filters.flight === o.value} onClick={() => setFilters(f => ({ ...f, flight: o.value }))}>
-                        {o.value === '10+' ? (
-                          <>
-                            <span className="sm:hidden">10H</span>
-                            <span className="hidden sm:inline">10H+</span>
-                          </>
-                        ) : (
-                          o.label
-                        )}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-                <div className="relative flex items-center gap-1 sm:gap-2 shrink-0" ref={monthRef} aria-label="출발 시기">
-                  <Label className="hidden sm:inline-block">Departs</Label>
-                  <div className="flex items-stretch h-7 sm:h-7.5 border border-black/25 dark:border-white/25">
-                    <button type="button" onClick={() => stepMonth(-1)} disabled={!canStep(-1)} className="tgl-press w-6 sm:w-7.5 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
+              <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-6 py-0.5 w-full">
+                <Segments label="체류 기간" icon={BedDouble}>
+                  <Seg active={filters.stay === 'short'} onClick={() => setFilters(f => ({ ...f, stay: 'short' }))}>2–3박</Seg>
+                  <Seg active={filters.stay === 'mid'} onClick={() => setFilters(f => ({ ...f, stay: 'mid' }))}>4–5박</Seg>
+                  <Seg active={filters.stay === 'long'} onClick={() => setFilters(f => ({ ...f, stay: 'long' }))}>6박+</Seg>
+                </Segments>
+                <Segments label="비행 시간" icon={Plane}>
+                  {FLIGHT_OPTIONS.map(o => (
+                    <Seg key={o.value} active={filters.flight === o.value} onClick={() => setFilters(f => ({ ...f, flight: o.value }))}>
+                      {o.value === '10+' ? (<><span className="sm:hidden">10H</span><span className="hidden sm:inline">10H+</span></>) : o.label}
+                    </Seg>
+                  ))}
+                </Segments>
+                <div className="relative flex items-center gap-1.5 sm:gap-2 shrink-0" ref={monthRef} role="group" aria-label="출발 시기">
+                  <CalendarDays className="hidden sm:block w-3.5 h-3.5 text-black/60 dark:text-white/60" aria-hidden />
+                  <div className="flex h-7 sm:h-8 border border-black/30 dark:border-white/30 divide-x divide-black/15 dark:divide-white/15">
+                    <button type="button" onClick={() => stepMonth(-1)} disabled={monthIndex(year, month) <= firstIndex} className="tgl-press hidden sm:grid w-7 place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
-                    <button type="button" onClick={() => setMonthOpen(o => !o)} aria-expanded={monthOpen} aria-haspopup="dialog" className="tgl-press px-1.5 sm:px-2.5 font-mono text-[10.5px] sm:text-meta tracking-tight sm:tracking-wider tabular-nums border-x border-black/25 hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10 cursor-pointer" aria-label="출발 월 바꾸기">
+                    <button type="button" onClick={() => setMonthOpen(o => !o)} aria-expanded={monthOpen} aria-haspopup="dialog" className={`tgl-press h-full px-2 sm:px-2.5 inline-flex items-center gap-1 font-mono text-[11px] sm:text-meta tracking-wide tabular-nums cursor-pointer transition-colors ${monthOpen ? 'bg-[#0B0B0C] text-white dark:bg-[#F2F2EE] dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/10'}`} aria-label="출발 연월 선택">
+                      <CalendarDays className="sm:hidden w-3 h-3" aria-hidden />
                       {MONTHS[month - 1]} <span className="sm:hidden">{String(year).slice(2)}</span><span className="hidden sm:inline">{year}</span>
                     </button>
-                    <button type="button" onClick={() => stepMonth(1)} disabled={!canStep(1)} className="tgl-press w-6 sm:w-7.5 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
+                    <button type="button" onClick={() => stepMonth(1)} disabled={monthIndex(year, month) >= lastIndex} className="tgl-press hidden sm:grid w-7 place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  {/* Month grid: absolute popover directly anchored to Departs so layout never shifts */}
+                  {/* Year and month picker, anchored to Departs so the layout never shifts */}
                   {monthOpen && (
                     <div
                       role="dialog"
-                      aria-label="출발 월 선택"
+                      aria-label="출발 연월 선택"
                       ref={gridRef}
-                      className="absolute z-50 top-full right-0 sm:left-0 sm:right-auto mt-1.5 w-[280px] sm:w-[320px] p-2.5 sm:p-3 bg-[#F2F2EE] dark:bg-[#161618] border border-black/20 dark:border-white/20 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150"
+                      className="absolute z-50 top-full right-0 sm:left-0 sm:right-auto mt-1.5 w-[272px] sm:w-[312px] p-2.5 sm:p-3 bg-[#F2F2EE] dark:bg-[#161618] border border-black/20 dark:border-white/20 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Departs</Label>
-                        <span className="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-micro text-black/60 dark:text-white/60">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center border border-black/30 dark:border-white/30 divide-x divide-black/15 dark:divide-white/15 h-8">
+                          <button type="button" onClick={() => setGridYear(y => y - 1)} disabled={gridYear <= thisYear} className="tgl-press w-8 h-full grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 해">
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="px-3 font-mono text-meta font-bold tabular-nums" aria-live="polite">{gridYear}</span>
+                          <button type="button" onClick={() => setGridYear(y => y + 1)} disabled={gridYear >= lastYear} className="tgl-press w-8 h-full grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 해">
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <span className="inline-flex items-center gap-1.5 font-mono text-micro text-black/60 dark:text-white/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />베스트 시즌
                         </span>
                       </div>
                       <div className="grid grid-cols-4 gap-1">
-                        {months.map((m, i) => {
-                          const on = m.year === filters.year && m.month === filters.month;
-                          const newYear = i === 0 || m.month === 1;
+                        {MONTHS.map((label, i) => {
+                          const m = i + 1;
+                          const on = gridYear === filters.year && m === filters.month;
+                          const past = monthIndex(gridYear, m) < firstIndex;
+                          const best = bestByMonth[i];
                           return (
                             <button
-                              key={`${m.year}-${m.month}`}
+                              key={label}
                               type="button"
-                              onClick={() => { setFilters(f => ({ ...f, year: m.year, month: m.month })); setMonthOpen(false); }}
+                              disabled={past}
+                              onClick={() => { setFilters(f => ({ ...f, year: gridYear, month: m })); setMonthOpen(false); }}
                               aria-pressed={on}
-                              aria-label={`${m.year}년 ${m.month}월${m.best ? `, 베스트 시즌 ${m.best}곳` : ''}`}
-                              className={`tgl-press relative h-9 sm:h-10 flex flex-col items-center justify-center font-mono text-micro sm:text-meta tracking-wider border transition-colors cursor-pointer ${
+                              aria-label={`${gridYear}년 ${m}월${best ? `, 베스트 시즌 ${best}곳` : ''}`}
+                              className={`tgl-press relative h-9 sm:h-10 grid place-items-center font-mono text-micro sm:text-meta tracking-wider border transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
                                 on ? 'bg-[#0B0B0C] text-white border-[#0B0B0C] dark:bg-[#F2F2EE] dark:text-black dark:border-[#F2F2EE]' : 'border-black/15 hover:border-black dark:border-white/15 dark:hover:border-white'
                               }`}
                             >
-                              <span>{MONTHS[m.month - 1]}</span>
-                              {newYear && <span className={`text-[9px] sm:text-micro leading-none ${on ? 'opacity-70' : 'text-black/60 dark:text-white/60'}`}>{m.year}</span>}
-                              {m.best >= topBest * 0.25 && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500" style={{ opacity: 0.35 + 0.65 * (m.best / topBest) }} />}
+                              {label}
+                              {!past && best >= topBest * 0.25 && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500" style={{ opacity: 0.35 + 0.65 * (best / topBest) }} />}
                             </button>
                           );
                         })}

@@ -46,8 +46,8 @@ export interface LightboxImageMeta {
   type?: 'gallery' | 'timeline';
 }
 
-// Photos shown on each side of the current one in the slideshow settings strip
-const STRIP_WINDOW = 12;
+// Photos on each side of the current one that the slideshow settings strip loads right away
+const STRIP_EAGER = 6;
 
 interface LightboxProps {
   isOpen: boolean;
@@ -118,6 +118,12 @@ export function Lightbox({
     const id = window.setTimeout(() => setIsSettingsStripReady(true), 60);
     return () => window.clearTimeout(id);
   }, [isSettingsOpen]);
+  // Center the current photo when the strip appears or the photo changes, never on other re-renders
+  const settingsActiveThumbRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!isSettingsStripReady) return;
+    settingsActiveThumbRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [isSettingsStripReady, currentIndex]);
   const [isBgmShuffle, setIsBgmShuffle] = useState(() => bgmPlayer.isShuffle());
 
   // Volume HUD state
@@ -1175,27 +1181,28 @@ export function Lightbox({
                   )}
                   {images.length > 1 && (
                     <div className="flex gap-1 overflow-x-auto hide-scrollbar shrink-0 -mx-1 px-1 h-11">
-                      {/* Only the photos around the current one: a trip can hold hundreds of full-size images */}
-                      {isSettingsStripReady && (() => {
-                        const from = Math.max(0, currentIndex - STRIP_WINDOW);
-                        const to = Math.min(images.length, currentIndex + STRIP_WINDOW + 1);
-                        return images.slice(from, to).map((img, i) => {
-                          const idx = from + i;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              ref={idx === currentIndex ? (el) => el?.scrollIntoView({ block: 'nearest', inline: 'center' }) : undefined}
-                              onClick={() => onNavigate(idx)}
-                              className={`w-11 h-11 shrink-0 overflow-hidden border ${idx === currentIndex ? 'border-red-500' : 'border-white/15 opacity-70 hover:opacity-100'}`}
-                              aria-label={`${idx + 1}번째 사진`}
-                              aria-current={idx === currentIndex}
-                            >
-                              <img src={img.url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" draggable={false} />
-                            </button>
-                          );
-                        });
-                      })()}
+                      {/* Every photo stays scrollable; only those near the current one load right away,
+                          the rest load as they scroll into view, decoded off the main thread */}
+                      {isSettingsStripReady && images.map((img, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          ref={idx === currentIndex ? settingsActiveThumbRef : undefined}
+                          onClick={() => onNavigate(idx)}
+                          className={`w-11 h-11 shrink-0 overflow-hidden border bg-white/5 ${idx === currentIndex ? 'border-red-500' : 'border-white/15 opacity-70 hover:opacity-100'}`}
+                          aria-label={`${idx + 1}번째 사진`}
+                          aria-current={idx === currentIndex}
+                        >
+                          <img
+                            src={img.url}
+                            alt=""
+                            loading={Math.abs(idx - currentIndex) <= STRIP_EAGER ? 'eager' : 'lazy'}
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                            draggable={false}
+                          />
+                        </button>
+                      ))}
                     </div>
                   )}
                   <div className="flex items-center gap-1.5">

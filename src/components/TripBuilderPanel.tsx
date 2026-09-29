@@ -1842,6 +1842,7 @@ export function TripBuilderPanel({
       {/* Panel Header (Nou producte Reference Style); re-keyed on destination change to replay the accent */}
       <div
         key={`guide-header-${guideDestinationLabel}`}
+        data-sheet-handle
         className={`flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/5 shrink-0 bg-white dark:bg-[#121212] ${guideDestinationLabel ? 'tgl-accent-flash' : ''}`}
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -1901,7 +1902,7 @@ export function TripBuilderPanel({
       </div>
 
       {/* Scrollable Form Body */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-5 space-y-4">
+      <div data-sheet-scroll className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-5 space-y-4">
         {error && (
           <p className="text-red-600 dark:text-red-400 text-xs font-mono border-l-2 border-red-500 pl-3">{error}</p>
         )}
