@@ -439,7 +439,7 @@ export function StayCard({
             )}
           </span>
           <span className="flex items-center gap-1 text-micro font-semibold text-black/60 dark:text-white/60">
-            <span>{isExpanded ? '접기 (Close)' : '상세 펼치기 (Expand)'}</span>
+            <span>{isExpanded ? 'Close' : 'Details'}</span>
             {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </span>
         </div>

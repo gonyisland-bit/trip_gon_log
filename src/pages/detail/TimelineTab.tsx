@@ -1,5 +1,5 @@
 import {
-  Plane, Ship, Train, Car, User, Trash2, Image as ImageIcon, MapPin, Plus, ExternalLink, MapPinOff,
+  Plane, Ship, Train, Car, Lock, Trash2, Image as ImageIcon, MapPin, Plus, ExternalLink, MapPinOff,
   ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Sun, Cloud, Cloudy, CloudRain, Snowflake,
   CloudLightning, GripVertical, Check, Coins, Copy
 } from 'lucide-react';
@@ -121,8 +121,11 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
           </div>
 
           {!isLoggedIn && (
-            <div className="bg-black/5 dark:bg-white/10 px-4 py-1.5 text-micro md:text-meta uppercase font-bold tracking-widest text-center flex items-center justify-center gap-2 shrink-0 w-full">
-              <User className="w-3 h-3 shrink-0" /> <span className="truncate">로그인 후 기록을 수정하거나 새 일정을 추가할 수 있습니다.</span>
+            <div
+              className="px-4 py-1 text-micro font-mono uppercase font-bold tracking-widest text-black/60 dark:text-white/60 flex items-center justify-center gap-1.5 shrink-0 w-full border-b border-black/10 dark:border-white/10"
+              title="로그인 후 기록을 수정하거나 새 일정을 추가할 수 있습니다."
+            >
+              <Lock className="w-3 h-3 shrink-0" /> Read only
             </div>
           )}
 

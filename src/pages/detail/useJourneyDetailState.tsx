@@ -3220,7 +3220,13 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
             {/* Date & Destination summary - placed beneath title with clean typography & full visibility */}
             <div className="flex items-center gap-1.5 text-meta sm:text-xs font-mono font-medium text-black/75 dark:text-white/75 min-w-0 leading-tight mt-0.5">
-              <span className="truncate break-keep font-medium">{generateJourneyMessage(trip!.locationStr, trip!.date, generatedDates.length)}</span>
+              <span className="hidden sm:inline truncate break-keep font-medium">{generateJourneyMessage(trip!.locationStr, trip!.date, generatedDates.length)}</span>
+              <span className="sm:hidden truncate font-medium tabular-nums">{(() => {
+                const { start, end } = parseDateRange(trip!.date || '');
+                const md = (d: string) => d.slice(5).replace('-', '.');
+                const range = start && end ? `${md(start)}–${md(end)}` : (trip!.date || '');
+                return generatedDates.length > 0 ? `${range} · ${generatedDates.length}D` : range;
+              })()}</span>
               <button
                 type="button"
                 onClick={handleOpenInCalendar}

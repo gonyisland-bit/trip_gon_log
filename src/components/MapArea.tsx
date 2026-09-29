@@ -34,7 +34,6 @@ interface MapAreaProps {
   radarFocusedSpot?: { lat: number; lng: number; title: string } | null;
   radarRouteTarget?: { lat: number; lng: number; title: string; distance?: number } | null;
   activeGhostSpotId?: string | number | null;
-  mobileSheetSnap?: 'half' | 'expanded';
   // Today mode: today's date key and the minute of the day, to split today's route at the clock
   todayRoute?: { date: string; nowMin: number } | null;
 }
@@ -235,7 +234,6 @@ export function MapArea({
   radarFocusedSpot = null,
   radarRouteTarget = null,
   activeGhostSpotId = null,
-  mobileSheetSnap = 'half',
   todayRoute = null,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -759,17 +757,21 @@ export function MapArea({
       } catch (_) {}
     });
 
-    // Fix blank tile edge after layout settles (especially on mobile transitions)
-    setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 60);
+    // Fix blank tile edge after layout settles
     setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 200);
-    setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 500);
 
-    const ro = new ResizeObserver(() => { if (mapRef.current) mapRef.current.invalidateSize(); });
+    // The container resizes every frame while the mobile sheet animates: re-measure once per frame at most
+    let resizeFrame = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => { if (mapRef.current) mapRef.current.invalidateSize(); });
+    });
     ro.observe(containerRef.current);
 
     setMapReady(true);
 
     return () => {
+      cancelAnimationFrame(resizeFrame);
       ro.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
@@ -783,17 +785,7 @@ export function MapArea({
     };
   }, [trip.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Effect 1b: Re-measure map container when mobile bottom sheet snaps or tab changes ───
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-    const t1 = setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 60);
-    const t2 = setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 250);
-    const t3 = setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 450);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [mobileSheetSnap, activeTab, mapReady]);
-
-  // ─── Effect 1c: Toggle map dragging/zooming based on isInteractive state ───
+  // ─── Effect 1b: Toggle map dragging/zooming based on isInteractive state ───
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;

@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, FileText, Clock, Plane, BedDouble, TrainFront, Image as ImageIcon, type LucideIcon } from 'lucide-react';
 import { getDefaultCurrencyForLocation } from '../components/SettlementExpenseInput';
 import { SettlementView } from '../components/SettlementView';
 import { SummaryView } from '../components/SummaryView';
@@ -16,14 +16,15 @@ import { StaysTab } from './detail/StaysTab';
 import { TransitTab } from './detail/TransitTab';
 import { GalleryTab } from './detail/GalleryTab';
 import { DetailOverlays } from './detail/DetailOverlays';
+import { DetailSkeleton } from '../components/EditorialSkeleton';
 
-const DETAIL_TABS: { id: TabType; label: string }[] = [
-  { id: 'summary', label: 'SUM' },
-  { id: 'timeline', label: 'TIME' },
-  { id: 'flights', label: 'FLIGHT' },
-  { id: 'stays', label: 'STAY' },
-  { id: 'transit', label: 'TRANS' },
-  { id: 'gallery', label: 'PHOTO' },
+const DETAIL_TABS: { id: TabType; label: string; icon: LucideIcon }[] = [
+  { id: 'summary', label: 'SUM', icon: FileText },
+  { id: 'timeline', label: 'TIME', icon: Clock },
+  { id: 'flights', label: 'FLIGHT', icon: Plane },
+  { id: 'stays', label: 'STAY', icon: BedDouble },
+  { id: 'transit', label: 'TRANS', icon: TrainFront },
+  { id: 'gallery', label: 'PHOTO', icon: ImageIcon },
 ];
 
 export function JourneyDetailPage(props: JourneyDetailPageProps) {
@@ -40,13 +41,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
   } = s;
 
   // Early Return (conditional render)
-  if (!trip) {
-    return (
-      <div className="flex-grow flex items-center justify-center bg-transparent h-[80vh] text-xs font-bold uppercase tracking-widest text-black/60 dark:text-white/60">
-        Loading Journey Details...
-      </div>
-    );
-  }
+  if (!trip) return <DetailSkeleton />;
 
   return (
     <main 
@@ -63,7 +58,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
       
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
-        className={`w-full md:w-1/2 flex flex-col bg-white/80 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-all duration-300 flex-grow md:h-full overflow-hidden overflow-x-hidden max-w-full relative ${
+        className={`w-full md:w-1/2 flex flex-col bg-white/80 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-[height] duration-300 ease-standard flex-grow md:h-full overflow-hidden overflow-x-hidden max-w-full relative ${
           mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[62dvh] max-md:flex-1 min-h-0'
         }`}
       >
@@ -88,7 +83,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
         </div>
         
         {/* Tab Headers - Unified Single-line Sleek Design (SUM, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
-        <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap border-b border-black/15 dark:border-white/15 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md transition-colors shrink-0 w-full h-9 sm:h-10">
+        <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap border-b border-black/15 dark:border-white/15 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md transition-colors shrink-0 w-full h-11 sm:h-10">
           {/* Active tab block slides between tabs */}
           {DETAIL_TABS.some(t => t.id === activeTab) && (
             <span
@@ -109,13 +104,14 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
               }}
-              className={`relative z-[1] flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-meta md:text-xs font-extrabold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none ${
+              className={`relative z-[1] flex-1 h-full px-0.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 text-micro sm:text-meta md:text-xs font-extrabold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none ${
                 activeTab === tab.id
                   ? 'text-white dark:text-black'
                   : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
               }`}
             >
-              <span>{tab.label}</span>
+              <tab.icon className="w-3.5 h-3.5 shrink-0" aria-hidden />
+              <span className="leading-none">{tab.label}</span>
             </button>
           ))}
         </div>

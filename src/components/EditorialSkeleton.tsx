@@ -1,81 +1,45 @@
 import React from 'react';
 
 /**
- * EditorialSkeleton for Journey Detail Page
- * Matches the exact proportions of Detail.tsx (Header, Tab Bar, 3:4 Hero Frame, Timeline list)
- * Eliminates blank white screen and layout shifts, providing an instant 0ms perceived transition.
+ * Journey Detail skeleton: the same split as Detail.tsx (map panel with its info header,
+ * then the tab sheet), so nothing jumps when the page arrives.
  */
 export function DetailSkeleton() {
   return (
-    <div className="w-full h-full flex flex-col bg-[#F9F8F6] dark:bg-[#111111] text-black dark:text-white transition-colors overflow-hidden select-none animate-in fade-in duration-150">
-      {/* 1. Detail Header Bar */}
-      <header className="w-full border-b border-black/10 dark:border-white/10 px-4 sm:px-6 md:px-8 py-3.5 flex items-center justify-between shrink-0 bg-white/50 dark:bg-[#141414]/50 backdrop-blur-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-sm bg-black/10 dark:bg-white/10 animate-pulse" />
-          <div className="flex flex-col gap-1.5">
-            <div className="w-32 sm:w-44 h-5 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse" />
-            <div className="w-20 sm:w-28 h-3 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse" />
+    <div className="w-full h-full flex flex-col md:flex-row overflow-hidden select-none animate-in fade-in duration-150" aria-busy="true" aria-label="Loading journey">
+      {/* Map panel */}
+      <div className="w-full md:w-1/2 max-md:h-[38dvh] md:h-full shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20">
+        <div className="min-h-[52px] sm:min-h-[58px] px-3 md:px-5 flex items-center gap-3 border-b border-black/15 dark:border-white/15 shrink-0">
+          <div className="w-4 h-4 rounded-sm bg-black/10 dark:bg-white/10" />
+          <div className="flex flex-col gap-1.5 flex-1">
+            <div className="w-40 sm:w-56 h-3.5 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse" />
+            <div className="w-24 sm:w-40 h-2.5 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse" />
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <div className="w-16 h-7 rounded-sm bg-black/10 dark:bg-white/10 animate-pulse hidden sm:block" />
-          <div className="w-20 h-7 rounded-sm bg-black/15 dark:bg-white/15 animate-pulse" />
-        </div>
-      </header>
-
-      {/* 2. Editorial Tab Bar */}
-      <div className="w-full border-b border-black/10 dark:border-white/10 px-4 sm:px-8 py-2 flex items-center gap-6 overflow-x-hidden shrink-0 bg-white/30 dark:bg-[#161616]/30">
-        {['SUMMARY', 'TIMELINE', 'FLIGHT', 'STAY', 'TRANSIT', 'SETTLEMENT'].map((tab, idx) => (
-          <div
-            key={tab}
-            className={`h-4 rounded-xs animate-pulse ${
-              idx === 0
-                ? 'w-16 bg-black/30 dark:bg-white/30'
-                : 'w-14 bg-black/10 dark:bg-white/10 opacity-60'
-            }`}
-          />
-        ))}
+        <div className="flex-1 min-h-0 bg-neutral-100 dark:bg-[#111111] animate-pulse" />
       </div>
 
-      {/* 3. Main Content Split View Skeleton */}
-      <div className="flex-1 min-h-0 w-full grid grid-cols-1 md:grid-cols-12 overflow-hidden">
-        {/* Left Column: 3:4 Editorial Cover & Meta */}
-        <div className="md:col-span-5 lg:col-span-4 p-4 sm:p-6 md:p-8 flex flex-col gap-4 border-r border-black/10 dark:border-white/10 overflow-hidden">
-          <div className="w-full aspect-[3/4] max-h-[55vh] rounded-sm bg-black/10 dark:bg-white/10 animate-pulse relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-          </div>
-          <div className="flex flex-col gap-2 pt-2">
-            <div className="w-3/4 h-6 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse" />
-            <div className="w-1/2 h-4 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse" />
-            <div className="w-full h-12 rounded-xs bg-black/5 dark:bg-white/5 animate-pulse mt-2" />
-          </div>
+      {/* Tab sheet */}
+      <div className="w-full md:w-1/2 flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="md:hidden h-6 flex items-center justify-center border-b border-black/10 dark:border-white/10 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-black/20 dark:bg-white/20" />
         </div>
-
-        {/* Right Column: Timeline Cards Skeleton */}
-        <div className="md:col-span-7 lg:col-span-8 p-4 sm:p-6 md:p-8 flex flex-col gap-4 overflow-hidden">
-          <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
-            <div className="w-28 h-5 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse" />
-            <div className="w-20 h-4 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse" />
-          </div>
-
-          <div className="flex flex-col gap-3.5">
-            {[1, 2, 3, 4].map(key => (
-              <div
-                key={key}
-                className="w-full p-4 border border-black/10 dark:border-white/10 rounded-sm bg-white/40 dark:bg-[#181818]/40 flex items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-3.5 flex-1">
-                  <div className="w-10 h-10 rounded-sm bg-black/10 dark:bg-white/10 animate-pulse shrink-0" />
-                  <div className="flex flex-col gap-2 flex-1">
-                    <div className="w-36 sm:w-56 h-4 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse" />
-                    <div className="w-24 sm:w-32 h-3 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse" />
-                  </div>
-                </div>
-                <div className="w-12 h-4 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse shrink-0" />
+        <div className="h-11 sm:h-10 flex border-b border-black/15 dark:border-white/15 shrink-0">
+          {[0, 1, 2, 3, 4, 5].map(i => (
+            <div key={i} className={`flex-1 border-r last:border-r-0 border-black/15 dark:border-white/15 ${i === 0 ? 'bg-black/80 dark:bg-white/80' : ''}`} />
+          ))}
+        </div>
+        <div className="flex flex-col">
+          {[0, 1, 2, 3, 4].map(i => (
+            <div key={i} className="flex items-center gap-4 px-4 md:px-6 py-5 border-b border-black/10 dark:border-white/10">
+              <div className="w-12 h-4 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse shrink-0" />
+              <div className="flex flex-col gap-2 flex-1">
+                <div className="w-3/5 h-3.5 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse" />
+                <div className="w-2/5 h-2.5 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse" />
               </div>
-            ))}
-          </div>
+              <div className="w-16 h-16 bg-black/10 dark:bg-white/10 animate-pulse shrink-0" />
+            </div>
+          ))}
         </div>
       </div>
     </div>

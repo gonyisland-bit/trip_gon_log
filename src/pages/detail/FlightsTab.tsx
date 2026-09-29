@@ -20,8 +20,8 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
             <div className="flex items-center justify-between px-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/10 dark:border-white/10 text-xs">
               <div className="flex items-center gap-2 font-mono">
                 <Plane className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-                <span className="font-bold tracking-wider text-[11px] uppercase text-black/70 dark:text-white/70">
-                  실시간 최저가 항공권 비교
+                <span className="font-bold tracking-wider text-micro uppercase text-black/70 dark:text-white/70" title="실시간 최저가 항공권 비교">
+                  Compare fares
                 </span>
               </div>
               <button
@@ -38,8 +38,9 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
               const flightsToUse = isEditing ? draftFlights : flights;
               if (flightsToUse.length === 0) {
                 return (
-                  <div className="text-center py-16 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
-                    등록된 항공편이 없습니다.
+                  <div className="flex flex-col items-center gap-2 py-16 text-black/60 dark:text-white/60 text-xs font-mono font-bold tracking-widest uppercase">
+                    <Plane className="w-5 h-5" />
+                    No flights
                   </div>
                 );
               }

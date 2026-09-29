@@ -292,6 +292,8 @@ export function FlightCard({
     return match ? match.code : clean.toUpperCase().slice(0, 3);
   };
 
+  const isDefaultTitle = /^(OUTBOUND|INBOUND) FLIGHTS?$/i.test((flight.title || '').trim());
+
   return (
     <div 
       onClick={onClick}
@@ -318,7 +320,12 @@ export function FlightCard({
             placeholder="FLIGHT TITLE"
           />
         ) : (
-          <span className="uppercase truncate">{flight.title}</span>
+          // Default titles repeat the Outbound/Inbound group header, so only custom titles are shown
+          isDefaultTitle ? (
+            <span className="font-mono">{flight.date}</span>
+          ) : (
+            <span className="uppercase truncate">{flight.title}</span>
+          )
         )}
         {isEditMode ? (
           <input
@@ -331,7 +338,7 @@ export function FlightCard({
             className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 sm:w-36 text-right font-mono"
           />
         ) : (
-          <span className="font-mono">{flight.date}</span>
+          !isDefaultTitle && <span className="font-mono">{flight.date}</span>
         )}
       </div>
       
@@ -764,7 +771,7 @@ export function FlightCard({
           )}
         </span>
         <span className="flex items-center gap-1 text-meta font-semibold text-black/60 dark:text-white/60">
-          <span>{isExpanded ? '접기 (Close)' : '펼치기 (Expand)'}</span>
+          <span>{isExpanded ? 'Close' : 'Expand'}</span>
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </span>
       </div>

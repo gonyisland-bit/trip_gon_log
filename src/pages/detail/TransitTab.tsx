@@ -22,14 +22,16 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
             <button 
               onClick={() => setTransitSortType('time')} 
               className={`px-2.5 py-1 border transition-colors rounded-sm cursor-pointer ${transitSortType === 'time' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+              title="탑승 시간순"
             >
-              탑승시간순
+              By time
             </button>
             <button 
               onClick={() => setTransitSortType('type')} 
               className={`px-2.5 py-1 border transition-colors rounded-sm cursor-pointer ${transitSortType === 'type' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+              title="탑승 종류순"
             >
-              탑승종류순
+              By type
             </button>
           </div>
 

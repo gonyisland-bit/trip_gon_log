@@ -27,7 +27,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
   return (
     <>
       <section 
-        className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-all duration-300 md:h-full shrink-0 ${
+        className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-[height,opacity] duration-300 ease-standard md:h-full shrink-0 ${
           mobileSheetSnap === 'expanded' 
             ? 'max-md:h-0 max-md:opacity-0 max-md:border-none overflow-hidden pointer-events-none' 
             : 'max-md:h-[38dvh]'
@@ -78,11 +78,11 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
             const city = cleanAdministrativeDistricts(rawCity);
 
             return (
-              <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white animate-in fade-in duration-300">
+              <div className="absolute top-4 left-4 sm:top-8 sm:left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white animate-in fade-in duration-300">
                 <span className="text-[13px] sm:text-sm md:text-base font-extrabold tracking-[0.25em] uppercase text-red-600 dark:text-red-500 mb-1 leading-none font-sans">
                   {detectedCountry || country}
                 </span>
-                <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold uppercase tracking-tighter leading-[0.95] border-b-2 sm:border-b-4 border-black dark:border-white pb-2 max-w-[340px] sm:max-w-[480px] break-words font-sans text-black dark:text-white">
+                <h2 className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold uppercase tracking-tighter leading-[0.95] border-b-2 sm:border-b-4 border-black dark:border-white pb-1 sm:pb-2 max-w-[240px] sm:max-w-[480px] break-words font-sans text-black dark:text-white">
                   {city}
                 </h2>
               </div>
@@ -115,7 +115,6 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
               radarFocusedSpot={radarFocusedSpot}
               radarRouteTarget={radarRouteTarget}
               activeGhostSpotId={activeGhostSpotId}
-              mobileSheetSnap={mobileSheetSnap}
               todayRoute={todayMode.todayKey ? { date: todayMode.todayKey, nowMin: todayMode.nowMin } : null}
             />
           </ErrorBoundary>
