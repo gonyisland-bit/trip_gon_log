@@ -10,6 +10,7 @@ import { ProfileEditModal } from './ProfileEditModal';
 import { MiniWeatherWidget } from './MiniWeatherWidget';
 import { confirmDialog } from '../utils/feedback';
 import { openIntro, prefetchIntro } from '../intro/openIntro';
+import { preloadPocketPage } from '../utils/prefetchHelper';
 
 const HUBS = [
   { view: 'home', label: 'Home' },
@@ -179,20 +180,20 @@ export function Navigation({
           <div className="hidden md:flex items-center gap-6 lg:gap-8 border-l border-black/15 dark:border-white/15 pl-6 lg:pl-8 font-['Inter',sans-serif]">
             <button 
               onClick={() => navigateTo('home')} 
-              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 border-b-2 ${
                 currentView === 'home' 
-                  ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  ? 'text-black dark:text-white border-black dark:border-white' 
+                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               HOME
             </button>
             <button 
               onClick={() => navigateTo('archive')} 
-              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 border-b-2 ${
                 currentView === 'archive' 
-                  ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  ? 'text-black dark:text-white border-black dark:border-white' 
+                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               TRIP
@@ -205,40 +206,42 @@ export function Navigation({
                 window.dispatchEvent(new CustomEvent('resetMagazineHub'));
                 navigateTo('magazine');
               }} 
-              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 border-b-2 ${
                 currentView === 'magazine' 
-                  ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  ? 'text-black dark:text-white border-black dark:border-white' 
+                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               MAGAZINE
             </button>
             <button 
               onClick={() => navigateTo('map')} 
-              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 border-b-2 ${
                 currentView === 'map' 
-                  ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  ? 'text-black dark:text-white border-black dark:border-white' 
+                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               MAP
             </button>
             <button 
               onClick={() => navigateTo('calendar')} 
-              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 border-b-2 ${
                 currentView === 'calendar' 
-                  ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  ? 'text-black dark:text-white border-black dark:border-white' 
+                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               CALENDAR
             </button>
             <button 
-              onClick={() => navigateTo('pocket')} 
-              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+              onClick={() => navigateTo('pocket')}
+              onPointerEnter={() => { preloadPocketPage().catch(() => {}); }}
+              onFocus={() => { preloadPocketPage().catch(() => {}); }}
+              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 border-b-2 ${
                 currentView === 'pocket' 
-                  ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
-                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  ? 'text-black dark:text-white border-black dark:border-white' 
+                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               POCKET

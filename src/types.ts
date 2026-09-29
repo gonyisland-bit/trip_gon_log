@@ -198,6 +198,9 @@ export interface SpotPocketItem {
   tags?: string[];
   platform?: SpotPocketPlatform;
   thumbnailUrl?: string;
+  // 480px copy for cards; valid only while thumbSmallSrc still equals thumbnailUrl
+  thumbSmallUrl?: string;
+  thumbSmallSrc?: string;
   country?: string;
   city?: string;
   lat?: number;

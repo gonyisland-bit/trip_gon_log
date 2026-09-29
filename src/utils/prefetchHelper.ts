@@ -8,6 +8,7 @@
 let detailPromise: Promise<any> | null = null;
 let mapPromise: Promise<any> | null = null;
 let managePromise: Promise<any> | null = null;
+let pocketPromise: Promise<any> | null = null;
 
 // Check if user is on low-end connection or data saver mode
 export function shouldSkipBackgroundPrefetch(): boolean {
@@ -55,6 +56,16 @@ export function preloadManagePage(): Promise<any> {
 }
 
 /**
+ * Preloads the PocketHubPage chunk (PocketHub.tsx and its scrap/detail modals).
+ */
+export function preloadPocketPage(): Promise<any> {
+  if (!pocketPromise) {
+    pocketPromise = import('../pages/PocketHub');
+  }
+  return pocketPromise;
+}
+
+/**
  * Schedules background prefetching strictly during browser idle time (requestIdleCallback)
  * after a generous safety delay (2.5 seconds) to ensure current page animations, hero videos,
  * and critical UI rendering are 100% completed without competition.
@@ -72,6 +83,8 @@ export function scheduleIdlePrefetch(delayMs: number = 2500): () => void {
     runIdle(() => {
       // Preload the most visited page: Detail.tsx
       preloadDetailPage().catch(() => {});
+      // Then Pocket, whose first open otherwise waits on its large chunk
+      runIdle(() => { preloadPocketPage().catch(() => {}); });
     });
   }, delayMs);
 

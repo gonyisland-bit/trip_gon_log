@@ -101,8 +101,8 @@ export function IntroTipView({ onWatch, onDismiss }: { onWatch: () => void; onDi
           </svg>
           <span className="tgl-introtip-shapes relative w-4 h-4" aria-hidden>
             <span className="absolute inset-0 rounded-full bg-red-500" />
-            <span className="absolute inset-y-0 left-[5px] w-1.5 rounded-full bg-current" />
-            <span className="absolute inset-[1px] bg-current" />
+            <span className="absolute inset-y-0 left-[5px] w-1.5 rounded-full bg-blue-500" />
+            <span className="absolute inset-[1px] bg-emerald-500" />
             <Play className="absolute inset-0 w-4 h-4 fill-current translate-x-[1px]" />
           </span>
         </button>

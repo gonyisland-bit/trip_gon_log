@@ -1742,6 +1742,8 @@ export function useMapHubState({
     };
 
     const applySoftMask = (currentMap: any, nightPane: HTMLElement) => {
+      // The frame may land after the map was removed (leaving the Map hub quickly)
+      if (mapRef.current !== currentMap || !currentMap._mapPane) return;
       const size = currentMap.getSize();
       const padX = size.x * 0.5;
       const padY = size.y * 0.5;

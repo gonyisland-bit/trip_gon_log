@@ -8,6 +8,9 @@ export const COL = {
   amber: '#d97706',
   grey: '#8a8a86',
   cool: '#3b82f6',
+  // The outro trio: plan (red), log (blue), relive (emerald)
+  log: '#2563eb',
+  relive: '#059669',
 };
 
 export const FONT_SANS = '"Noto Sans KR", Inter, -apple-system, sans-serif';

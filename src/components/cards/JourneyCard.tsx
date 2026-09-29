@@ -85,11 +85,16 @@ export function JourneyCard({
       <div
         ref={mediaRef}
         className={`tgl-journey-media relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 ${
-          isPlan ? 'outline outline-1 outline-dashed -outline-offset-1 outline-black/60 dark:outline-white/60' : ''
+          isPlan ? 'outline outline-2 outline-dashed -outline-offset-2 outline-amber-500' : ''
         } ${isActive ? 'ring-2 ring-red-600/60 ring-offset-2 dark:ring-offset-[#141414]' : ''}`}
-        style={isPlan ? { filter: `grayscale(${planGrayscale(planInfo.daysLeft, planInfo.isUpcoming)})` } : undefined}
       >
-        <CardMedia img={trip.img} title={trip.title} videoUrl={trip.videoUrl} isActive={isActive} />
+        {/* Only the photo goes grey, so the plan outline and badge keep their amber */}
+        <div
+          className="absolute inset-0"
+          style={isPlan ? { filter: `grayscale(${planGrayscale(planInfo.daysLeft, planInfo.isUpcoming)})` } : undefined}
+        >
+          <CardMedia img={trip.img} title={trip.title} videoUrl={trip.videoUrl} isActive={isActive} />
+        </div>
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-transparent to-transparent" />
 
         <div className="absolute left-3 top-2 sm:left-4 sm:top-3 text-white pointer-events-none">
@@ -103,6 +108,11 @@ export function JourneyCard({
           <div className="absolute right-3 top-3 sm:right-4 sm:top-4 flex items-center gap-1.5 font-mono text-micro font-bold tracking-wider text-white pointer-events-none">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
             <span>DAY {live.currentDay}/{live.totalDays}</span>
+          </div>
+        ) : isPlan ? (
+          <div className="absolute right-3 top-3 sm:right-4 sm:top-4 flex items-center gap-1 px-1.5 py-0.5 bg-amber-500 text-black font-mono text-micro font-bold tracking-wider pointer-events-none">
+            <span>PLAN</span>
+            {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && <span className="tabular-nums">· {planInfo.dDayLabel}</span>}
           </div>
         ) : (trip.statusBadge === 'NEW' || trip.statusBadge === 'EDITING') && (
           <div className="absolute right-3 top-3 sm:right-4 sm:top-4 font-mono text-micro font-bold tracking-wider text-white pointer-events-none flex items-center gap-1.5">

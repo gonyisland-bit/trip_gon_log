@@ -236,8 +236,8 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
             {/* The film's three shapes hop on the beat while it loads, then settle */}
             <div className="tgl-intro-shapes flex items-end gap-3 h-14" data-state={gate ? 'ready' : 'loading'} aria-hidden>
               <span className="block w-7 h-7 rounded-full bg-red-600" />
-              <span className="block w-4 h-11 rounded-full bg-black" />
-              <span className="block w-7 h-7 bg-black" />
+              <span className="block w-4 h-11 rounded-full bg-blue-600" />
+              <span className="block w-7 h-7 bg-emerald-600" />
             </div>
             {gate ? (
               <div className="flex flex-col items-center gap-4 tgl-rise">

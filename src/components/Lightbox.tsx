@@ -46,6 +46,9 @@ export interface LightboxImageMeta {
   type?: 'gallery' | 'timeline';
 }
 
+// Photos shown on each side of the current one in the slideshow settings strip
+const STRIP_WINDOW = 12;
+
 interface LightboxProps {
   isOpen: boolean;
   images: LightboxImageMeta[];
@@ -108,6 +111,13 @@ export function Lightbox({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsOpenRef = useRef(false);
   settingsOpenRef.current = isSettingsOpen;
+  // The panel opens at once; its photo strip mounts a frame later so decoding never delays the tap
+  const [isSettingsStripReady, setIsSettingsStripReady] = useState(false);
+  useEffect(() => {
+    if (!isSettingsOpen) { setIsSettingsStripReady(false); return; }
+    const id = window.setTimeout(() => setIsSettingsStripReady(true), 60);
+    return () => window.clearTimeout(id);
+  }, [isSettingsOpen]);
   const [isBgmShuffle, setIsBgmShuffle] = useState(() => bgmPlayer.isShuffle());
 
   // Volume HUD state
@@ -1164,20 +1174,28 @@ export function Lightbox({
                     </div>
                   )}
                   {images.length > 1 && (
-                    <div className="flex gap-1 overflow-x-auto hide-scrollbar shrink-0 -mx-1 px-1">
-                      {images.map((img, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          ref={idx === currentIndex ? (el) => el?.scrollIntoView({ block: 'nearest', inline: 'center' }) : undefined}
-                          onClick={() => onNavigate(idx)}
-                          className={`w-11 h-11 shrink-0 overflow-hidden border ${idx === currentIndex ? 'border-red-500' : 'border-white/15 opacity-70 hover:opacity-100'}`}
-                          aria-label={`${idx + 1}번째 사진`}
-                          aria-current={idx === currentIndex}
-                        >
-                          <img src={img.url} alt="" loading="lazy" className="w-full h-full object-cover" draggable={false} />
-                        </button>
-                      ))}
+                    <div className="flex gap-1 overflow-x-auto hide-scrollbar shrink-0 -mx-1 px-1 h-11">
+                      {/* Only the photos around the current one: a trip can hold hundreds of full-size images */}
+                      {isSettingsStripReady && (() => {
+                        const from = Math.max(0, currentIndex - STRIP_WINDOW);
+                        const to = Math.min(images.length, currentIndex + STRIP_WINDOW + 1);
+                        return images.slice(from, to).map((img, i) => {
+                          const idx = from + i;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              ref={idx === currentIndex ? (el) => el?.scrollIntoView({ block: 'nearest', inline: 'center' }) : undefined}
+                              onClick={() => onNavigate(idx)}
+                              className={`w-11 h-11 shrink-0 overflow-hidden border ${idx === currentIndex ? 'border-red-500' : 'border-white/15 opacity-70 hover:opacity-100'}`}
+                              aria-label={`${idx + 1}번째 사진`}
+                              aria-current={idx === currentIndex}
+                            >
+                              <img src={img.url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" draggable={false} />
+                            </button>
+                          );
+                        });
+                      })()}
                     </div>
                   )}
                   <div className="flex items-center gap-1.5">

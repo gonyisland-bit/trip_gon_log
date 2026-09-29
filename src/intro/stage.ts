@@ -283,7 +283,7 @@ export class IntroStage {
 
     // Outro: plan, log, relive
     [this.keep(new THREE.IcosahedronGeometry(0.6, 2)), this.keep(new THREE.CylinderGeometry(0.42, 0.42, 1.2, 28)), this.keep(new THREE.BoxGeometry(1, 1, 1))]
-      .forEach((g, i) => { const m = new THREE.Mesh(g, i === 0 ? redMat : this.keep(std(COL.ink))); this.outroShapes.push(m); this.scene.add(m); });
+      .forEach((g, i) => { const m = new THREE.Mesh(g, i === 0 ? redMat : this.keep(std(i === 1 ? COL.log : COL.relive))); this.outroShapes.push(m); this.scene.add(m); });
   }
 
   private buildLogoLayout() {
@@ -717,7 +717,7 @@ export class IntroStage {
       const p = this.project(new THREE.Vector3((i - 1) * gap, -0.55, 0));
       g.globalAlpha = a;
       g.textAlign = 'center';
-      g.fillStyle = COL.red; g.font = `700 ${22 * u}px ${FONT_MONO}`; g.fillText(en, p.x, p.y + 34 * u);
+      g.fillStyle = [COL.red, COL.log, COL.relive][i]; g.font = `700 ${22 * u}px ${FONT_MONO}`; g.fillText(en, p.x, p.y + 34 * u);
       g.fillStyle = COL.ink; g.font = `800 ${(portrait ? 64 : 72) * u}px ${FONT_SANS}`; g.fillText(ko, p.x, p.y + (portrait ? 104 : 112) * u);
       g.textAlign = 'start';
       g.globalAlpha = 1;

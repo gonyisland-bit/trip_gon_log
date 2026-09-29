@@ -9,7 +9,7 @@ import {
   Tag, Link2, ScanText, Clipboard
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
-import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike } from '../utils/pocketStorage';
+import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike, getCardThumbUrl, needsCardThumb, buildCardThumb } from '../utils/pocketStorage';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
@@ -703,6 +703,43 @@ export function PocketHubPage({
     });
     return () => unsub();
   }, []);
+
+  // Cards load a 480px copy of each photo instead of the full scrap. Members who may write to the
+  // shared pockets make the missing copies in the background, a few per visit, and save them once.
+  const spotsRef = useRef(spots);
+  spotsRef.current = spots;
+  const thumbJobRef = useRef(false);
+  const thumbFailedRef = useRef(new Set<string>());
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+  const canWriteShared = isLoggedIn && (isAdmin || (currentUserProfile?.status ?? 'approved') === 'approved');
+  useEffect(() => {
+    if (!canWriteShared || thumbJobRef.current) return;
+    const todo = spots.filter(s => needsCardThumb(s) && !thumbFailedRef.current.has(s.thumbnailUrl!)).slice(0, 12);
+    if (todo.length === 0) return;
+    const timer = window.setTimeout(async () => {
+      thumbJobRef.current = true;
+      const made = new Map<string, string>();
+      for (const spot of todo) {
+        if (!mountedRef.current) break;
+        try {
+          made.set(spot.thumbnailUrl!, await buildCardThumb(spot.thumbnailUrl!));
+        } catch (err) {
+          thumbFailedRef.current.add(spot.thumbnailUrl!);
+          console.warn('[PocketHub] Card thumbnail failed:', err);
+        }
+      }
+      thumbJobRef.current = false;
+      if (made.size === 0) return;
+      const next = spotsRef.current.map(s => {
+        const small = s.thumbnailUrl ? made.get(s.thumbnailUrl) : undefined;
+        return small ? { ...s, thumbSmallUrl: small, thumbSmallSrc: s.thumbnailUrl } : s;
+      });
+      if (mountedRef.current) setSpots(next);
+      savePockets(next);
+    }, 2000);
+    return () => window.clearTimeout(timer);
+  }, [canWriteShared, spots]);
 
   // Close card menu when clicking outside
   useEffect(() => {
@@ -1549,7 +1586,7 @@ export function PocketHubPage({
                     key={spot.id}
                     style={{
                       animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
-                      animationDelay: `${Math.min(cardIdx * 30, 240)}ms`
+                      animationDelay: `${Math.min(cardIdx * 15, 90)}ms`
                     }}
                     draggable={isDragMode}
                     onDragStart={isDragMode ? () => setDraggingSpotId(spot.id) : undefined}
@@ -1564,7 +1601,7 @@ export function PocketHubPage({
                         setSelectedSpotForModal(spot);
                       }
                     }}
-                    className={`tgl-scrap-card group flex flex-col border bg-white dark:bg-[#1C1C1E] transition-[transform,box-shadow,border-color,opacity] duration-base ease-emphasized overflow-hidden hover:-translate-y-[3px] hover:shadow-[0_8px_18px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)] cursor-pointer ${
+                    className={`tgl-scrap-card group flex flex-col rounded-2xl border bg-white dark:bg-[#1C1C1E] transition-[transform,box-shadow,border-color,opacity] duration-base ease-emphasized overflow-hidden hover:-translate-y-[3px] hover:shadow-[0_8px_18px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)] cursor-pointer ${
                       isDragMode ? 'cursor-grab active:cursor-grabbing' : ''
                     } ${
                       isDraggingThis ? 'opacity-30 scale-[0.98]' : ''
@@ -1587,7 +1624,8 @@ export function PocketHubPage({
                     <div className="relative aspect-[16/10] w-full bg-black/5 dark:bg-white/5 overflow-hidden">
                       {spot.thumbnailUrl ? (
                         <img
-                          src={spot.thumbnailUrl}
+                          src={getCardThumbUrl(spot)}
+                          decoding="async"
                           alt={spot.title}
                           className="w-full h-full object-cover transition-transform duration-hero ease-emphasized group-hover:scale-[1.04]"
                           loading="lazy"
@@ -1602,7 +1640,7 @@ export function PocketHubPage({
                       )}
 
                       {/* Category */}
-                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 bg-white dark:bg-black text-black dark:text-white text-micro font-mono font-bold tracking-wider uppercase flex items-center gap-1.5">
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white text-micro font-mono font-bold tracking-wider uppercase flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
                         <span>{meta.label}</span>
                       </div>
@@ -1635,24 +1673,24 @@ export function PocketHubPage({
                     </div>
 
                     {/* Body: place, location, memo */}
-                    <div className="px-3 pt-3 pb-2.5 sm:px-3.5 sm:pt-3.5 flex-grow flex flex-col">
-                      <h3 className="text-sm sm:text-[15px] font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors duration-base group-hover:text-red-600 dark:group-hover:text-red-400">
+                    <div className="px-2.5 pt-2 pb-2 sm:px-3 sm:pt-2.5 flex-grow flex flex-col">
+                      <h3 className="text-[13px] sm:text-sm font-extrabold tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-1 transition-colors duration-base group-hover:text-red-600 dark:group-hover:text-red-400">
                         {spot.title}
                       </h3>
                       <p
-                        className="mt-1 text-micro sm:text-meta font-mono uppercase tracking-wide text-black/60 dark:text-white/60 truncate"
+                        className="mt-0.5 text-micro font-mono uppercase tracking-wide text-black/60 dark:text-white/60 truncate"
                         title={spot.address || locationLabel}
                       >
                         {locationLabel}
                       </p>
                       {spot.memo && (
-                        <p className="mt-1.5 text-meta sm:text-[13px] text-black/60 dark:text-white/65 leading-relaxed line-clamp-2 break-words">
+                        <p className="mt-1 text-meta text-black/60 dark:text-white/65 leading-snug line-clamp-1 break-words">
                           {spot.memo}
                         </p>
                       )}
 
                       {/* Footer: like, comments, source on the left / add to trip on the right */}
-                      <div className="mt-auto pt-2.5 border-t border-black/15 dark:border-white/15 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="mt-auto pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-3 min-w-0 font-mono text-micro sm:text-meta">
                           <button
                             type="button"
@@ -1690,11 +1728,11 @@ export function PocketHubPage({
                         <button
                           type="button"
                           onClick={() => setSpotToUseInTrip(spot)}
-                          className="tgl-press tap-target w-8 h-8 rounded-full border border-black dark:border-white flex items-center justify-center text-black dark:text-white transition-colors duration-base group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black cursor-pointer shrink-0"
+                          className="tgl-press tap-target w-7 h-7 rounded-full border border-black dark:border-white flex items-center justify-center text-black dark:text-white transition-colors duration-base group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black cursor-pointer shrink-0"
                           title="여정 타임라인에 추가"
                           aria-label="여정 타임라인에 추가"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -1735,7 +1773,7 @@ export function PocketHubPage({
 
                           {/* Card Grid (Collapsible) */}
                           {!isCollapsed && (
-                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6 animate-in fade-in duration-150">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-4 animate-in fade-in duration-150">
                               {group.items.slice(0, visibleCount).map((spot, idx) => renderCard(spot, idx))}
                             </div>
                           )}

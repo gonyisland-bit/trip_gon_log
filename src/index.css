@@ -19,6 +19,12 @@
   #root {
     min-height: 100%;
   }
+
+  /* Keep the scrollbar's room even on views that don't scroll (map, detail),
+     so the header keeps its width when switching views */
+  html {
+    scrollbar-gutter: stable;
+  }
 }
 
 /* Buttons (spec 4.4): one look per role. Primary = ink fill, Danger = red fill (irreversible),
