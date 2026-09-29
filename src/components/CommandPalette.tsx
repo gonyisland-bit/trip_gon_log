@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Archive, BookOpen, Bookmark, CalendarDays, CornerDownLeft, Home, Map as MapIcon, MapPin, Moon, Plane, Search, Shuffle, Ticket, Wallet,
+  Archive, BookOpen, Bookmark, CalendarDays, CornerDownLeft, Home, Map as MapIcon, MapPin, Moon, Plane, PlayCircle, Search, Shuffle, Ticket, Wallet,
 } from 'lucide-react';
 import { Trip, Plan, SpotPocketItem } from '../types';
 import { getSavedPockets } from '../utils/pocketStorage';
 import { Sheet } from './Sheet';
+import { openIntro } from '../intro/openIntro';
 
 // Command palette (v1.3 P5): Cmd/Ctrl+K. Jump to a journey or a pocket place,
 // or run an app command, from the keyboard alone. The last row hands the
@@ -69,6 +70,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
       cmd('departure', '여행지 뽑기', 'departure board spin ticket 랜덤', Ticket, onOpenDeparture),
       cmd('wallet', '예약 지갑', 'wallet booking flight stay 항공 숙소 교통 예약', Wallet, onOpenWallet),
       cmd('keep', '장소 담기', 'pocket save place scrap 포켓 스크랩', Bookmark, onKeepPlace),
+      cmd('intro', '소개 영상 보기', 'intro video 인트로 소개 영상 tour', PlayCircle, openIntro),
       cmd('night', '야간 모드 전환', 'dark light night theme 다크 라이트', Moon, onCycleNightMode, 'Ctrl+Shift+L'),
       cmd('home', '홈', 'home', Home, () => onNavigate('home')),
       cmd('archive', '아카이브', 'archive journeys trips 여정', Archive, () => onNavigate('archive')),

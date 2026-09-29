@@ -32,15 +32,19 @@ const LandingGuestView = lazyWithRetry(() => import('./components/LandingGuestVi
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Trip, TimelineData } from './types';
 import { WeatherEffectLayer } from './components/WeatherEffectLayer';
-import { db } from './firebase';
+import { auth, db } from './firebase';
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { lazyWithRetry, cleanForFirestore } from './app/appUtils';
 import { useAppState } from './app/useAppState';
+import { OPEN_INTRO_EVENT, isIntroPath } from './intro/openIntro';
+import { IntroTip } from './components/home/IntroTip';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
 const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
 const CommandPalette = lazyWithRetry(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const RemixSheet = lazyWithRetry(() => import('./components/RemixSheet').then(m => ({ default: m.RemixSheet })));
+// Intro 2.0 (Three.js) loads only when opened
+const IntroView = lazyWithRetry(() => import('./intro/IntroView').then(m => ({ default: m.IntroView })));
 
 // A departure date for the Trip Guide: a week out this month, otherwise the first Friday of the month
 function departureDate(year: number, month: number): string {
@@ -92,6 +96,26 @@ function App() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
   const [remixSourceId, setRemixSourceId] = useState<number | null>(null);
+  // Intro 2.0: from the menu, footer, landing, palette, or a shared /intro link
+  const [introFromLink] = useState(() => isIntroPath());
+  const [isIntroOpen, setIsIntroOpen] = useState(introFromLink);
+  // A shared /intro link should not reopen the film on the next reload
+  const closeIntro = () => {
+    setIsIntroOpen(false);
+    setTimeout(() => { if (isIntroPath()) window.history.replaceState(window.history.state, '', '/'); }, 300);
+  };
+  useEffect(() => {
+    if (introFromLink && showSplash) handleFinishSplash();
+    const open = () => setIsIntroOpen(true);
+    window.addEventListener(OPEN_INTRO_EVENT, open);
+    return () => window.removeEventListener(OPEN_INTRO_EVENT, open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Watching the intro from anywhere retires the first-visit hint (kept per account)
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (isIntroOpen && uid) setDoc(doc(db, 'users', uid, 'settings', 'intro'), { seenAt: Date.now(), watched: true }, { merge: true }).catch(() => {});
+  }, [isIntroOpen]);
   useEffect(() => {
     const openDeparture = () => setIsDepartureOpen(true);
     const openWallet = () => setIsWalletOpen(true);
@@ -774,6 +798,22 @@ function App() {
           </Suspense>
           </LayerBoundary>
         )}
+
+        {/* Intro 2.0: motion-graphics film of the app, rendered live */}
+        {isIntroOpen && (
+          <LayerBoundary name="소개 영상" onClose={closeIntro}>
+          <Suspense fallback={null}>
+            <IntroView
+              onClose={closeIntro}
+              startLabel={isLoggedIn ? '앱으로 돌아가기' : '지금 시작하기'}
+              onStart={isLoggedIn ? undefined : () => { setIsIntroOpen(false); setAuthModalMode('signup'); setIsAuthModalOpen(true); }}
+            />
+          </Suspense>
+          </LayerBoundary>
+        )}
+
+        {/* First visit after sign-in: one hint to watch the intro */}
+        {isLoggedIn && !showSplash && !isIntroOpen && currentView === 'home' && <IntroTip />}
 
         {/* Departure Board: the destination picker game (v1.3) */}
         {isDepartureOpen && (

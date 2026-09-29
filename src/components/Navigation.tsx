@@ -9,6 +9,7 @@ import { PasswordVerifyModal } from './PasswordVerifyModal';
 import { ProfileEditModal } from './ProfileEditModal';
 import { MiniWeatherWidget } from './MiniWeatherWidget';
 import { confirmDialog } from '../utils/feedback';
+import { openIntro } from '../intro/openIntro';
 
 interface NavigationProps {
   currentView: string;
@@ -423,6 +424,18 @@ export function Navigation({
             </button>
           )}
 
+          <button
+            onClick={() => { setShowSettings(false); openIntro(); }}
+            className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
+          >
+            <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
+              {isLoggedIn && isAdmin ? '08' : '07'}
+            </span>
+            <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white">
+              INTRO
+            </span>
+          </button>
+
           {/* Swiss Minimal 3-Way Segmented Control for Night Mode with Hover Shortcut Tooltip */}
           <div 
             className="group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 sm:pt-3.5 border-t border-black/5 dark:border-white/5"
@@ -430,7 +443,7 @@ export function Navigation({
           >
             <div className="flex items-center">
               <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-                {isLoggedIn && isAdmin ? '08' : '07'}
+                {isLoggedIn && isAdmin ? '09' : '08'}
               </span>
               <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight text-black/80 dark:text-white/80">
                 NIGHT MODE

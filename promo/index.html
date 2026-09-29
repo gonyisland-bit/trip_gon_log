@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tripgon Intro Renderer</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+KR:wght@500;700;800&display=swap">
+<title>Tripgon Intro Exporter</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;800&display=swap">
 <style>
   body { margin: 0; font-family: Inter, sans-serif; background: #ddd; color: #111; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px; }
   #stage { display: flex; justify-content: center; width: 100%; }
@@ -16,9 +16,10 @@
 </style>
 </head>
 <body>
+<!-- Dev only: run `npm run dev`, open /promo/index.html, Export saves to promo/out/ -->
 <div id="stage"></div>
 <div class="bar">
-  <select id="fmt"><option value="vertical">9:16 vertical</option><option value="wide">16:9 wide</option></select>
+  <select id="fmt"><option value="vertical">9:16 vertical</option><option value="wide">16:9 wide</option><option value="square">1:1 square</option></select>
   <button id="play">Play</button>
   <button id="sound">Sound</button>
   <input id="scrub" type="range" min="0" max="1000" value="0">
@@ -27,10 +28,6 @@
 <div id="info"></div>
 <script src="vendor/mp4-muxer.js"></script>
 <script src="vendor/webm-muxer.js"></script>
-<script src="world.js"></script>
-<script src="engine.js"></script>
-<script src="scenes.js"></script>
-<script src="audio.js"></script>
-<script src="main.js"></script>
+<script type="module" src="/src/intro/exporter.ts"></script>
 </body>
 </html>

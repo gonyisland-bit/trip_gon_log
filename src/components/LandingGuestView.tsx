@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { openIntro } from '../intro/openIntro';
 import { LandingHeroMediaItem } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 
@@ -159,6 +160,14 @@ export function LandingGuestView({
 
             {/* Main Action Buttons: Swiss Minimal Monochrome SIGN IN & JOIN */}
             <div className="md:col-span-5 lg:col-span-6 flex flex-wrap items-center md:justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={openIntro}
+                className="px-5 sm:px-6 py-3.5 sm:py-4 inline-flex items-center gap-2 text-white/90 hover:text-white border border-transparent hover:border-white/40 text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition-all cursor-pointer rounded-none"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                INTRO
+              </button>
               <button
                 type="button"
                 onClick={() => onOpenAuthModal('login')}

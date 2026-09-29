@@ -33,9 +33,31 @@ function r2DevApi(env: Record<string, string>): Plugin {
   }
 }
 
+// Dev only: the intro exporter (promo/index.html) saves rendered videos to promo/out
+function promoSave(): Plugin {
+  return {
+    name: 'promo-save',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/__promo/save', async (req, res) => {
+        if (req.method !== 'POST') { res.statusCode = 405; return res.end() }
+        const { mkdirSync, writeFileSync } = await import('node:fs')
+        const { basename, join } = await import('node:path')
+        const name = basename(new URL(req.url || '', 'http://x').searchParams.get('name') || 'intro.mp4')
+        const chunks: Buffer[] = []
+        for await (const chunk of req) chunks.push(chunk as Buffer)
+        const dir = join(process.cwd(), 'promo', 'out')
+        mkdirSync(dir, { recursive: true })
+        writeFileSync(join(dir, name), Buffer.concat(chunks))
+        res.end('ok')
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), r2DevApi(loadEnv(mode, process.cwd(), ''))],
+  plugins: [react(), r2DevApi(loadEnv(mode, process.cwd(), '')), promoSave()],
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
   }
