@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock, Ticket, Wallet } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
@@ -295,6 +296,9 @@ export function Navigation({
         </div>
       </div>
 
+      {/* Backdrop and drawer live on <body>: the sticky header's blur and view transition must not
+          become their containing block, and the drawer must measure the real visible viewport */}
+      {createPortal(<>
       {/* Backdrop for Desktop Drawer & Mobile Overlay */}
       <div 
         onClick={() => setShowSettings(false)}
@@ -350,7 +354,7 @@ export function Navigation({
         </div>
 
         {/* Hubs: large type, the current one marked in red */}
-        <nav className="flex flex-col px-5 sm:px-7 pt-4 pb-3 flex-1 justify-center min-h-0" aria-label="허브">
+        <nav className="tgl-drawer-hubs flex flex-col px-5 sm:px-7 pt-4 pb-3 flex-1 shrink-0 justify-center" aria-label="허브">
           {HUBS.map((hub, i) => {
             const active = currentView === hub.view;
             return (
@@ -359,13 +363,13 @@ export function Navigation({
                 type="button"
                 onClick={() => handleMenuNavigate(hub.view)}
                 aria-current={active ? 'page' : undefined}
-                className="tgl-drawer-item group flex items-center min-h-12 sm:min-h-14 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                className="tgl-drawer-item tgl-drawer-hub group flex items-center min-h-12 sm:min-h-14 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 style={{ ['--i' as string]: i }}
               >
                 <span className={`font-mono text-xs font-bold w-8 shrink-0 tabular-nums ${active ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <span className={`font-['Inter',sans-serif] text-[28px] sm:text-[34px] leading-none font-extrabold uppercase tracking-tight transition-[color,transform] duration-base group-hover:translate-x-1 ${
+                <span className={`tgl-drawer-hub-label font-['Inter',sans-serif] text-[28px] sm:text-[34px] leading-none font-extrabold uppercase tracking-tight transition-[color,transform] duration-base group-hover:translate-x-1 ${
                   active ? 'text-black dark:text-white' : 'text-black/75 dark:text-white/75 group-hover:text-black dark:group-hover:text-white'
                 }`}>
                   {hub.label}
@@ -504,6 +508,7 @@ export function Navigation({
           )}
         </div>
       </div>
+      </>, document.body)}
 
       {/* Password Verification Modal before accessing profile */}
       {isPasswordVerifyOpen && currentUser?.email && (
