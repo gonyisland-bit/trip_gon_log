@@ -31,7 +31,7 @@ export function ScrollToTop() {
       onClick={scrollToTop}
       aria-label="맨 위로 이동"
       title="TOP"
-      className={`tap-target fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full flex items-center justify-center bg-black text-white dark:bg-white dark:text-black border border-black/15 dark:border-white/15 shadow-xl transition-all duration-300 cursor-pointer select-none group ${
+      className={`tgl-totop tap-target fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full flex items-center justify-center bg-black text-white dark:bg-white dark:text-black border border-black/15 dark:border-white/15 shadow-xl transition-all duration-300 cursor-pointer select-none group ${
         isVisible
           ? 'opacity-100 translate-y-0 pointer-events-auto hover:scale-105 active:scale-95'
           : 'opacity-0 translate-y-4 pointer-events-none'

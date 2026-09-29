@@ -1270,3 +1270,6 @@ input[type="datetime-local"] { min-width: 0; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   .tgl-sheet-in, .tgl-sheet-out, .tgl-dialog-in, .tgl-dialog-out, .tgl-sheet-backdrop-in, .tgl-sheet-backdrop-out { animation: none; }
 }
+
+/* Bottom peek bar (calendar day): the quick dock and TOP step aside while it is open */
+html[data-peek] .tgl-dock, html[data-peek] .tgl-totop { opacity: 0 !important; pointer-events: none !important; }

@@ -220,6 +220,16 @@ export function CalendarHubPage({
   } | null>(null);
   const [isQuickViewAnimOpen, setIsQuickViewAnimOpen] = useState<boolean>(false);
   const quickViewRef = useRef<HTMLDivElement>(null);
+  const [isPeekExpanded, setIsPeekExpanded] = useState<boolean>(false);
+  const peekTouchYRef = useRef<number | null>(null);
+  const isPeekOpen = !!quickViewDate;
+
+  // 하단 피크 바가 열려 있는 동안 다른 하단 플로팅(퀵 독, TOP)은 비켜선다
+  useEffect(() => {
+    if (!isPeekOpen) { setIsPeekExpanded(false); return; }
+    document.documentElement.setAttribute('data-peek', '1');
+    return () => document.documentElement.removeAttribute('data-peek');
+  }, [isPeekOpen]);
 
   useEffect(() => {
     if (quickViewDate) {
@@ -254,12 +264,6 @@ export function CalendarHubPage({
         setIsMonthDropdownOpen(false);
         setIsMonthStripOpen(false);
       }
-      if (quickViewRef.current && !quickViewRef.current.contains(target)) {
-        const clickedDayBtn = (target as HTMLElement)?.closest?.('[data-calendar-date], [data-calendar-month-cell]');
-        if (!clickedDayBtn) {
-          closeQuickView();
-        }
-      }
       if (hoveredTooltip) {
         // 년달력 또는 월달력 날짜 버튼 클릭이 아닌 다른 곳을 누르면 툴팁 및 선택 해제
         const clickedDayBtn = (target as HTMLElement)?.closest?.('[data-calendar-year-cell], [data-calendar-month-cell]');
@@ -270,7 +274,7 @@ export function CalendarHubPage({
         }
       }
     };
-    if (isYearDropdownOpen || isMonthDropdownOpen || isMonthStripOpen || hoveredTooltip || quickViewDate) {
+    if (isYearDropdownOpen || isMonthDropdownOpen || isMonthStripOpen || hoveredTooltip) {
       document.addEventListener('mousedown', handleOutsideClick);
       document.addEventListener('touchstart', handleOutsideClick, { passive: true });
     }
@@ -278,7 +282,7 @@ export function CalendarHubPage({
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('touchstart', handleOutsideClick);
     };
-  }, [isYearDropdownOpen, isMonthDropdownOpen, isMonthStripOpen, hoveredTooltip, quickViewDate]);
+  }, [isYearDropdownOpen, isMonthDropdownOpen, isMonthStripOpen, hoveredTooltip]);
 
   // 뷰 모드: 월별 보기 ('month') vs 연간 보기 ('year')
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
@@ -1813,7 +1817,7 @@ export function CalendarHubPage({
           setDragAnchorDate(null);
         }
       }}
-      className="relative w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none pb-24 overflow-hidden"
+      className="relative w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none ${quickViewDate ? 'pb-56' : 'pb-24'} overflow-hidden transition-[padding] duration-300"
     >
 
       {/* ───────────────────────────────────────────────────────────── */}
@@ -2354,6 +2358,8 @@ export function CalendarHubPage({
                 const isSelectedDate = !!(selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr);
                 const isSelectedWeather = isWeatherMode && selectedWeatherDay?.dateStr === cell.dateStr;
                 const isSelected = isSelectedDate || isSelectedWeather;
+                // 날씨 모드: 확대/오프셋 링은 온도 텍스트와 이웃 셀을 침범하므로 안쪽 링만 사용
+                const weatherCell = isWeatherMode && cell.isCurrentMonth;
 
                 if (!cell.isCurrentMonth) {
                   circleClasses += ' opacity-20 text-black/60 dark:text-white/60 hover:opacity-40';
@@ -2364,7 +2370,7 @@ export function CalendarHubPage({
                   // 오늘 날짜: 스위스 미니멀 반전 상태 (블랙/화이트) + 선택 시 선명한 듀얼 링 인디케이터
                   circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-sm';
                   if (isSelected) {
-                    circleClasses += ' ring-[2.5px] ring-black dark:ring-white ring-offset-2 ring-offset-[#fcfbf9] dark:ring-offset-[#121316] scale-105 shadow-md z-20';
+                    circleClasses += ' ring-[2.5px] ring-black dark:ring-white ' + (weatherCell ? 'ring-inset' : 'ring-offset-2 ring-offset-[#fcfbf9] dark:ring-offset-[#121316] scale-105 shadow-md') + ' z-20';
                   }
                   textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none';
                 } else if (hasTrip) {
@@ -2376,7 +2382,7 @@ export function CalendarHubPage({
                   textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none text-white';
                 } else if (isSelected) {
                   // 선택 날짜: 테두리 진하고 약간 더 두껍게 (ring-[2.5px]) + 내부 은은한 모노크롬 색상
-                  circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-extrabold ring-[2.5px] ring-black dark:ring-white scale-105 shadow-md z-20';
+                  circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-extrabold ring-[2.5px] ring-black dark:ring-white z-20' + (weatherCell ? ' ring-inset' : ' scale-105 shadow-md');
                   textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none text-black dark:text-white';
                 } else if (isInRange) {
                   circleClasses += ' bg-red-600/20 ring-2 ring-red-600 text-red-600 dark:text-red-400 font-extrabold';
@@ -2487,7 +2493,8 @@ export function CalendarHubPage({
                                     ? 'text-black dark:text-white font-extrabold' 
                                     : 'text-black/75 dark:text-white/75 font-bold'
                             }`}>
-                              {weatherItem.tempMin}°/{weatherItem.tempMax}°
+                              <span className="sm:hidden">{weatherItem.tempMax}°</span>
+                              <span className="hidden sm:inline">{weatherItem.tempMin}°/{weatherItem.tempMax}°</span>
                             </span>
                           </div>
                         );
@@ -3598,124 +3605,99 @@ export function CalendarHubPage({
       {/* Swiss Minimal Quick View Bottom Sheet / Popover (Smooth Slide) */}
       {/* ───────────────────────────────────────────────────────────── */}
       {quickViewDate && (
-        <div 
-          className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300 ease-out ${
-            isQuickViewAnimOpen ? 'bg-black/50 backdrop-blur-xs' : 'bg-black/0 pointer-events-none'
-          }`}
-          onClick={closeQuickView}
-        >
+        <div className="fixed inset-x-0 bottom-0 z-50 pointer-events-none flex justify-center px-2 sm:px-4" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}>
           <div
             ref={quickViewRef}
-            onClick={(e) => e.stopPropagation()}
-            className={`w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-5 sm:p-6 text-black dark:text-white select-none transition-all duration-300 ease-out transform ${
-              isQuickViewAnimOpen
-                ? 'translate-y-0 opacity-100 sm:scale-100'
-                : 'translate-y-full opacity-0 sm:translate-y-8 sm:scale-95'
+            role="region"
+            aria-label="선택한 날짜"
+            className={`pointer-events-auto w-full max-w-md border border-black/20 dark:border-white/20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] text-black dark:text-white select-none transition-[transform,opacity] duration-300 ease-out ${
+              isQuickViewAnimOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
             }`}
           >
-            {/* Top Bar: Date Header + Holiday Tag + Close */}
-            <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
-              <div className="flex items-center gap-2">
-                <span className="text-base sm:text-lg font-extrabold font-satoshi tracking-tight">
-                  {quickViewDate.dateStr.replace(/-/g, '.')}
+            {/* Grip: 탭하면 펼침/접힘, 아래로 스와이프하면 접힘 후 닫힘, 위로 스와이프하면 펼침 */}
+            <div
+              className="flex items-center justify-center h-5 cursor-pointer touch-none"
+              onClick={() => setIsPeekExpanded(v => !v)}
+              onTouchStart={(e) => { peekTouchYRef.current = e.touches[0].clientY; }}
+              onTouchEnd={(e) => {
+                const y0 = peekTouchYRef.current;
+                peekTouchYRef.current = null;
+                if (y0 === null) return;
+                const dy = e.changedTouches[0].clientY - y0;
+                if (dy > 30) { if (isPeekExpanded) setIsPeekExpanded(false); else closeQuickView(); }
+                else if (dy < -30) setIsPeekExpanded(true);
+              }}
+              aria-label={isPeekExpanded ? '접기' : '펼치기'}
+            >
+              <span className="w-8 h-0.5 bg-black/25 dark:bg-white/25" />
+            </div>
+
+            {/* 요약 한 줄: 날짜 / 날씨 / 일정 수 / 추가 / 닫기 */}
+            <div className="flex items-center gap-2 px-3 pb-3">
+              <div className="flex items-baseline gap-2 min-w-0 flex-1">
+                <span className="text-sm font-extrabold font-mono tabular-nums shrink-0">
+                  {quickViewDate.dateStr.slice(5).replace('-', '.')}
                 </span>
-                {quickViewDate.holidayName && (
-                  <span className="px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-meta font-bold font-mono">
-                    {quickViewDate.holidayName}
+                {quickViewDate.holidayName ? (
+                  <span className="text-meta font-bold text-red-600 dark:text-red-400 truncate">{quickViewDate.holidayName}</span>
+                ) : (
+                  <span className="text-meta font-mono text-black/60 dark:text-white/60 truncate">
+                    {quickViewDate.items.length > 0 ? `일정 ${quickViewDate.items.length}` : '일정 없음'}
                   </span>
                 )}
               </div>
+              {quickViewDate.weather && (() => {
+                const meta = getWeatherMeta(quickViewDate.weather.weatherCode, quickViewDate.weather.precipitationProb);
+                const IconComp = meta.icon;
+                return (
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold shrink-0">
+                    <IconComp className={`w-4 h-4 ${meta.colorClass}`} />
+                    <span className="tabular-nums">
+                      <span className="text-red-600 dark:text-red-400">{quickViewDate.weather.tempMax}°</span>
+                      <span className="text-black/40 dark:text-white/40">/</span>
+                      <span className="text-blue-600 dark:text-blue-400">{quickViewDate.weather.tempMin}°</span>
+                    </span>
+                  </div>
+                );
+              })()}
+              <button
+                type="button"
+                onClick={() => { const d = quickViewDate.dateStr; openNewEventModal(d, d); }}
+                className="tap-target w-8 h-8 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black hover:opacity-85 transition-opacity cursor-pointer shrink-0"
+                aria-label="일정 추가"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 onClick={closeQuickView}
-                className="tap-target w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                title="닫기"
+                className="tap-target w-8 h-8 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
+                aria-label="닫기"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Weather Block (날씨 정보가 있는 경우) */}
-            {quickViewDate.weather && (() => {
-              const meta = getWeatherMeta(quickViewDate.weather.weatherCode, quickViewDate.weather.precipitationProb);
-              const IconComp = meta.icon;
-              return (
-                <div className="flex items-center justify-between py-2.5 px-3 my-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-xs font-mono">
-                  <div className="flex items-center gap-2">
-                    <IconComp className={`w-4 h-4 ${meta.colorClass}`} />
-                    <span className="font-bold">{meta.labelKo}</span>
-                    <span className="text-black/60 dark:text-white/60 font-normal">
-                      {selectedWeatherCity.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 font-bold">
-                    <span className="text-red-600 dark:text-red-400">
-                      {quickViewDate.weather.tempMax}°
-                    </span>
-                    <span className="text-black/60 dark:text-white/60">/</span>
-                    <span className="text-blue-600 dark:text-blue-400">
-                      {quickViewDate.weather.tempMin}°
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Schedule Items List (일정이 있을 때만 표시하여 일정이 없는 날은 모달 높이 컴팩트화) */}
-            {quickViewDate.items.length > 0 && (
-              <div className="my-3 space-y-2 max-h-56 overflow-y-auto">
-                {quickViewDate.items.map((it, idx) => (
-                  <div 
-                    key={idx}
-                    className="p-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <span 
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: it.categoryColor || (it.isPlan ? '#3b82f6' : '#ef4444') }}
-                      />
-                      <span className="font-satoshi font-bold text-sm truncate">
-                        {it.title}
-                      </span>
-                    </div>
-                    {it.days && (
-                      <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
-                        {it.days} DAYS
-                      </span>
-                    )}
-                  </div>
-                ))}
+            {/* 펼침: 그날의 일정 */}
+            {isPeekExpanded && (
+              <div className="px-3 pb-3 border-t border-black/10 dark:border-white/10 pt-3 max-h-[40dvh] overflow-y-auto overscroll-contain">
+                {quickViewDate.items.length === 0 ? (
+                  <p className="text-xs font-mono text-black/60 dark:text-white/60">이 날짜에는 일정이 없습니다.</p>
+                ) : (
+                  <ul className="flex flex-col gap-1.5">
+                    {quickViewDate.items.map((it, idx) => (
+                      <li key={idx} className="flex items-center justify-between gap-3 px-2.5 py-2 border border-black/15 dark:border-white/15">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: it.categoryColor || (it.isPlan ? '#3b82f6' : '#ef4444') }} />
+                          <span className="text-sm font-bold truncate">{it.title}</span>
+                        </div>
+                        {it.days && <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 shrink-0">{it.days}D</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
-
-            {/* Bottom Action Buttons */}
-            <div className={`flex items-center gap-2 ${
-              quickViewDate.items.length > 0
-                ? 'pt-3 border-t border-black/10 dark:border-white/10'
-                : quickViewDate.weather
-                  ? 'pt-1'
-                  : 'pt-3'
-            }`}>
-              <button
-                type="button"
-                onClick={() => {
-                  const d = quickViewDate.dateStr;
-                  closeQuickView();
-                  openNewEventModal(d, d);
-                }}
-                className="flex-1 h-9 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>ADD SCHEDULE</span>
-              </button>
-              <button
-                type="button"
-                onClick={closeQuickView}
-                className="px-4 h-9 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-mono font-bold transition-colors cursor-pointer"
-              >
-                CLOSE
-              </button>
-            </div>
           </div>
         </div>
       )}

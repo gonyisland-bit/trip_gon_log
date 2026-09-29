@@ -75,7 +75,7 @@ export function QuickActionBar({ currentView, onNavigate, onNewTrip }: QuickActi
   return (
     <nav
       aria-label="빠른 실행"
-      className={`fixed left-1/2 bottom-5 z-40 -translate-x-1/2 flex items-center gap-1 p-1 bg-[#0B0B0C]/90 backdrop-blur-md rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-[transform,opacity] duration-emph ease-emphasized ${
+      className={`tgl-dock fixed left-1/2 bottom-5 z-40 -translate-x-1/2 flex items-center gap-1 p-1 bg-[#0B0B0C]/90 backdrop-blur-md rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-[transform,opacity] duration-emph ease-emphasized ${
         hidden ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
       }`}
       style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
