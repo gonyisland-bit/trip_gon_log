@@ -248,7 +248,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
 
       {/* Lower third */}
       {shot && !ended && (
-        <div key={index} className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-20 sm:bottom-16 z-[5] max-w-3xl tgl-reel-caption">
+        <div key={index} className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-24 sm:bottom-20 z-[5] max-w-3xl tgl-reel-caption">
           <div className="flex items-center gap-2 font-mono text-micro sm:text-meta tracking-[0.16em] uppercase text-white/85">
             <span className="w-6 h-px bg-red-500" />
             {[shot.location || shot.place, shot.date].filter(Boolean).join(' · ')}
@@ -281,17 +281,20 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
         </div>
       )}
 
-      {/* Controls */}
-      <div className={`absolute bottom-5 right-4 sm:right-8 z-[7] flex items-center gap-2 transition-opacity duration-base ${chromeVisible || !playing || ended ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Controls: bottom-centre transport pill, the same place and shape as Playlog and the photo slideshow */}
+      <div
+        className={`absolute left-1/2 -translate-x-1/2 z-[7] flex items-center gap-1 p-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 transition-opacity duration-base ${chromeVisible || !playing || ended ? 'opacity-100' : 'opacity-0'}`}
+        style={{ bottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+      >
         {!ended && (
-          <button type="button" onClick={(e) => { e.stopPropagation(); setPlaying(p => !p); }} className="tgl-press tap-target w-10 h-10 rounded-full bg-white/15 hover:bg-white hover:text-black backdrop-blur-md flex items-center justify-center transition-colors" aria-label={playing ? '일시정지' : '재생'}>
-            {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          <button type="button" onClick={(e) => { e.stopPropagation(); setPlaying(p => !p); }} className="tgl-press tap-target w-10 h-10 rounded-full bg-white text-black hover:bg-neutral-200 flex items-center justify-center transition-colors" aria-label={playing ? '일시정지' : '재생'}>
+            {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current translate-x-[1px]" />}
           </button>
         )}
-        <button type="button" onClick={(e) => { e.stopPropagation(); setMuted(m => !m); }} className="tgl-press tap-target w-10 h-10 rounded-full bg-white/15 hover:bg-white hover:text-black backdrop-blur-md flex items-center justify-center transition-colors" aria-label={muted ? '소리 켜기' : '소리 끄기'}>
+        <button type="button" onClick={(e) => { e.stopPropagation(); setMuted(m => !m); }} className="tgl-press tap-target w-10 h-10 rounded-full text-white/85 hover:bg-white/15 flex items-center justify-center transition-colors" aria-label={muted ? '소리 켜기' : '소리 끄기'}>
           {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </button>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onClose(); }} className="tgl-press tap-target w-10 h-10 rounded-full bg-white/15 hover:bg-white hover:text-black backdrop-blur-md flex items-center justify-center transition-colors" aria-label="닫기">
+        <button type="button" onClick={(e) => { e.stopPropagation(); onClose(); }} className="tgl-press tap-target w-10 h-10 rounded-full text-white/85 hover:bg-white/15 flex items-center justify-center transition-colors" aria-label="닫기">
           <X className="w-4 h-4" />
         </button>
       </div>
