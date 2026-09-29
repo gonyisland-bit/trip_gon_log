@@ -83,7 +83,7 @@ export function QuickActionBar({ currentView, onNavigate, onNewTrip }: QuickActi
       <DockButton label="포켓" onClick={keepPlace}><Bookmark className="w-4 h-4" /></DockButton>
       <DockButton label="신규여행" onClick={onNewTrip}><Plane className="w-4 h-4" /></DockButton>
       <DockButton label="예약지갑" onClick={openBookingWallet}><Wallet className="w-4 h-4" /></DockButton>
-      <DockButton label="여행지뽑기" onClick={openDepartureBoard} accent><Ticket className="w-4 h-4" /></DockButton>
+      <DockButton label="공항 터미널" onClick={openDepartureBoard} accent><Ticket className="w-4 h-4" /></DockButton>
     </nav>
   );
 }

@@ -815,9 +815,9 @@ function App() {
         {/* First visit after sign-in: one hint to watch the intro */}
         {isLoggedIn && !showSplash && !isIntroOpen && currentView === 'home' && <IntroTip />}
 
-        {/* Departure Board: the destination picker game (v1.3) */}
+        {/* Airport terminal: the destination picker (v1.3, renamed from Departure Board) */}
         {isDepartureOpen && (
-          <LayerBoundary name="여행지 뽑기" onClose={() => setIsDepartureOpen(false)}>
+          <LayerBoundary name="공항 터미널" onClose={() => setIsDepartureOpen(false)}>
           <Suspense fallback={null}>
             <DepartureBoard
               onClose={() => setIsDepartureOpen(false)}

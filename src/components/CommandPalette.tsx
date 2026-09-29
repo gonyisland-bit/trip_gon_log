@@ -67,7 +67,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
       ({ id: `cmd-${id}`, group: '명령', label, keywords: `${label} ${keywords}`, icon, run, hint });
     const commands: Entry[] = [
       cmd('new', '새 여정 만들기', 'new trip create 신규', Plane, onNewTrip),
-      cmd('departure', '여행지 뽑기', 'departure board spin ticket 랜덤', Ticket, onOpenDeparture),
+      cmd('departure', '공항 터미널', 'airport terminal departure board spin ticket 랜덤 여행지 뽑기', Ticket, onOpenDeparture),
       cmd('wallet', '예약 지갑', 'wallet booking flight stay 항공 숙소 교통 예약', Wallet, onOpenWallet),
       cmd('keep', '장소 담기', 'pocket save place scrap 포켓 스크랩', Bookmark, onKeepPlace),
       cmd('intro', '소개 영상 보기', 'intro video 인트로 소개 영상 tour', PlayCircle, openIntro),

@@ -14,7 +14,7 @@ import {
   formatHours, gateFor, isBestSeason, loadTickets, makeTicket, readCachedTickets, saveTickets, selectableMonths, targetMonth, todayKey,
 } from './departureData';
 
-// Departure Board (v1.3): a split-flap airport board that picks the next trip.
+// Airport terminal (v1.3, renamed from Departure Board): a split-flap board that picks the next trip.
 // Filters narrow the pool, SPIN rolls the letters to a destination, and a result
 // can open the Trip Guide or be kept as a ticket. One free "today's ticket" a day.
 
@@ -151,6 +151,18 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
   const [store, setStore] = useState(() => readCachedTickets());
   const [kept, setKept] = useState(false);
   const [clock, setClock] = useState(() => new Date());
+  const [monthOpen, setMonthOpen] = useState(false);
+  const monthRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  // The month grid closes on an outside tap or Esc
+  useEffect(() => {
+    if (!monthOpen) return;
+    const onDown = (e: PointerEvent) => { const t = e.target as Node; if (!monthRef.current?.contains(t) && !gridRef.current?.contains(t)) setMonthOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setMonthOpen(false); } };
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey, true);
+    return () => { document.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey, true); };
+  }, [monthOpen]);
   const flip = useFlapSound(muted);
   // The back gesture steps out of the lobby (straight away: the exit animation is for the close button)
   useBackToClose(true, onClose);
@@ -261,6 +273,17 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
     const next = monthIndex(filters.year, filters.month) + dir;
     return next >= firstIndex && next <= lastIndex;
   };
+  const months = useMemo(() => {
+    const out: { year: number; month: number; best: number }[] = [];
+    for (let i = firstIndex; i <= lastIndex; i++) {
+      const y = Math.floor(i / 12), m = (i % 12) + 1;
+      const best = candidates({ ...filters, year: y, month: m }).filter(c => isBestSeason(c, m)).length;
+      out.push({ year: y, month: m, best });
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.stay, filters.flight, firstIndex, lastIndex]);
+  const topBest = Math.max(1, ...months.map(m => m.best));
   const stepMonth = (dir: 1 | -1, wrap = false) => setFilters(f => {
     let next = monthIndex(f.year, f.month) + dir;
     if (next > lastIndex) next = wrap ? firstIndex : lastIndex;
@@ -282,7 +305,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
-      className={`tgl-press h-8 min-w-[40px] px-2.5 font-mono text-meta uppercase tracking-wider border transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
+      className={`tgl-press h-10 sm:h-8 min-w-[44px] sm:min-w-[40px] px-2.5 font-mono text-meta uppercase tracking-wider border transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
         active ? 'bg-[#0B0B0C] text-white border-[#0B0B0C] dark:bg-[#F2F2EE] dark:text-black dark:border-[#F2F2EE]' : 'border-black/25 text-black/75 hover:border-black hover:text-black dark:border-white/25 dark:text-white/75 dark:hover:border-white dark:hover:text-white'
       }`}
     >
@@ -297,7 +320,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
     <div
       role="dialog"
       data-bg-cover
-      aria-label="Departure Board"
+      aria-label="공항 터미널"
       className={`fixed inset-0 z-[190] bg-[#F2F2EE] text-[#0B0B0C] dark:bg-[#0B0B0C] dark:text-[#F2F2EE] transition-colors duration-700 overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
     >
       <div className="h-full flex flex-col" style={{ perspective: '1400px', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
@@ -306,7 +329,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
           {/* Top bar */}
           <div className="flex items-center justify-between gap-3 border-b border-black/15 dark:border-white/15 pb-2">
             <div className="flex items-baseline gap-3">
-              <span className="font-sans font-extrabold text-lg sm:text-xl tracking-tight">Departures</span>
+              <span className="font-sans font-extrabold text-lg sm:text-xl tracking-tight">Terminal 1 <span className="text-black/40 dark:text-white/40 font-normal">·</span> Departures</span>
               <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums">ICN · {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -345,22 +368,54 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
                 </div>
                 <div className="flex items-center gap-2">
                   <Label>Departs</Label>
-                  <div className="flex items-stretch h-8 border border-black/25 dark:border-white/25">
-                    <button type="button" onClick={() => stepMonth(-1)} disabled={!canStep(-1)} className="tgl-press w-8 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
+                  <div className="relative flex items-stretch h-10 sm:h-8 border border-black/25 dark:border-white/25" ref={monthRef}>
+                    <button type="button" onClick={() => stepMonth(-1)} disabled={!canStep(-1)} className="tgl-press w-10 sm:w-8 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => stepMonth(1, true)} className="tgl-press px-3 font-mono text-meta tracking-wider tabular-nums border-x border-black/25 hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10 cursor-pointer" aria-label="출발 월 바꾸기">
+                    <button type="button" onClick={() => setMonthOpen(o => !o)} aria-expanded={monthOpen} aria-haspopup="dialog" className="tgl-press px-3 font-mono text-meta tracking-wider tabular-nums border-x border-black/25 hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10 cursor-pointer" aria-label="출발 월 바꾸기">
                       {MONTHS[month - 1]} {year}
                     </button>
-                    <button type="button" onClick={() => stepMonth(1)} disabled={!canStep(1)} className="tgl-press w-8 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
+                    <button type="button" onClick={() => stepMonth(1)} disabled={!canStep(1)} className="tgl-press w-10 sm:w-8 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               </div>
 
+              {/* Month grid: opens under the filters from the month label */}
+              {monthOpen && (
+                <div role="dialog" aria-label="출발 월 선택" ref={gridRef} className="w-full sm:max-w-md p-3 bg-[#F2F2EE] dark:bg-[#161618] border border-black/20 dark:border-white/20 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Departs</Label>
+                    <span className="inline-flex items-center gap-1.5 font-mono text-micro text-black/60 dark:text-white/60"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />베스트 시즌</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {months.map((m, i) => {
+                      const on = m.year === filters.year && m.month === filters.month;
+                      const newYear = i === 0 || m.month === 1;
+                      return (
+                        <button
+                          key={`${m.year}-${m.month}`}
+                          type="button"
+                          onClick={() => { setFilters(f => ({ ...f, year: m.year, month: m.month })); setMonthOpen(false); }}
+                          aria-pressed={on}
+                          aria-label={`${m.year}년 ${m.month}월${m.best ? `, 베스트 시즌 ${m.best}곳` : ''}`}
+                          className={`tgl-press relative h-11 flex flex-col items-center justify-center font-mono text-meta tracking-wider border transition-colors cursor-pointer ${
+                            on ? 'bg-[#0B0B0C] text-white border-[#0B0B0C] dark:bg-[#F2F2EE] dark:text-black dark:border-[#F2F2EE]' : 'border-black/15 hover:border-black dark:border-white/15 dark:hover:border-white'
+                          }`}
+                        >
+                          {MONTHS[m.month - 1]}
+                          {newYear && <span className={`text-micro leading-none ${on ? 'opacity-70' : 'text-black/60 dark:text-white/60'}`}>{m.year}</span>}
+                          {m.best >= topBest * 0.25 && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500" style={{ opacity: 0.35 + 0.65 * (m.best / topBest) }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Board */}
-              <div className="dark relative border border-white/15 p-3 sm:p-4 flex flex-col gap-3 bg-[#101012] text-[#F2F2EE] shadow-[0_24px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
+              <div className="dark relative border border-white/15 p-3 sm:p-4 flex flex-col gap-3 bg-[#101012] text-[#F2F2EE]">
                 <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
                   <div className="flex flex-col gap-1">
                     <Label>Flight</Label>

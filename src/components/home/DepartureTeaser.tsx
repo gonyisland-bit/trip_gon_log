@@ -31,7 +31,7 @@ export function DepartureTeaser() {
   const city = pool[i];
 
   return (
-    <aside aria-label="여행지 뽑기" className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-3">
+    <aside aria-label="공항 터미널" className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-3">
       <button
         type="button"
         onClick={openDepartureBoard}
@@ -44,7 +44,7 @@ export function DepartureTeaser() {
         </span>
         {city && <span className="hidden sm:inline font-mono text-meta text-white/55 shrink-0">{city.hoursLabel}</span>}
         <span className="ml-auto inline-flex items-center gap-2 text-sm font-bold shrink-0 group-hover:text-red-400 transition-colors">
-          여행지 뽑기
+          공항 터미널
           <ArrowRight className="w-4 h-4 transition-transform duration-base group-hover:translate-x-1" />
         </span>
       </button>
