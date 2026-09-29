@@ -17,8 +17,20 @@ function rng(seed: number) {
 
 let cached: Promise<AudioBuffer> | null = null;
 
+// Rendering takes a few seconds; progress (0–1) is shared by every caller
+let progress = 0;
+const listeners = new Set<(p: number) => void>();
+const report = (p: number) => { progress = p; listeners.forEach(fn => fn(p)); };
+
+/** Subscribe to rendering progress; returns an unsubscribe function */
+export function onSoundtrackProgress(fn: (p: number) => void) {
+  listeners.add(fn);
+  fn(progress);
+  return () => { listeners.delete(fn); };
+}
+
 export function renderSoundtrack(): Promise<AudioBuffer> {
-  if (!cached) cached = render().catch(e => { cached = null; throw e; });
+  if (!cached) cached = render().then(b => { report(1); return b; }).catch(e => { cached = null; report(0); throw e; });
   return cached;
 }
 
@@ -161,6 +173,12 @@ async function render(): Promise<AudioBuffer> {
   };
   SFX.forEach(([b, k]) => sfx[k](T(b)));
 
+  // Pause the offline render at checkpoints to learn how far it has got
+  const STEPS = 20;
+  for (let k = 1; k < STEPS; k++) {
+    const at = (Math.round((DURATION * k / STEPS) * sr / 128) * 128) / sr; // render-quantum boundary
+    ctx.suspend(at).then(() => { report(k / STEPS * 0.97); ctx.resume(); }).catch(() => {});
+  }
   const buf = await ctx.startRendering();
   let peak = 0;
   for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i])); }

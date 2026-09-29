@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { RotateCcw, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Play, RotateCcw, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useBackToClose } from '../utils/overlayHistory';
 import { prefersReducedMotion } from '../motion';
 import { PlayerDock, PlayerTopBar, DockButton } from '../components/player/PlayerDock';
 import { IntroStage } from './stage';
-import { renderSoundtrack } from './soundtrack';
+import { onSoundtrackProgress, renderSoundtrack } from './soundtrack';
 import { BEAT, DURATION, SCENES, sceneAt } from './timeline';
 
 // Intro 2.0 player: the stage renders in real time at any aspect ratio, with the shared player dock.
@@ -26,6 +26,11 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
   const stageRef = useRef<IntroStage | null>(null);
 
   const [ready, setReady] = useState(false);
+  // After loading, wait for a tap: it unlocks audio so the film starts with sound
+  const [gate, setGate] = useState(false);
+  const gateRef = useRef(false);
+  gateRef.current = gate;
+  const [progress, setProgress] = useState(0.04);
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -99,15 +104,21 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
     const ctx = Ctx ? new Ctx() : null;
     if (ctx) { const gain = ctx.createGain(); gain.connect(ctx.destination); audio.current.ctx = ctx; audio.current.gain = gain; }
 
-    Promise.all([stage.load(), renderSoundtrack().catch(() => null)]).then(([, buf]) => {
+    // Loading weights: player 10%, 3D scene and fonts 15%, soundtrack 75%
+    let stageP = 0.1, soundP = 0;
+    const bump = () => { if (!disposed) setProgress(Math.max(0.04, stageP + soundP * 0.75)); };
+    bump();
+    const unsub = onSoundtrackProgress(p => { soundP = p; bump(); });
+    const loaded = stage.load().then(() => { stageP = 0.25; bump(); });
+    Promise.all([loaded, renderSoundtrack().catch(() => null)]).then(([, buf]) => {
+      unsub();
       if (disposed) return;
       audio.current.buf = buf;
       if (!buf || !ctx) setMuted(true);
+      setProgress(1);
       fit();
       setReady(true);
-      play(0);
-      // Browsers keep audio locked until a tap; show it as muted until then
-      if (ctx && ctx.state === 'suspended') setMuted(true);
+      setGate(true);
     });
 
     // Render loop with a simple quality governor
@@ -139,6 +150,7 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
     document.body.style.overflow = 'hidden';
     return () => {
       disposed = true;
+      unsub();
       cancelAnimationFrame(raf);
       ro.disconnect();
       document.removeEventListener('visibilitychange', onHide);
@@ -158,6 +170,15 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
     else if (clock.current.playing) startAudio(now());
   };
   const togglePlay = () => (clock.current.playing ? pause() : play());
+  // The tap that starts the film also resumes the audio context (browser autoplay rule)
+  const begin = () => {
+    if (!ready || !gateRef.current) return;
+    const ctx = audio.current.ctx;
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    setGate(false);
+    setChrome(true);
+    play(0);
+  };
   const nextScene = () => {
     const b = now() / BEAT;
     const nxt = SCENES.find(s => s.start > b + 0.01);
@@ -174,6 +195,7 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      else if ((e.key === ' ' || e.key === 'Enter') && gateRef.current) { e.preventDefault(); begin(); }
       else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
       else if (e.key === 'ArrowRight') nextScene();
       else if (e.key === 'ArrowLeft') prevScene();
@@ -202,16 +224,47 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
       className="fixed inset-0 z-player bg-black text-white select-none overflow-hidden"
       onPointerMove={(e) => { if (e.pointerType === 'mouse') setChrome(true); }}
     >
-      <div ref={hostRef} className="absolute inset-0" onClick={() => { if (!chrome) setChrome(true); else if (ready) togglePlay(); }}>
+      <div ref={hostRef} className="absolute inset-0" onClick={() => { if (gate) begin(); else if (!chrome) setChrome(true); else if (ready) togglePlay(); }}>
         <canvas ref={glRef} className="absolute inset-0 w-full h-full block" aria-hidden />
         <canvas ref={typeRef} className="absolute inset-0 w-full h-full block pointer-events-none" aria-hidden />
       </div>
 
-      {!ready && !failed && (
-        <div className="absolute inset-0 grid place-items-center bg-[#f3f2ee] text-black pointer-events-none">
-          <div className="flex flex-col items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-            <span className="font-mono text-micro uppercase tracking-[0.2em] text-black/60">Loading intro</span>
+      {(!ready || gate) && !failed && (
+        <div className="absolute inset-0 grid place-items-center bg-[#f3f2ee] text-black" onClick={gate ? begin : undefined}>
+          <div className="flex flex-col items-center gap-7 px-6 text-center">
+            {/* The film's three shapes hop on the beat while it loads, then settle */}
+            <div className="tgl-intro-shapes flex items-end gap-3 h-14" data-state={gate ? 'ready' : 'loading'} aria-hidden>
+              <span className="block w-7 h-7 rounded-full bg-red-600" />
+              <span className="block w-4 h-11 rounded-full bg-black" />
+              <span className="block w-7 h-7 bg-black" />
+            </div>
+            {gate ? (
+              <div className="flex flex-col items-center gap-4 tgl-rise">
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={(e) => { e.stopPropagation(); begin(); }}
+                  className="tgl-press tgl-intro-go w-[4.5rem] h-[4.5rem] rounded-full bg-black text-white grid place-items-center hover:bg-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                  aria-label="소개 영상 시작"
+                >
+                  <Play className="w-7 h-7 fill-current translate-x-[2px]" />
+                </button>
+                <div>
+                  <p className="text-base font-extrabold">탭해서 시작</p>
+                  <p className="mt-1 font-mono text-micro uppercase tracking-widest text-black/60">0:49 · 소리와 함께 보면 더 좋아요</p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-56 flex flex-col gap-2.5" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)} aria-label="소개 영상 불러오는 중">
+                <div className="w-full h-[2px] bg-black/15 overflow-hidden">
+                  <div className="h-full bg-red-600 origin-left transition-transform duration-300 ease-out" style={{ transform: `scaleX(${progress})` }} />
+                </div>
+                <div className="flex justify-between font-mono text-micro uppercase tracking-widest text-black/60 tabular-nums">
+                  <span key={progress < 0.12 ? 'a' : progress < 0.25 ? 'b' : 'c'} className="tgl-rise">{progress < 0.12 ? '플레이어' : progress < 0.25 ? '3D 장면' : '사운드'}</span>
+                  <span>{Math.round(progress * 100)}%</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -222,7 +275,7 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
       )}
 
       <PlayerTopBar
-        visible={chrome || !playing}
+        visible={ready && !gate && (chrome || !playing)}
         count={SCENES.length}
         index={idx}
         progress={(b - sc.start) / (sc.end - sc.start)}
@@ -245,7 +298,7 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
       <PlayerDock
         className="absolute left-1/2 -translate-x-1/2 z-[46]"
         style={{ bottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
-        visible={ready && (chrome || !playing)}
+        visible={ready && !gate && (chrome || !playing)}
         playing={playing}
         onTogglePlay={togglePlay}
         onPrev={prevScene}

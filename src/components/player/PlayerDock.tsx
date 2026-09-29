@@ -148,9 +148,10 @@ export function PlayerTopBar({
 
   return (
     <div
-      className="absolute top-0 inset-x-0 z-[45] px-4 sm:px-8 pb-6 bg-gradient-to-b from-black/60 to-transparent pointer-events-none"
+      className="absolute top-0 inset-x-0 z-[45] px-4 sm:px-8 pb-6 pointer-events-none isolate"
       style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
     >
+      <div className={`absolute inset-0 -z-10 bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-base ${visible ? 'opacity-100' : 'opacity-0'}`} aria-hidden />
       <div className={`transition-opacity duration-base ${visible ? 'opacity-100' : 'opacity-0'}`}>
         {continuous ? (
           <div className="h-[2px] bg-white/25 overflow-hidden">

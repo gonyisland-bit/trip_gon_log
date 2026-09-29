@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
-import { openIntro } from '../intro/openIntro';
+import { openIntro, prefetchIntro } from '../intro/openIntro';
 import { LandingHeroMediaItem } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 
@@ -163,6 +163,9 @@ export function LandingGuestView({
               <button
                 type="button"
                 onClick={openIntro}
+                onPointerEnter={prefetchIntro}
+                onTouchStart={prefetchIntro}
+                onFocus={prefetchIntro}
                 className="px-5 sm:px-6 py-3.5 sm:py-4 inline-flex items-center gap-2 text-white/90 hover:text-white border border-transparent hover:border-white/40 text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition-all cursor-pointer rounded-none"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />

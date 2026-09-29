@@ -1273,3 +1273,19 @@ input[type="datetime-local"] { min-width: 0; max-width: 100%; }
 
 /* Bottom peek bar (calendar day): the quick dock and TOP step aside while it is open */
 html[data-peek] .tgl-dock, html[data-peek] .tgl-totop { opacity: 0 !important; pointer-events: none !important; }
+
+/* Intro loader: the film's three shapes hop on the 128 BPM beat, then settle when ready */
+.tgl-intro-shapes > span { transform-origin: 50% 100%; animation: tglIntroHop 938ms cubic-bezier(.3, 0, .2, 1) infinite; }
+.tgl-intro-shapes > span:nth-child(2) { animation-delay: 156ms; }
+.tgl-intro-shapes > span:nth-child(3) { animation-delay: 312ms; }
+.tgl-intro-shapes[data-state="ready"] > span { animation: tglIntroSettle 520ms var(--ease-spring, cubic-bezier(.2, 1.4, .4, 1)) both; }
+.tgl-intro-go { animation: tglIntroGo 1876ms ease-out infinite; }
+@keyframes tglIntroHop {
+  0%, 62%, 100% { transform: translateY(0) scale(1, 1); }
+  14% { transform: translateY(0) scale(1.16, .8); }
+  34% { transform: translateY(-20px) scale(.9, 1.12); }
+  50% { transform: translateY(0) scale(1.1, .88); }
+}
+@keyframes tglIntroSettle { from { transform: translateY(-12px); } to { transform: none; } }
+@keyframes tglIntroGo { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .45); } 70%, 100% { box-shadow: 0 0 0 18px rgba(220, 38, 38, 0); } }
+@media (prefers-reduced-motion: reduce) { .tgl-intro-shapes > span, .tgl-intro-go { animation: none !important; } }
