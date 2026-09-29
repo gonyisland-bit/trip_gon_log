@@ -2,9 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { Traveler, poseTraveler, drawTraveler, TRAVELER_DARK, TravelerPalette, STRIDE_PER_RAD } from '../splash/travelerRig';
 import type { WeatherEffectType } from '../WeatherEffectLayer';
 
-// Airport lobby (v1.3) under the Departure Board: a flat four-colour scene.
-// Behind a wall of glass, planes roll, rotate and climb away while others glide
-// in to land; in front, travelers cross the concourse pulling their carry-ons.
+// Terminal concourse (v1.3) under the departures board: a flat four-colour scene.
+// A trussed ceiling with downlights, pillars, a hanging gate sign and a row of seats frame
+// a wall of glass; behind it planes roll, rotate and climb away while others glide in to
+// land, and travelers cross the polished floor pulling their carry-ons. Rain dims the sky,
+// splashes on the apron and runs down the glass; snow settles into a bank that stops growing.
 // The sky follows the app's day/night mode and the live weather, blending
 // between states instead of cutting. Every plane leaves the frame before it
 // is reused. One canvas, paused while the tab is hidden, still under reduced motion.
@@ -122,6 +124,19 @@ function drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, s: numbe
   ctx.fill();
 }
 
+// A row of linked terminal seats, ~26 units per seat, origin at the floor under the first seat
+function drawSeats(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, n: number, seat: string, frame: string) {
+  ctx.fillStyle = frame;
+  ctx.fillRect(x - 2 * s, y - 13 * s, n * 26 * s, 2.2 * s);
+  for (let i = 0; i <= n; i += Math.max(1, Math.floor(n / 2))) ctx.fillRect(x + i * 26 * s - 3 * s, y - 13 * s, 2 * s, 13 * s);
+  ctx.fillStyle = seat;
+  for (let i = 0; i < n; i++) {
+    const sx = x + i * 26 * s;
+    ctx.beginPath(); ctx.roundRect(sx, y - 34 * s, 22 * s, 20 * s, 4 * s); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(sx - 1 * s, y - 17 * s, 24 * s, 5 * s, 2.5 * s); ctx.fill();
+  }
+}
+
 const ease = (t: number) => t * t * (3 - 2 * t);
 // Move `v` toward `target` at `rate` per second
 const approach = (v: number, target: number, rate: number, dt: number) => v + (target - v) * Math.min(1, rate * dt);
@@ -194,6 +209,11 @@ export function LobbyScene({ isDarkMode = true, weatherType = 'clear', intensity
     clouds.forEach((c, i) => { c.a = i < fw.clouds ? fw.cloud : 0; });
     let flash = 0;
     let nextFlash = 3 + Math.random() * 5;
+    const splashes: { x: number; y: number; t: number }[] = [];
+    // Drops on the glass hold still, then run down leaving a short trail
+    const beads = Array.from({ length: 46 }, () => ({ x: Math.random(), y: Math.random(), r: 0.8 + Math.random() * 1.8, hold: Math.random() * 4, v: 0 }));
+    // Snow bank depth (0..1 of its cap); starts settled if it is already snowing
+    let bank = fw.snow > 0 ? 1 : 0;
 
     let raf = 0;
     let last = performance.now();
@@ -216,6 +236,8 @@ export function LobbyScene({ isDarkMode = true, weatherType = 'clear', intensity
       cur.storm = approach(cur.storm, wx.storm, k, reduced ? 1 : dt);
 
       const floorY = h * 0.78;          // where the glass meets the floor
+      const ceilH = Math.max(18, h * 0.1); // trussed ceiling above the glass
+      const wet = Math.min(1, cur.rain * 2.2);
       const runwayY = floorY - h * 0.1; // runway seen through the glass
       const sky = blendSky(cur.night, cur.grey);
       const clearSky = 1 - cur.grey;
@@ -238,8 +260,9 @@ export function LobbyScene({ isDarkMode = true, weatherType = 'clear', intensity
           ctx.beginPath(); ctx.arc(s.x * w, s.y * floorY, s.r, 0, Math.PI * 2); ctx.fill();
         });
       }
-      const bodyX = w * 0.82, bodyY = floorY * 0.2, bodyR = Math.max(10, Math.min(26, h * 0.06));
-      const sunA = (1 - cur.night) * (1 - cur.grey * 0.85);
+      const bodyX = w * 0.82, bodyY = ceilH + (floorY - ceilH) * 0.2, bodyR = Math.max(10, Math.min(26, h * 0.06));
+      // No sun through rain or snow
+      const sunA = (1 - cur.night) * (1 - cur.grey * 0.85) * (1 - wet) * (1 - Math.min(1, cur.snow * 2));
       if (sunA > 0.01) {
         ctx.globalAlpha = sunA * 0.25;
         ctx.fillStyle = MUSTARD;
@@ -268,6 +291,10 @@ export function LobbyScene({ isDarkMode = true, weatherType = 'clear', intensity
         drawCloud(ctx, c.x * w, c.y * floorY, c.s * Math.max(0.6, h / 300));
       });
       ctx.globalAlpha = 1;
+      if (wet > 0.01) {
+        ctx.fillStyle = css(hex('#1C2330'), 0.24 * wet);
+        ctx.fillRect(0, 0, w, floorY);
+      }
 
       // Horizon: dusk glow at night, a pale haze by day, then the runway with its lights
       ctx.fillStyle = css(mix(hex('#FFFFFF'), hex(MUSTARD), cur.night), (0.28 - cur.night * 0.1) * clearSky);
@@ -335,15 +362,48 @@ export function LobbyScene({ isDarkMode = true, weatherType = 'clear', intensity
         }
         ctx.stroke();
       }
+      // Splashes: small rings on the runway and apron, more in heavier rain
+      if (!reduced && cur.rain > 0.02) {
+        let spawn = cur.rain * dt * 90;
+        while (spawn > 0 && splashes.length < 70) {
+          if (spawn < 1 && Math.random() > spawn) break;
+          splashes.push({ x: Math.random() * w, y: runwayY + 2 + Math.random() * (floorY - runwayY - 4), t: 0 });
+          spawn -= 1;
+        }
+      }
+      if (splashes.length) {
+        ctx.lineWidth = 1;
+        const sc = css(mix(hex('#DDE4EE'), hex('#9FB0CC'), cur.night), 1);
+        for (let i = splashes.length - 1; i >= 0; i--) {
+          const sp = splashes[i];
+          sp.t += dt * 2.6;
+          if (sp.t >= 1) { splashes.splice(i, 1); continue; }
+          ctx.globalAlpha = (1 - sp.t) * 0.7 * Math.max(0.3, wet);
+          ctx.strokeStyle = sc;
+          ctx.beginPath(); ctx.ellipse(sp.x, sp.y, 1.5 + sp.t * 7, 0.5 + sp.t * 2, 0, 0, Math.PI * 2); ctx.stroke();
+          if (sp.t < 0.35) { ctx.fillStyle = sc; ctx.fillRect(sp.x - 0.5, sp.y - 4 * (0.35 - sp.t) * 6, 1, 2); }
+        }
+        ctx.globalAlpha = 1;
+      }
+      const bankCap = Math.max(6, h * 0.035);
+      bank = reduced ? (cur.snow > 0.05 ? 1 : 0) : Math.max(0, Math.min(1, bank + (cur.snow > 0.05 ? cur.snow * dt / 14 : -dt / 10)));
+      const bankPx = bank * bankCap;
       const snowN = Math.round(flakes.length * cur.snow);
       if (snowN > 0) {
         ctx.fillStyle = css(mix(hex('#FFFFFF'), hex(CREAM), cur.night), 0.9);
         for (let i = 0; i < snowN; i++) {
           const f = flakes[i];
-          if (!reduced) { f.y += f.v * dt; if (f.y > 1) { f.y -= 1.02; f.x = Math.random(); } }
+          if (!reduced) { f.y += f.v * dt; if (f.y * floorY > floorY - bankPx * 0.6) { f.y = -0.02; f.x = Math.random(); } }
           const x = f.x * w + Math.sin(time * 0.8 + f.p) * 8, y = f.y * floorY;
           ctx.beginPath(); ctx.arc(x, y, f.r, 0, Math.PI * 2); ctx.fill();
         }
+      }
+      if (bankPx > 0.3) {
+        // Settled snow on the apron: a soft bank along the foot of the glass
+        ctx.fillStyle = css(mix(hex('#FFFFFF'), hex('#C9D2E2'), cur.night), 0.95);
+        ctx.beginPath(); ctx.moveTo(0, floorY);
+        for (let x = 0; x <= w + 12; x += 12) ctx.lineTo(x, floorY - bankPx * (0.75 + 0.25 * Math.sin(x * 0.021) * Math.cos(x * 0.007)));
+        ctx.lineTo(w, floorY); ctx.closePath(); ctx.fill();
       }
       if (!reduced && cur.storm > 0.5) {
         nextFlash -= dt;
@@ -355,19 +415,127 @@ export function LobbyScene({ isDarkMode = true, weatherType = 'clear', intensity
         flash = approach(flash, 0, 4, dt);
       }
 
+      // Rain on the glass: beads hold, then run down
+      if (wet > 0.02) {
+        const bc = mix(hex('#EEF3FA'), hex('#AFC0DA'), cur.night);
+        beads.forEach((b, i) => {
+          if (i > beads.length * wet) return;
+          if (!reduced) {
+            if (b.hold > 0) b.hold -= dt;
+            else { b.v = Math.min(0.5, b.v + dt * 0.8); b.y += b.v * dt; }
+            if (b.y > 1) { b.y = Math.random() * 0.3; b.x = Math.random(); b.hold = 1 + Math.random() * 4; b.v = 0; }
+          }
+          const bx = b.x * w, by = ceilH + b.y * (floorY - ceilH);
+          if (b.v > 0.05) {
+            ctx.strokeStyle = css(bc, 0.18 * wet); ctx.lineWidth = b.r * 0.9;
+            ctx.beginPath(); ctx.moveTo(bx, by - Math.min(30, b.v * 70)); ctx.lineTo(bx, by); ctx.stroke();
+          }
+          ctx.fillStyle = css(bc, 0.45 * wet);
+          ctx.beginPath(); ctx.arc(bx, by, b.r, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = css(hex('#FFFFFF'), 0.5 * wet);
+          ctx.beginPath(); ctx.arc(bx - b.r * 0.3, by - b.r * 0.3, b.r * 0.35, 0, Math.PI * 2); ctx.fill();
+        });
+      }
+
       // Glass wall: mullions and a soft reflection band
       ctx.fillStyle = INK;
       const pane = Math.max(120, w / 7);
       for (let x = 0; x <= w + pane; x += pane) ctx.fillRect(x - 3, 0, 6, floorY);
-      ctx.fillRect(0, h * 0.3, w, 4);
+      const transomY = ceilH + (floorY - ceilH) * 0.28;
+      ctx.fillRect(0, transomY, w, 4);
+      if (bankPx > 0.3) {
+        ctx.fillStyle = css(mix(hex('#FFFFFF'), hex('#C9D2E2'), cur.night), 0.9);
+        ctx.fillRect(0, transomY - Math.min(3, bankPx * 0.4), w, Math.min(3, bankPx * 0.4));
+      }
       ctx.fillStyle = `rgba(255,255,255,${0.05 + (1 - cur.night) * 0.07})`;
       ctx.beginPath(); ctx.moveTo(w * 0.1, 0); ctx.lineTo(w * 0.22, 0); ctx.lineTo(w * 0.02, floorY); ctx.lineTo(-w * 0.1, floorY); ctx.closePath(); ctx.fill();
 
-      // Concourse floor
+      // Ceiling: a band that continues the board area above, a zigzag truss and downlights
+      const ceilC = mix(hex('#E9E4D8'), hex('#0E131D'), cur.night);
+      ctx.fillStyle = css(ceilC);
+      ctx.fillRect(0, 0, w, ceilH);
+      ctx.strokeStyle = css(mix(hex(INK), hex(CREAM), cur.night), 0.28);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      const tTop = ceilH * 0.3, tBot = ceilH * 0.82, bay = Math.max(26, ceilH * 1.2);
+      ctx.moveTo(0, tTop); ctx.lineTo(w, tTop); ctx.moveTo(0, tBot); ctx.lineTo(w, tBot);
+      for (let x = 0; x < w + bay; x += bay) { ctx.moveTo(x, tBot); ctx.lineTo(x + bay / 2, tTop); ctx.lineTo(x + bay, tBot); }
+      ctx.stroke();
+      ctx.fillStyle = INK;
+      ctx.fillRect(0, ceilH - 3, w, 3);
+      const lightGap = Math.max(70, w / 9);
+      for (let x = lightGap / 2; x < w; x += lightGap) {
+        const glow = ctx.createRadialGradient(x, ceilH, 0, x, ceilH, ceilH * 1.6);
+        glow.addColorStop(0, css(hex('#FFE7B0'), 0.16 + cur.night * 0.22));
+        glow.addColorStop(1, css(hex('#FFE7B0'), 0));
+        ctx.fillStyle = glow;
+        ctx.fillRect(x - ceilH * 1.6, ceilH, ceilH * 3.2, ceilH * 1.6);
+        ctx.fillStyle = css(mix(hex('#FFF4D6'), hex(MUSTARD), cur.night));
+        ctx.beginPath(); ctx.ellipse(x, ceilH - 1, 7, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Pillars in front of the glass
+      const pw = Math.max(9, w * 0.016);
+      const pillarC = mix(hex(CREAM), hex('#1A2336'), cur.night);
+      for (let x = pane * 1.5; x < w; x += pane * 3) {
+        ctx.fillStyle = css(pillarC);
+        ctx.fillRect(x - pw / 2, ceilH, pw, floorY - ceilH + 4);
+        ctx.fillStyle = css(hex(INK), 0.12);
+        ctx.fillRect(x + pw / 2 - pw * 0.3, ceilH, pw * 0.3, floorY - ceilH + 4);
+      }
+
+      // Hanging gate sign
+      const signH = Math.max(16, h * 0.065), signW = Math.min(230, Math.max(120, w * 0.26));
+      const signX = Math.max(14, w * 0.08), signY = ceilH + Math.max(8, h * 0.045);
+      ctx.strokeStyle = css(hex(INK), 0.6); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(signX + signW * 0.2, ceilH); ctx.lineTo(signX + signW * 0.2, signY); ctx.moveTo(signX + signW * 0.8, ceilH); ctx.lineTo(signX + signW * 0.8, signY); ctx.stroke();
+      ctx.fillStyle = NAVY;
+      ctx.beginPath(); ctx.roundRect(signX, signY, signW, signH, 2); ctx.fill();
+      ctx.fillStyle = MUSTARD;
+      ctx.fillRect(signX, signY, signH * 0.9, signH);
+      // Plane glyph, drawn (a font glyph may render as an emoji)
+      {
+        const cx = signX + signH * 0.45, cy = signY + signH * 0.5, u = signH * 0.034;
+        ctx.fillStyle = NAVY;
+        ctx.beginPath();
+        ctx.moveTo(cx + 9 * u, cy); ctx.lineTo(cx - 7 * u, cy - 1.4 * u); ctx.lineTo(cx - 9 * u, cy - 5 * u); ctx.lineTo(cx - 10 * u, cy - 5 * u);
+        ctx.lineTo(cx - 9 * u, cy - 1.2 * u); ctx.lineTo(cx - 2 * u, cy - 1.2 * u); ctx.lineTo(cx - 5 * u, cy - 9 * u); ctx.lineTo(cx - 3 * u, cy - 9 * u);
+        ctx.lineTo(cx + 3 * u, cy - 1.2 * u); ctx.lineTo(cx + 3 * u, cy + 1.2 * u); ctx.lineTo(cx - 3 * u, cy + 9 * u); ctx.lineTo(cx - 5 * u, cy + 9 * u);
+        ctx.lineTo(cx - 2 * u, cy + 1.2 * u); ctx.lineTo(cx - 9 * u, cy + 1.2 * u); ctx.lineTo(cx - 10 * u, cy + 5 * u); ctx.lineTo(cx - 9 * u, cy + 5 * u);
+        ctx.lineTo(cx - 7 * u, cy + 1.4 * u); ctx.closePath(); ctx.fill();
+      }
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = CREAM;
+      ctx.font = `700 ${Math.round(signH * 0.46)}px "SF Mono", Consolas, monospace`;
+      ctx.fillText('GATES 1–24', signX + signH * 1.25, signY + signH * 0.54);
+      ctx.fillStyle = MUSTARD;
+      ctx.textAlign = 'right';
+      ctx.fillText('→', signX + signW - signH * 0.3, signY + signH * 0.54);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+
+      // Concourse floor: polished, so the glass and pillars reflect in it
       ctx.fillStyle = css(sky.floor);
       ctx.fillRect(0, floorY, w, h - floorY);
+      const refl = ctx.createLinearGradient(0, floorY, 0, floorY + (h - floorY) * 0.7);
+      refl.addColorStop(0, css(sky.bottom, 0.28 + wet * 0.1));
+      refl.addColorStop(1, css(sky.bottom, 0));
+      ctx.fillStyle = refl;
+      ctx.fillRect(0, floorY, w, h - floorY);
+      ctx.fillStyle = css(hex(INK), 0.06);
+      for (let x = 0; x <= w + pane; x += pane) ctx.fillRect(x - 3, floorY, 6, (h - floorY) * 0.45);
+      ctx.fillStyle = css(pillarC, 0.35);
+      for (let x = pane * 1.5; x < w; x += pane * 3) ctx.fillRect(x - pw / 2, floorY + 4, pw, (h - floorY) * 0.5);
       ctx.fillStyle = css(mix(hex(INK), hex(CREAM), cur.night), 0.12 + (1 - cur.night) * 0.1);
       ctx.fillRect(0, floorY, w, 1.5);
+
+      // Seats along the glass, behind the walking lanes
+      const seatS = Math.max(0.45, h / 260) * 0.5;
+      const seatY = floorY + 4 + (h - floorY) * 0.06;
+      const seatC = css(mix(hex(NAVY), hex('#2A3A60'), cur.night));
+      const frameC = css(mix(hex(INK), hex('#5A6680'), cur.night));
+      drawSeats(ctx, w * 0.3, seatY, seatS, 4, seatC, frameC);
+      if (w > 520) drawSeats(ctx, w * 0.66, seatY, seatS, 5, seatC, frameC);
 
       // Travelers (far to near), each on its own lane
       const shadow = `rgba(0,0,0,${0.14 + cur.night * 0.2})`;
