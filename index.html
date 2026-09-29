@@ -47,6 +47,32 @@
       }
     </style>
     
+    <!-- Boot splash: painted with the HTML, animated by CSS alone (transform/opacity), so it plays
+         smoothly while the app bundle downloads and boots. SplashScreen.tsx takes it over. -->
+    <script>
+      (function() {
+        try { if (sessionStorage.getItem('splash_screen_viewed')) document.documentElement.classList.add('tgl-no-boot'); } catch (_) {}
+      })();
+    </script>
+    <style>
+      .tgl-splash { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: #F6F4EF; cursor: pointer; -webkit-user-select: none; user-select: none; }
+      html.dark .tgl-splash { background: #11110F; }
+      html.tgl-no-boot #boot-splash { display: none; }
+      .tgl-splash-stack { position: relative; width: clamp(200px, 44vw, 460px); display: flex; flex-direction: column; }
+      .tgl-splash-logo { display: block; width: 100%; height: auto; will-change: transform, opacity; animation: tglSplashLogo 560ms cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--t, 0ms) + 80ms); }
+      html.dark .tgl-splash-logo { filter: invert(1); }
+      .tgl-splash-track { position: relative; margin-top: clamp(14px, 2.4vw, 22px); height: 14px; }
+      .tgl-splash-line { position: absolute; left: 0; right: 0; top: 6px; height: 2px; border-radius: 2px; background: #DC2626; transform-origin: left center; will-change: transform; animation: tglSplashLine 700ms cubic-bezier(.65,0,.35,1) both; animation-delay: calc(var(--t, 0ms) + 320ms); }
+      html.dark .tgl-splash-line { background: #EF4444; }
+      .tgl-splash-plane { position: absolute; left: 0; top: 0; width: 100%; height: 14px; will-change: transform, opacity; animation: tglSplashPlane 700ms cubic-bezier(.65,0,.35,1) both; animation-delay: calc(var(--t, 0ms) + 320ms); }
+      .tgl-splash-plane svg { position: absolute; left: -7px; top: 0; width: 14px; height: 14px; color: #DC2626; }
+      html.dark .tgl-splash-plane svg { color: #EF4444; }
+      @keyframes tglSplashLogo { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+      @keyframes tglSplashLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+      @keyframes tglSplashPlane { 0% { opacity: 0; transform: translateX(0); } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translateX(100%); } }
+      @media (prefers-reduced-motion: reduce) { .tgl-splash-logo, .tgl-splash-line, .tgl-splash-plane { animation: none; } .tgl-splash-plane { opacity: 0; } }
+    </style>
+
     <!-- Fonts: Inter, Satoshi & Noto Sans KR -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,6 +95,15 @@
     <script defer src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.min.js"></script>
   </head>
   <body>
+    <div id="boot-splash" class="tgl-splash" aria-hidden="true">
+      <div class="tgl-splash-stack">
+        <img class="tgl-splash-logo" src="/tripgon-logotype.svg" alt="" />
+        <div class="tgl-splash-track">
+          <div class="tgl-splash-line"></div>
+          <div class="tgl-splash-plane"><svg viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(45deg)"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></div>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
