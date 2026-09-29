@@ -145,7 +145,7 @@ function QuickBookingModalContent({
                   type="text"
                   value={originAirport}
                   onChange={(e) => setOriginAirport(e.target.value.toUpperCase())}
-                  className="w-full px-2.5 py-1.5 font-mono font-bold uppercase text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
+                  className="w-full px-2.5 py-1.5 font-mono font-bold uppercase text-xs bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
                   placeholder="ICN"
                 />
               </div>
@@ -159,7 +159,7 @@ function QuickBookingModalContent({
                   type="text"
                   value={destAirport}
                   onChange={(e) => setDestAirport(e.target.value.toUpperCase())}
-                  className="w-full px-2.5 py-1.5 font-mono font-bold uppercase text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
+                  className="w-full px-2.5 py-1.5 font-mono font-bold uppercase text-xs bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
                   placeholder="TYO"
                 />
               </div>
@@ -176,7 +176,7 @@ function QuickBookingModalContent({
                     setDest(e.target.value);
                     setDestAirport(inferAirportCode(e.target.value));
                   }}
-                  className="w-full px-2.5 py-1.5 font-sans font-bold text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
+                  className="w-full px-2.5 py-1.5 font-sans font-bold text-xs bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
                   placeholder="Tokyo"
                 />
               </div>
@@ -193,7 +193,7 @@ function QuickBookingModalContent({
                     max={20}
                     value={adults}
                     onChange={(e) => setAdults(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-2 py-1.5 font-mono font-bold text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
+                    className="w-full px-2 py-1.5 font-mono font-bold text-xs bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
                   />
                   <span className="text-[11px] font-mono text-black/60 dark:text-white/60">명</span>
                 </div>
@@ -210,7 +210,7 @@ function QuickBookingModalContent({
                   type="date"
                   value={depDate}
                   onChange={(e) => setDepDate(e.target.value)}
-                  className="w-full min-w-0 max-w-full px-2 sm:px-2.5 py-1.5 font-mono text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none box-border"
+                  className="w-full min-w-0 max-w-full px-2 sm:px-2.5 py-1.5 font-mono text-xs bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none box-border"
                 />
               </div>
               <div className="min-w-0">
@@ -221,7 +221,7 @@ function QuickBookingModalContent({
                   type="date"
                   value={retDate}
                   onChange={(e) => setRetDate(e.target.value)}
-                  className="w-full min-w-0 max-w-full px-2 sm:px-2.5 py-1.5 font-mono text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none box-border"
+                  className="w-full min-w-0 max-w-full px-2 sm:px-2.5 py-1.5 font-mono text-xs bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none box-border"
                 />
               </div>
             </div>

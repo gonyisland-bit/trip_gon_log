@@ -241,7 +241,7 @@ export function SearchModal({
 
   return (
     <div className="fixed inset-0 z-modal flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-[#151515] border border-black/10 dark:border-white/10 shadow-2xl rounded-none mt-16 md:mt-24 flex flex-col max-h-[75vh] overflow-hidden text-black dark:text-white">
+      <div className="relative w-full max-w-2xl bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 shadow-2xl rounded-none mt-16 md:mt-24 flex flex-col max-h-[75vh] overflow-hidden text-black dark:text-white">
         
         {/* Search Input Header */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-black/15 dark:border-white/15">

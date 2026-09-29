@@ -26,7 +26,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
           <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
             REGISTERED USERS & PERMISSIONS MANAGEMENT
           </span>
-          <span className="text-meta font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+          <span className="text-meta font-mono px-2 py-0.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark uppercase font-bold">
             TOTAL: {usersList.length}
           </span>
         </div>
@@ -40,7 +40,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
 
       {/* Action Toast */}
       {userActionToast && (
-        <div className="p-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="p-3 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
           <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
           <span>{userActionToast}</span>
         </div>
@@ -70,7 +70,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
               value={newAdminEmailInput}
               onChange={e => setNewAdminEmailInput(e.target.value)}
               placeholder="새 관리자 이메일 주소 입력 (가입 승인 메일 수신처)..."
-              className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+              className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
             />
           </div>
           <button
@@ -104,7 +104,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
               </span>
             </div>
 
-            <div className="divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#161616]">
+            <div className="divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-surface dark:bg-surface-dark">
               {adminsList.map((adminUser) => {
                 const isSuper = adminUser.email?.toLowerCase() === 'gonyisland@naver.com';
                 const fullName = `${adminUser.lastName} ${adminUser.firstName}`.trim() || '관리자';
@@ -141,7 +141,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                               SUPER ADMIN
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 text-micro font-mono font-extrabold uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
+                            <span className="px-2 py-0.5 text-micro font-mono font-extrabold uppercase tracking-wider bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark leading-none">
                               ADMIN
                             </span>
                           )}
@@ -168,7 +168,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           onClick={() => handleToggleUserPermission(adminUser, 'canCreate')}
                           className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
                             adminUser.permissions?.canCreate
-                              ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
+                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
                               : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="여정 생성(추가) 권한 토글"
@@ -182,7 +182,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           onClick={() => handleToggleUserPermission(adminUser, 'canEdit')}
                           className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
                             adminUser.permissions?.canEdit
-                              ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
+                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
                               : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="전체 여정 편집 권한 토글"
@@ -269,7 +269,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                       }}
                       className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${
                         isActive
-                          ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
                           : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                       }`}
                     >
@@ -297,7 +297,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                     setUserCurrentPage(1);
                   }}
                   placeholder="일반 유저 검색 (이름, 이메일, 전화번호)..."
-                  className="w-full pl-9 pr-4 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                  className="w-full pl-9 pr-4 py-2 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
                 />
               </div>
               {userSearchQuery && (
@@ -309,13 +309,13 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                   }}
                   className="btn btn-secondary shrink-0"
                 >
-                  CLEAR
+                  Clear
                 </button>
               )}
             </div>
 
             {/* Users List Table */}
-            <div className="flex flex-col border border-black/20 dark:border-white/20 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
+            <div className="flex flex-col border border-black/20 dark:border-white/20 divide-y divide-black/10 dark:divide-white/10 bg-surface dark:bg-surface-dark">
               {paginatedUsers.map((user) => {
                 const isPending = user.status === 'pending';
                 const fullName = `${user.lastName} ${user.firstName}`.trim() || '미등록';
@@ -384,7 +384,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           <button
                             type="button"
                             onClick={() => handleApproveUser(user)}
-                            className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-emerald-600 dark:hover:bg-emerald-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            className="px-3 py-1.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:bg-emerald-600 dark:hover:bg-emerald-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
                           >
                             APPROVE
                           </button>
@@ -393,7 +393,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                             onClick={() => handleRejectUser(user)}
                             className="btn btn-outline-danger btn-sm"
                           >
-                            REJECT
+                            Reject
                           </button>
                         </div>
                       )}
@@ -406,7 +406,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           onClick={() => handleToggleUserPermission(user, 'canCreate')}
                           className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             user.permissions?.canCreate
-                              ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
+                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
                               : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="여정 생성(추가) 권한 토글"
@@ -420,7 +420,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           onClick={() => handleToggleUserPermission(user, 'canEdit')}
                           className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             user.permissions?.canEdit
-                              ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
+                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
                               : 'text-black/60 dark:text-white/60 hover:text-black'
                           }`}
                           title="전체 여정 편집 권한 토글"
@@ -516,7 +516,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                     onClick={() => setUserCurrentPage(prev => Math.max(prev - 1, 1))}
                     className="btn btn-secondary btn-sm"
                   >
-                    PREV
+                    Prev
                   </button>
 
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
@@ -526,7 +526,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                       onClick={() => setUserCurrentPage(pageNum)}
                       className={`w-7 h-7 text-xs font-mono font-bold transition-colors cursor-pointer flex items-center justify-center border ${
                         pageNum === safePage
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-extrabold'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-extrabold'
                           : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white'
                       }`}
                     >
@@ -540,7 +540,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                     onClick={() => setUserCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     className="btn btn-secondary btn-sm"
                   >
-                    NEXT
+                    Next
                   </button>
                 </div>
               </div>

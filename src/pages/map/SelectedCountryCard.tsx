@@ -407,7 +407,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                           onClick={() => setActiveWeatherCity(c)}
                           className={`px-1.5 sm:px-2 py-0.5 whitespace-nowrap transition-colors cursor-pointer border ${
                             isCurCity
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-extrabold shadow-2xs'
+                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-extrabold shadow-2xs'
                               : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 font-bold'
                           }`}
                         >
@@ -537,7 +537,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                 className={`w-full py-1.5 sm:py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-extrabold uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                   isCurrentCountryFavorite
                     ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
-                    : 'bg-white dark:bg-[#161616] text-black dark:text-white border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
+                    : 'bg-surface dark:bg-surface-dark text-black dark:text-white border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
                 }`}
               >
                 <Star className={`w-3.5 h-3.5 ${isCurrentCountryFavorite ? 'fill-black text-black' : ''}`} />

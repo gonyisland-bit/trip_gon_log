@@ -44,7 +44,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
     <main className="min-h-screen w-full bg-paper dark:bg-paper-dark text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">
       
       {/* 1. Header Toolbar with Swiss Minimal Mode Switcher */}
-      <div className="border-b border-black/15 dark:border-white/15 px-3 sm:px-8 py-2.5 bg-white dark:bg-[#111111] flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 sticky top-0 z-30 relative">
+      <div className="border-b border-black/15 dark:border-white/15 px-3 sm:px-8 py-2.5 bg-surface dark:bg-surface-dark flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 sticky top-0 z-30 relative">
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => {
@@ -81,7 +81,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 }}
                 className={`flex-1 md:flex-none px-2.5 sm:px-4 py-1 sm:py-1.5 text-meta sm:text-xs font-mono font-bold uppercase tracking-tight cursor-pointer whitespace-nowrap text-center shrink-0 flex items-center justify-center gap-1 ${
                   activeMode === tab.id
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
               >
@@ -167,7 +167,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           onClick={() => { setIsDelegatingModalOpen(false); setDelegatingUser(null); }}
         >
           <div 
-            className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh]" 
+            className="w-full max-w-lg bg-surface dark:bg-surface-dark border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh]" 
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
@@ -217,7 +217,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                     </div>
                     <span className={`px-2 py-1 text-meta font-mono font-extrabold uppercase shrink-0 ${
                       hasAccess
-                        ? 'bg-black text-white dark:bg-white dark:text-black'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
                         : 'border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                     }`}>
                       {hasAccess ? 'ALLOWED (허용됨)' : 'DENIED (권한없음)'}
@@ -256,7 +256,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer border ${
             (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess)
               ? 'bg-emerald-600 text-white border-emerald-600 scale-105'
-              : 'bg-black text-white dark:bg-white dark:text-black border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
+              : 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
           }`}
           title="변경사항 저장 (단축키: Ctrl + S)"
         >
@@ -273,7 +273,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           onClick={() => {
             executeWithGuard(() => navigateSafely(getReturnView()));
           }}
-          className="tap-target w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-[#1a1a1a] text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+          className="tap-target w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-surface dark:bg-surface-dark text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
           title="뷰 모드로 이동"
         >
           <Eye className="w-5 h-5" />
@@ -286,7 +286,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
         onClick={scrollToTop}
         aria-label="맨 위로 이동"
         title="맨 위로 이동 (TOP)"
-        className={`tap-target fixed bottom-6 right-6 z-[600] w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-black text-white dark:bg-white dark:text-black border border-white/20 dark:border-black/20 transition-all duration-300 cursor-pointer select-none group ${
+        className={`tap-target fixed bottom-6 right-6 z-[600] w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border border-white/20 dark:border-black/20 transition-all duration-300 cursor-pointer select-none group ${
           showScrollTop
             ? 'opacity-100 translate-y-0 pointer-events-auto hover:scale-110 active:scale-95'
             : 'opacity-0 translate-y-4 pointer-events-none'
@@ -300,9 +300,9 @@ export function ManageHubPage(props: ManageHubPageProps) {
         isOpen={showUnsavedModal}
         title="UNSAVED CHANGES"
         message="Are you sure you want to leave? Any unsaved changes will be lost."
-        confirmLabel="SAVE (Y)"
-        discardLabel="DISCARD (N)"
-        cancelLabel="SKIP (ESC)"
+        confirmLabel="Save (Y)"
+        discardLabel="Discard (N)"
+        cancelLabel="Skip (Esc)"
         onConfirm={async () => {
           setShowUnsavedModal(false);
           setShowSaveSuccessModal(false);
@@ -355,8 +355,8 @@ export function ManageHubPage(props: ManageHubPageProps) {
         isOpen={trashDeleteModal.isOpen}
         title={trashDeleteModal.title}
         message={trashDeleteModal.message}
-        confirmLabel="DELETE (Y)"
-        cancelLabel="CANCEL (N, ESC)"
+        confirmLabel="Delete (Y)"
+        cancelLabel="Cancel (N, Esc)"
         confirmVariant="danger"
         iconType="alert"
         onConfirm={async () => {
@@ -376,7 +376,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           onClick={() => setShowQuickPhotoPicker(false)}
         >
           <div 
-            className="w-full max-w-3xl max-h-[85vh] bg-white dark:bg-[#161616] border border-black dark:border-white shadow-2xl flex flex-col"
+            className="w-full max-w-3xl max-h-[85vh] bg-surface dark:bg-surface-dark border border-black dark:border-white shadow-2xl flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -402,7 +402,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               <select
                 value={selectedTripForMoments === null ? '' : selectedTripForMoments}
                 onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
-                className="px-2.5 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                className="px-2.5 py-1.5 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
               >
                 <option value="">-- Select journey --</option>
                 {localJourneys.map(j => (
@@ -419,7 +419,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                   value={momentSearchQuery}
                   onChange={e => setMomentSearchQuery(e.target.value)}
                   placeholder="장소, 메모, 날짜 검색..."
-                  className="w-full pl-8 pr-2.5 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                  className="w-full pl-8 pr-2.5 py-1.5 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                 />
               </div>
             </div>
@@ -548,7 +548,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           onClick={() => { setIsPresetModalOpen(false); setEditingPreset(null); }}
         >
           <div 
-            className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto" 
+            className="w-full max-w-lg bg-surface dark:bg-surface-dark border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto" 
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
@@ -627,7 +627,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                   <select 
                     value={editingPreset.theme}
                     onChange={e => setEditingPreset({ ...editingPreset, theme: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none text-xs font-mono"
+                    className="w-full px-3 py-2 bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-xs font-mono"
                   >
                     <option value="culture">CULTURE</option>
                     <option value="shopping">SHOPPING</option>
@@ -667,13 +667,13 @@ export function ManageHubPage(props: ManageHubPageProps) {
                   onClick={() => { setIsPresetModalOpen(false); setEditingPreset(null); }}
                   className="btn btn-secondary flex-1"
                 >
-                  CANCEL
+                  Cancel
                 </button>
                 <button 
                   type="submit"
                   className="btn btn-primary flex-1"
                 >
-                  SAVE PRESET
+                  Save preset
                 </button>
               </div>
             </form>
@@ -710,7 +710,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
       {/* Restore Magazine Sections Modal */}
       {showRestoreModal && (
         <div className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150" onClick={() => setShowRestoreModal(false)}>
-          <div className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-lg bg-surface dark:bg-surface-dark border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-black/70 dark:text-white/70" />

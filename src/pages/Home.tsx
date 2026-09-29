@@ -636,8 +636,8 @@ export function JourneyCardMenu({
         isOpen={showDeleteConfirm}
         title="DELETE JOURNEY"
         message="Are you sure you want to delete this journey?"
-        confirmLabel="YES (Y)"
-        cancelLabel="CANCEL (ESC)"
+        confirmLabel="Yes (Y)"
+        cancelLabel="Cancel (Esc)"
         confirmVariant="danger"
         onConfirm={() => {
           setShowDeleteConfirm(false);
@@ -1344,7 +1344,7 @@ export function HomePage({
                       <button
                         type="button"
                         onClick={() => onNavigate('detail', currentHero.id)}
-                        className="tap-target w-10 h-10 rounded-full border border-black/20 dark:border-white/20 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shrink-0 active:scale-95 shadow-sm cursor-pointer"
+                        className="tap-target w-10 h-10 rounded-full border border-black/20 dark:border-white/20 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark flex items-center justify-center shrink-0 active:scale-95 shadow-sm cursor-pointer"
                         title="VIEW TRIP"
                       >
                         <ArrowRight className="w-4 h-4" />
@@ -1929,7 +1929,7 @@ export function HomePage({
             {/* Minimal Section Sub-Header */}
             <div className="flex items-center justify-between pb-4 sm:pb-5 border-b border-black/10 dark:border-white/10 mb-6 sm:mb-8">
               <div className="flex items-center gap-2.5">
-                <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-meta px-2 py-0.5 uppercase tracking-widest">
+                <span className="bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-mono font-extrabold text-meta px-2 py-0.5 uppercase tracking-widest">
                   CALENDAR ARCHIVE
                 </span>
                 <span className="text-xs font-mono font-bold tracking-widest uppercase text-black/60 dark:text-white/60">
@@ -2070,7 +2070,7 @@ export function HomePage({
                       let numStyle = 'text-xs sm:text-sm md:text-base font-extrabold leading-none ';
 
                       if (cell.isToday) {
-                        btnStyle += 'bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-xs scale-105';
+                        btnStyle += 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold shadow-xs scale-105';
                         numStyle += 'text-white dark:text-black';
                       } else if (cell.hasTrip) {
                         btnStyle += 'bg-red-600 hover:bg-red-700 text-white font-extrabold shadow-xs';

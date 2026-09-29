@@ -80,7 +80,7 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
         aria-expanded={open}
         aria-label="지도 레이어"
         className={`tap-target h-8 sm:h-9 px-2.5 sm:px-3 flex items-center gap-1.5 border shadow-2xl backdrop-blur-md transition-colors cursor-pointer ${
-          open ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'bg-white/95 dark:bg-[#111111]/95 border-black/20 dark:border-white/20 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10'
+          open ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'bg-surface/95 dark:bg-surface-dark/95 border-black/20 dark:border-white/20 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10'
         }`}
       >
         <Layers className="w-3.5 h-3.5" />
@@ -95,7 +95,7 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
           <div
             role="dialog"
             aria-label="지도 레이어"
-            className={`${closing ? 'tgl-sheet-out' : 'tgl-sheet-in'} z-[61] max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white dark:bg-[#11110F] text-black dark:text-white border-t sm:border border-black/20 dark:border-white/20 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] sm:shadow-2xl`}
+            className={`${closing ? 'tgl-sheet-out' : 'tgl-sheet-in'} z-[61] max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-surface dark:bg-surface-dark text-black dark:text-white border-t sm:border border-black/20 dark:border-white/20 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] sm:shadow-2xl`}
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             <div className="sm:hidden w-10 h-1 bg-black/20 dark:bg-white/20 mx-auto mt-2" />

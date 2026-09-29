@@ -56,7 +56,7 @@ export function PasswordVerifyModal({
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-sm bg-white dark:bg-[#161616] border border-black dark:border-white shadow-2xl p-6 flex flex-col gap-4"
+        className="w-full max-w-sm bg-surface dark:bg-surface-dark border border-black dark:border-white shadow-2xl p-6 flex flex-col gap-4"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
@@ -108,7 +108,7 @@ export function PasswordVerifyModal({
               onClick={onClose}
               className="btn btn-secondary flex-1"
             >
-              CANCEL
+              Cancel
             </button>
             <button
               type="submit"

@@ -64,14 +64,14 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               onClick={() => setUtilSubTab(tab.id)}
               className={`py-2 px-1 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center justify-center gap-1 sm:gap-1.5 shrink-0 ${
                 utilSubTab === tab.id
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                   : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-black/[0.02] dark:bg-white/[0.02]'
               }`}
             >
               <span>{tab.label}</span>
               {'count' in tab && typeof tab.count === 'number' && (
                 <span className={`text-micro sm:text-micro px-1 py-0.2 font-mono font-bold shrink-0 ${
-                  'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-black text-white dark:bg-white dark:text-black'
+                  'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
                 }`}>
                   {tab.count}
                 </span>
@@ -112,7 +112,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 onClick={() => setGradientEnabled(!gradientEnabled)}
                 className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                   gradientEnabled
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                     : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                 }`}
               >
@@ -190,7 +190,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         value={gradientFrom}
                         onChange={e => setGradientFrom(e.target.value)}
                         placeholder="#FAF8F5"
-                        className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none"
+                        className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none"
                       />
                     </div>
                   </div>
@@ -211,7 +211,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         value={gradientTo}
                         onChange={e => setGradientTo(e.target.value)}
                         placeholder="#F1ECE1"
-                        className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none"
+                        className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none"
                       />
                     </div>
                   </div>
@@ -251,7 +251,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 onClick={() => setShowMarquee(!showMarquee)}
                 className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                   showMarquee
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                     : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                 }`}
               >
@@ -373,7 +373,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   onClick={() => handleToggleBgmAutoplay(!bgmAutoplay)}
                   className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                     bgmAutoplay
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                       : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                   }`}
                 >
@@ -396,7 +396,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   onClick={() => setBgmShuffle((prev) => !prev)}
                   className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                     bgmShuffle
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                       : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                   }`}
                 >
@@ -586,8 +586,8 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               }}
               className={`p-4 border cursor-pointer transition-all ${
                 mapTileStyle === 'esri'
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
-                  : 'bg-white dark:bg-[#11110F] border-black/20 dark:border-white/20 hover:border-black'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-md'
+                  : 'bg-surface dark:bg-surface-dark border-black/20 dark:border-white/20 hover:border-black'
               }`}
             >
               <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
@@ -606,8 +606,8 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               }}
               className={`p-4 border cursor-pointer transition-all ${
                 mapTileStyle === 'google'
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
-                  : 'bg-white dark:bg-[#11110F] border-black/20 dark:border-white/20 hover:border-black'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-md'
+                  : 'bg-surface dark:bg-surface-dark border-black/20 dark:border-white/20 hover:border-black'
               }`}
             >
               <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
@@ -684,7 +684,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   onClick={() => setPresetThemeFilter(theme)}
                   className={`px-2 py-1 text-meta font-bold uppercase border transition-colors cursor-pointer ${
                     presetThemeFilter === theme
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                       : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40 dark:hover:border-white/40'
                   }`}
                 >
@@ -743,7 +743,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                     <div>
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-micro font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
+                          <span className="text-micro font-mono font-extrabold bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark px-1.5 py-0.5 uppercase tracking-wider">
                             {preset.country}
                           </span>
                           <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60">
@@ -817,7 +817,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
           </div>
 
           {/* Swiss Minimal One-Touch Optimizer Bar */}
-          <div className="border border-black/15 dark:border-white/15 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-[#11110F]">
+          <div className="border border-black/15 dark:border-white/15 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface dark:bg-surface-dark">
             <div className="flex flex-col gap-0.5 min-w-0">
               <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-black dark:text-white" />
@@ -919,7 +919,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
 
           {/* Empty Trash State */}
           {trashedJourneys.length === 0 && trashedSections.length === 0 && (
-            <div className="p-12 text-center border border-dashed border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] flex flex-col items-center justify-center gap-2">
+            <div className="p-12 text-center border border-dashed border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark flex flex-col items-center justify-center gap-2">
               <Trash2 className="w-8 h-8 text-black/60 dark:text-white/60 stroke-[1.5]" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                 휴지통이 비어 있습니다
@@ -946,7 +946,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                       className={`p-3.5 border transition-all flex items-center justify-between gap-4 cursor-pointer ${
                         isSelected
                           ? 'border-red-600 bg-red-500/10 shadow-xs'
-                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:border-black/30 dark:hover:border-white/30'
+                          : 'border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark hover:border-black/30 dark:hover:border-white/30'
                       }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
@@ -1013,7 +1013,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                       className={`p-3.5 border transition-all flex items-center justify-between gap-4 cursor-pointer ${
                         isSelected
                           ? 'border-red-600 bg-red-500/10 shadow-xs'
-                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:border-black/30 dark:hover:border-white/30'
+                          : 'border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark hover:border-black/30 dark:hover:border-white/30'
                       }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">

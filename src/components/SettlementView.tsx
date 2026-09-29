@@ -459,7 +459,7 @@ export function SettlementView({
       {/* Image Share / Download Modal (Rendered in Portal) */}
       {capturedImg && createPortal(
         <div className="fixed inset-0 z-nested bg-black/80 flex flex-col items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1a1a1a] p-5 rounded-lg max-w-2xl w-full flex flex-col gap-4 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
+          <div className="bg-surface dark:bg-surface-dark p-5 rounded-lg max-w-2xl w-full flex flex-col gap-4 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center border-b pb-2.5 border-black/5 dark:border-white/10">
               <span className="text-xs font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
                 <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
@@ -510,7 +510,7 @@ export function SettlementView({
       )}
 
       {/* Capture Area Ref */}
-      <div ref={printRef} className="bg-white dark:bg-[#121212] p-5 md:p-6 shadow-sm border border-black/5 dark:border-white/5 flex flex-col gap-5 w-full font-sans">
+      <div ref={printRef} className="bg-surface dark:bg-surface-dark p-5 md:p-6 shadow-sm border border-black/5 dark:border-white/5 flex flex-col gap-5 w-full font-sans">
         
         {/* Receipt Header shown when capturing */}
         {isCapturing && (
@@ -545,7 +545,7 @@ export function SettlementView({
         </div>
 
       {/* 3. Expense Ledger */}
-      <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 shadow-sm overflow-hidden">
+      <div className="bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 shadow-sm overflow-hidden">
         <div className="py-2 px-3 bg-black/3 dark:bg-white/3 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-meta md:text-xs font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60">
             <ClipboardList className="w-3.5 h-3.5" />

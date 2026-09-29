@@ -689,9 +689,9 @@ function App() {
             isOpen={showUnsavedModal}
             title="UNSAVED CHANGES"
             message="Are you sure?"
-            confirmLabel="SAVE (Y)"
-            discardLabel="DISCARD (N)"
-            cancelLabel="SKIP (ESC)"
+            confirmLabel="Save (Y)"
+            discardLabel="Discard (N)"
+            cancelLabel="Skip (Esc)"
             onConfirm={handleSaveAndNavigate}
             onDiscard={handleDiscardAndNavigate}
             onCancel={handleCancelUnsavedModal}
@@ -702,8 +702,8 @@ function App() {
             isOpen={journeyDeleteConfirm.isOpen}
             title="MOVE TO TRASH"
             message={`'${journeyDeleteConfirm.title}' 여정을 휴지통으로 이동하시겠습니까?`}
-            confirmLabel="DELETE"
-            cancelLabel="CANCEL"
+            confirmLabel="Delete"
+            cancelLabel="Cancel"
             confirmVariant="danger"
             iconType="alert"
             onConfirm={handleConfirmDeleteJourney}
@@ -715,8 +715,8 @@ function App() {
             isOpen={pendingLeaveBuilderModal.isOpen}
             title="LEAVE BUILDER"
             message={`작성 중인 여정 설정이 저장되지 않을 수 있습니다.\n정말 다른 화면으로 이동하시겠습니까?`}
-            confirmLabel="LEAVE"
-            cancelLabel="CONTINUE"
+            confirmLabel="Leave"
+            cancelLabel="Continue"
             confirmVariant="danger"
             iconType="alert"
             onConfirm={() => {

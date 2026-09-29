@@ -817,7 +817,7 @@ export function MagazineHubPage({
             {/* Top Barcode & Category Tag */}
             <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
               <div className="flex items-center gap-2.5 sm:gap-3">
-                <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta">
+                <span className="bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold px-2 py-0.5 text-meta">
                   MAGAZINE DIRECTORY
                 </span>
                 <span className="font-bold text-red-600 dark:text-red-400">
@@ -1398,7 +1398,7 @@ export function MagazineHubPage({
                         onClick={() => handleSelectSection(sec.id)}
                         className={`px-2.5 py-1 text-[11px] sm:text-xs font-bold uppercase font-['Inter',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
                           isActive
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent shadow-xs'
                             : 'bg-transparent border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                         }`}
                       >
@@ -1479,7 +1479,7 @@ export function MagazineHubPage({
                           handleSelectSection(sec.id);
                           setIsAccordionOpen(false);
                         }}
-                        className={`group relative flex flex-col border transition-all cursor-pointer bg-white dark:bg-[#1a1a1a] select-none ${
+                        className={`group relative flex flex-col border transition-all cursor-pointer bg-surface dark:bg-surface-dark select-none ${
                           isActive
                             ? 'border-red-600 dark:border-red-500 shadow-xl ring-2 ring-red-600/30 dark:ring-red-500/30'
                             : 'border-black/15 dark:border-white/15 hover:border-black/50 dark:hover:border-white/50 hover:-translate-y-1 shadow-xs'

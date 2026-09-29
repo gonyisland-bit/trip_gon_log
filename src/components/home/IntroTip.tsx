@@ -56,7 +56,7 @@ export function IntroTipView({ onWatch, onDismiss }: { onWatch: () => void; onDi
       onPointerLeave={() => setHover(false)}
     >
       <div
-        className={`tgl-introtip-pill flex items-center h-12 rounded-full bg-black text-white dark:bg-white dark:text-black shadow-[0_10px_30px_rgba(0,0,0,0.22)] transition-[padding] duration-emph ease-emphasized ${expanded ? 'pl-2' : 'pl-0'}`}
+        className={`tgl-introtip-pill flex items-center h-12 rounded-full bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-[0_10px_30px_rgba(0,0,0,0.22)] transition-[padding] duration-emph ease-emphasized ${expanded ? 'pl-2' : 'pl-0'}`}
       >
         {/* Label and dismiss: folds away after the countdown */}
         <div

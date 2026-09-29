@@ -424,7 +424,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                             PLAN
                           </span>
                         ) : (
-                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black font-mono text-micro font-extrabold uppercase tracking-widest shrink-0">
+                          <span className="px-1.5 py-0.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-mono text-micro font-extrabold uppercase tracking-widest shrink-0">
                             LOG
                           </span>
                         )}

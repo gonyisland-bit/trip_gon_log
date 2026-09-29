@@ -1206,7 +1206,7 @@ export function PocketHubPage({
     <div className="min-h-screen bg-transparent text-black dark:text-white flex flex-col font-sans">
       {/* Toast Notification (Placed safely below global nav header with highest z-index) */}
       {actionSuccessToast && (
-        <div className="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 z-nested bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-mono tracking-widest uppercase shadow-2xl flex items-center gap-2 border border-black/20 dark:border-white/20 animate-in fade-in slide-in-from-top-4 duration-200 pointer-events-none">
+        <div className="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 z-nested bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark px-4 py-2 text-xs font-mono tracking-widest uppercase shadow-2xl flex items-center gap-2 border border-black/20 dark:border-white/20 animate-in fade-in slide-in-from-top-4 duration-200 pointer-events-none">
           {actionSuccessToast.includes('...') ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
           ) : (
@@ -1221,7 +1221,7 @@ export function PocketHubPage({
         {/* Top Metadata Barcode & Category Tag */}
         <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta">
+            <span className="bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold px-2 py-0.5 text-meta">
               POCKET
             </span>
             <span className="font-bold text-red-600 dark:text-red-400">
@@ -1655,7 +1655,7 @@ export function PocketHubPage({
                             onClick={(e) => handleToggleSelectSpot(spot.id, e)}
                             className={`tap-target w-7 h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
                               isSelected
-                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                                 : 'bg-white/90 dark:bg-black/90 border-black/20 dark:border-white/20 text-transparent hover:border-black dark:hover:border-white'
                             }`}
                           >
@@ -1828,7 +1828,7 @@ export function PocketHubPage({
       {/* ── USE IN TRIP SELECTOR POPOVER MODAL ── */}
       {spotToUseInTrip && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#111111] border border-black dark:border-white w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-surface dark:bg-surface-dark border border-black dark:border-white w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-4">
               <div>
                 <span className="text-meta font-mono tracking-widest text-red-500 uppercase">ADD TO TIMELINE</span>
@@ -1889,7 +1889,7 @@ export function PocketHubPage({
                 onClick={() => setSpotToUseInTrip(null)}
                 className="btn btn-secondary btn-sm"
               >
-                CANCEL
+                Cancel
               </button>
             </div>
           </div>
@@ -1915,7 +1915,7 @@ export function PocketHubPage({
           onClick={handleCloseModal}
         >
           <div 
-            className="bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-auto"
+            className="bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-5">
@@ -1995,7 +1995,7 @@ export function PocketHubPage({
                           onClick={() => setNewTitle(cand)}
                           className={`px-2 py-0.5 text-meta font-mono border transition-all cursor-pointer ${
                             newTitle === cand
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold'
                               : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
                           }`}
                         >
@@ -2028,7 +2028,7 @@ export function PocketHubPage({
                         onClick={() => setNewCategory(cat)}
                         className={`h-8 text-meta font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
                           isSelected
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold'
                             : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40'
                         }`}
                       >
@@ -2261,7 +2261,7 @@ export function PocketHubPage({
                   onClick={handleCloseModal}
                   className="btn btn-secondary"
                 >
-                  CANCEL
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -2298,8 +2298,8 @@ export function PocketHubPage({
         isOpen={Boolean(spotToDelete)}
         title="DELETE SPOT"
         message={`'${spotToDelete?.title || ''}' 스팟을 포켓에서 삭제하시겠습니까?`}
-        confirmLabel="DELETE"
-        cancelLabel="CANCEL"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
         onConfirm={handleDeleteSpot}
         onCancel={() => setSpotToDelete(null)}
         confirmVariant="danger"

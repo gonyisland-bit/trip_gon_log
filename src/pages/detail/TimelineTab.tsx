@@ -533,7 +533,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'car' ? null : 'car')}
                                 className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'car'
-                                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'car' ? "차량 선택 해제 (기본 도보)" : "차량으로 이동"}
@@ -545,7 +545,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'train' ? null : 'train')}
                                 className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'train'
-                                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'train' ? "열차 선택 해제 (기본 도보)" : "열차로 이동"}
@@ -557,7 +557,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'ship' ? null : 'ship')}
                                 className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'ship'
-                                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'ship' ? "선박 선택 해제 (기본 도보)" : "선박으로 이동"}
@@ -569,7 +569,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'flight' ? null : 'flight')}
                                 className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'flight'
-                                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'flight' ? "항공 선택 해제 (기본 도보)" : "항공으로 이동"}

@@ -237,7 +237,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                         onClick={() => setGalleryColumns(4)}
                         className={`flex items-center gap-1.5 px-2.5 py-1 text-micro md:text-meta font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
                           galleryColumns === 4
-                            ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
                             : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                         }`}
                         title="Grid view (4 columns)"
@@ -249,7 +249,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                         onClick={() => setGalleryColumns(2)}
                         className={`flex items-center gap-1.5 px-2.5 py-1 text-micro md:text-meta font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
                           galleryColumns === 2
-                            ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
                             : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                         }`}
                         title="Wide view (2 columns)"
@@ -265,7 +265,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                         onClick={() => setGalleryViewMode('accordion')}
                         className={`px-2.5 py-1 text-micro md:text-meta font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                           galleryViewMode === 'accordion'
-                            ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
+                            ? 'bg-surface dark:bg-surface-dark text-black dark:text-white shadow-sm'
                             : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                         }`}
                       >
@@ -275,7 +275,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                         onClick={() => setGalleryViewMode('grid')}
                         className={`px-2.5 py-1 text-micro md:text-meta font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                           galleryViewMode === 'grid'
-                            ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
+                            ? 'bg-surface dark:bg-surface-dark text-black dark:text-white shadow-sm'
                             : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                         }`}
                       >

@@ -157,11 +157,11 @@ export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transi
     <div
       role="dialog"
       aria-label="예약 지갑"
-      className={`fixed inset-0 z-[185] bg-white dark:bg-[#111111] text-black dark:text-white overflow-y-auto overscroll-contain ${prefersReducedMotion() ? '' : leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
+      className={`fixed inset-0 z-[185] bg-surface dark:bg-surface-dark text-black dark:text-white overflow-y-auto overscroll-contain ${prefersReducedMotion() ? '' : leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
     >
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-8 pt-4 pb-28 flex flex-col gap-8">
         {/* Top bar */}
-        <div style={{ paddingTop: 'max(0.25rem, env(safe-area-inset-top, 0px))' }} className="sticky top-0 z-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pb-3 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-sm border-b border-black/15 dark:border-white/15 flex items-center justify-between gap-3">
+        <div style={{ paddingTop: 'max(0.25rem, env(safe-area-inset-top, 0px))' }} className="sticky top-0 z-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pb-3 bg-surface/95 dark:bg-surface-dark/95 backdrop-blur-sm border-b border-black/15 dark:border-white/15 flex items-center justify-between gap-3">
           <div className="flex items-baseline gap-3">
             <span className="font-sans font-extrabold text-xl tracking-tight">Wallet</span>
             <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums">

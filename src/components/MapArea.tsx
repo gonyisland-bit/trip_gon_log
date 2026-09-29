@@ -2106,7 +2106,7 @@ export function MapArea({
             onClick={() => setIsMapMenuOpen(prev => !prev)}
             className={`tap-target w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center ${
               isMapMenuOpen 
-                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                 : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white hover:bg-[#F9F8F6] dark:hover:bg-[#111111]'
             }`}
             title="지도 도구 메뉴"

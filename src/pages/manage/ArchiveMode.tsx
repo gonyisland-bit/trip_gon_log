@@ -61,7 +61,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
                   Journey Archive header
                 </span>
-                <span className="text-meta font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+                <span className="text-meta font-mono px-2 py-0.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark uppercase">
                   HUB CONFIG
                 </span>
               </div>
@@ -85,7 +85,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       value={archiveHubBadgeText}
                       onChange={e => setArchiveHubBadgeText(e.target.value)}
                       placeholder="e.g. JOURNEY ARCHIVE"
-                      className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
+                      className="px-3 py-2 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
                     />
                   </div>
 
@@ -99,7 +99,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       value={archiveHubVolumeText}
                       onChange={e => setArchiveHubVolumeText(e.target.value)}
                       placeholder="e.g. VOL. 2026"
-                      className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
+                      className="px-3 py-2 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
                     />
                   </div>
                 </div>
@@ -114,7 +114,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     value={archiveHubMainTitle}
                     onChange={e => setArchiveHubMainTitle(e.target.value)}
                     placeholder="e.g. A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES"
-                    className="px-3 py-2 text-xs font-satoshi font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    className="px-3 py-2 text-xs font-satoshi font-bold uppercase bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                   />
                 </div>
 
@@ -128,7 +128,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     value={archiveHubSubtitle}
                     onChange={e => setArchiveHubSubtitle(e.target.value)}
                     placeholder="e.g. 발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다."
-                    className="px-3 py-2 text-xs font-['Noto_Sans_KR',sans-serif] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white resize-none"
+                    className="px-3 py-2 text-xs font-['Noto_Sans_KR',sans-serif] bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white resize-none"
                   />
                 </div>
 
@@ -160,7 +160,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
               onClick={() => setMobileArchiveTab('LIST')}
               className={`flex-1 py-2.5 text-xs font-extrabold uppercase tracking-wider font-sans border-r border-black/15 dark:border-white/15 cursor-pointer ${
                 mobileArchiveTab === 'LIST'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
                   : 'text-black/60 dark:text-white/60'
               }`}
             >
@@ -171,7 +171,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
               onClick={() => setMobileArchiveTab('EDIT')}
               className={`flex-1 py-2.5 text-xs font-extrabold uppercase tracking-wider font-sans cursor-pointer ${
                 mobileArchiveTab === 'EDIT'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
                   : 'text-black/60 dark:text-white/60'
               }`}
             >
@@ -217,7 +217,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     type="button"
                     onClick={() => handleSaveJourney()}
                     disabled={isSavingTrip}
-                    className={`px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-extrabold uppercase tracking-widest font-sans flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity ${
+                    className={`px-4 py-2 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-xs font-extrabold uppercase tracking-widest font-sans flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity ${
                       tripSaveSuccess ? '!bg-emerald-600 !text-white' : ''
                     }`}
                   >
@@ -238,7 +238,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     type="text"
                     value={editTitle}
                     onChange={e => setEditTitle(e.target.value)}
-                    className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px]"
+                    className="px-3 py-2 text-xs font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px]"
                   />
                 </div>
 
@@ -253,7 +253,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       {editDate || '날짜 미지정'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 h-[35px] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 px-2.5">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 h-[35px] bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 px-2.5">
                     <input
                       type="date"
                       value={parsedDateInputs.start}
@@ -351,12 +351,12 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     }}
                     onFocus={() => setIsCountryDropdownOpen(true)}
                     placeholder="e.g. JAPAN, USA, FRANCE"
-                    className="px-3 py-2 text-xs font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px]"
+                    className="px-3 py-2 text-xs font-bold uppercase bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px]"
                   />
 
                   {/* Country Autocomplete Dropdown */}
                   {isCountryDropdownOpen && matchedCountries.length > 0 && (
-                    <div className="absolute top-[calc(100%+2px)] left-0 right-0 z-40 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto">
+                    <div className="absolute top-[calc(100%+2px)] left-0 right-0 z-40 bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto">
                       {matchedCountries.map(c => (
                         <button
                           key={c.code}
@@ -391,7 +391,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       }
                     }}
                     placeholder="e.g. Tokyo, Osaka, Kyoto"
-                    className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px] w-full"
+                    className="px-3 py-2 text-xs font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px] w-full"
                   />
                 </div>
 
@@ -407,7 +407,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       onChange={e => setNewTagInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                       placeholder="새 태그 입력 후 Enter..."
-                      className="flex-1 px-3 py-1.5 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
+                      className="flex-1 px-3 py-1.5 text-xs font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none"
                     />
                     <button
                       type="button"
@@ -496,9 +496,9 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                             }
                           }}
                           placeholder="이미지 또는 영상 URL 입력 / 파일 드롭"
-                          className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none flex-1"
+                          className="px-3 py-2 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none flex-1"
                         />
-                        <label className="px-3 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 cursor-pointer shrink-0">
+                        <label className="px-3 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-meta font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 cursor-pointer shrink-0">
                           <Upload className="w-3 h-3" />
                           <span>UPLOAD</span>
                           <input
@@ -732,7 +732,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                             }
                           }}
                           placeholder="히어로 이미지 또는 영상 URL 입력 / 파일 드롭"
-                          className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none flex-1"
+                          className="px-3 py-2 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none flex-1"
                         />
                         <label className="px-3 bg-red-600 hover:bg-red-700 text-white text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1.5 cursor-pointer shrink-0">
                           <Upload className="w-3 h-3" />
@@ -1036,7 +1036,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                   }}
                   className={`p-2.5 border transition-all flex items-center gap-2.5 cursor-pointer rounded-none ${
                     isSelected
-                      ? 'bg-white dark:bg-[#181818] border-red-600 dark:border-red-500 shadow-md ring-1 ring-red-600/30'
+                      ? 'bg-surface dark:bg-surface-dark border-red-600 dark:border-red-500 shadow-md ring-1 ring-red-600/30'
                       : 'bg-white/60 dark:bg-[#11110F]/60 border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
                   }`}
                 >

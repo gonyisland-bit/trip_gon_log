@@ -755,8 +755,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         isOpen={isConfirmOpen}
         title="CREATE ACCOUNT"
         message={`[${lastName} ${firstName}] (${email}) 님의 계정을 생성하시겠습니까?`}
-        confirmLabel="CREATE"
-        cancelLabel="CANCEL"
+        confirmLabel="Create"
+        cancelLabel="Cancel"
         confirmVariant="primary"
         onConfirm={() => executeAuth(true)}
         onCancel={() => setIsConfirmOpen(false)}

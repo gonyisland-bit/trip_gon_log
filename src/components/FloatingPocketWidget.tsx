@@ -141,9 +141,9 @@ export function FloatingPocketWidget({
     <div className={className || "fixed bottom-6 left-6 z-40 flex flex-col items-start font-sans select-none pointer-events-auto"}>
       {/* Expanded Widget Panel (Drop-up: positioned right above toggle button, expands rightward) */}
       {isOpen && (
-        <div className="absolute bottom-12 left-0 mb-1 w-[290px] sm:w-[330px] max-h-[420px] bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden rounded-xl z-50">
+        <div className="absolute bottom-12 left-0 mb-1 w-[290px] sm:w-[330px] max-h-[420px] bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden rounded-xl z-50">
           {/* Widget Header */}
-          <div className="px-3.5 py-2.5 bg-black text-white dark:bg-white dark:text-black flex items-center justify-between border-b border-black/10">
+          <div className="px-3.5 py-2.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark flex items-center justify-between border-b border-black/10">
             <div className="flex items-center gap-1.5 text-xs font-mono font-extrabold tracking-widest uppercase">
               <Bookmark className="w-3.5 h-3.5 text-red-500 fill-red-500" />
               <span>POCKET WIDGET</span>
@@ -180,7 +180,7 @@ export function FloatingPocketWidget({
                     onClick={() => setSelectedCategory(cat)}
                     className={`px-2 py-0.5 text-micro font-mono uppercase tracking-wider border transition-colors cursor-pointer shrink-0 ${
                       isSelected
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold'
                         : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black'
                     }`}
                   >
@@ -210,7 +210,7 @@ export function FloatingPocketWidget({
                     className={`border transition-all duration-200 overflow-hidden shadow-2xs ${
                       isExpanded
                         ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.04]'
-                        : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] hover:border-black/30 dark:hover:border-white/30'
+                        : 'border-black/10 dark:border-white/10 bg-surface dark:bg-surface-dark hover:border-black/30 dark:hover:border-white/30'
                     }`}
                   >
                     {/* Header Row: click to toggle accordion & focus map */}
@@ -269,7 +269,7 @@ export function FloatingPocketWidget({
                           disabled={!isEditing}
                           className={`tap-target w-6 h-6 flex items-center justify-center transition-colors shrink-0 ${
                             isEditing
-                              ? 'bg-black text-white dark:bg-white dark:text-black hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white cursor-pointer'
+                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white cursor-pointer'
                               : 'bg-black/10 text-black/60 dark:bg-white/10 dark:text-white/60 cursor-not-allowed'
                           }`}
                           title={isEditing ? "타임라인에 추가" : "수정 모드에서만 타임라인에 추가할 수 있습니다"}

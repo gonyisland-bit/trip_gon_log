@@ -633,7 +633,7 @@ export function EditTripModal({
                 disabled={!isPlanJourney || !onMoveToArchive}
                 className={`py-2 px-3 border text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   !isPlanJourney
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                     : 'bg-transparent text-black/60 dark:text-white/60 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
                 }`}
               >
@@ -653,7 +653,7 @@ export function EditTripModal({
                 disabled={isPlanJourney || !onMoveToPlans}
                 className={`py-2 px-3 border text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   isPlanJourney
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                     : 'bg-transparent text-black/60 dark:text-white/60 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
                 }`}
               >
@@ -728,7 +728,7 @@ export function EditTripModal({
                 {locations.map((loc, idx) => (
                   <span 
                     key={idx} 
-                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-micro font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                    className="flex items-center gap-1.5 bg-surface dark:bg-surface-dark text-micro font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
                   >
                     {loc.name}
                     <button 
@@ -797,7 +797,7 @@ export function EditTripModal({
                 {tags.map(tag => (
                   <span 
                     key={tag} 
-                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-micro font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                    className="flex items-center gap-1.5 bg-surface dark:bg-surface-dark text-micro font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
                   >
                     {tag}
                     <button 
@@ -825,7 +825,7 @@ export function EditTripModal({
 
             {/* Suggestions dropdown */}
             {filteredSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-36 overflow-y-auto z-50 flex flex-col divide-y divide-black/5 dark:divide-white/5">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 shadow-xl max-h-36 overflow-y-auto z-50 flex flex-col divide-y divide-black/5 dark:divide-white/5">
                 {filteredSuggestions.map(suggestion => (
                   <button
                     key={suggestion}
@@ -1388,9 +1388,9 @@ export function EditTripModal({
         isOpen={showUnsavedConfirm}
         title="UNSAVED CHANGES"
         message="Are you sure?"
-        confirmLabel="SAVE (Y)"
-        discardLabel="DISCARD (N)"
-        cancelLabel="SKIP (ESC)"
+        confirmLabel="Save (Y)"
+        discardLabel="Discard (N)"
+        cancelLabel="Skip (Esc)"
         onConfirm={async () => {
           setShowUnsavedConfirm(false);
           await handleSubmit({ preventDefault: () => {} } as any);

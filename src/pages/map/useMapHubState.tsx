@@ -2033,7 +2033,7 @@ export function useMapHubState({
               <circle cx="12" cy="11" r="4.5" fill="#FFFFFF"/>
             </svg>
             ${journeyCount > 1 ? `
-              <span class="absolute -top-1.5 -right-1.5 bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-micro min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border border-white dark:border-black">
+              <span class="absolute -top-1.5 -right-1.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-mono font-extrabold text-micro min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border border-white dark:border-black">
                 ${journeyCount}
               </span>
             ` : ''}

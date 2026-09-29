@@ -587,7 +587,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                       onClick={() => { setTitle(cand); setIsUserEditedTitle(true); }}
                       className={`px-2.5 py-1 text-xs font-mono border transition-all cursor-pointer ${
                         title === cand
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold'
                           : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
                       }`}
                     >
@@ -694,7 +694,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                         }}
                         className={`px-2.5 py-1 text-xs font-mono border transition-all cursor-pointer flex items-center gap-1 ${
                           isSelected
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold shadow-xs'
+                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold shadow-xs'
                             : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black/50 dark:hover:border-white/50'
                         }`}
                       >
@@ -724,7 +724,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                     onClick={() => setCategory(cat.key)}
                     className={`px-3 py-1.5 text-xs font-mono font-bold border transition-colors cursor-pointer flex items-center gap-1.5 ${
                       isSelected
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                         : 'border-black/15 dark:border-white/15 text-black/65 dark:text-white/65 hover:border-black dark:hover:border-white'
                     }`}
                   >

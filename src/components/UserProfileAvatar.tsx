@@ -101,7 +101,7 @@ export function UserProfileAvatar({
 
   if (initial) {
     return (
-      <div className={`relative flex items-center justify-center shrink-0 aspect-square rounded-none font-mono font-extrabold uppercase bg-black text-white dark:bg-white dark:text-black ${containerSize} ${borderClass} ${className}`}>
+      <div className={`relative flex items-center justify-center shrink-0 aspect-square rounded-none font-mono font-extrabold uppercase bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark ${containerSize} ${borderClass} ${className}`}>
         <span>{initial}</span>
       </div>
     );

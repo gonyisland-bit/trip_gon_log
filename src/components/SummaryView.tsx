@@ -648,7 +648,7 @@ export function SummaryView({
       >
         {/* 1. Masthead & Inverted Tag Pill */}
         <div className="flex flex-col items-start gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-black text-white dark:bg-white dark:text-black rounded-xs text-meta font-extrabold uppercase tracking-widest font-mono">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark rounded-xs text-meta font-extrabold uppercase tracking-widest font-mono">
             <span>MEMORANDUM OF TRAVEL</span>
             <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
           </div>
@@ -685,7 +685,7 @@ export function SummaryView({
                   onClick={handleCapture}
                   className="inline-flex items-center gap-2 text-meta font-extrabold uppercase tracking-widest text-black dark:text-white hover:opacity-60 transition-opacity cursor-pointer active:scale-95 shrink-0"
                 >
-                  <span className="w-4 h-4 rounded-xs bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
+                  <span className="w-4 h-4 rounded-xs bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark flex items-center justify-center">
                     <ArrowDownRight className="w-3 h-3" />
                   </span>
                   <span>EXPORT SUMMARY</span>

@@ -67,7 +67,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMapConfirm(null)}
-                className="flex-1 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-meta font-extrabold uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-sm"
+                className="flex-1 py-2 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:opacity-85 text-meta font-extrabold uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-sm"
               >
                 이동 (Y)
               </a>
@@ -208,8 +208,8 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
         isOpen={showTripDeleteConfirm}
         title="DELETE JOURNEY"
         message="Are you sure you want to permanently delete this journey?"
-        confirmLabel="YES (Y)"
-        cancelLabel="CANCEL (ESC)"
+        confirmLabel="Yes (Y)"
+        cancelLabel="Cancel (Esc)"
         confirmVariant="danger"
         onConfirm={async () => {
           setShowTripDeleteConfirm(false);
@@ -227,7 +227,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
           onClick={() => setCostModalItem(null)}
         >
           <div 
-            className="bg-white dark:bg-[#121212] border-2 border-black dark:border-white p-6 sm:p-8 max-w-sm w-full shadow-2xl flex flex-col gap-5 text-black dark:text-white rounded-none select-none relative animate-in zoom-in-95 duration-150"
+            className="bg-surface dark:bg-surface-dark border-2 border-black dark:border-white p-6 sm:p-8 max-w-sm w-full shadow-2xl flex flex-col gap-5 text-black dark:text-white rounded-none select-none relative animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header: Title & Close */}
@@ -395,7 +395,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
                 onClick={() => setIsCoverModalOpen(false)}
                 className="btn btn-secondary"
               >
-                CANCEL
+                Cancel
               </button>
               <button
                 type="button"

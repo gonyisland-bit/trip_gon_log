@@ -81,7 +81,7 @@ export function PocketScheduleModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-[#111111] border border-black dark:border-white w-full max-w-md p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 font-sans my-auto"
+        className="bg-surface dark:bg-surface-dark border border-black dark:border-white w-full max-w-md p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 font-sans my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -118,7 +118,7 @@ export function PocketScheduleModal({
                   onClick={() => setSelectedDate(d)}
                   className={`px-3 py-1.5 text-xs font-mono border transition-colors whitespace-nowrap flex flex-col items-center cursor-pointer ${
                     isSelected
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold shadow-xs'
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold shadow-xs'
                       : 'border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:border-black dark:hover:border-white'
                   }`}
                 >
@@ -146,7 +146,7 @@ export function PocketScheduleModal({
                   onClick={() => setSelectedSlotId(slot.id)}
                   className={`p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
                       : 'border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/[0.02] dark:bg-white/[0.02]'
                   }`}
                 >
@@ -179,7 +179,7 @@ export function PocketScheduleModal({
             onClick={onClose}
             className="btn btn-secondary btn-sm"
           >
-            CANCEL
+            Cancel
           </button>
           <button
             type="button"

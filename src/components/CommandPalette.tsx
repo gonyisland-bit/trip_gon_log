@@ -179,7 +179,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
                   data-index={i}
                   onMouseMove={() => !on && setActive(i)}
                   onClick={() => choose(e)}
-                  className={`mx-1 px-3 h-11 flex items-center gap-3 cursor-pointer ${on ? 'bg-black text-white dark:bg-white dark:text-black' : ''} ${e.id === 'full-search' ? 'mt-1 border-t border-black/10 dark:border-white/10' : ''}`}
+                  className={`mx-1 px-3 h-11 flex items-center gap-3 cursor-pointer ${on ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : ''} ${e.id === 'full-search' ? 'mt-1 border-t border-black/10 dark:border-white/10' : ''}`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${on ? '' : 'text-black/60 dark:text-white/60'}`} />
                   <span className="text-sm font-semibold truncate">{e.label}</span>

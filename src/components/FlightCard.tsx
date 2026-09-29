@@ -434,7 +434,7 @@ export function FlightCard({
                 className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16 sm:w-20 mt-1 cursor-pointer font-mono"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
+                  <option key={num} value={num} className="bg-surface dark:bg-surface-dark">TER {num}</option>
                 ))}
               </select>
             ) : (
@@ -516,11 +516,11 @@ export function FlightCard({
                     onUpdate(flight.id, 'flightNo', e.target.value.toUpperCase());
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white tracking-wider text-center w-16 sm:w-20 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase font-mono"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface dark:bg-surface-dark px-1.5 text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white tracking-wider text-center w-16 sm:w-20 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase font-mono"
                   placeholder="KE000"
                 />
               ) : (
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 sm:px-1.5 text-meta sm:text-xs md:text-sm font-bold text-black/70 dark:text-white/70 tracking-wider whitespace-nowrap z-10 font-mono">
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface dark:bg-surface-dark px-1 sm:px-1.5 text-meta sm:text-xs md:text-sm font-bold text-black/70 dark:text-white/70 tracking-wider whitespace-nowrap z-10 font-mono">
                   {flight.flightNo}
                 </span>
               )}
@@ -623,7 +623,7 @@ export function FlightCard({
                 className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-meta sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16 sm:w-20 mt-1 cursor-pointer font-mono"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
+                  <option key={num} value={num} className="bg-surface dark:bg-surface-dark">TER {num}</option>
                 ))}
               </select>
             ) : (

@@ -324,7 +324,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-black dark:text-white">{c.authorName}</span>
                               {currentUser?.uid && c.authorId === currentUser.uid && (
-                                <span className="px-1 py-0.2 text-micro bg-black text-white dark:bg-white dark:text-black font-bold">YOU</span>
+                                <span className="px-1 py-0.2 text-micro bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-bold">YOU</span>
                               )}
                               <span className="text-black/60 dark:text-white/60">
                                 {new Date(c.createdAt).toLocaleDateString()}
@@ -380,7 +380,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                         }
                       }}
                       placeholder="댓글 입력 후 Enter..."
-                      className="flex-1 px-2.5 py-1.5 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 text-black dark:text-white font-sans outline-none rounded focus:border-black dark:focus:border-white"
+                      className="flex-1 px-2.5 py-1.5 text-xs bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 text-black dark:text-white font-sans outline-none rounded focus:border-black dark:focus:border-white"
                     />
                     <button
                       type="button"
@@ -399,7 +399,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                         onSaveComments(spot.id, [...(spot.comments || []), newComment]);
                         setQuickCommentText('');
                       }}
-                      className="tap-target px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase rounded cursor-pointer"
+                      className="tap-target px-3 py-1.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase rounded cursor-pointer"
                     >
                       <Send className="w-3 h-3" />
                     </button>
@@ -463,7 +463,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
                 isLiked
                   ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
-                  : 'bg-white dark:bg-[#1a1a1a] border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
+                  : 'bg-surface dark:bg-surface-dark border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
               }`}
               title="좋아요 관심사 체크"
             >
@@ -480,7 +480,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
                 isCommentsExpanded
                   ? 'bg-black/10 dark:bg-white/15 border-black/30 dark:border-white/30 text-black dark:text-white shadow-xs'
-                  : 'bg-white dark:bg-[#1a1a1a] border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
+                  : 'bg-surface dark:bg-surface-dark border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
               }`}
               title={isCommentsExpanded ? "댓글 접기" : "댓글 펼치기"}
             >
@@ -499,7 +499,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                 href={spot.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-meta font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1 cursor-pointer shrink-0"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-surface dark:bg-surface-dark text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-meta font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1 cursor-pointer shrink-0"
                 title="출처 원본 게시물 보기"
               >
                 <span className="hidden sm:inline">ORIGINAL</span>

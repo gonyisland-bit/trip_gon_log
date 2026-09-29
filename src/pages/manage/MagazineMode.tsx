@@ -62,7 +62,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
               Magazine Hub header
             </span>
-            <span className="text-meta font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+            <span className="text-meta font-mono px-2 py-0.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark uppercase">
               HUB CONFIG
             </span>
           </div>
@@ -86,7 +86,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   value={hubBadgeText}
                   onChange={e => setHubBadgeText(e.target.value)}
                   placeholder="e.g. CURATED ARCHIVE"
-                  className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
+                  className="px-3 py-2 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
                 />
               </div>
 
@@ -100,7 +100,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   value={hubVolumeText}
                   onChange={e => setHubVolumeText(e.target.value)}
                   placeholder="e.g. VOL. 2026"
-                  className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
+                  className="px-3 py-2 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
                 />
               </div>
             </div>
@@ -115,7 +115,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 value={hubMainTitle}
                 onChange={e => setHubMainTitle(e.target.value)}
                 placeholder="e.g. A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS"
-                className="px-3 py-2 text-xs font-satoshi font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                className="px-3 py-2 text-xs font-satoshi font-bold uppercase bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
               />
             </div>
 
@@ -129,7 +129,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 value={hubSubtitle}
                 onChange={e => setHubSubtitle(e.target.value)}
                 placeholder="e.g. 여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다."
-                className="px-3 py-2 text-xs font-['Noto_Sans_KR',sans-serif] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white resize-none"
+                className="px-3 py-2 text-xs font-['Noto_Sans_KR',sans-serif] bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white resize-none"
               />
             </div>
 
@@ -171,7 +171,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 sessionStorage.setItem('lastMagazineSectionId', sec.id);
               }
             }}
-            className="px-3 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white rounded-none cursor-pointer focus:border-black dark:focus:border-white min-w-[200px] max-w-full sm:max-w-[340px]"
+            className="px-3 py-1.5 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white rounded-none cursor-pointer focus:border-black dark:focus:border-white min-w-[200px] max-w-full sm:max-w-[340px]"
           >
             {sectionsList.map((sec, idx) => (
               <option key={sec.id} value={sec.id}>
@@ -189,7 +189,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   type="button"
                   onClick={() => activeIdx > 0 && handleMoveSection(activeIdx, 'up')}
                   disabled={activeIdx <= 0}
-                  className="tap-target p-1.5 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
+                  className="tap-target p-1.5 border border-black/20 dark:border-white/20 bg-surface dark:bg-surface-dark text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
                   title="섹션 앞으로 이동"
                 >
                   <ChevronUp className="w-3.5 h-3.5" />
@@ -198,7 +198,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   type="button"
                   onClick={() => activeIdx < sectionsList.length - 1 && handleMoveSection(activeIdx, 'down')}
                   disabled={activeIdx >= sectionsList.length - 1}
-                  className="tap-target p-1.5 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
+                  className="tap-target p-1.5 border border-black/20 dark:border-white/20 bg-surface dark:bg-surface-dark text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
                   title="섹션 뒤로 이동"
                 >
                   <ChevronDown className="w-3.5 h-3.5" />
@@ -271,7 +271,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               </h3>
             </div>
             {currentMagSection.isDefault && (
-              <span className="text-meta font-mono font-bold px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+              <span className="text-meta font-mono font-bold px-2 py-0.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark uppercase">
                 DEFAULT MAIN
               </span>
             )}
@@ -342,7 +342,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 </span>
               </div>
 
-              <div className="w-full flex-1 min-h-[340px] sm:min-h-[360px] p-3.5 bg-white dark:bg-[#11110F] border border-black/15 dark:border-white/15 shadow-sm flex flex-col items-center justify-between">
+              <div className="w-full flex-1 min-h-[340px] sm:min-h-[360px] p-3.5 bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 shadow-sm flex flex-col items-center justify-between">
                 {/* MOUTHWASH Card Top Bold Title */}
                 <div className="min-h-[2.8rem] flex items-center justify-center mb-1 px-1 w-full">
                   <h4 className="text-sm sm:text-base font-satoshi font-extrabold uppercase tracking-tight text-center leading-[1.12] text-black dark:text-white line-clamp-2">
@@ -403,7 +403,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 value={currentMagSection.title || ''}
                 onChange={e => handleUpdateSectionField(currentMagSection.id, 'title', e.target.value)}
                 placeholder="e.g. TOKYO VIBES, JEJU ISLAND"
-                className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                className="px-3 py-2 text-xs font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
               />
             </div>
 
@@ -417,7 +417,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 value={currentMagSection.heroTitle || ''}
                 onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroTitle', e.target.value)}
                 placeholder="e.g. The Other Side of Paradise"
-                className="px-3 py-2 text-xs font-serif font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                className="px-3 py-2 text-xs font-serif font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
               />
             </div>
 
@@ -431,7 +431,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 value={currentMagSection.heroLocation || ''}
                 onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroLocation', e.target.value)}
                 placeholder="e.g. TOKYO 또는 여행 음식, 쇼핑거리"
-                className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                className="px-3 py-2 text-xs font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
               />
             </div>
 
@@ -443,7 +443,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               <select
                 value={currentMagSection.heroTripId || ''}
                 onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroTripId', e.target.value ? Number(e.target.value) : undefined)}
-                className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                className="px-3 py-2 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
               >
                 <option value="">-- NO LINKED JOURNEY (복합 여정) --</option>
                 {localJourneys.map(j => (
@@ -654,7 +654,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                         return next;
                       });
                     }}
-                    className={`flex flex-col gap-3 p-4 bg-white dark:bg-[#161616] border transition-all shadow-xs h-full cursor-pointer select-none ${options.spanClass || ''} ${
+                    className={`flex flex-col gap-3 p-4 bg-surface dark:bg-surface-dark border transition-all shadow-xs h-full cursor-pointer select-none ${options.spanClass || ''} ${
                       isCardSelected
                         ? 'border-black dark:border-white ring-2 ring-black dark:ring-white shadow-md bg-black/[0.02] dark:bg-white/[0.04]'
                         : isItemHero 
@@ -742,7 +742,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                             onClick={() => handleSetAsHeroFromItem(item)}
                             className={`px-2 py-0.5 text-meta font-mono font-bold uppercase transition-colors cursor-pointer border ${
                               isItemHero
-                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                                 : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
                             }`}
                             title="섹션 히어로로 지정"
@@ -820,7 +820,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                           className="w-full h-full object-cover"
                         />
                         {isItemHero && (
-                          <div className="absolute top-2 left-2 bg-black text-white dark:bg-white dark:text-black text-micro font-mono font-bold px-1.5 py-0.5 shadow-sm">
+                          <div className="absolute top-2 left-2 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-micro font-mono font-bold px-1.5 py-0.5 shadow-sm">
                             HERO SELECTED ★
                           </div>
                         )}
@@ -953,7 +953,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
           <select
             value={selectedTripForMoments === null ? '' : selectedTripForMoments}
             onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
-            className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+            className="px-3 py-2 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
           >
             <option value="">-- SELECT JOURNEY TO LOAD PHOTOS --</option>
             {localJourneys.map(j => (
@@ -971,7 +971,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               value={momentSearchQuery}
               onChange={e => setMomentSearchQuery(e.target.value)}
               placeholder="Search place, memo, location..."
-              className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+              className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
             />
           </div>
         </div>
@@ -1018,7 +1018,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                       }
                       handleAddItemToCurrentSection(item);
                     }}
-                    className={`group relative h-32 sm:h-36 bg-white dark:bg-[#121212] border overflow-hidden flex flex-col justify-end transition-all select-none ${
+                    className={`group relative h-32 sm:h-36 bg-surface dark:bg-surface-dark border overflow-hidden flex flex-col justify-end transition-all select-none ${
                       isAttached
                         ? 'border-black/30 dark:border-white/30 opacity-40 grayscale cursor-not-allowed'
                         : 'border-black/15 dark:border-white/15 cursor-pointer active:scale-95 hover:border-black dark:hover:border-white shadow-xs'
@@ -1071,7 +1071,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
           type="button"
           onClick={() => handleSaveMagazine()}
           disabled={isSavingMagazine}
-          className={`px-8 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity shadow-md ${
+          className={`px-8 py-3 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity shadow-md ${
             magazineSaveSuccess ? '!bg-emerald-600 !text-white' : ''
           }`}
         >
@@ -1083,7 +1083,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
       {/* Modal: Add New Section */}
       {showAddSectionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-md bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
+          <div className="w-full max-w-md bg-surface dark:bg-surface-dark border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                 ADD NEW MAGAZINE SECTION (새 섹션 추가)
@@ -1108,7 +1108,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   onChange={e => setNewSectionTitle(e.target.value)}
                   placeholder="e.g. TOKYO VIBES"
                   autoFocus
-                  className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                  className="px-3 py-2 text-xs font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                 />
               </div>
 
@@ -1121,7 +1121,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   value={newSectionSubtitle}
                   onChange={e => setNewSectionSubtitle(e.target.value)}
                   placeholder="e.g. City lights, quiet alleys, coffee"
-                  className="px-3 py-2 text-xs bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                  className="px-3 py-2 text-xs bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                 />
               </div>
             </div>
@@ -1152,14 +1152,14 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 onClick={() => setShowAddSectionModal(false)}
                 className="btn btn-secondary"
               >
-                CANCEL
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={handleAddSection}
                 className="btn btn-primary"
               >
-                CREATE SECTION
+                Create section
               </button>
             </div>
           </div>
@@ -1169,7 +1169,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
       {/* Modal: Auto-Generate Section from Journey */}
       {showAutoGenerateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
+          <div className="w-full max-w-lg bg-surface dark:bg-surface-dark border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-red-600 dark:text-red-500" />
@@ -1200,7 +1200,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               <select
                 value={selectedTripForAutoGenerate ?? (localJourneys[0]?.id || '')}
                 onChange={e => setSelectedTripForAutoGenerate(Number(e.target.value))}
-                className="px-3 py-2.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white cursor-pointer"
+                className="px-3 py-2.5 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white cursor-pointer"
               >
                 {(() => {
                   const uncreatedJourneys = localJourneys.filter(j => !existingTripIds.has(Number(j.id)));
@@ -1282,7 +1282,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 onClick={() => setShowAutoGenerateModal(false)}
                 className="btn btn-secondary"
               >
-                CANCEL
+                Cancel
               </button>
               {(() => {
                 const targetId = selectedTripForAutoGenerate ?? localJourneys[0]?.id;

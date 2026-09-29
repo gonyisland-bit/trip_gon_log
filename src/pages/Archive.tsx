@@ -630,7 +630,7 @@ export function ArchiveHubPage({
           {/* Top Barcode & Category Tag */}
           <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta">
+              <span className="bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold px-2 py-0.5 text-meta">
                 JOURNEY DIRECTORY
               </span>
               <span className="hidden sm:inline font-bold text-red-600 dark:text-red-400">

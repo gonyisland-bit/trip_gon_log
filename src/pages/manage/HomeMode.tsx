@@ -91,7 +91,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   onClick={() => setAutoSlide(!autoSlide)}
                   className={`w-full py-2 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center ${
                     autoSlide
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                       : 'bg-transparent border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                   }`}
                 >
@@ -127,7 +127,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                         onClick={() => setSlideDuration(sec)}
                         className={`px-2 py-1 text-meta font-mono font-bold border transition-colors cursor-pointer ${
                           slideDuration === sec
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                             : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
                         }`}
                       >
@@ -149,7 +149,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 onClick={() => setPlayVideoOnActivate(!playVideoOnActivate)}
                 className={`px-3 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer rounded-none ${
                   playVideoOnActivate
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                     : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
                 }`}
               >
@@ -191,7 +191,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                       return (
                         <div
                           key={id}
-                          className="p-1.5 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 flex items-center justify-between gap-2"
+                          className="p-1.5 bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 flex items-center justify-between gap-2"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="font-mono text-xs font-bold text-red-600 dark:text-red-500 w-5 shrink-0 text-center">
@@ -258,11 +258,11 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                       value={heroSearchQuery}
                       onChange={e => setHeroSearchQuery(e.target.value)}
                       placeholder="여정 검색 (제목, 장소)..."
-                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 outline-none rounded-none focus:border-black dark:focus:border-white"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 outline-none rounded-none focus:border-black dark:focus:border-white"
                     />
                   </div>
 
-                  <div className="max-h-60 overflow-y-auto border border-black/15 dark:border-white/15 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
+                  <div className="max-h-60 overflow-y-auto border border-black/15 dark:border-white/15 divide-y divide-black/10 dark:divide-white/10 bg-surface dark:bg-surface-dark">
                     {filteredHeroCandidates.length === 0 ? (
                       <div className="p-4 text-center text-xs font-mono text-black/60 dark:text-white/60">
                         검색 결과가 없습니다.
@@ -305,7 +305,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                               </div>
                             </div>
                             {isSelected && (
-                              <span className="text-micro font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black shrink-0">
+                              <span className="text-micro font-mono font-bold px-1.5 py-0.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shrink-0">
                                 SLIDE #{selectedHeroIds.indexOf(journey.id) + 1}
                               </span>
                             )}
@@ -365,7 +365,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                         inputEl.value = '';
                       }
                     }}
-                    className="flex-1 px-3 py-1.5 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                    className="flex-1 px-3 py-1.5 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
                   />
                   <span className="text-meta font-mono text-black/60 dark:text-white/60 shrink-0">
                     [ENTER로 추가]
@@ -401,7 +401,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                             await handleReplaceLandingHeroMedia(idx, files[0]);
                           }
                         }}
-                        className={`border bg-white dark:bg-[#161616] flex flex-col overflow-hidden group shadow-2xs transition-all ${
+                        className={`border bg-surface dark:bg-surface-dark flex flex-col overflow-hidden group shadow-2xs transition-all ${
                           isCardDragOver
                             ? 'border-red-500 ring-2 ring-red-500'
                             : 'border-black/15 dark:border-white/15'
@@ -598,7 +598,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                     onClick={() => setHomeJourneyLimit(limit)}
                     className={`px-3 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer ${
                       homeJourneyLimit === limit
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                         : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
                     }`}
                   >
@@ -646,8 +646,8 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                       onClick={() => setHomeMagSectionId(sec.id)}
                       className={`p-3 border flex flex-col justify-between gap-2 cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
-                          : 'bg-white dark:bg-[#161616] border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-md'
+                          : 'bg-surface dark:bg-surface-dark border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -696,7 +696,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                       선택된 매거진 섹션에 등록된 사진이 없습니다. 매거진 허브 편집기에서 사진을 추가해주세요.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 max-w-xl gap-2.5 p-2.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                    <div className="grid grid-cols-3 max-w-xl gap-2.5 p-2.5 border border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark">
                       {itemsToPreview.map((item, idx) => (
                         <div
                           key={item.id || idx}
@@ -743,7 +743,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
             {/* 1. Widget Display Toggles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Calendar Archive Toggle */}
-              <div className="flex flex-col gap-1.5 p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+              <div className="flex flex-col gap-1.5 p-3.5 border border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-red-600 dark:text-red-500" />
@@ -769,7 +769,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
               </div>
 
               {/* Live Weather Widget Toggle */}
-              <div className="flex flex-col gap-1.5 p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+              <div className="flex flex-col gap-1.5 p-3.5 border border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Globe className="w-4 h-4 text-black/70 dark:text-white/70" />
@@ -806,8 +806,8 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   onClick={() => setWidgetOrder('calendar-first')}
                   className={`p-3 border text-left flex items-center justify-between cursor-pointer transition-all ${
                     widgetOrder === 'calendar-first'
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'bg-white dark:bg-[#161616] border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
+                      : 'bg-surface dark:bg-surface-dark border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
                   }`}
                 >
                   <div className="flex flex-col">
@@ -822,8 +822,8 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   onClick={() => setWidgetOrder('weather-first')}
                   className={`p-3 border text-left flex items-center justify-between cursor-pointer transition-all ${
                     widgetOrder === 'weather-first'
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'bg-white dark:bg-[#161616] border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
+                      : 'bg-surface dark:bg-surface-dark border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
                   }`}
                 >
                   <div className="flex flex-col">
@@ -838,7 +838,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
             {/* 3. Extended Modules (D-Day & Exchange Rates) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* D-Day Banner Toggle */}
-              <div className="flex items-center justify-between p-3 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+              <div className="flex items-center justify-between p-3 border border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark">
                 <div className="flex flex-col">
                   <span className="text-xs font-mono font-bold uppercase text-black dark:text-white">
                     다가오는 여정 D-DAY 배너
@@ -861,7 +861,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
               </div>
 
               {/* Live Exchange Rates Toggle */}
-              <div className="flex items-center justify-between p-3 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+              <div className="flex items-center justify-between p-3 border border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark">
                 <div className="flex flex-col">
                   <span className="text-xs font-mono font-bold uppercase text-black dark:text-white">
                     실시간 주요 환율 정보 바
@@ -911,7 +911,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
 
               {/* Autocomplete Input for Adding City */}
               {isAddingWeatherCity && (
-                <div className="p-3 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] flex flex-col gap-2 animate-in fade-in duration-150">
+                <div className="p-3 border border-black/20 dark:border-white/20 bg-surface dark:bg-surface-dark flex flex-col gap-2 animate-in fade-in duration-150">
                   <span className="text-xs font-mono font-bold uppercase text-black/70 dark:text-white/70">
                     추가할 도시 또는 여행지 검색
                   </span>
@@ -930,7 +930,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
               )}
 
               {/* Cities List with Ordering & Deleting */}
-              <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+              <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 border border-black/15 dark:border-white/15 bg-surface dark:bg-surface-dark">
                 {widgetCities.length === 0 ? (
                   <div className="p-4 text-center text-xs font-mono text-black/60 dark:text-white/60">
                     등록된 맞춤 도시가 없습니다. (자동 감지 모드로 동작)

@@ -183,7 +183,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
         onClick={() => setIsOpen(!isOpen)}
         className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
           isOpen
-            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
             : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 border-black/10 dark:border-white/15 text-black dark:text-white'
         }`}
         title={`날씨 지역: ${selectedCity.name || selectedCity.nameEn} (클릭하여 변경)`}
@@ -266,7 +266,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
               onClick={handleToggleBg}
               className={`px-2.5 py-0.5 rounded-full text-micro font-mono font-bold transition-all cursor-pointer ${
                 isBgEnabled
-                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-2xs'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-2xs'
                   : 'bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60 hover:bg-black/15 dark:hover:bg-white/15'
               }`}
             >

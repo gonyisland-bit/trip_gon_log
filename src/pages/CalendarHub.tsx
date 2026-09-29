@@ -1827,7 +1827,7 @@ export function CalendarHubPage({
         {/* Top Metadata Bar & Pure Typography Year */}
         <div className="flex items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-3 mb-4 sm:mb-6">
           <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
-            <span className="shrink-0 bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta tracking-widest font-mono">
+            <span className="shrink-0 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold px-2 py-0.5 text-meta tracking-widest font-mono">
               CALENDAR
             </span>
 
@@ -1953,7 +1953,7 @@ export function CalendarHubPage({
                           }}
                           className={`relative flex flex-col items-center justify-center py-1 sm:py-1.5 px-0.5 rounded-xs transition-all cursor-pointer ${
                             isActive
-                              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs ring-1 ring-black dark:ring-white'
+                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs ring-1 ring-black dark:ring-white'
                               : isAvoid
                               ? 'opacity-40 text-black/60 dark:text-white/60 hover:opacity-80 hover:bg-black/5 dark:hover:bg-white/5'
                               : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
@@ -2066,7 +2066,7 @@ export function CalendarHubPage({
                 onClick={() => toggleViewMode('month')}
                 className={`h-full px-1.5 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                   viewMode === 'month'
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
                 title="월별 보기로 전환"
@@ -2080,7 +2080,7 @@ export function CalendarHubPage({
                 onClick={() => toggleViewMode('year')}
                 className={`h-full px-1.5 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                   viewMode === 'year'
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
                 title="연간 보기로 전환"
@@ -2100,7 +2100,7 @@ export function CalendarHubPage({
               onClick={() => setIsWeatherMode(prev => !prev)}
               className={`tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs ${
                 isWeatherMode
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
                   : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
               }`}
               title={isWeatherMode ? "날씨 모드 끄기" : "날씨 모드 켜기 (캘린더에 일별 날씨/기온 표시)"}
@@ -2224,7 +2224,7 @@ export function CalendarHubPage({
                     onClick={() => handleSelectCity(c)}
                     className={`h-6 px-2.5 rounded-full text-meta sm:text-meta font-mono font-bold transition-all cursor-pointer shrink-0 flex items-center shadow-2xs ${
                       isSelected
-                        ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
                         : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-black/70 dark:text-white/70'
                     }`}
                     title={`${displayName} (${c.nameEn})`}
@@ -2368,7 +2368,7 @@ export function CalendarHubPage({
                   }
                 } else if (cell.isToday) {
                   // 오늘 날짜: 스위스 미니멀 반전 상태 (블랙/화이트) + 선택 시 선명한 듀얼 링 인디케이터
-                  circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-sm';
+                  circleClasses += ' bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold shadow-sm';
                   if (isSelected) {
                     circleClasses += ' ring-[2.5px] ring-black dark:ring-white ' + (weatherCell ? 'ring-inset' : 'ring-offset-2 ring-offset-[#fcfbf9] dark:ring-offset-[#121316] scale-105 shadow-md') + ' z-20';
                   }
@@ -2972,7 +2972,7 @@ export function CalendarHubPage({
                       }
 
                       if (day.isToday) {
-                        circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-xs';
+                        circleClasses += ' bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold shadow-xs';
                       } else if (day.hasTrip) {
                         circleClasses += ' text-white font-extrabold hover:opacity-90';
                         textClasses += ' text-white';
@@ -3221,14 +3221,14 @@ export function CalendarHubPage({
                           }}
                           className="btn btn-danger btn-sm"
                         >
-                          CONFIRM DELETE
+                          Delete
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsConfirmingDelete(false)}
                           className="btn btn-secondary btn-sm"
                         >
-                          CANCEL
+                          Cancel
                         </button>
                       </div>
                     ) : (
@@ -3254,7 +3254,7 @@ export function CalendarHubPage({
                     }}
                     className="btn btn-secondary"
                   >
-                    CANCEL
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -3663,7 +3663,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={() => { const d = quickViewDate.dateStr; openNewEventModal(d, d); }}
-                className="tap-target w-8 h-8 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black hover:opacity-85 transition-opacity cursor-pointer shrink-0"
+                className="tap-target w-8 h-8 flex items-center justify-center bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:opacity-85 transition-opacity cursor-pointer shrink-0"
                 aria-label="일정 추가"
               >
                 <Plus className="w-4 h-4" />
@@ -3798,7 +3798,7 @@ export function CalendarHubPage({
                 onClick={() => setIsYearTripsModalOpen(false)}
                 className="btn btn-secondary btn-sm"
               >
-                CLOSE
+                Close
               </button>
             </div>
           </div>

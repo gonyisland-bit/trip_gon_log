@@ -61,7 +61,7 @@ export const MagazineSpread = memo(function MagazineSpread({ sections, activeId,
                     aria-pressed={on}
                     className={`px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
                       on
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                         : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                     }`}
                   >
@@ -138,7 +138,7 @@ export const MagazineSpread = memo(function MagazineSpread({ sections, activeId,
           <button
             type="button"
             onClick={() => onOpen(active.id)}
-            className="tgl-press px-8 py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 hover:text-white dark:hover:text-white transition-colors cursor-pointer flex items-center gap-2 group"
+            className="tgl-press px-8 py-3.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-xs sm:text-sm font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 hover:text-white dark:hover:text-white transition-colors cursor-pointer flex items-center gap-2 group"
           >
             <span>{ctaLabel}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

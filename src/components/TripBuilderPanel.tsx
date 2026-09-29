@@ -331,7 +331,7 @@ export function TripBuilderPanel({
               }
             }
           }}
-          className="text-[11px] font-mono font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 rounded-sm bg-transparent outline-none w-24 focus:w-32 focus:border-black dark:focus:border-white text-black dark:text-white transition-all"
+          className="text-[11px] font-mono font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 rounded-full bg-transparent outline-none w-24 focus:w-32 focus:border-black dark:focus:border-white text-black dark:text-white transition-all"
         />
       </div>
     </div>
@@ -1775,7 +1775,7 @@ export function TripBuilderPanel({
     };
   }, [selectedPresetObj, presetStartDate]);
 
-  const inputCls = 'w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-sans';
+  const inputCls = 'w-full h-10 pl-10 pr-4 text-xs bg-paper dark:bg-paper-dark rounded-full outline-none focus-visible:ring-2 focus-visible:ring-red-600 transition-colors text-black dark:text-white font-sans';
   const labelCls = 'text-meta font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 mb-1 block';
   const iconCls = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 dark:text-white/60 pointer-events-none';
 
@@ -1839,12 +1839,12 @@ export function TripBuilderPanel({
   if (!isOpen) return null;
 
   return (
-    <aside className="w-full h-full flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121212] border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 text-black dark:text-white overflow-hidden font-sans select-none z-30 shadow-2xl">
+    <aside className="w-full h-full flex-1 min-h-0 flex flex-col bg-surface dark:bg-surface-dark border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 text-black dark:text-white overflow-hidden font-sans select-none z-30 shadow-2xl">
       {/* Panel Header (Nou producte Reference Style); re-keyed on destination change to replay the accent */}
       <div
         key={`guide-header-${guideDestinationLabel}`}
         data-sheet-handle
-        className={`flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/5 shrink-0 bg-white dark:bg-[#121212] ${guideDestinationLabel ? 'tgl-accent-flash' : ''}`}
+        className={`flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/5 shrink-0 bg-surface dark:bg-surface-dark ${guideDestinationLabel ? 'tgl-accent-flash' : ''}`}
       >
         <div className="flex items-center gap-3 min-w-0">
           <button
@@ -1877,10 +1877,10 @@ export function TripBuilderPanel({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-black/5 dark:border-white/5 bg-neutral-50 dark:bg-[#181818] shrink-0">
+      <div className="flex shrink-0 mx-4 sm:mx-5 mt-2 mb-1 p-1 gap-1 rounded-full bg-black/[0.06] dark:bg-white/10">
         {([
-          { id: 'curator', label: 'CURATOR', icon: Compass },
-          { id: 'custom', label: 'CUSTOM', icon: Sliders },
+          { id: 'curator', label: 'Curator', icon: Compass },
+          { id: 'custom', label: 'Custom', icon: Sliders },
         ] as const).map(tab => {
           const Icon = tab.icon;
           const active = panelTab === tab.id;
@@ -1889,10 +1889,10 @@ export function TripBuilderPanel({
               key={tab.id}
               type="button"
               onClick={() => setPanelTab(tab.id)}
-              className={`flex-1 py-3 px-3 flex items-center justify-center gap-2 text-xs font-mono font-bold tracking-wider uppercase border-b-2 transition-all cursor-pointer ${
+              className={`flex-1 h-9 px-3 flex items-center justify-center gap-2 text-xs font-bold tracking-wider uppercase rounded-full transition-colors cursor-pointer ${
                 active
-                  ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white'
-                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  ? 'bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark shadow-sm'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -1933,7 +1933,7 @@ export function TripBuilderPanel({
                     className={`p-3 border transition-all cursor-pointer flex gap-3 items-center ${
                       isSelected
                         ? 'border-black dark:border-white bg-black/5 dark:bg-white/10 ring-1 ring-black dark:ring-white'
-                        : 'border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#181818]'
+                        : 'border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 bg-surface dark:bg-surface-dark'
                     }`}
                   >
                     <img
@@ -1944,7 +1944,7 @@ export function TripBuilderPanel({
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-meta font-mono font-extrabold bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase">
+                        <span className="text-meta font-mono font-extrabold bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark px-1.5 py-0.5 uppercase">
                           {preset.country}
                         </span>
                         <span className="text-meta font-mono font-bold text-red-600 dark:text-red-400">
@@ -2010,7 +2010,7 @@ export function TripBuilderPanel({
                       type="date"
                       value={presetStartDate}
                       onChange={(e) => setPresetStartDate(e.target.value)}
-                      className="px-2.5 py-1 text-xs font-mono font-bold bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white rounded-none cursor-pointer"
+                      className="h-8 px-3 text-xs font-mono font-bold bg-paper dark:bg-paper-dark text-black dark:text-white outline-none focus-visible:ring-2 focus-visible:ring-red-600 rounded-full cursor-pointer"
                     />
                   </div>
 
@@ -2245,7 +2245,7 @@ export function TripBuilderPanel({
                         )}
                       </div>
                       {isBuilderCountryOpen && filteredBuilderCountries.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1e1e1e] border border-black/10 dark:border-white/10 rounded-xl shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5 p-1">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-paper dark:bg-paper-dark rounded-card shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5 p-1">
                           {filteredBuilderCountries.map(c => (
                             <button
                               key={c.code}
@@ -2308,7 +2308,7 @@ export function TripBuilderPanel({
                         )}
                       </div>
                       {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1e1e1e] border border-black/10 dark:border-white/10 rounded-xl shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5 p-1">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-paper dark:bg-paper-dark rounded-card shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5 p-1">
                           {filteredBuilderCities.map(city => (
                             <button
                               key={city.nameEn}
@@ -2656,13 +2656,13 @@ export function TripBuilderPanel({
                         className={`p-3.5 border transition-all cursor-pointer flex flex-col gap-2.5 ${
                           isSelected
                             ? 'border-black dark:border-white bg-black/5 dark:bg-white/10 ring-1 ring-black dark:ring-white'
-                            : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40 bg-white dark:bg-[#181818]'
+                            : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40 bg-surface dark:bg-surface-dark'
                         }`}
                       >
                         {/* Card Top: Number, Region, Theme Badge */}
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black text-meta font-mono font-extrabold">
+                            <span className="w-5 h-5 flex items-center justify-center bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-meta font-mono font-extrabold">
                               0{idx + 1}
                             </span>
                             <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
@@ -2796,7 +2796,7 @@ export function TripBuilderPanel({
                       }}
                       className={`px-2 py-1 text-meta font-mono uppercase border transition-all cursor-pointer ${
                         isSel
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold'
                           : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40'
                       }`}
                     >
@@ -2881,7 +2881,7 @@ export function TripBuilderPanel({
                     )}
                   </div>
                   {isCountryDropdownOpen && filteredBuilderCountries.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                    <div className="absolute top-full left-0 right-0 mt-0.5 bg-paper dark:bg-paper-dark rounded-card shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
                       {filteredBuilderCountries.map(c => (
                         <button
                           key={c.code}
@@ -2944,7 +2944,7 @@ export function TripBuilderPanel({
                     )}
                   </div>
                   {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                    <div className="absolute top-full left-0 right-0 mt-0.5 bg-paper dark:bg-paper-dark rounded-card shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
                       {filteredBuilderCities.map(city => (
                         <button
                           key={city.nameEn}
@@ -3210,7 +3210,7 @@ export function TripBuilderPanel({
                         <span className="text-xs font-extrabold uppercase font-sans tracking-tight">
                           {tpl.name}
                         </span>
-                        <span className="text-micro font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black">
+                        <span className="text-micro font-mono font-bold px-1.5 py-0.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark">
                           {tpl.badge}
                         </span>
                       </div>
@@ -3242,7 +3242,7 @@ export function TripBuilderPanel({
                     {presets.filter(p => p.isCustom).map(cp => (
                       <div
                         key={cp.id}
-                        className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] transition-all flex items-center justify-between gap-3 group"
+                        className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-surface dark:bg-surface-dark transition-all flex items-center justify-between gap-3 group"
                       >
                         <div
                           onClick={() => applyPresetToCurator(cp)}
@@ -3295,7 +3295,7 @@ export function TripBuilderPanel({
                     <div
                       key={wp.id}
                       onClick={() => applyPresetToCurator(wp)}
-                      className="p-2.5 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] transition-all cursor-pointer flex items-center justify-between gap-2"
+                      className="p-2.5 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white bg-surface dark:bg-surface-dark transition-all cursor-pointer flex items-center justify-between gap-2"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
@@ -3326,8 +3326,8 @@ export function TripBuilderPanel({
         isOpen={confirmModalState.isOpen}
         title={confirmModalState.title}
         message={confirmModalState.message}
-        confirmLabel="CREATE"
-        cancelLabel="CANCEL"
+        confirmLabel="Create"
+        cancelLabel="Cancel"
         confirmVariant="black"
         iconType="check"
         onConfirm={() => {

@@ -691,7 +691,7 @@ export function TransitCard({
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
                       transit.transitType === 'train' || (!transit.transitType || (transit.transitType !== 'bus' && transit.transitType !== 'taxi' && transit.transitType !== 'car'))
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                         : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
@@ -705,7 +705,7 @@ export function TransitCard({
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
                       transit.transitType === 'bus'
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                         : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
@@ -719,7 +719,7 @@ export function TransitCard({
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
                       transit.transitType === 'taxi'
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                         : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
@@ -733,7 +733,7 @@ export function TransitCard({
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
                       transit.transitType === 'car'
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                         : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >

@@ -318,7 +318,7 @@ export function ProfileEditModal({
         onClick={onClose}
       >
         <div 
-          className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+          className="w-full max-w-lg bg-surface dark:bg-surface-dark border border-black dark:border-white shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
@@ -496,7 +496,7 @@ export function ProfileEditModal({
                 onClick={onClose}
                 className="btn btn-secondary flex-1"
               >
-                CANCEL
+                Cancel
               </button>
               <button 
                 type="submit"
@@ -654,7 +654,7 @@ export function ProfileEditModal({
           onClick={() => setIsAvatarPickerOpen(false)}
         >
           <div 
-            className="w-full max-w-md bg-white dark:bg-[#161616] border border-black dark:border-white shadow-2xl p-5 flex flex-col gap-4 animate-in zoom-in-95 duration-150"
+            className="w-full max-w-md bg-surface dark:bg-surface-dark border border-black dark:border-white shadow-2xl p-5 flex flex-col gap-4 animate-in zoom-in-95 duration-150"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
@@ -717,7 +717,7 @@ export function ProfileEditModal({
                       onClick={() => setSelectedCategory(cat.id as any)}
                       className={`px-2 py-0.5 text-meta font-mono font-bold border cursor-pointer transition-colors ${
                         selectedCategory === cat.id
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                           : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                       }`}
                     >

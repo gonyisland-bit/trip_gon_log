@@ -386,7 +386,7 @@ export function SettingsModal({
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-3 text-meta font-extrabold uppercase tracking-widest transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
                   : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
               }`}
             >

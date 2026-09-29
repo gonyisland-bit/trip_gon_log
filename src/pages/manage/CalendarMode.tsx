@@ -39,7 +39,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
               calendarSaveSuccess
                 ? 'bg-emerald-600 text-white border border-emerald-600'
                 : isCalendarDirty
-                  ? 'bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white ring-2 ring-red-600/30'
+                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border border-black dark:border-white ring-2 ring-red-600/30'
                   : 'border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
             }`}
             title={isCalendarDirty ? "변경된 캘린더 세팅 저장" : "저장할 변경사항이 없습니다"}
@@ -79,7 +79,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
               handleAddCalendarWeatherCity(placeName, coords, address, countryName, cityName);
             }}
             placeholder="도시명 검색 (예: 서울, 도쿄, 오사카, 파리, 삿포로, 런던, 뉴욕...)"
-            className="w-full h-9 px-3 text-xs bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
+            className="w-full h-9 px-3 text-xs bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
           />
           <span className="text-meta text-black/60 dark:text-white/60 font-mono">
             * 검색 후 선택 시 한글 정규화 도시명과 공식 영문 코드가 자동 등록되며, 실시간 클라우드에 영속 저장됩니다.
@@ -108,7 +108,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
                   </span>
 
                   {isHomeTarget ? (
-                    <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black text-micro font-mono font-extrabold tracking-wider uppercase shrink-0">
+                    <span className="px-1.5 py-0.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-micro font-mono font-extrabold tracking-wider uppercase shrink-0">
                       HOME 4
                     </span>
                   ) : (

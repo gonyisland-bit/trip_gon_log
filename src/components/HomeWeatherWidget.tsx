@@ -194,7 +194,7 @@ export function HomeWeatherWidget({
       {/* Sub-Header */}
       <div className="flex items-center justify-between pb-3.5 border-b border-black/10 dark:border-white/10 mb-0">
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-extrabold text-meta px-2 py-0.5 uppercase tracking-widest">
+          <span className="bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-mono font-extrabold text-meta px-2 py-0.5 uppercase tracking-widest">
             LIVE WEATHER
           </span>
           <span className="text-[11px] sm:text-xs font-mono font-bold tracking-widest uppercase text-black/60 dark:text-white/60">
@@ -246,7 +246,7 @@ export function HomeWeatherWidget({
                 onClick={() => setSelectedCityEn(isSelected ? null : city.nameEn)}
                 className={`p-3.5 sm:p-4 md:p-4.5 rounded-2xl flex flex-col justify-between gap-3 text-left transition-all duration-200 cursor-pointer relative overflow-hidden [&>div]:relative [&>div]:z-[1] ${
                   isSelected
-                    ? 'bg-white dark:bg-[#11110F] border border-black dark:border-white shadow-md ring-1 ring-black dark:ring-white scale-[1.01]'
+                    ? 'bg-surface dark:bg-surface-dark border border-black dark:border-white shadow-md ring-1 ring-black dark:ring-white scale-[1.01]'
                     : 'bg-black/[0.025] dark:bg-white/[0.035] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] shadow-xs'
                 }`}
                 title="클릭하여 1주일 예보 확인"

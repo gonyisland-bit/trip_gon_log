@@ -281,7 +281,7 @@ export function Navigation({
             aria-expanded={showSettings}
             className={`w-11 h-11 -mr-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
               showSettings 
-                ? 'bg-black text-white dark:bg-white dark:text-black' 
+                ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' 
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
             }`}
             title={showSettings ? "메뉴 닫기 (ESC)" : "메뉴 열기"}
@@ -387,7 +387,7 @@ export function Navigation({
             className="tgl-drawer-item w-full h-14 flex items-center gap-3 text-left border-b border-black/10 dark:border-white/10 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
             style={{ ['--i' as string]: 6 }}
           >
-            <span className="w-8 h-8 shrink-0 rounded-full bg-black text-white dark:bg-white dark:text-black grid place-items-center transition-colors group-hover:bg-red-600 dark:group-hover:bg-red-500 dark:group-hover:text-white">
+            <span className="w-8 h-8 shrink-0 rounded-full bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark grid place-items-center transition-colors group-hover:bg-red-600 dark:group-hover:bg-red-500 dark:group-hover:text-white">
               <Play className="w-3.5 h-3.5 fill-current translate-x-[1px]" />
             </span>
             <span className="flex-1 text-sm font-bold">소개 영상</span>

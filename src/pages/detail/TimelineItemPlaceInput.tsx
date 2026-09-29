@@ -166,7 +166,7 @@ export function TimelineItemPlaceInput({
 
       {/* Frequent Places Auto-complete Dropdown */}
       {showDropdown && filteredFrequent.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#222222] border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto rounded-none" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute left-0 right-0 top-full mt-1 bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto rounded-none" onClick={(e) => e.stopPropagation()}>
           <div className="px-2 py-1 text-micro font-bold text-black/60 dark:text-white/60 border-b border-black/5 dark:border-white/5 uppercase tracking-widest">
             자주 사용하는 장소
           </div>

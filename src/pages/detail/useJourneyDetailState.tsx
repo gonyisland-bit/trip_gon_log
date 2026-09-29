@@ -3270,7 +3270,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
             }}
             className={`tap-target p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center ${
               activeTab === 'summary'
-                ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
             }`}
             title="Summary View (요약 보기)"

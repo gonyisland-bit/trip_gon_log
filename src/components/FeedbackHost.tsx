@@ -68,7 +68,7 @@ export function FeedbackHost() {
             <div
               key={t.id}
               role={t.tone === 'error' ? 'alert' : undefined}
-              className="tgl-toast pointer-events-auto flex items-start gap-3 bg-white dark:bg-[#161616] text-black dark:text-white border border-black/20 dark:border-white/20 shadow-xl px-4 py-3"
+              className="tgl-toast pointer-events-auto flex items-start gap-3 bg-surface dark:bg-surface-dark text-black dark:text-white border border-black/20 dark:border-white/20 shadow-xl px-4 py-3"
             >
               <span className={`shrink-0 pt-[3px] text-micro font-mono font-bold uppercase tracking-wider ${t.tone === 'error' ? 'text-red-600 dark:text-red-500' : 'text-black/60 dark:text-white/60'}`}>
                 {TONE_LABEL[t.tone]}
