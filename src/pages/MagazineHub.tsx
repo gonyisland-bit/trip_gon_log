@@ -826,7 +826,7 @@ export function MagazineHubPage({
               <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-extrabold uppercase tracking-tight leading-[0.98] text-black dark:text-white">
                 {headerMainTitle}
               </h1>
-              <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
+              <p className="hidden sm:block text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
                 {headerSubtitle}
               </p>
             </div>

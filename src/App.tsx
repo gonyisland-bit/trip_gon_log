@@ -299,7 +299,7 @@ function App() {
               ) : (
                 <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 bg-transparent text-center w-full">
                   <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin mb-3" />
-                  <span className="text-meta font-mono uppercase tracking-widest text-black/60 dark:text-white/60">Loading Archive View...</span>
+                  <span className="text-meta font-mono uppercase tracking-widest text-black/60 dark:text-white/60">Loading</span>
                 </div>
               )
             }>

@@ -542,7 +542,7 @@ export function SettingsModal({
                 
                 <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm">
                   <div className="flex flex-col">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-black dark:text-white">마퀴 전광판 배너 (Marquee Banner)</span>
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-black dark:text-white">Marquee Banner</span>
                     <span className="text-micro text-black/60 dark:text-white/60">홈 화면 상단에 흐르는 전광판 배너 표시 여부</span>
                   </div>
                   <button

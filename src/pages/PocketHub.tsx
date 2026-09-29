@@ -1201,7 +1201,7 @@ export function PocketHubPage({
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-extrabold uppercase tracking-tight leading-[0.98] text-black dark:text-white">
             POCKET
           </h1>
-          <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
+          <p className="hidden sm:block text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
             SNS 스크랩 & 숨은 핫플 꿀팁을 지역별 갤러리로 보관하고, 여정 작성 시 즉시 꺼내어 활용하세요.
           </p>
         </div>
@@ -1927,7 +1927,7 @@ export function PocketHubPage({
                       ) : (
                         <>
                           <ScanText className="w-3 h-3" />
-                          <span>사진 글씨 읽기 (OCR)</span>
+                          <span>Scan text</span>
                         </>
                       )}
                     </button>
@@ -2011,7 +2011,7 @@ export function PocketHubPage({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
-                    국가 (Country)
+                    Country
                   </label>
                   <input
                     type="text"
@@ -2023,7 +2023,7 @@ export function PocketHubPage({
                 </div>
                 <div>
                   <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
-                    도시/지역 (City)
+                    City
                   </label>
                   <input
                     type="text"

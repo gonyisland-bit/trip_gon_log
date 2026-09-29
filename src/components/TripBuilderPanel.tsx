@@ -3213,7 +3213,7 @@ export function TripBuilderPanel({
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
-                    대중적 러프 템플릿 (QUICK START)
+                    Quick start
                   </span>
                   <span className="text-meta font-mono text-black/60 dark:text-white/60">4 PRESETS</span>
                 </div>
@@ -3250,7 +3250,7 @@ export function TripBuilderPanel({
                 <div className="pt-4 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      나만의 맞춤 템플릿 (SAVED TEMPLATES)
+                      Saved templates
                     </span>
                     <span className="text-meta font-mono text-black/60 dark:text-white/60">
                       {presets.filter(p => p.isCustom).length} SAVED
@@ -3302,7 +3302,7 @@ export function TripBuilderPanel({
               <div className="pt-4 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70">
-                    전 세계 추천 여정 (WORLD PRESETS)
+                    World presets
                   </span>
                   <span className="text-meta font-mono text-black/60 dark:text-white/60">
                     {presets.filter(p => !p.isCustom).length} AVAILABLE

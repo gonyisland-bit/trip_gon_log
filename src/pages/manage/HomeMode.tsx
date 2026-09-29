@@ -338,7 +338,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                       }}
                       className="text-meta font-mono text-red-600 hover:underline cursor-pointer"
                     >
-                      전체 초기화 (RESET ALL)
+                      Reset all
                     </button>
                   )}
                 </div>

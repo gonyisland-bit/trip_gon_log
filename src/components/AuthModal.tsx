@@ -399,7 +399,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   className="w-full py-2 px-3 border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-black dark:text-white text-center"
                 >
                   <Mail className="w-3.5 h-3.5" />
-                  <span>관리자에게 승인 요청 메일 발송 (MAILTO)</span>
+                  <span>Request approval</span>
                 </a>
 
                 {/* 2. Copy One-Click Approval URL */}
@@ -439,7 +439,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
               }}
               className="w-full h-11 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
             >
-              확인 (CONFIRM)
+              Confirm
             </button>
           </div>
         ) : (
@@ -475,7 +475,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                        성 (LAST NAME) *
+                        Last name *
                       </label>
                       <input 
                         type="text"
@@ -498,7 +498,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                     </div>
                     <div>
                       <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                        이름 (FIRST NAME) *
+                        First name *
                       </label>
                       <input 
                         type="text"
@@ -525,7 +525,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                        생년월일 (BIRTHDAY)
+                        Birthday
                       </label>
                       <input 
                         type="text"
@@ -537,7 +537,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                     </div>
                     <div>
                       <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                        전화번호 (PHONE)
+                        Phone
                       </label>
                       <input 
                         type="tel"
@@ -552,7 +552,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   {/* Username (아이디) */}
                   <div>
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                      아이디 (USERNAME) *
+                      Username *
                     </label>
                     <input 
                       type="text" 
@@ -610,7 +610,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   {/* Email Address */}
                   <div>
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                      이메일 (EMAIL) *
+                      Email *
                     </label>
                     <input 
                       type="email"
@@ -635,7 +635,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   {/* Password */}
                   <div>
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                      비밀번호 (PASSWORD) *
+                      Password *
                     </label>
                     <PasswordInput
                       required
@@ -656,7 +656,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   {/* Password Confirmation */}
                   <div>
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                      비밀번호 확인 (CONFIRM) *
+                      Confirm password *
                     </label>
                     <PasswordInput
                       required
@@ -698,7 +698,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   {/* Sign In Mode: Email & Password Only */}
                   <div>
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                      이메일 (EMAIL) *
+                      Email *
                     </label>
                     <input 
                       type="email"
@@ -712,7 +712,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
 
                   <div>
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                      비밀번호 (PASSWORD) *
+                      Password *
                     </label>
                     <PasswordInput
                       required

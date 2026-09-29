@@ -630,13 +630,14 @@ export function ArchiveHubPage({
               <span className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2 py-0.5 text-meta">
                 JOURNEY DIRECTORY
               </span>
-              <span className="font-bold text-red-600 dark:text-red-400">
+              <span className="hidden sm:inline font-bold text-red-600 dark:text-red-400">
                 {headerBadge}
               </span>
             </div>
             <div className="flex items-center gap-3">
               <span className="hidden sm:inline">{headerVolume}</span>
-              <span>{tripStats.totalTrips} JOURNEYS RECORDED</span>
+              <span className="hidden sm:inline">{tripStats.totalTrips} JOURNEYS RECORDED</span>
+              <span className="sm:hidden tabular-nums">{tripStats.totalTrips} TRIPS</span>
             </div>
           </div>
 
@@ -645,7 +646,7 @@ export function ArchiveHubPage({
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-extrabold uppercase tracking-tight leading-[0.98] text-black dark:text-white">
               {headerMainTitle}
             </h1>
-            <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
+            <p className="hidden sm:block text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
               {headerSubtitle}
             </p>
           </div>
@@ -857,7 +858,7 @@ export function ArchiveHubPage({
                                 : 'border-black/15 dark:border-white/15 hover:bg-black/5'
                             }`}
                           >
-                            {f === 'All' ? '전체 (All)' : `#${f}`}
+                            {f === 'All' ? 'All' : `#${f}`}
                           </button>
                         ))}
                         {visibleTags.length === 0 && (

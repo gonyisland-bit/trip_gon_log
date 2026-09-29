@@ -59,7 +59,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
               <div className="flex items-center gap-2.5">
                 <Sliders className="w-4 h-4 text-red-600 dark:text-red-400" />
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
-                  여정 허브 메인 헤더 & 소개글 설정 (JOURNEY ARCHIVE MAIN HEADER)
+                  Journey Archive header
                 </span>
                 <span className="text-meta font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
                   HUB CONFIG
@@ -175,7 +175,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                   : 'text-black/60 dark:text-white/60'
               }`}
             >
-              상세 수정 (EDIT)
+              Edit
             </button>
           </div>
 

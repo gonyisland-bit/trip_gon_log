@@ -236,7 +236,7 @@ function QuickBookingModalContent({
                 <span className="hidden sm:inline">Flight 항공권 실시간 비교</span>
               </span>
               <span className="text-meta font-mono text-black/60 dark:text-white/60 truncate text-right">
-                {originAirport} ➔ {destAirport} • 성인 {adults}명
+                {originAirport} → {destAirport} • 성인 {adults}명
               </span>
             </div>
 

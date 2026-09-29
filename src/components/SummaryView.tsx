@@ -846,7 +846,7 @@ export function SummaryView({
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-base sm:text-lg font-extrabold font-sans tracking-tight text-black dark:text-white">
-                          {f.fromCode || 'DEP'} ➔ {f.toCode || 'ARR'}
+                          {f.fromCode || 'DEP'} → {f.toCode || 'ARR'}
                         </span>
                         <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 rounded-xs">
                           {f.flightNo || 'FLIGHT'}

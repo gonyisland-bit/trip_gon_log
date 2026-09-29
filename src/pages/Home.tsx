@@ -1177,7 +1177,7 @@ export function HomePage({
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div className="max-w-md">
                 <p className="text-xs sm:text-sm font-medium leading-relaxed opacity-85 break-keep">
-                  발걸음이 머물렀던 전 세계의 도시와 찬란했던 순간의 기록. 나만의 여행 포켓과 감성 타임라인을 기록해 보세요.
+                  발걸음이 머물렀던 도시와 순간의 기록.
                 </p>
               </div>
 
@@ -1574,7 +1574,7 @@ export function HomePage({
                             : 'border-black/15 bg-black/4 dark:bg-white/5 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40'
                         }`}
                       >
-                        {f === 'All' ? '전체 (All)' : `#${f}`}
+                        {f === 'All' ? 'All' : `#${f}`}
                       </button>
                     ))}
                     {visibleTags.length === 0 && (

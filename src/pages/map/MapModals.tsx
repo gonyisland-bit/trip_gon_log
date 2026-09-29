@@ -378,7 +378,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                         }}
                         className="text-meta font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                       >
-                        [➔ {c.name} 국가 정보 보기]
+                        {c.name} →
                       </button>
                     );
                   })()}

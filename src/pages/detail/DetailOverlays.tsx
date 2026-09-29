@@ -33,7 +33,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
       {showAutosaveModal && (
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 shadow-2xl border border-emerald-500/20 rounded-sm font-bold text-xs uppercase tracking-wider flex items-center gap-2 animate-bounce animate-in slide-in-from-bottom-5 duration-300">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          <span>자동 저장되었습니다. (Autosaved)</span>
+          <span>Autosaved</span>
         </div>
       )}
 

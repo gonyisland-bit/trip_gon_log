@@ -106,7 +106,7 @@ export function PocketScheduleModal({
         {/* 1. Date Selection (DAY 1, DAY 2 ...) */}
         <div className="mb-4">
           <label className="block text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1.5 font-bold">
-            1. 여행 날짜 선택 (DATE)
+            1. Date
           </label>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             {dates.map((d, idx) => {
@@ -133,7 +133,7 @@ export function PocketScheduleModal({
         {/* 2. Realistic 6-Time-Slot Selection */}
         <div className="mb-5">
           <label className="block text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1.5 font-bold">
-            2. 시간대 선택 (TIME SLOT)
+            2. Time slot
           </label>
           <div className="grid grid-cols-2 gap-2">
             {QUICK_TIME_SLOTS.map((slot) => {

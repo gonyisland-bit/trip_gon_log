@@ -60,7 +60,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
           <div className="flex items-center gap-2.5">
             <Sliders className="w-4 h-4 text-red-600 dark:text-red-400" />
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
-              매거진 허브 메인 헤더 & 소개글 설정 (MAGAZINE HUB MAIN HEADER)
+              Magazine Hub header
             </span>
             <span className="text-meta font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
               HUB CONFIG
@@ -476,7 +476,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 title="타임라인 최신 사진/제목/장소 데이터로 즉시 동기화"
               >
                 <RefreshCw className={`w-3 h-3 ${isSyncingMagazine ? 'animate-spin text-red-500' : 'text-black/70 dark:text-white/70'}`} />
-                <span>{isSyncingMagazine ? '동기화 중...' : '타임라인 동기화 (SYNC)'}</span>
+                <span>{isSyncingMagazine ? '동기화 중...' : 'Sync timeline'}</span>
               </button>
               <button
                 type="button"
@@ -1209,7 +1209,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   return (
                     <>
                       {uncreatedJourneys.length > 0 && (
-                        <optgroup label="── 미생성 여정 (NEW) ──">
+                        <optgroup label="── New ──">
                           {uncreatedJourneys.map(j => (
                             <option key={j.id} value={j.id}>
                               {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country} · {j.date})
@@ -1218,7 +1218,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                         </optgroup>
                       )}
                       {createdJourneys.length > 0 && (
-                        <optgroup label="── 이미 섹션으로 생성된 여정 (ALREADY CREATED) ──">
+                        <optgroup label="── Already created ──">
                           {createdJourneys.map(j => (
                             <option key={j.id} value={j.id}>
                               ✓ [생성완료] {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country} · {j.date})

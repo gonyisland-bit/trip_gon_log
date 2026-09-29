@@ -681,7 +681,7 @@ export function EditTripModal({
           {/* Country */}
           <div className="flex flex-col gap-1.5">
             <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-              대표 국가명 (Country)
+              Country
             </label>
             <input
               type="text"

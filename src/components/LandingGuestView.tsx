@@ -154,8 +154,8 @@ export function LandingGuestView({
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end pt-2">
             <p className="md:col-span-7 lg:col-span-6 text-xs sm:text-sm md:text-base font-sans font-medium text-white/80 leading-relaxed break-keep max-w-xl">
-              발걸음이 머물렀던 세계 곳곳의 도시와 찬란했던 순간의 감성 아카이브.
-              나만의 스마트 포켓과 시네마틱 타임라인을 기록해 보세요.
+              발걸음이 머물렀던 도시와 순간의 기록.
+              <span className="hidden sm:inline"> 스마트 포켓과 시네마틱 타임라인으로 남겨 보세요.</span>
             </p>
 
             {/* Main Action Buttons: Swiss Minimal Monochrome SIGN IN & JOIN */}

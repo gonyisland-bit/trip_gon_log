@@ -3349,7 +3349,7 @@ export function CalendarHubPage({
             {/* Share Copied Toast */}
             {shareCopied && (
               <div className="py-1 px-3 mt-3 bg-emerald-600 text-white font-mono text-xs font-bold text-center animate-in fade-in slide-in-from-top-1">
-                ✓ 일정 내용이 클립보드에 복사되었습니다.
+                Copied to clipboard
               </div>
             )}
 

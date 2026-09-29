@@ -740,7 +740,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-                도시 (City)
+                City
               </label>
               <input 
                 type="text"
@@ -752,7 +752,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-                국가 (Country)
+                Country
               </label>
               <input 
                 type="text"

@@ -407,7 +407,7 @@ export function ProfileEditModal({
               {/* Username (아이디) Field */}
               <div>
                 <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                  아이디 (USERNAME)
+                  Username
                 </label>
                 <input 
                   type="text" 
@@ -425,7 +425,7 @@ export function ProfileEditModal({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                    성 (LAST NAME)
+                    Last name
                   </label>
                   <input 
                     type="text" 
@@ -436,7 +436,7 @@ export function ProfileEditModal({
                 </div>
                 <div>
                   <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                    이름 (FIRST NAME)
+                    First name
                   </label>
                   <input 
                     type="text" 
@@ -464,7 +464,7 @@ export function ProfileEditModal({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                    생년월일 (BIRTHDAY)
+                    Birthday
                   </label>
                   <input 
                     type="text" 
@@ -476,7 +476,7 @@ export function ProfileEditModal({
                 </div>
                 <div>
                   <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                    전화번호 (PHONE)
+                    Phone
                   </label>
                   <input 
                     type="tel" 
@@ -519,7 +519,7 @@ export function ProfileEditModal({
               <div className="pt-3 border-t border-black/10 dark:border-white/10 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <span className="text-meta font-mono font-bold uppercase tracking-wider opacity-60">
-                    비밀번호 (PASSWORD)
+                    Password
                   </span>
                   <button
                     type="button"
@@ -534,7 +534,7 @@ export function ProfileEditModal({
                   <div className="flex flex-col gap-2">
                     <div>
                       <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                        새 비밀번호 (NEW PASSWORD)
+                        New password
                       </label>
                       <PasswordInput
                         variant="box"
@@ -550,7 +550,7 @@ export function ProfileEditModal({
                     </div>
                     <div>
                       <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                        새 비밀번호 확인 (CONFIRM)
+                        Confirm password
                       </label>
                       <PasswordInput
                         variant="box"
@@ -600,7 +600,7 @@ export function ProfileEditModal({
                   onClick={() => setIsDeleteConfirmOpen(true)}
                   className="px-2.5 py-1 text-meta font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:bg-red-500/10 border border-red-500/30 transition-colors cursor-pointer"
                 >
-                  회원 탈퇴 (DELETE ACCOUNT)
+                  Delete account
                 </button>
               </div>
             )}
@@ -639,7 +639,7 @@ export function ProfileEditModal({
         isOpen={isDeleteConfirmOpen}
         title="DELETE ACCOUNT"
         message="정말로 회원 탈퇴하시겠습니까? 탈퇴 시 모든 프로필 및 데이터가 영구 삭제되며 복구할 수 없습니다."
-        confirmLabel="탈퇴 확인 (DELETE)"
+        confirmLabel="Delete"
         cancelLabel="취소"
         iconType="alert"
         confirmVariant="danger"

@@ -751,7 +751,7 @@ export function useAppState() {
       // Extract flight details
       const tripFlights = flightsByTrip[activeTrip.id] || [];
       const flightInfo = tripFlights
-        .map(f => `${f.fromCode} ➔ ${f.toCode} (${f.flightNo})`)
+        .map(f => `${f.fromCode} → ${f.toCode} (${f.flightNo})`)
         .join(', ');
 
       // Extract stay details

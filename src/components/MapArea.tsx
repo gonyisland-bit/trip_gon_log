@@ -1061,11 +1061,9 @@ export function MapArea({
       const isTransitFaded = activeTab === 'transit' && expandedItemId !== null && !isTransitActive;
       
       let pinColor = '#dc2626';
-      let pinTextPrefix = '';
 
       if (isSummaryMode) {
         pinColor = '#d97706'; // Gold/Amber highlight for summary mode
-        pinTextPrefix = '📍 ';
       } else if (activeTab === 'transit') {
         const tType = item.transitType || 'train';
         if (tType === 'bus') {
@@ -1075,23 +1073,14 @@ export function MapArea({
         } else {
           pinColor = '#4f46e5'; // Indigo/Blue
         }
-        
-        if (item.type === 'transit_depart') {
-          pinTextPrefix = '🛫 ';
-        } else if (item.type === 'transit_arrive') {
-          pinTextPrefix = '🛬 ';
-        }
       } else if (item.isPhoto) {
         pinColor = '#f97316';
-        pinTextPrefix = '📷 ';
       } else if (activeTab === 'stays') {
         pinColor = '#e11d48'; // Swiss Minimal Rose/Red for Stays
-        pinTextPrefix = '';
       } else {
         const dayIndex = item.dayIndex || 0;
         const colorIndex = (dayIndex ? dayIndex - 1 : 0) % dayColors.length;
         pinColor = dayColors[colorIndex];
-        pinTextPrefix = '';
       }
 
       const isSelectedStay = activeTab === 'stays' && isActive;
@@ -1151,7 +1140,7 @@ export function MapArea({
         htmlContent = `
           <div class="pin-wrapper" style="transition: opacity 0.3s;">
             <div class="pin-label pin-label-active font-extrabold tracking-tight" style="background-color: rgba(217, 119, 6, 0.15); border: 1.5px solid #d97706; color: #d97706; padding: 4px 8px; border-radius: 9999px; white-space: nowrap; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2); font-size: 11px;">
-              ✨ ${item.place}
+              ${item.place}
             </div>
           </div>
         `;
@@ -1168,7 +1157,7 @@ export function MapArea({
               ` : ''}
               <div class="leaflet-pin${isActive ? ' active-pin' : ''}${isHovered && !isActive ? ' hovered-pin' : ''}" style="background-color: ${pinColor}; ${isActive ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
             </div>
-            <div class="pin-label${isActive ? ' pin-label-active' : ''}${isHovered && !isActive ? ' pin-label-hovered' : ''}">${pinTextPrefix}${item.place}</div>
+            <div class="pin-label${isActive ? ' pin-label-active' : ''}${isHovered && !isActive ? ' pin-label-hovered' : ''}">${item.place}</div>
           </div>
         `;
       }
@@ -1681,7 +1670,7 @@ export function MapArea({
       subText.style.fontSize = '9px';
       subText.style.display = 'block';
       subText.style.marginBottom = '6px';
-      subText.textContent = '📍 Double click to view on Google Maps';
+      subText.textContent = 'Double-click to open Google Maps';
       popupContainer.appendChild(subText);
 
       const button = document.createElement('button');
@@ -1938,7 +1927,7 @@ export function MapArea({
   if (!(window as any).L) {
     return (
       <div className="flex-grow relative bg-neutral-100 dark:bg-[#111111] overflow-hidden flex flex-col items-center justify-center text-black/60 dark:text-white/60 p-6">
-        <span className="text-meta uppercase tracking-widest font-bold z-10 mb-2">Loading Map Engine...</span>
+        <span className="text-meta uppercase tracking-widest font-bold z-10 mb-2">Loading map</span>
       </div>
     );
   }

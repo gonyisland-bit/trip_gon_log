@@ -404,7 +404,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
                 className="px-2.5 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
               >
-                <option value="">-- 여정 선택 (SELECT JOURNEY) --</option>
+                <option value="">-- Select journey --</option>
                 {localJourneys.map(j => (
                   <option key={j.id} value={j.id}>
                     {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
@@ -508,7 +508,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 onClick={() => setShowQuickPhotoPicker(false)}
                 className="px-4 py-1.5 text-xs font-mono font-bold border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
               >
-                닫기 (CLOSE)
+                Close
               </button>
             </div>
           </div>
@@ -534,7 +534,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
         isOpen={showCleanSuccessModal}
         title="OPTIMIZATION COMPLETE"
         message={`데이터베이스 최적화 및 안전 정리가 완료되었습니다.\n- 고아 문서/카드 정리: ${cleanupSummary?.orphanedDeleted ?? 0}건\n- 매거진 동기화 및 장소명 최적화: ${cleanupSummary?.magazineOptimized ?? 0}건\n- 폐기 속성(subtitle) 제거: ${cleanupSummary?.subtitleCleaned ?? 0}건\n- 로컬 임시 캐시 정리: ${cleanupSummary?.cacheCleaned ?? 0}건\n\n모든 활성 여정 및 타임라인 데이터는 100% 온전히 유지됩니다.`}
-        confirmLabel="확인 (OK)"
+        confirmLabel="OK"
         iconType="check"
         singleButton
         onConfirm={() => setShowCleanSuccessModal(false)}
@@ -686,7 +686,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
         isOpen={Boolean(presetToDelete)}
         title="DELETE PRESET"
         message={`'${presetToDelete?.title}' 프리셋을 삭제하시겠습니까?\n기본 프리셋인 경우 목록에서 숨겨지며 언제든지 '기본 복구'를 통해 복원할 수 있습니다.`}
-        confirmLabel="삭제 (DELETE)"
+        confirmLabel="Delete"
         cancelLabel="취소"
         confirmVariant="danger"
         iconType="alert"
@@ -699,7 +699,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
         isOpen={showRestorePresetsConfirm}
         title="RESTORE DEFAULT PRESETS"
         message="모든 커스텀 프리셋을 초기화하고 시스템 기본 프리셋 목록으로 되돌리시겠습니까?"
-        confirmLabel="복구 (RESTORE)"
+        confirmLabel="Restore"
         cancelLabel="취소"
         confirmVariant="black"
         iconType="alert"
@@ -715,7 +715,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-black/70 dark:text-white/70" />
                 <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                  매거진 섹션 복구 (RESTORE MAGAZINE SECTIONS)
+                  Restore magazine sections
                 </h3>
               </div>
               <button type="button" onClick={() => setShowRestoreModal(false)} className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer">
@@ -822,7 +822,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 onClick={() => setShowRestoreModal(false)}
                 className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
               >
-                닫기 (CLOSE)
+                Close
               </button>
             </div>
           </div>

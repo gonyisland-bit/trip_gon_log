@@ -864,7 +864,7 @@ export function SettlementView({
         <div className="flex flex-col gap-2.5">
           <span className="text-micro md:text-meta font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60 border-b border-dashed border-black/10 dark:border-white/10 pb-1.5 flex items-center gap-1.5">
             <User className="w-3.5 h-3.5" />
-            <span>개인별 (INDIVIDUAL)</span>
+            <span>Individual</span>
           </span>
           <div className="flex flex-col gap-2">
             {members.map(name => {
@@ -889,7 +889,7 @@ export function SettlementView({
         <div className="flex flex-col gap-2.5">
           <span className="text-micro md:text-meta font-extrabold uppercase tracking-widest text-emerald-800 dark:text-emerald-400 border-b border-dashed border-emerald-500/20 pb-1.5 flex items-center gap-1.5">
             <Send className="w-3.5 h-3.5 text-emerald-600" />
-            <span>송금 (SEND)</span>
+            <span>Send</span>
           </span>
           {transfers.length === 0 ? (
             <div className="text-center py-4 text-meta text-black/60 dark:text-white/60 font-bold border border-dashed border-black/10 dark:border-white/10">
