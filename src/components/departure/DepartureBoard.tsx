@@ -87,8 +87,8 @@ function FlapRow({ text, cells, rollKey, size = 'md', onFlip, tone = 'ink' }: {
   }, [rollKey, target.join('')]);
 
   const dims = size === 'lg'
-    ? 'w-[clamp(17px,5.2vw,40px)] h-[clamp(26px,7.6vw,54px)] text-[clamp(15px,4.3vw,32px)]'
-    : 'w-[clamp(14px,3.4vw,22px)] h-[clamp(21px,4.8vw,30px)] text-[clamp(12px,2.7vw,17px)]';
+    ? 'w-[clamp(15px,min(4.6vw,4vh),40px)] h-[clamp(24px,min(7vw,5.8vh),54px)] text-[clamp(14px,min(4vw,3.3vh),32px)]'
+    : 'w-[clamp(14px,min(3.4vw,2.6vh),22px)] h-[clamp(21px,min(4.8vw,3.5vh),30px)] text-[clamp(12px,min(2.7vw,2.1vh),17px)]';
   const color = tone === 'amber' ? 'text-amber-400' : tone === 'red' ? 'text-red-500' : 'text-[#F2F2EE]';
   return (
     <div className="flex gap-[3px]" aria-label={text}>
@@ -277,7 +277,7 @@ export function DepartureBoard({
     >
       <div className="h-full flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         {/* Top bar */}
-        <div className="shrink-0 w-full max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <div className="shrink-0 w-full max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
           <div className="flex flex-col min-w-0">
             <span className="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-tight">공항 터미널</span>
             <span className={`${label} ${muted} tabular-nums`}>Terminal 1 · ICN {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
@@ -289,15 +289,11 @@ export function DepartureBoard({
           </div>
         </div>
 
-        {/* Board, the ticket's actions, then every ticket */}
-        <div className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${leaving ? '' : 'tgl-board-in'}`}>
-          <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 pb-5 flex flex-col gap-4">
-            <section aria-label="출발 안내판" className="dark rounded-card bg-[#101012] text-[#F2F2EE] p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
-              <div className="flex items-center justify-between">
-                <span className={`${label} text-white/55`}>Departures</span>
-                <span className={`${label} text-white/55 tabular-nums`}>{ticket ? `Ticket ${tickets.indexOf(ticket) + 1}/${tickets.length}` : 'No tickets'}</span>
-              </div>
-              <div className="flex flex-wrap items-end gap-x-3 sm:gap-x-4 gap-y-2">
+        {/* Board, the ticket's actions, then every ticket: two thirds of the height (scrolls inside when short) */}
+        <div className={`flex-[2] min-h-0 overflow-y-auto overscroll-contain hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
+          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-2 flex flex-col gap-3">
+            <section aria-label="출발 안내판" className="dark rounded-card bg-[#101012] text-[#F2F2EE] p-3.5 sm:p-4 flex flex-col gap-3 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+              <div className="flex items-end gap-x-3 sm:gap-x-4">
                 <div className="flex flex-col gap-1">
                   <span className={`${label} text-white/55`}>Flight</span>
                   <FlapRow text={ticket ? ticket.flightNo.replace(' ', '') : 'TG000'} cells={5} rollKey={rollKey} onFlip={flip} />
@@ -335,11 +331,11 @@ export function DepartureBoard({
               </div>
 
               {/* The trip in words: title, route, party */}
-              <div className="border-t border-white/10 pt-3 flex gap-3 items-center min-h-[52px]">
+              <div className="border-t border-white/10 pt-2.5 flex gap-3 items-center min-h-[48px]">
                 {ticket ? (
                   <>
                     {(ticket.plan?.coverImg || city?.coverImage) && (
-                      <img src={getEffectiveImageUrl(ticket.plan?.coverImg || city?.coverImage || '')} alt="" loading="lazy" className="w-14 h-14 rounded-thumb object-cover shrink-0" />
+                      <img src={getEffectiveImageUrl(ticket.plan?.coverImg || city?.coverImage || '')} alt="" loading="lazy" className="w-12 h-12 rounded-thumb object-cover shrink-0" />
                     )}
                     <span key={ticket.id} className="tgl-rise flex-1 min-w-0 flex flex-col gap-0.5">
                       <span className="text-[15px] sm:text-[17px] font-extrabold leading-snug line-clamp-2">{ticket.plan?.title || `${ticket.cityKo} 여행`}</span>
@@ -389,7 +385,7 @@ export function DepartureBoard({
                     <Plus className="w-3.5 h-3.5" aria-hidden />새 티켓
                   </button>
                 </div>
-                <ul className="-mx-4 sm:mx-0 px-4 sm:px-0 flex gap-2 overflow-x-auto hide-scrollbar snap-x" aria-label="보관한 티켓">
+                <ul className="flex gap-2 overflow-x-auto hide-scrollbar snap-x rounded-card" aria-label="보관한 티켓">
                   {tickets.map(t => {
                     const on = t.id === ticket?.id;
                     const st = ticketStatus(t);
@@ -404,7 +400,7 @@ export function DepartureBoard({
                             on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.03] dark:hover:bg-white/[0.06]'
                           }`}
                         >
-                          <span className="flex-1 min-w-0 p-3.5 flex flex-col gap-0.5">
+                          <span className="flex-1 min-w-0 px-3.5 py-3 flex flex-col gap-0.5">
                             <span className={`${label} ${on ? 'opacity-70' : muted}`}>{t.flightNo} · Gate {t.gate}</span>
                             <span className="text-[19px] font-extrabold tracking-tight uppercase truncate">{t.cityEn}{n > 1 ? ` +${n - 1}` : ''}</span>
                             <span className={`text-meta truncate ${on ? 'opacity-75' : muted}`}>{shortRange(t)}</span>
@@ -424,8 +420,9 @@ export function DepartureBoard({
           </div>
         </div>
 
-        {/* The lobby below: glass wall, planes, travelers */}
-        <div className="tgl-lobby-scene relative shrink-0 w-full h-[20dvh] min-h-[110px] max-h-[220px] overflow-hidden">
+        {/* The lobby below, one third of the height, in a rounded window with the page's side margins */}
+        <div className="flex-[1] min-h-[120px] w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="tgl-lobby-scene relative h-full rounded-card overflow-hidden">
           <LobbyScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
           {skyNote && (
             <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none">
@@ -433,6 +430,7 @@ export function DepartureBoard({
               {skyNote}
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
