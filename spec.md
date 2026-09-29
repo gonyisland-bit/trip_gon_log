@@ -404,7 +404,8 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [x] P5-a 불투명(90%+) 바탕 뒤의 `backdrop-blur` 24곳 제거, 상태가 크기를 바꾸지 않는 고정 클래스의 `transition-all` 76곳을 `transition`으로(118곳 유지).
 - [x] P5-b1 여정 커버 960px · 갤러리 480px 사본: 쓰기 권한 회원이 볼 때 백그라운드로 목록 8개 · 갤러리 12장씩 만들어 여정 문서에 저장(`app/useJourneyThumbs`), 카드 · 목록 행 · 지금 띠 · 갤러리 격자가 사본 사용(`utils/journeyThumbs`), 우리 R2 원본만 대상. 포켓과 같은 `utils/imageThumbs` 사용.
 - [x] P5-b2 긴 목록: 화면 밖 항목의 배치 · 그리기를 브라우저가 건너뛰는 `content-visibility: auto`(`.tgl-cv-tile` 갤러리 사진 · `-row` 일정 · 예약 카드 · 여정 목록 행 · `-card` 포켓 카드 · `-month` 캘린더 연 보기 월 칸, `contain-intrinsic-size: auto`로 실제 높이 기억). 사진 밖으로 점선이 나가는 여정 카드와 끈적 머리가 있는 묶음에는 붙이지 않음.
-- [ ] P5-b3 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리 — 로그인 화면 실기기 확인과 함께 진행.
+- [x] P5-b3-1 `CalendarHub` 분리(동작 변경 없음): 화면 틀 `pages/CalendarHub.tsx`(47줄) + `pages/calendar/` — `calendarData.ts`(타입 · 상수 · 날짜 함수), `useCalendarHubState.tsx`(상태 · 핸들러), 섹션 `CalendarHeader` · `CalendarBoard` · `CalendarEventModals` · `CalendarTripModals` · `CalendarDayPeek`(훅 결과 `s`를 받음).
+- [ ] P5-b3 나머지 4개(`useManageHubState` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) — 앞의 셋은 저장 · 변경 추적이 한 덩어리라 설계 변경 필요, 하나씩 따로 계획.
 
 ### V1.3 디자인 리뉴얼 진행 현황 (2026.09.28 기준, 다른 PC에서 이어가기용)
 - [x] **P0 기반 정비**: 버전 1.3.0 단일 소스, AGENTS.md 5장 버전 지침, 모션 토큰 v2 · `src/motion/`.
