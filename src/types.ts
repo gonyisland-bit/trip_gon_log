@@ -41,6 +41,11 @@ export interface Trip {
   description?: string;
   subtitle?: string;
   gallery?: (string | GalleryImageMeta)[];
+  /** 960px copy of img for cards (valid while imgSmallSrc === img) */
+  imgSmall?: string;
+  imgSmallSrc?: string;
+  /** 480px copies of gallery and timeline photos, by original URL */
+  galleryThumbs?: { src: string; url: string }[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
   displayOrder?: number;
   statusBadge?: 'NEW' | 'EDITING' | 'PLAN' | '';

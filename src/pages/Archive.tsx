@@ -4,6 +4,7 @@ import { Trip, Plan, ArchiveHubConfig } from '../types';
 import { JourneyCardMenu, getEnglishCityName } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { JourneyListRow, type JourneyRowBadge } from '../components/cards/JourneyListRow';
+import { cardCoverUrl } from '../utils/journeyThumbs';
 import { ViewModeSegment } from '../components/ui/ViewModeSegment';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { preloadDetailPage } from '../utils/prefetchHelper';
@@ -945,7 +946,7 @@ export function ArchiveHubPage({
                         <JourneyListRow
                           key={trip.id}
                           style={{ animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: `${Math.min(index * 20, 200)}ms` }}
-                          img={trip.img}
+                          img={cardCoverUrl(trip)}
                           title={trip.title}
                           year={year || ''}
                           month={month}

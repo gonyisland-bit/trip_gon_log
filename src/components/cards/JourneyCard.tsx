@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { ArrowUpRight } from 'lucide-react';
 import { Trip } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
@@ -93,7 +94,7 @@ export function JourneyCard({
           className="absolute inset-0"
           style={isPlan ? { filter: `grayscale(${planGrayscale(planInfo.daysLeft, planInfo.isUpcoming)})` } : undefined}
         >
-          <CardMedia img={trip.img} title={trip.title} videoUrl={trip.videoUrl} isActive={isActive} />
+          <CardMedia img={cardCoverUrl(trip)} title={trip.title} videoUrl={trip.videoUrl} isActive={isActive} />
         </div>
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-transparent to-transparent" />
 

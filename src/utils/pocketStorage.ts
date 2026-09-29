@@ -1,8 +1,7 @@
 import { SpotPocketItem, SpotPocketPlatform } from '../types';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { compressImage } from './imageHelper';
-import { uploadFileToR2 } from './storageHelper';
+import { buildImageThumb } from './imageThumbs';
 
 /** The image a pocket card should load: the small copy when it still matches the photo, else the photo */
 export function getCardThumbUrl(spot: SpotPocketItem): string | undefined {
@@ -16,13 +15,8 @@ export function needsCardThumb(spot: SpotPocketItem): boolean {
 }
 
 /** Downloads a pocket photo, shrinks it to card size (480px wide) and stores the copy in R2 */
-export async function buildCardThumb(photoUrl: string): Promise<string> {
-  // no-store: the card <img> already cached this file without CORS headers, which a CORS fetch can't reuse
-  const res = await fetch(photoUrl, { mode: 'cors', cache: 'no-store' });
-  if (!res.ok) throw new Error(`thumb fetch ${res.status}`);
-  const blob = await res.blob();
-  const small = await compressImage(new File([blob], 'thumb.jpg', { type: blob.type || 'image/jpeg' }), { maxWidth: 480, maxHeight: 2000, quality: 0.78 });
-  return uploadFileToR2(small, `pocket_thumbs/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`);
+export function buildCardThumb(photoUrl: string): Promise<string> {
+  return buildImageThumb(photoUrl, 480, 'pocket_thumbs');
 }
 
 const LOCAL_STORAGE_KEY = 'trip_spot_pockets';

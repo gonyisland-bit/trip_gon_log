@@ -6,6 +6,7 @@ import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetCo
 import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { JourneyListRow, type JourneyRowBadge } from '../components/cards/JourneyListRow';
+import { cardCoverUrl } from '../utils/journeyThumbs';
 import { ViewModeSegment } from '../components/ui/ViewModeSegment';
 import { Chip } from '../components/ui/Chip';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -1558,7 +1559,7 @@ export function HomePage({
               return (
                 <JourneyListRow
                   key={trip.id}
-                  img={trip.img}
+                  img={cardCoverUrl(trip)}
                   title={trip.title}
                   year={year || ''}
                   month={month}

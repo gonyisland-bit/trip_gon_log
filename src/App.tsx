@@ -8,6 +8,7 @@ import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
 import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './app/quickActions';
 import { TabBar } from './components/TabBar';
+import { useJourneyThumbs } from './app/useJourneyThumbs';
 import { TOGGLE_PALETTE_EVENT, OPEN_REMIX_EVENT, openRemix } from './app/layerEvents';
 import { getSavedPockets } from './utils/pocketStorage';
 import { LayerBoundary } from './components/LayerBoundary';
@@ -93,6 +94,12 @@ function App() {
     handleBatchPermanentDelete, activeFlights, activeStays, activeTransits, existingTags,
     isHomeGradientActive, appGradientStyle, handleCycleNightMode, handleRemixJourney
   } = s;
+
+  // Small copies of journey covers and gallery photos for lists and grids (v1.3.5 P5-b1)
+  useJourneyThumbs({
+    trips, plans, activeTrip, timelineData, currentView,
+    canWrite: isLoggedIn && (isAdmin || currentUserProfile?.status !== 'pending'),
+  });
 
   const [isDepartureOpen, setIsDepartureOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);

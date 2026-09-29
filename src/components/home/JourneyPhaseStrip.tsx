@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
+import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { ArrowRight } from 'lucide-react';
 import { Trip, Plan } from '../../types';
-import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { getLiveTripStatus, getUpcomingPlanInfo, parseTripStartDate } from '../../utils/tripPlanHelper';
 import { CountUp } from '../CountUp';
 
@@ -110,7 +110,7 @@ export function JourneyPhaseStrip({ trips, plans, onNavigate }: JourneyPhaseStri
           {trip.img && (
             <div className="hidden sm:block w-24 md:w-32 aspect-[4/3] overflow-hidden rounded-thumb bg-black/5 dark:bg-white/5">
               <img
-                src={getEffectiveImageUrl(trip.img)}
+                src={cardCoverUrl(trip)}
                 alt=""
                 loading="lazy"
                 className={`w-full h-full object-cover transition-transform duration-hero ease-emphasized group-hover:scale-105 ${phase.kind === 'memory' ? 'grayscale group-hover:grayscale-0' : ''}`}

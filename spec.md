@@ -303,6 +303,8 @@ Firestore 컬렉션: `users/public/trips`, `users/public/plans` (연관 컬렉�
 | `tags` | `string[]` | 필수 | 테마 및 분류 태그 배열 |
 | `img` | `string` | 필수 | 목록 카드 커버 이미지 URL (Cloudflare R2 또는 Unsplash) |
 | `mapImg` | `string` | 필수 | 지도 썸네일 이미지 URL |
+| `imgSmall` · `imgSmallSrc` | `string` | 선택 | 카드 · 목록용 커버 960px 사본(R2 `journey_thumbs/`)과 그 사본을 만든 원본 주소. `imgSmallSrc`가 지금 `img`와 같을 때만 사본을 씀(v1.3.5) |
+| `galleryThumbs` | `{ src: string; url: string }[]` | 선택 | 갤러리 · 일정 사진의 480px 사본 목록(원본 주소 → 사본 주소). 갤러리 격자만 쓰고 뷰어는 원본(v1.3.5) |
 | `displayOrder` | `number` | 필수 | 정렬 우선순위 (0 = 최신 최우선) |
 | `members` | `string[]` | 필수 | 여정 동행 멤버 목록 (기본 1인 작성자 이름 포함) |
 | `statusBadge` | `'NEW' \| 'EDITING' \| 'PLAN' \| ''` | 선택 | 여정 상태 뱃지 |
@@ -400,7 +402,8 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [x] P4-e 캘린더 · 모달: 가운데 모달 11곳(확인 · 로그인 · 포켓 스크랩 · 빠른 예약 · 캘린더 4 · 상세 · 지도 2)을 surface 둥근 카드로, 확인 모달의 구분선 제거 · 닫기 원형 버튼, 캘린더 월 이동 · 연월 전환 · 드롭다운 · 계획 배너 · 입력칸 · 하단 날짜 판을 둥근 표면으로.
 - [x] 정리: 버튼 · 확인 창 문구 문장형(Cancel · Delete · Save (Y)), Trip Guide 탭 세그먼트 · 입력 알약 · 카드, 선택 상태 흑백 쌍을 ink 토큰으로(112곳), 흰 표면을 `bg-surface`로(122곳, 사진 위 흰 버튼 70곳은 유지). 홈 → 여정 상세 → 지도 시트 → 포켓 → 매거진 → 캘린더 → 모달 바텀시트화. `bg-white`(약 1,100곳)는 화면별로 `bg-surface`로 옮김.
 - [x] P5-a 불투명(90%+) 바탕 뒤의 `backdrop-blur` 24곳 제거, 상태가 크기를 바꾸지 않는 고정 클래스의 `transition-all` 76곳을 `transition`으로(118곳 유지).
-- [ ] P5-b 여정 커버 · 갤러리 작은 사본(R2), 긴 목록(갤러리 · 포켓 · 캘린더) 가상화, 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리 — 로그인 화면 실기기 확인과 함께 진행.
+- [x] P5-b1 여정 커버 960px · 갤러리 480px 사본: 쓰기 권한 회원이 볼 때 백그라운드로 목록 8개 · 갤러리 12장씩 만들어 여정 문서에 저장(`app/useJourneyThumbs`), 카드 · 목록 행 · 지금 띠 · 갤러리 격자가 사본 사용(`utils/journeyThumbs`), 우리 R2 원본만 대상. 포켓과 같은 `utils/imageThumbs` 사용.
+- [ ] P5-b 긴 목록(갤러리 · 포켓 · 캘린더) 가상화, 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리 — 로그인 화면 실기기 확인과 함께 진행.
 
 ### V1.3 디자인 리뉴얼 진행 현황 (2026.09.28 기준, 다른 PC에서 이어가기용)
 - [x] **P0 기반 정비**: 버전 1.3.0 단일 소스, AGENTS.md 5장 버전 지침, 모션 토큰 v2 · `src/motion/`.
@@ -428,6 +431,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - 버튼: `btn` 전체가 굵은 산세리프 알약으로(h-8 / h-10 / h-12), 보조 버튼은 보더 반전 대신 연한 채움, 새 여행 `NewTripButton`은 빨강 알약(`btn-accent`).
 - 공용 컨트롤 `ui/Segment` · `ui/Chip` · `ui/IconButton` · `ui/Card`(`CardRow`) 추가.
 - AGENTS.md 3장 · spec 4.1 · 4.2 · 4.4를 Swiss Soft 기준으로 갱신.
+- 여정 이미지 사본(P5-b1): 카드 · 목록은 커버 960px 사본, 갤러리 격자는 480px 사본을 불러 목록 로딩을 줄였습니다. 사본은 볼 때 조금씩 만들어져 모든 기기가 함께 씁니다.
 - 정리 · 성능(P4 마무리 · P5-a): 버튼 문구 문장형, ink · surface 토큰 통일, 보이지 않는 블러 제거, 고정 전환을 필요한 속성만으로.
 - 캘린더 · 모달(P4-e): 확인 · 로그인 등 가운데 모달을 둥근 카드로, 캘린더 컨트롤 · 입력칸 · 날짜 판을 둥근 표면으로.
 - 포켓 · 매거진(P4-d): 컨트롤을 알약으로, 포켓 선택 바를 먹색 알약으로, 매거진 이슈 카드를 둥글게.

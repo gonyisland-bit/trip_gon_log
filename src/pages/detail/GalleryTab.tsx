@@ -1,4 +1,5 @@
 import { Trash2, MapPin, Plus, Maximize2, ArrowRight, Columns2, LayoutGrid } from 'lucide-react';
+import { galleryThumbMap } from '../../utils/journeyThumbs';
 import { Footer } from '../../components/Footer';
 import type { JourneyDetailState } from './useJourneyDetailState';
 
@@ -10,8 +11,10 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
     itemRefs, allTripDates, allGalleryImages, galleryUrlIndexMap, galleryGroups,
     handleJumpToTimelineItem, handleGalleryUpload, handleGalleryDragOver, handleGalleryDragLeave,
     handleGalleryDrop, handleUpdateGalleryImageNote, handleRemoveGalleryImage,
-    handleToggleGalleryImagePin
+    handleToggleGalleryImagePin, trip
   } = s;
+  // Grid tiles load the 480px copies when they exist (the viewer keeps the originals)
+  const thumbs = galleryThumbMap(trip);
 
   return (
     <>
@@ -43,7 +46,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                 {/* Film-photo styled image container */}
                 <div className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition duration-300 aspect-[4/3] group shrink-0">
                   <img
-                    src={imgItem.url}
+                    src={thumbs.get(imgItem.url) || imgItem.url}
                     alt={imgItem.place || 'Gallery Photo'}
                     loading="lazy"
                     decoding="async"
