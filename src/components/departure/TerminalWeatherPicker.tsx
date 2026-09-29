@@ -59,9 +59,9 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
         aria-expanded={open}
         aria-haspopup="listbox"
         title="창밖 날씨 위치"
-        className="tgl-press h-10 sm:h-8 px-2.5 inline-flex items-center gap-1.5 border border-black/25 hover:border-black dark:border-white/25 dark:hover:border-white font-mono text-meta cursor-pointer"
+        className="tgl-press h-7 sm:h-8 px-2 sm:px-2.5 inline-flex items-center gap-1 sm:gap-1.5 border border-black/25 hover:border-black dark:border-white/25 dark:hover:border-white font-mono text-[11px] sm:text-meta cursor-pointer"
       >
-        {Icon && <Icon className="w-4 h-4" />}
+        {Icon && <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
         {temp !== undefined && <span className="tabular-nums font-bold">{temp}°</span>}
         <span className="hidden sm:inline uppercase tracking-wider max-w-[7rem] truncate">{name || nameEn || '날씨'}</span>
         <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${open ? 'rotate-180' : ''}`} />
