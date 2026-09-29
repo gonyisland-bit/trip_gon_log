@@ -171,7 +171,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 <button
                   type="button"
                   onClick={() => setIsHeroJourneysAccordionOpen(prev => !prev)}
-                  className="px-2.5 py-1 text-meta font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white transition-colors cursor-pointer flex items-center gap-1.5 text-black dark:text-white"
+                  className="btn btn-secondary btn-sm flex"
                 >
                   <span>{isHeroJourneysAccordionOpen ? 'COLLAPSE' : 'SELECT JOURNEYS'}</span>
                   <ChevronDown className={`w-3 h-3 transition-transform ${isHeroJourneysAccordionOpen ? 'rotate-180' : ''}`} />

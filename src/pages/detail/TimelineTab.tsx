@@ -201,7 +201,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         setSelectedItemIds(currentTimeline.map(item => item.id));
                       }
                     }}
-                    className="text-meta font-bold uppercase tracking-widest text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 transition-colors"
+                    className="btn btn-secondary btn-sm"
                   >
                     {selectedItemIds.length === currentTimeline.length ? 'Deselect All' : 'Select All'}
                   </button>
@@ -813,7 +813,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black/10 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
                               <button 
                                 type="button"
-                                className="px-2 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer flex items-center gap-1 text-meta font-mono font-bold uppercase tracking-wider" 
+                                className="btn btn-secondary btn-sm flex" 
                                 title="위로 일정 추가"
                                 onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
                               >
@@ -822,7 +822,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               </button>
                               <button 
                                 type="button"
-                                className="px-2 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer flex items-center gap-1 text-meta font-mono font-bold uppercase tracking-wider" 
+                                className="btn btn-secondary btn-sm flex" 
                                 title="아래로 일정 추가"
                                 onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
                               >
@@ -933,7 +933,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                           <button
                             type="button"
                             onClick={() => setIsPocketWidgetOpen(true)}
-                            className="w-full py-2 px-3 border border-dashed border-black/20 dark:border-white/20 hover:border-red-500 hover:text-red-500 hover:bg-red-500/5 transition-all text-meta font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 flex items-center justify-center gap-2 cursor-pointer group select-none"
+                            className="btn btn-secondary w-full flex group"
                             title={`${gapHours}시간의 빈틈이 있습니다. 포켓 위젯을 열어 스팟을 채워보세요.`}
                           >
                             <Plus className="w-3 h-3 group-hover:scale-110 transition-transform text-red-500 shrink-0" />
@@ -953,7 +953,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
               <div className="p-6 flex justify-center w-full">
                 <button 
                   onClick={() => handleAddTimelineItem(selectedDate === 'ALL' ? allTripDates[0] || '2025.04.12' : selectedDate)}
-                  className="text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
+                  className="btn btn-secondary flex"
                 >
                   <Plus className="w-4 h-4" /> Add Timeline Event
                 </button>

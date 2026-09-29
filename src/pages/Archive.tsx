@@ -930,7 +930,7 @@ export function ArchiveHubPage({
             </div>
             </div>
             {isLoggedIn && (
-              <button onClick={onAddArchive} className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-micro sm:text-meta md:text-xs font-mono font-extrabold uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer">
+              <button onClick={onAddArchive} className="btn btn-secondary btn-sm w-full sm:w-auto flex shrink-0">
                 <Plus className="w-3.5 h-3.5" /> <span>ADD TRIP</span>
               </button>
             )}

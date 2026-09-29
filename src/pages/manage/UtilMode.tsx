@@ -638,7 +638,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={() => setShowRestorePresetsConfirm(true)}
-                className="flex items-center gap-1 text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/20 dark:border-white/20 px-2.5 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                className="btn btn-secondary btn-sm flex"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>기본 복구</span>
@@ -646,7 +646,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={handleOpenNewPreset}
-                className="flex items-center gap-1 text-meta font-mono font-bold uppercase bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 hover:opacity-85 transition-opacity cursor-pointer"
+                className="btn btn-primary btn-sm flex"
               >
                 <Plus className="w-3 h-3" />
                 <span>NEW PRESET</span>
@@ -841,7 +841,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               type="button"
               onClick={handleOneTouchOptimize}
               disabled={isScanning || isCleaning}
-              className="px-3.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-xs font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50 shadow-xs"
+              className="btn btn-primary btn-sm flex shrink-0"
               title="데이터베이스 무결성을 진단하고 불필요한 고아 문서를 원터치로 정리합니다."
             >
               {isScanning || isCleaning ? (
@@ -898,7 +898,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   type="button"
                   disabled={selectedTrashJourneyIds.length === 0 && selectedTrashSectionIds.length === 0}
                   onClick={handleBatchRestoreSelectedTrash}
-                  className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed rounded-none"
+                  className="btn btn-secondary btn-sm flex"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>선택 복구</span>
@@ -908,7 +908,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   type="button"
                   disabled={selectedTrashJourneyIds.length === 0 && selectedTrashSectionIds.length === 0}
                   onClick={requestBatchDeleteSelected}
-                  className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed rounded-none"
+                  className="btn btn-outline-danger btn-sm flex"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>선택 영구 삭제</span>
@@ -973,7 +973,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => onRestoreMagazineSection && onRestoreMagazineSection(sec.id)}
-                          className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                          className="btn btn-secondary btn-sm flex"
                           title="섹션 복구"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
@@ -983,7 +983,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => requestPermanentDeleteSingleSection(sec)}
-                          className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                          className="btn btn-outline-danger btn-sm flex"
                           title="영구 삭제"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1047,7 +1047,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => onRestoreJourney(journey.id)}
-                          className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                          className="btn btn-secondary btn-sm flex"
                           title="여정 복구"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
@@ -1057,7 +1057,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => requestPermanentDeleteSingleJourney(journey)}
-                          className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                          className="btn btn-outline-danger btn-sm flex"
                           title="영구 삭제"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

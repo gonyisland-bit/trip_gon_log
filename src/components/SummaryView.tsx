@@ -1103,7 +1103,7 @@ export function SummaryView({
             <div className="flex items-stretch divide-x divide-black/15 dark:divide-white/15 bg-white dark:bg-[#0E0E0E] shrink-0">
               <button
                 onClick={handleSaveImage}
-                className="flex-1 py-3.5 sm:py-4 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-extrabold uppercase tracking-widest font-sans hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer rounded-none"
+                className="btn btn-primary btn-lg flex-1 flex"
               >
                 <Download className="w-4 h-4" />
                 <span>SAVE</span>

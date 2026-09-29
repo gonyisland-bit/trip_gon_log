@@ -1370,7 +1370,7 @@ export function PocketHubPage({
               {isFavoriteFilter && (
                 <button
                   onClick={() => setIsFavoriteFilter(false)}
-                  className="h-7 px-2 flex items-center gap-1 text-meta font-mono font-bold tracking-wider uppercase border border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                  className="btn btn-secondary btn-sm flex shrink-0"
                 >
                   <Star className="w-2.5 h-2.5 fill-current" />
                   <span>FAVORITES</span>
@@ -1755,14 +1755,14 @@ export function PocketHubPage({
                         <button
                           type="button"
                           onClick={() => setSelectedSpotIds(new Set())}
-                          className="px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider border border-white/20 dark:border-black/20 hover:border-white dark:hover:border-black transition-colors cursor-pointer"
+                          className="btn btn-secondary btn-sm"
                         >
                           DESELECT
                         </button>
                         <button
                           type="button"
                           onClick={handleCreateTripFromSelectedPockets}
-                          className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                          className="btn btn-primary btn-sm flex"
                         >
                           <Plus className="w-3.5 h-3.5" />
                           <span>CREATE TRIP</span>
@@ -1777,7 +1777,7 @@ export function PocketHubPage({
                       <button
                         type="button"
                         onClick={() => setVisibleCount(prev => prev + 40)}
-                        className="h-10 px-6 border border-black dark:border-white text-xs font-mono font-extrabold uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-2"
+                        className="btn btn-secondary btn-lg flex"
                       >
                         <span>LOAD MORE (+40)</span>
                         <span className="text-black/60 dark:text-white/60 font-normal">
@@ -1855,7 +1855,7 @@ export function PocketHubPage({
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => setSpotToUseInTrip(null)}
-                className="h-8 px-4 border border-black/20 dark:border-white/20 text-xs font-mono uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                className="btn btn-secondary btn-sm"
               >
                 CANCEL
               </button>
@@ -2076,7 +2076,7 @@ export function PocketHubPage({
                       <button
                         type="button"
                         onClick={handleApplyDescriptionToNewMemo}
-                        className="px-1.5 py-0.5 bg-black dark:bg-white text-white dark:text-black text-micro font-mono font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer"
+                        className="btn btn-primary btn-sm"
                       >
                         덮어쓰기 적용
                       </button>
@@ -2131,7 +2131,7 @@ export function PocketHubPage({
                         type="button"
                         onClick={handleRunOcrInModal}
                         disabled={isModalOcrRunning}
-                        className="h-7 px-3 bg-red-600 text-white text-meta font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-red-700"
+                        className="btn btn-primary btn-sm flex"
                         title="사진 속 글씨(장소명/설명)를 읽어옵니다"
                       >
                         <ScanText className="w-3.5 h-3.5" />
@@ -2227,13 +2227,13 @@ export function PocketHubPage({
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="h-9 px-4 border border-black/20 dark:border-white/20 text-xs font-mono uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                  className="btn btn-secondary"
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
-                  className="h-9 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
+                  className="btn btn-primary"
                 >
                   {editingSpot ? 'SAVE' : 'KEEP SPOT'}
                 </button>

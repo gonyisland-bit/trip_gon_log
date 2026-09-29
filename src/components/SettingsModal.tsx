@@ -603,14 +603,14 @@ export function SettingsModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-meta font-extrabold uppercase tracking-widest rounded-none transition-all text-black/60 dark:text-white/60"
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-meta font-extrabold uppercase tracking-widest rounded-none transition-all flex items-center gap-1.5 disabled:opacity-50"
+                  className="btn btn-primary flex"
                 >
                   {saving ? (
                     <>
@@ -940,7 +940,7 @@ export function SettingsModal({
                     }
                     onClose();
                   }}
-                  className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-meta font-extrabold uppercase tracking-widest rounded-none transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="btn btn-primary flex"
                 >
                   <Save className="w-3.5 h-3.5" />
                   Save BGM Settings
@@ -1004,7 +1004,7 @@ export function SettingsModal({
                           <button
                             onClick={() => handleRestore(journey.id)}
                             disabled={loadingId === journey.id}
-                            className="flex items-center gap-1 text-micro font-extrabold uppercase tracking-widest px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-50 text-black dark:text-white"
+                            className="btn btn-secondary btn-sm flex"
                           >
                             {loadingId === journey.id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -1016,7 +1016,7 @@ export function SettingsModal({
                           <button
                             onClick={() => handlePermanentDelete(journey.id)}
                             disabled={loadingId === journey.id}
-                            className="flex items-center gap-1 text-micro font-extrabold uppercase tracking-widest px-2.5 py-1.5 border border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors disabled:opacity-50"
+                            className="btn btn-outline-danger btn-sm flex"
                           >
                             {loadingId === journey.id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />

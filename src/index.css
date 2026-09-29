@@ -21,6 +21,41 @@
   }
 }
 
+/* Buttons (spec 4.4): one look per role. Primary = ink fill, Danger = red fill (irreversible),
+   Secondary = single border that inverts on hover, Ghost = text only. Sizes: btn-sm h-8, btn h-9, btn-lg h-10 */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-sm border border-transparent
+      text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap select-none cursor-pointer
+      transition-colors duration-fast active:scale-[0.98]
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-1
+      disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+  .btn-sm { @apply h-8 px-2.5 text-micro; }
+  .btn-lg { @apply h-10 px-5; }
+  .btn-primary {
+    @apply bg-black border-black text-white hover:bg-black/80
+      dark:bg-white dark:border-white dark:text-black dark:hover:bg-white/85;
+  }
+  .btn-danger {
+    @apply bg-red-600 border-red-600 text-white hover:bg-red-700 hover:border-red-700
+      dark:bg-red-500 dark:border-red-500 dark:hover:bg-red-600 dark:hover:border-red-600;
+  }
+  .btn-secondary {
+    @apply bg-transparent border-black/20 text-black hover:bg-black hover:border-black hover:text-white
+      dark:border-white/20 dark:text-white dark:hover:bg-white dark:hover:border-white dark:hover:text-black;
+  }
+  /* Opens a delete confirmation: red outline, filled on hover */
+  .btn-outline-danger {
+    @apply bg-transparent border-red-600/40 text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white
+      dark:border-red-400/40 dark:text-red-400 dark:hover:bg-red-500 dark:hover:border-red-500 dark:hover:text-white;
+  }
+  .btn-ghost {
+    @apply bg-transparent text-black/70 hover:text-black hover:bg-black/5
+      dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10;
+  }
+}
+
 @layer utilities {
   .font-sans {
     font-family: 'Inter', 'Noto Sans KR', sans-serif !important;

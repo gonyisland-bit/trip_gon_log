@@ -231,7 +231,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               <button 
                 type="button"
                 onClick={() => { setIsDelegatingModalOpen(false); setDelegatingUser(null); }}
-                className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer"
+                className="btn btn-primary"
               >
                 DONE (완료)
               </button>
@@ -506,7 +506,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               <button
                 type="button"
                 onClick={() => setShowQuickPhotoPicker(false)}
-                className="px-4 py-1.5 text-xs font-mono font-bold border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                className="btn btn-secondary btn-sm"
               >
                 Close
               </button>
@@ -665,13 +665,13 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 <button 
                   type="button"
                   onClick={() => { setIsPresetModalOpen(false); setEditingPreset(null); }}
-                  className="flex-1 py-2.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  className="btn btn-secondary flex-1"
                 >
                   CANCEL
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer"
+                  className="btn btn-primary flex-1"
                 >
                   SAVE PRESET
                 </button>
@@ -736,7 +736,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 <button
                   type="button"
                   onClick={handleRestoreDefaultSections}
-                  className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 cursor-pointer"
+                  className="btn btn-primary btn-sm"
                 >
                   기본 홈 복구 실행
                 </button>
@@ -770,7 +770,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                       <button
                         type="button"
                         onClick={() => handleApplyBackup(b.sections)}
-                        className="px-2.5 py-1 text-xs font-mono font-bold border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer"
+                        className="btn btn-secondary btn-sm shrink-0"
                       >
                         불러오기
                       </button>
@@ -792,7 +792,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                     await handleLoadFirestoreMagazineSections();
                   }}
                   disabled={isLoadingFirestoreMag}
-                  className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white cursor-pointer disabled:opacity-50"
+                  className="btn btn-primary btn-sm"
                 >
                   {isLoadingFirestoreMag ? '조회 중...' : '서버 데이터 조회'}
                 </button>
@@ -808,7 +808,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                       handleForceRestoreSectionsFromFirestore();
                       setShowRestoreModal(false);
                     }}
-                    className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black text-micro font-mono font-bold uppercase cursor-pointer hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white"
+                    className="btn btn-primary btn-sm"
                   >
                     이 데이터로 복원
                   </button>
@@ -820,7 +820,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               <button
                 type="button"
                 onClick={() => setShowRestoreModal(false)}
-                className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+                className="btn btn-secondary"
               >
                 Close
               </button>

@@ -778,7 +778,7 @@ export function EditTripModal({
                     setLocationInput('');
                   }
                 }}
-                className="px-3 py-2.5 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity shrink-0"
+                className="btn btn-primary shrink-0"
               >
                 추가
               </button>
@@ -914,7 +914,7 @@ export function EditTripModal({
                     }
                   }
                 }}
-                className="px-3 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest hover:opacity-80 transition-opacity shrink-0"
+                className="btn btn-primary shrink-0"
               >
                 추가
               </button>
@@ -1006,7 +1006,7 @@ export function EditTripModal({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading || videoUploading}
-                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      className="btn btn-primary flex shrink-0"
                     >
                       {uploading || videoUploading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1047,7 +1047,7 @@ export function EditTripModal({
                         }
                         notify('MAIN 미디어가 HERO로 복사되었습니다.');
                       }}
-                      className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      className="btn btn-primary flex shrink-0"
                       title="MAIN 미디어를 HERO로 복사"
                     >
                       <span>TO HERO</span>
@@ -1188,7 +1188,7 @@ export function EditTripModal({
                       type="button"
                       onClick={() => heroFileInputRef.current?.click()}
                       disabled={heroUploading || heroVideoUploading}
-                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      className="btn btn-primary flex shrink-0"
                     >
                       {heroUploading || heroVideoUploading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1229,7 +1229,7 @@ export function EditTripModal({
                         }
                         notify('HERO 미디어가 MAIN으로 복사되었습니다.');
                       }}
-                      className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      className="btn btn-primary flex shrink-0"
                       title="HERO 미디어를 MAIN으로 복사"
                     >
                       <span>TO MAIN</span>
@@ -1357,14 +1357,14 @@ export function EditTripModal({
               type="button"
               onClick={handleAttemptClose}
               disabled={saving}
-              className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-black dark:text-white disabled:opacity-50"
+              className="btn btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || !title.trim() || uploading || videoUploading || heroUploading || heroVideoUploading}
-              className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-extrabold uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-md"
+              className="btn btn-primary flex"
             >
               {saving ? (
                 <>

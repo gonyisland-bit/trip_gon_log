@@ -3224,14 +3224,14 @@ export function CalendarHubPage({
                             setIsConfirmingDelete(false);
                             handleDeleteEvent(editingEvent.id);
                           }}
-                          className="px-2.5 py-1.5 rounded-sm bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold tracking-wider cursor-pointer shadow-xs"
+                          className="btn btn-danger btn-sm"
                         >
                           CONFIRM DELETE
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsConfirmingDelete(false)}
-                          className="px-2 py-1.5 rounded-sm border border-black/20 dark:border-white/20 text-xs font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+                          className="btn btn-secondary btn-sm"
                         >
                           CANCEL
                         </button>
@@ -3257,13 +3257,13 @@ export function CalendarHubPage({
                       setIsConfirmingDelete(false);
                       closeEventModal();
                     }}
-                    className="px-4 py-2 rounded-sm border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-xs font-bold uppercase tracking-wider text-black/70 dark:text-white/70 cursor-pointer transition-colors"
+                    className="btn btn-secondary"
                   >
                     CANCEL
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-sm bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider shadow-xs cursor-pointer transition-colors flex items-center gap-1.5"
+                    className="btn btn-primary flex"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>SAVE</span>
@@ -3484,7 +3484,7 @@ export function CalendarHubPage({
                   setViewingTrip(null);
                   executeNavigateToTrip(t, d);
                 }}
-                className="w-full py-2.5 px-4 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 active:scale-[0.99] text-xs font-extrabold font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+                className="btn btn-primary w-full flex"
               >
                 <span>OPEN JOURNEY</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
@@ -3801,7 +3801,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={() => setIsYearTripsModalOpen(false)}
-                className="px-4 py-1.5 border border-black/15 dark:border-white/15 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 font-bold transition-colors cursor-pointer uppercase tracking-wider"
+                className="btn btn-secondary btn-sm"
               >
                 CLOSE
               </button>

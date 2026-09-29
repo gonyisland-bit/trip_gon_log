@@ -141,7 +141,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     type="button"
                     onClick={handleSaveArchiveHubHeader}
                     disabled={isSavingArchiveHubHeader}
-                    className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer font-['Noto_Sans_KR',sans-serif]"
+                    className="btn btn-primary flex"
                   >
                     {isSavingArchiveHubHeader ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     <span>{archiveHubHeaderSaveSuccess ? 'SAVED!' : 'SAVE TRIP HUB HEADER'}</span>
@@ -205,7 +205,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                   <button
                     type="button"
                     onClick={() => onNavigate('detail', selectedJourney.id)}
-                    className="px-3 py-2 border border-black/30 dark:border-white/30 text-xs font-extrabold uppercase tracking-wider font-sans flex items-center gap-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                    className="btn btn-secondary flex"
                     title="이 여정의 상세 페이지로 바로 이동"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -609,7 +609,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                             }
                             notify('MAIN 미디어가 HERO로 복사되었습니다.');
                           }}
-                          className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="btn btn-primary flex shrink-0"
                           title="MAIN 미디어를 HERO로 복사"
                         >
                           <span>TO HERO</span>
@@ -849,7 +849,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                             }
                             notify('HERO 미디어가 MAIN으로 복사되었습니다.');
                           }}
-                          className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="btn btn-primary flex shrink-0"
                           title="HERO 미디어를 MAIN으로 복사"
                         >
                           <span>TO MAIN</span>
@@ -953,7 +953,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                   <button
                     type="button"
                     onClick={() => onCloneTrip(selectedJourney.id)}
-                    className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-extrabold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                    className="btn btn-secondary flex"
                   >
                     <Shuffle className="w-3.5 h-3.5" />
                     <span>Remix</span>
@@ -975,7 +975,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                         setEditTitle(prev => prev.endsWith(' (Plan)') ? prev : `${prev} (Plan)`);
                       }
                     }}
-                    className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-extrabold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                    className="btn btn-secondary flex"
                   >
                     <ArrowRightLeft className="w-3.5 h-3.5" />
                     <span>{isSelectedPlan ? 'LOG(여정)로 전환' : 'PLAN(계획)으로 전환'}</span>
@@ -985,7 +985,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                 <button
                   type="button"
                   onClick={() => onDeleteTrip(selectedJourney.id)}
-                  className="px-3 py-2 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-extrabold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                  className="btn btn-outline-danger flex"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>휴지통으로 이동</span>

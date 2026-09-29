@@ -411,7 +411,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                       onClose();
                       onOpenAuthModal();
                     }}
-                    className="w-full py-2 text-center text-xs font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-dashed border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
+                    className="btn btn-secondary w-full"
                   >
                     댓글을 작성하려면 로그인하세요 →
                   </button>
@@ -514,7 +514,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                 onClose();
                 onUseInTrip(spot);
               }}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 text-xs font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 whitespace-nowrap"
+              className="btn btn-primary btn-sm inline-flex shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>ADD TRIP</span>

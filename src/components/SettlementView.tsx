@@ -483,7 +483,7 @@ export function SettlementView({
             <div className="flex gap-2">
               <button
                 onClick={handleSaveImage}
-                className="flex-1 bg-black text-white dark:bg-white dark:text-black py-2.5 rounded-sm text-xs font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
+                className="btn btn-primary flex-1 flex"
               >
                 <Download className="w-3.5 h-3.5" />
                 저장 (다운로드)
@@ -499,7 +499,7 @@ export function SettlementView({
               )}
               <button
                 onClick={() => setCapturedImg(null)}
-                className="flex-1 border border-black/20 dark:border-white/20 py-2.5 rounded-sm text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                className="btn btn-secondary flex-1"
               >
                 닫기
               </button>
@@ -559,7 +559,7 @@ export function SettlementView({
               <div className="flex gap-1.5">
                 <button
                   onClick={handleCapture}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-micro font-extrabold uppercase tracking-widest rounded-sm transition-all cursor-pointer"
+                  className="btn btn-secondary btn-sm flex"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span>EXPORT</span>
@@ -626,7 +626,7 @@ export function SettlementView({
                 추가
               </button>
               <button onClick={() => setShowAddForm(false)}
-                className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-micro font-extrabold uppercase tracking-widest rounded-sm hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60">
+                className="btn btn-secondary btn-sm">
                 취소
               </button>
             </div>

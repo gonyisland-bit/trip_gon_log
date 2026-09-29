@@ -142,7 +142,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 type="button"
                 onClick={handleSaveHubHeader}
                 disabled={isSavingHubHeader}
-                className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer font-['Noto_Sans_KR',sans-serif]"
+                className="btn btn-primary flex"
               >
                 {isSavingHubHeader ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 <span>{hubHeaderSaveSuccess ? 'SAVED!' : 'SAVE MAGAZINE HUB HEADER'}</span>
@@ -242,7 +242,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
           <button
             type="button"
             onClick={handleOpenRestoreModal}
-            className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer text-black dark:text-white transition-colors"
+            className="btn btn-secondary btn-sm flex"
             title="유실된 매거진 섹션 복구 (기본 섹션 복구 또는 로컬 백업 스냅샷에서 불러오기)"
           >
             <RotateCcw className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
@@ -251,7 +251,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
           <button
             type="button"
             onClick={() => setShowAddSectionModal(true)}
-            className="px-3.5 py-1.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:opacity-85 shadow-xs transition-opacity"
+            className="btn btn-primary btn-sm flex"
             title="새 섹션 생성 (직접 생성 또는 여정에서 자동완성 선택 가능)"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -472,7 +472,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 type="button"
                 onClick={handleRefreshAndSyncMagazine}
                 disabled={isSyncingMagazine}
-                className="px-3 py-1 bg-white dark:bg-[#1f1f1f] text-black dark:text-white border border-black/20 dark:border-white/20 text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+                className="btn btn-secondary btn-sm flex"
                 title="타임라인 최신 사진/제목/장소 데이터로 즉시 동기화"
               >
                 <RefreshCw className={`w-3 h-3 ${isSyncingMagazine ? 'animate-spin text-red-500' : 'text-black/70 dark:text-white/70'}`} />
@@ -481,7 +481,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={handleAddTextCardToCurrentSection}
-                className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                className="btn btn-primary btn-sm flex"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>ADD TEXT CARD</span>
@@ -674,7 +674,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => handleUpdateItemInCurrentSection(item.id, 'layoutType', isLandscape ? 'portrait' : 'landscape')}
-                          className="px-1.5 py-0.5 text-meta font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                          className="btn btn-secondary btn-sm"
                           title="가로형/세로형 비율 전환"
                         >
                           {isLandscape ? '가로 ⟳' : '세로 ⟳'}
@@ -689,7 +689,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                             <button
                               type="button"
                               onClick={() => setInlineAddMenuCardId(prev => prev === item.id ? null : item.id)}
-                              className="px-2 py-0.5 text-meta font-mono font-bold uppercase bg-red-600 hover:bg-red-700 text-white flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                              className="btn btn-primary btn-sm flex"
                               title="현재 카드 바로 뒤에 추가"
                             >
                               <Plus className="w-3 h-3" />
@@ -1139,7 +1139,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   setSelectedTripForAutoGenerate(firstUncreated ? firstUncreated.id : (localJourneys[0]?.id ?? null));
                   setShowAutoGenerateModal(true);
                 }}
-                className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-meta font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                className="btn btn-primary btn-sm flex shrink-0"
               >
                 <Sparkles className="w-3 h-3" />
                 <span>여정 자동 생성 →</span>
@@ -1150,14 +1150,14 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={() => setShowAddSectionModal(false)}
-                className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="btn btn-secondary"
               >
                 CANCEL
               </button>
               <button
                 type="button"
                 onClick={handleAddSection}
-                className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:opacity-85 transition-opacity"
+                className="btn btn-primary"
               >
                 CREATE SECTION
               </button>
@@ -1280,7 +1280,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={() => setShowAutoGenerateModal(false)}
-                className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="btn btn-secondary"
               >
                 CANCEL
               </button>

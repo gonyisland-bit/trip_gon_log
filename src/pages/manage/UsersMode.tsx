@@ -77,7 +77,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
             type="button"
             onClick={handleUpdateAdminEmail}
             disabled={adminEmailSaving || !newAdminEmailInput.trim()}
-            className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+            className="btn btn-primary flex"
           >
             <Save className="w-3.5 h-3.5" />
             <span>{adminEmailSaving ? 'SAVING...' : 'UPDATE EMAIL'}</span>
@@ -307,7 +307,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                     setUserSearchQuery('');
                     setUserCurrentPage(1);
                   }}
-                  className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-mono uppercase hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
+                  className="btn btn-secondary shrink-0"
                 >
                   CLEAR
                 </button>
@@ -391,7 +391,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           <button
                             type="button"
                             onClick={() => handleRejectUser(user)}
-                            className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:border-red-600 hover:text-red-600 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            className="btn btn-outline-danger btn-sm"
                           >
                             REJECT
                           </button>
@@ -450,7 +450,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           setDelegatingUser(user);
                           setIsDelegatingModalOpen(true);
                         }}
-                        className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 text-meta font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                        className="btn btn-secondary btn-sm"
                         title="특정 여정 편집 권한 위임"
                       >
                         여정 위임
@@ -514,7 +514,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                     type="button"
                     disabled={safePage <= 1}
                     onClick={() => setUserCurrentPage(prev => Math.max(prev - 1, 1))}
-                    className="px-3 py-1 text-xs font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="btn btn-secondary btn-sm"
                   >
                     PREV
                   </button>
@@ -538,7 +538,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                     type="button"
                     disabled={safePage >= totalPages}
                     onClick={() => setUserCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    className="px-3 py-1 text-xs font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="btn btn-secondary btn-sm"
                   >
                     NEXT
                   </button>

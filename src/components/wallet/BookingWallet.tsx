@@ -197,7 +197,7 @@ export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transi
         {journeys.length === 0 && (
           <div className="py-16 flex flex-col items-center gap-4 text-center">
             <p className="text-black/60 dark:text-white/60">다가오는 여정이 없습니다.</p>
-            <button type="button" onClick={() => { onClose(); onNewTrip(); }} className="tgl-press h-10 px-5 bg-black text-white dark:bg-white dark:text-black text-sm font-bold cursor-pointer hover:bg-red-600 dark:hover:bg-red-600 dark:hover:text-white">
+            <button type="button" onClick={() => { onClose(); onNewTrip(); }} className="btn btn-primary btn-lg tgl-press">
               새 여정 만들기
             </button>
           </div>
@@ -234,7 +234,7 @@ export function BookingWallet({ trips, plans, flightsByTrip, staysByTrip, transi
                       </span>
                     </button>
                     {r.ref && (
-                      <button type="button" onClick={() => copy(r.ref)} className="tgl-press shrink-0 h-8 px-2 inline-flex items-center gap-1.5 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white font-mono text-meta tracking-wider cursor-pointer" aria-label={`예약번호 ${r.ref} 복사`}>
+                      <button type="button" onClick={() => copy(r.ref)} className="btn btn-secondary btn-sm tgl-press shrink-0 inline-flex" aria-label={`예약번호 ${r.ref} 복사`}>
                         <span className="max-w-[88px] truncate">{r.ref}</span>
                         <Copy className="w-3.5 h-3.5" />
                       </button>

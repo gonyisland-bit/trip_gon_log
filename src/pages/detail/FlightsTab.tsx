@@ -139,19 +139,19 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
               <div className="flex gap-4 justify-center py-6">
                 <button 
                   onClick={() => handleAddFlight('OUTBOUND FLIGHT')} 
-                  className="text-meta md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                  className="btn btn-secondary flex"
                 >
                   <Plus className="w-3.5 h-3.5" /> Outbound Flight
                 </button>
                 <button 
                   onClick={() => handleAddFlight('LAYOVER FLIGHT')} 
-                  className="text-meta md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                  className="btn btn-secondary flex"
                 >
                   <Plus className="w-3.5 h-3.5" /> Layover Flight
                 </button>
                 <button 
                   onClick={() => handleAddFlight('INBOUND FLIGHT')} 
-                  className="text-meta md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                  className="btn btn-secondary flex"
                 >
                   <Plus className="w-3.5 h-3.5" /> Inbound Flight
                 </button>

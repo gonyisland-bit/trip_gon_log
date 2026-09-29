@@ -177,14 +177,14 @@ export function PocketScheduleModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-8 px-3.5 border border-black/20 dark:border-white/20 text-xs font-mono uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+            className="btn btn-secondary btn-sm"
           >
             CANCEL
           </button>
           <button
             type="button"
             onClick={handleApply}
-            className="h-8 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="btn btn-primary btn-sm flex"
           >
             <Check className="w-3.5 h-3.5" />
             <span>ADD TO TIMELINE</span>

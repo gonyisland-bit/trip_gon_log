@@ -184,6 +184,10 @@
   - 각진 형태(`rounded-none` 또는 `rounded-sm`)의 스위스 미니멀 스타일.
   - 고유 높이: `h-8` (스몰/보조), `h-9` (기본), `h-10` (강조 액션).
   - 호버 인터랙션: 반전 컬러 (`hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black`).
+  - 공용 클래스(`src/index.css` `@layer components`): 텍스트 버튼은 `btn` + 역할 하나 + 크기를 씁니다.
+    - 역할: `btn-primary`(먹색 채움, 화면·모달의 주 동작 하나), `btn-secondary`(단일 보더, 호버 반전: 취소 · 보조 동작), `btn-danger`(빨강 채움: 삭제 확인처럼 되돌릴 수 없는 실행), `btn-outline-danger`(빨강 보더: 삭제 확인을 여는 버튼), `btn-ghost`(텍스트만).
+    - 크기: `btn-sm`(h-8), `btn`(h-9), `btn-lg`(h-10). 모노 대문자, `rounded-sm`, 포커스는 빨간 링.
+    - 예외: 선택 상태가 있는 토글 · 세그먼트, 알약형 필터 칩, 사진이나 어두운 배경 위 버튼(랜딩, 라이트박스, Memory Reel, 공항 터미널), 아이콘만 있는 버튼. 저장 완료 · 승인 같은 성공 동작은 에메랄드를 유지합니다.
 - **모달 (Modals)**:
   - 딤 배경: `bg-black/60 backdrop-blur-xs`.
   - 상단 헤더: 영문 대문자 모노스페이스 서브 라벨 + 메인 볼드 타이틀 + 우측 `X` 닫기 버튼.

@@ -1510,7 +1510,7 @@ export function MagazineHubPage({
                   <button
                     type="button"
                     onClick={handleEditThisSection}
-                    className="mt-2 px-6 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:opacity-85 transition-opacity"
+                    className="btn btn-primary mt-2"
                   >
                     + ADD MOMENTS IN SETTINGS
                   </button>

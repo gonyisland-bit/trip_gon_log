@@ -153,25 +153,25 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
               <div className="flex flex-wrap justify-center gap-2">
                 <button 
                   onClick={() => handleAddTransit('train')} 
-                  className="text-micro md:text-meta font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="btn btn-secondary btn-sm flex"
                 >
                   <Plus className="w-3.5 h-3.5" /> Train
                 </button>
                 <button 
                   onClick={() => handleAddTransit('bus')} 
-                  className="text-micro md:text-meta font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="btn btn-secondary btn-sm flex"
                 >
                   <Plus className="w-3.5 h-3.5" /> Bus
                 </button>
                 <button 
                   onClick={() => handleAddTransit('taxi')} 
-                  className="text-micro md:text-meta font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="btn btn-secondary btn-sm flex"
                 >
                   <Plus className="w-3.5 h-3.5" /> Taxi
                 </button>
                 <button 
                   onClick={() => handleAddTransit('car')} 
-                  className="text-micro md:text-meta font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="btn btn-secondary btn-sm flex"
                 >
                   <Plus className="w-3.5 h-3.5" /> Rental
                 </button>

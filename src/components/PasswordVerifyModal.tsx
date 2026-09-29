@@ -106,14 +106,14 @@ export function PasswordVerifyModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-9 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+              className="btn btn-secondary flex-1"
             >
               CANCEL
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 h-9 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase hover:opacity-85 disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="btn btn-primary flex-1 flex"
             >
               {loading ? (
                 <>

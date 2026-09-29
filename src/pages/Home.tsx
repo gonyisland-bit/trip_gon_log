@@ -1740,7 +1740,7 @@ export function HomePage({
             <button
               type="button"
               onClick={() => onNavigate('archive')}
-              className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md"
+              className="btn btn-primary btn-lg flex"
             >
               <span>ALL TRIPS ({filteredTrips.length})</span>
               <ArrowRight className="w-4 h-4" />

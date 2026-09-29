@@ -378,7 +378,7 @@ export function ProfileEditModal({
                 <button
                   type="button"
                   onClick={() => setIsAvatarPickerOpen(true)}
-                  className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer flex items-center gap-1.5"
+                  className="btn btn-primary btn-sm flex"
                 >
                   <Camera className="w-3.5 h-3.5" />
                   <span>프로필 변경</span>
@@ -391,7 +391,7 @@ export function ProfileEditModal({
                       setProfileType('icon');
                       setProfileIcon('user');
                     }}
-                    className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold text-red-600 dark:text-red-400 hover:bg-red-500/10 cursor-pointer"
+                    className="btn btn-secondary btn-sm"
                   >
                     기본값 복귀
                   </button>
@@ -494,14 +494,14 @@ export function ProfileEditModal({
               <button 
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                className="btn btn-secondary flex-1"
               >
                 CANCEL
               </button>
               <button 
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="btn btn-primary flex-1 flex"
               >
                 {isSaving ? (
                   <>
@@ -525,7 +525,7 @@ export function ProfileEditModal({
                     type="button"
                     onClick={() => { setIsPasswordSectionOpen(v => !v); setPasswordMsg(null); }}
                     aria-expanded={isPasswordSectionOpen}
-                    className="px-2.5 py-1 text-meta font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                    className="btn btn-secondary btn-sm"
                   >
                     {isPasswordSectionOpen ? 'CLOSE' : 'CHANGE'}
                   </button>
@@ -573,7 +573,7 @@ export function ProfileEditModal({
                       type="button"
                       onClick={() => setIsPasswordConfirmOpen(true)}
                       disabled={!canChangePassword}
-                      className="h-9 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                      className="btn btn-primary flex"
                     >
                       {isChangingPassword ? (
                         <>
@@ -598,7 +598,7 @@ export function ProfileEditModal({
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="px-2.5 py-1 text-meta font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:bg-red-500/10 border border-red-500/30 transition-colors cursor-pointer"
+                  className="btn btn-outline-danger btn-sm"
                 >
                   Delete account
                 </button>
@@ -802,7 +802,7 @@ export function ProfileEditModal({
                   <button
                     type="button"
                     onClick={handlePasteClick}
-                    className="flex-1 py-2 px-2 border border-black/20 dark:border-white/20 text-[11px] font-mono font-bold text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="btn btn-secondary flex-1 flex"
                   >
                     <ClipboardPaste className="w-3.5 h-3.5" />
                     <span>클립보드 붙여넣기 (Ctrl+V)</span>
@@ -830,7 +830,7 @@ export function ProfileEditModal({
               <button
                 type="button"
                 onClick={() => setIsAvatarPickerOpen(false)}
-                className="w-full py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer flex items-center justify-center gap-1.5"
+                className="btn btn-primary w-full flex"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>선택 완료</span>

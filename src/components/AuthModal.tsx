@@ -413,7 +413,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       setTimeout(() => setCopiedLink(false), 2500);
                     }).catch(() => {});
                   }}
-                  className="w-full py-2 px-3 border border-black/20 dark:border-white/20 text-xs font-mono uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-black/80 dark:text-white/80"
+                  className="btn btn-secondary w-full flex"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>{copiedLink ? '승인 링크 복사 완료' : '원클릭 승인 링크 복사'}</span>
@@ -437,7 +437,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                 setSubmittedUser(null);
                 onClose();
               }}
-              className="w-full h-11 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
+              className="btn btn-primary btn-lg w-full"
             >
               Confirm
             </button>
@@ -677,7 +677,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   <button 
                     type="submit"
                     disabled={loading || !isSignUpValid}
-                    className="w-full h-11 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-black dark:disabled:hover:bg-white dark:disabled:hover:text-black flex items-center justify-center rounded-none cursor-pointer"
+                    className="btn btn-primary btn-lg w-full mt-2 flex"
                   >
                     {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
                   </button>
@@ -725,7 +725,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                   <button 
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
+                    className="btn btn-primary btn-lg w-full mt-2 flex"
                   >
                     {loading ? 'SIGNING IN...' : 'SIGN IN'}
                   </button>

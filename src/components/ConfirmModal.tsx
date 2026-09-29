@@ -184,12 +184,12 @@ export function ConfirmModal({
         </p>
 
         {/* Action Buttons: Clean 1-Row Grid with Short Labels */}
-        <div className={`grid ${gridColsClass} gap-1.5 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs font-extrabold uppercase tracking-wider`}>
+        <div className={`grid ${gridColsClass} gap-1.5 pt-3 border-t border-black/10 dark:border-white/10`}>
           {!singleButton && (
             <button
               type="button"
               onClick={() => handleImmediateClose(onCancel)}
-              className="px-2 py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
+              className="btn btn-secondary px-2"
             >
               {cancelLabel}
             </button>
@@ -199,7 +199,7 @@ export function ConfirmModal({
             <button
               type="button"
               onClick={() => handleImmediateClose(onDiscard)}
-              className="px-2 py-2.5 border border-black/25 dark:border-white/25 text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
+              className="btn btn-secondary px-2"
             >
               {discardLabel}
             </button>
@@ -209,11 +209,7 @@ export function ConfirmModal({
             ref={confirmButtonRef}
             type="button"
             onClick={() => handleImmediateClose(onConfirm)}
-            className={`px-2 py-2.5 text-center transition-colors cursor-pointer shadow-sm whitespace-nowrap text-[11px] outline-none ring-2 ring-transparent focus:ring-black dark:focus:ring-white ${
-              confirmVariant === 'danger'
-                ? 'bg-red-600 text-white dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600'
-                : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
-            }`}
+            className={`btn px-2 ${confirmVariant === 'danger' ? 'btn-danger' : 'btn-primary'}`}
           >
             {confirmLabel}
           </button>

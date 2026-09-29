@@ -500,7 +500,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                   const targetCity = selectedDestCities.length > 0 ? selectedDestCities[0] : undefined;
                   handleOpenTripBuilder(selectedCountry.name, targetCity, undefined, selectedCountry.code, selectedDestCities);
                 }}
-                className="w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-black text-white dark:bg-white dark:text-black text-[11px] sm:text-xs font-extrabold uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs truncate"
+                className="btn btn-primary btn-sm w-full flex"
                 title="선택된 장소 또는 국가 기준으로 새로운 트립 생성"
               >
                 <Plus className="w-3.5 h-3.5 shrink-0" />

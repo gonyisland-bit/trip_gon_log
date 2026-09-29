@@ -262,7 +262,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                             onClick={() => {
                               handleOpenTripBuilder(country.name, undefined, undefined, country.code);
                             }}
-                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-meta font-extrabold uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                            className="btn btn-primary btn-sm flex"
                           >
                             <Plus className="w-3 h-3" />
                             <span>TRIP</span>
@@ -320,7 +320,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                             onClick={() => {
                               handleOpenTripBuilder(matchedCountry?.name || '', city, undefined, matchedCountry?.code);
                             }}
-                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-meta font-extrabold uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                            className="btn btn-primary btn-sm flex"
                           >
                             <Plus className="w-3 h-3" />
                             <span>TRIP</span>

@@ -436,7 +436,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 type="button"
                 onClick={handleFetchUrl}
                 disabled={isFetchingUrl || !sourceUrlInput.trim()}
-                className="px-3 py-1.5 bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-meta font-bold tracking-wider uppercase transition-colors shrink-0 disabled:opacity-40 cursor-pointer flex items-center gap-1"
+                className="btn btn-primary btn-sm shrink-0 flex"
               >
                 {isFetchingUrl ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
                 <span>{isFetchingUrl ? 'FETCHING' : 'FETCH'}</span>
@@ -515,7 +515,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 type="button"
                 onClick={() => handleRunOcr(true)}
                 disabled={isOcrRunning || !selectedImage}
-                className="w-full py-2 px-4 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity font-mono text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                className="btn btn-primary w-full flex"
                 title="이미지에서 텍스트를 자동 인식하여 제목과 메모에 채웁니다"
               >
                 {isOcrRunning ? (
@@ -609,7 +609,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                   <button
                     type="button"
                     onClick={handleApplyDescriptionToMemo}
-                    className="px-2 py-0.5 bg-black dark:bg-white text-white dark:text-black text-meta font-mono font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
+                    className="btn btn-primary btn-sm flex"
                   >
                     <Check className="w-2.5 h-2.5" />
                     <span>APPLY TO MEMO</span>
@@ -813,14 +813,14 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             <button
               type="button"
               onClick={handleAttemptClose}
-              className="px-4 py-2 text-xs font-mono font-bold tracking-wider uppercase border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+              className="btn btn-secondary"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 text-xs font-mono font-bold tracking-wider uppercase bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+              className="btn btn-primary flex"
             >
               <Check className="w-3.5 h-3.5 text-red-500" />
               <span>{isSubmitting ? 'SAVING...' : 'SAVE SPOT (포켓 저장)'}</span>

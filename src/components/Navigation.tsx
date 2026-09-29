@@ -465,7 +465,7 @@ export function Navigation({
               <button
                 type="button"
                 onClick={handleLogout}
-                className="h-11 px-4 shrink-0 inline-flex items-center gap-2 border border-black/15 dark:border-white/15 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors font-mono text-xs font-bold uppercase tracking-widest cursor-pointer"
+                className="btn btn-outline-danger btn-lg shrink-0 inline-flex"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Logout
@@ -476,14 +476,14 @@ export function Navigation({
               <button
                 type="button"
                 onClick={() => { setShowSettings(false); openAuthModal('login'); }}
-                className="h-11 bg-black text-white dark:bg-white dark:text-black hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors font-mono text-xs font-bold uppercase tracking-widest cursor-pointer"
+                className="btn btn-primary btn-lg"
               >
                 Login
               </button>
               <button
                 type="button"
                 onClick={() => { setShowSettings(false); openAuthModal('signup'); }}
-                className="h-11 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs font-bold uppercase tracking-widest cursor-pointer"
+                className="btn btn-secondary btn-lg"
               >
                 Sign up
               </button>

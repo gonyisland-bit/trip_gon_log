@@ -3391,10 +3391,10 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                   setActiveTab(prev => prev === 'settlement' ? 'timeline' : 'settlement');
                   setExpandedItemId(null);
                 }}
-                className={`px-2.5 py-1 border rounded text-micro font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+                className={`btn btn-sm flex ${
                   activeTab === 'settlement'
                     ? 'bg-emerald-600 text-white border-emerald-600'
-                    : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
+                    : 'btn-secondary'
                 }`}
                 title="비용/정산 관리"
               >
@@ -3404,7 +3404,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
               <button
                 onClick={handleCopyShareLink}
-                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-micro font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                className="btn btn-secondary btn-sm flex"
                 title="공유 링크 복사"
               >
                 <Share2 className="w-3 h-3" />
@@ -3413,11 +3413,12 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
               <button
                 onClick={handleOpenInCalendar}
-                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-micro font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                className="btn btn-secondary btn-sm flex"
                 title="달력에서 보기"
+                aria-label="Calendar"
               >
                 <Calendar className="w-3 h-3" />
-                <span>Calendar</span>
+                <span className="hidden sm:inline">Calendar</span>
               </button>
 
               <button
@@ -3426,7 +3427,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                   setCoverInputUrl(tripToUse?.img || '');
                   setIsCoverModalOpen(true);
                 }}
-                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-micro font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                className="btn btn-secondary btn-sm flex"
                 title="카드 커버 이미지 변경"
               >
                 <ImageIcon className="w-3 h-3" />
@@ -3436,7 +3437,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               {isEditing && (
                 <button
                   onClick={handleCancel}
-                  className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-micro font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors cursor-pointer"
+                  className="btn btn-secondary btn-sm"
                 >
                   Cancel
                 </button>

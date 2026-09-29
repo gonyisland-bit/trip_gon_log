@@ -58,7 +58,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
               <button
                 type="button"
                 onClick={() => setMapConfirm(null)}
-                className="flex-1 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-meta font-extrabold uppercase tracking-wider rounded-lg transition-all cursor-pointer"
+                className="btn btn-secondary flex-1"
               >
                 취소 (N)
               </button>
@@ -288,7 +288,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
             <button
               type="button"
               onClick={() => setCostModalItem(null)}
-              className="mt-2 w-full py-2.5 bg-black hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-mono font-extrabold text-xs uppercase tracking-widest transition-colors cursor-pointer"
+              className="btn btn-primary mt-2 w-full"
             >
               CLOSE [ESC]
             </button>
@@ -370,7 +370,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
                   type="button"
                   onClick={() => coverFileInputRef.current?.click()}
                   disabled={isCoverUploading}
-                  className="px-3 bg-black text-white dark:bg-white dark:text-black text-meta font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="btn btn-primary flex"
                   title="사진 파일 업로드"
                 >
                   <Upload className="w-3 h-3" />
@@ -393,7 +393,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
               <button
                 type="button"
                 onClick={() => setIsCoverModalOpen(false)}
-                className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 text-xs font-mono font-bold uppercase transition-colors cursor-pointer"
+                className="btn btn-secondary"
               >
                 CANCEL
               </button>
@@ -401,7 +401,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
                 type="button"
                 onClick={() => handleUpdateTripCover(coverInputUrl)}
                 disabled={!coverInputUrl.trim() || isCoverUploading}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                className="btn btn-primary flex"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>APPLY COVER</span>

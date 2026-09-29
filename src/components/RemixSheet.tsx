@@ -197,7 +197,7 @@ export function RemixSheet({ journey, timeline, stays, pockets = [], onClose, on
         </div>
 
         <div className="px-5 py-3 border-t border-black/15 dark:border-white/15 flex justify-end">
-          <button type="button" onClick={create} disabled={busy || !count || !title.trim() || !startDate} className="tgl-press h-11 px-6 bg-black text-white dark:bg-white dark:text-black font-bold text-sm hover:bg-red-600 dark:hover:bg-red-600 dark:hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+          <button type="button" onClick={create} disabled={busy || !count || !title.trim() || !startDate} className="btn btn-primary btn-lg tgl-press">
             {busy ? '만드는 중…' : `계획 만들기 (${count})`}
           </button>
         </div>

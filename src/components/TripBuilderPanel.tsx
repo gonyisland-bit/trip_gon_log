@@ -2074,7 +2074,7 @@ export function TripBuilderPanel({
                 <button
                   type="button"
                   onClick={() => handleConfirmPresetGeneration(selectedPresetObj)}
-                  className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-extrabold uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer mt-3"
+                  className="btn btn-primary btn-lg w-full flex mt-3"
                 >
                   <Check className="w-4 h-4" />
                   <span>CREATE TRIP</span>
@@ -2760,7 +2760,7 @@ export function TripBuilderPanel({
                               e.stopPropagation();
                               handleConfirmProposalGeneration(prop);
                             }}
-                            className="py-2 px-2 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-extrabold uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                            className="btn btn-primary flex"
                           >
                             <Check className="w-3.5 h-3.5" />
                             <span>CREATE TRIP</span>

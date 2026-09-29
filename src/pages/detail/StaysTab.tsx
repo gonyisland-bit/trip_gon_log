@@ -63,7 +63,7 @@ export function StaysTab({ s }: { s: JourneyDetailState }) {
               <div className="flex justify-center py-6">
                 <button 
                   onClick={handleAddStay} 
-                  className="text-meta md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-6 py-2.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
+                  className="btn btn-secondary flex"
                 >
                   <Plus className="w-4 h-4" /> Add Accommodation
                 </button>
