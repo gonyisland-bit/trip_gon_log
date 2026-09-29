@@ -2463,9 +2463,9 @@ export function CalendarHubPage({
                         const isOrangeBg = hasTrip;
 
                         return (
-                          <div className="flex flex-col items-center justify-between h-full w-full pt-2 pb-2.5 sm:py-1.5 pointer-events-none select-none">
+                          <div className="flex flex-col items-center justify-center gap-[2px] h-full w-full sm:justify-between sm:gap-0 sm:py-1.5 pointer-events-none select-none">
                             {/* 1. 상단: 날짜 일자 숫자 */}
-                            <span className={`text-micro sm:text-meta font-mono leading-none ${
+                            <span className={`text-[9px] sm:text-meta font-mono leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-extrabold' 
                                 : cell.isToday
@@ -2478,8 +2478,8 @@ export function CalendarHubPage({
                             </span>
 
                             {/* 2. 중앙 메인: 날씨 아이콘 */}
-                            <div className={`my-auto flex items-center justify-center ${isForecast ? '' : 'opacity-60'}`}>
-                              <WeatherIconComponent className={`w-[14px] h-[14px] sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
+                            <div className={`flex items-center justify-center sm:my-auto ${isForecast ? '' : 'opacity-60'}`}>
+                              <WeatherIconComponent className={`w-[13px] h-[13px] sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
                                 isOrangeBg 
                                   ? 'text-white stroke-[2.4] drop-shadow-xs' 
                                   : cell.isToday
@@ -2489,7 +2489,7 @@ export function CalendarHubPage({
                             </div>
 
                             {/* 3. 하단: 최저/최고 기온 */}
-                            <span className={`text-micro sm:text-micro md:text-micro font-mono tracking-tighter leading-none ${
+                            <span className={`text-[9px] sm:text-micro md:text-micro font-mono tracking-tighter leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-extrabold' 
                                 : cell.isToday
