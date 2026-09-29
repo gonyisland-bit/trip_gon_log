@@ -6,7 +6,8 @@ import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
-import { QuickActionBar, OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './components/QuickActionBar';
+import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './app/quickActions';
+import { TabBar } from './components/TabBar';
 import { TOGGLE_PALETTE_EVENT, OPEN_REMIX_EVENT, openRemix } from './app/layerEvents';
 import { getSavedPockets } from './utils/pocketStorage';
 import { LayerBoundary } from './components/LayerBoundary';
@@ -209,6 +210,7 @@ function App() {
             openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
             openSettingModal={() => setIsManageModalOpen(true)}
             onSearchClick={() => { setSearchInitialQuery(''); setIsSearchOpen(true); }}
+            onNewTrip={() => handleCreateTripForCountry('', '')}
             isAdmin={isAdmin}
             isHomeGradientActive={isHomeGradientActive}
             currentUserProfile={currentUserProfile}
@@ -728,12 +730,12 @@ function App() {
           />
         </Suspense>
 
-        {/* Quick actions across hubs (v1.3) */}
+        {/* Phone tab bar across hubs (v1.3.5). Map, detail and manage keep their own bottom controls */}
         {isLoggedIn && ['home', 'archive', 'magazine', 'calendar', 'pocket'].includes(currentView) && (
           <>
-            {/* Phones: room under the page so the dock never sits on its last lines */}
-            <div className="md:hidden h-20 shrink-0" aria-hidden />
-            <QuickActionBar
+            {/* Room under the page so the bar never sits on its last lines */}
+            <div className="md:hidden shrink-0" style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }} aria-hidden />
+            <TabBar
               currentView={currentView}
               onNavigate={(view) => navigateTo(view)}
               onNewTrip={() => handleCreateTripForCountry('', '')}

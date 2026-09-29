@@ -51,7 +51,7 @@ export function IntroTipView({ onWatch, onDismiss }: { onWatch: () => void; onDi
   return (
     <div
       className="tgl-introtip fixed z-float right-4 sm:right-6 flex items-center"
-      style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
+      style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem + var(--tabbar-lift))' }}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHover(true); }}
       onPointerLeave={() => setHover(false)}
     >

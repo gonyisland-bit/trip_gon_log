@@ -1,9 +1,9 @@
 // Marks <html data-overlay> while something covers the screen (menu drawer, modal or sheet backdrop,
-// terminal, viewers), so floating chrome like the quick action dock can step aside (see index.css).
+// terminal, viewers), so floating chrome like the phone tab bar can step aside (see index.css).
 // One watcher for the whole app instead of every modal reporting itself.
 
 const CANDIDATES = '.fixed.inset-0, [role="dialog"], [aria-modal="true"]';
-const FLOATING = '.tgl-dock, .tgl-totop, .tgl-introtip';
+const FLOATING = '.tgl-tabbar, .tgl-totop, .tgl-introtip';
 
 // Opacity the element is heading to: a fade in progress counts as already finished
 function targetOpacity(el: HTMLElement, current: string): number {

@@ -1317,13 +1317,19 @@ input[type="datetime-local"] { min-width: 0; max-width: 100%; }
   .tgl-sheet-in, .tgl-sheet-out, .tgl-dialog-in, .tgl-dialog-out, .tgl-sheet-backdrop-in, .tgl-sheet-backdrop-out { animation: none; }
 }
 
-/* Bottom peek bar (calendar day): the quick dock and TOP step aside while it is open */
-html[data-peek] .tgl-dock, html[data-peek] .tgl-totop, html[data-peek] .tgl-introtip { opacity: 0 !important; pointer-events: none !important; }
+/* Phone tab bar (components/TabBar): floating chrome sits above it while it is up */
+:root { --tabbar-lift: 0px; }
+@media (max-width: 767px) {
+  html[data-tabbar] { --tabbar-lift: calc(76px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Bottom peek bar (calendar day): the tab bar and TOP step aside while it is open */
+html[data-peek] .tgl-tabbar, html[data-peek] .tgl-totop, html[data-peek] .tgl-introtip { opacity: 0 !important; pointer-events: none !important; }
 /* Phone bottom sheet resting half open: pushing the content up opens the sheet instead of scrolling it */
 [data-sheet-snap="half"] [data-sheet-scroll] { overflow-y: hidden; }
 
 /* Anything covering the screen (menu, modal, sheet, terminal, viewer): same, see app/overlayWatcher */
-html[data-overlay] .tgl-dock, html[data-overlay] .tgl-totop, html[data-overlay] .tgl-introtip { opacity: 0 !important; pointer-events: none !important; }
+html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay] .tgl-introtip { opacity: 0 !important; pointer-events: none !important; }
 
 /* Intro loader: the film's three shapes hop on the 128 BPM beat, then settle when ready */
 .tgl-intro-shapes > span { transform-origin: 50% 100%; animation: tglIntroHop 938ms cubic-bezier(.3, 0, .2, 1) infinite; }

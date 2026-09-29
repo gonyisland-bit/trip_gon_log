@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { openDepartureBoard } from '../QuickActionBar';
+import { openDepartureBoard } from '../../app/quickActions';
 import type { DestinationCity } from '../../data/worldDestinations';
 
 // Home entry to the Departure Board: a one-line board that rolls through

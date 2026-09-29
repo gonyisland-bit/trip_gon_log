@@ -15,7 +15,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
 import { PocketScrapModal } from '../components/PocketScrapModal';
-import { POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG } from '../components/QuickActionBar';
+import { POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG } from '../app/quickActions';
 import { takeSharedLink } from '../utils/shareTarget';
 import { scrapeSnsMetadata, ScrapedSpotData, inferCategory, detectCityAndCountry } from '../utils/snsScraper';
 import { compressImage } from '../utils/imageHelper';
@@ -1785,7 +1785,7 @@ export function PocketHubPage({
 
                   {/* Selection Mode Floating Action Bar */}
                   {isSelectionMode && selectedSpotIds.size > 0 && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-black text-white dark:bg-white dark:text-black px-5 py-3 border border-black/20 dark:border-white/20 shadow-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-3 duration-200 max-w-lg w-[92vw]">
+                    <div style={{ bottom: 'calc(1.5rem + var(--tabbar-lift))' }} className="fixed left-1/2 -translate-x-1/2 z-40 bg-black text-white dark:bg-white dark:text-black px-5 py-3 border border-black/20 dark:border-white/20 shadow-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-3 duration-200 max-w-lg w-[92vw]">
                       <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider truncate">
                         <span className="w-2 h-2 bg-red-600 shrink-0 inline-block" />
                         <span>SELECTED: {selectedSpotIds.size} SPOTS</span>

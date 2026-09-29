@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock } from 'lucide-react';
+import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock, Ticket, Wallet } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
@@ -11,6 +11,9 @@ import { MiniWeatherWidget } from './MiniWeatherWidget';
 import { confirmDialog } from '../utils/feedback';
 import { openIntro, prefetchIntro } from '../intro/openIntro';
 import { preloadPocketPage } from '../utils/prefetchHelper';
+import { openBookingWallet, openDepartureBoard } from '../app/quickActions';
+import { NewTripButton } from './NewTripButton';
+import { Segment } from './ui/Segment';
 
 const HUBS = [
   { view: 'home', label: 'Home' },
@@ -35,6 +38,7 @@ interface NavigationProps {
   openAuthModal: (mode: 'login' | 'signup') => void;
   openSettingModal?: () => void;
   onSearchClick: () => void;
+  onNewTrip?: () => void;
   isAdmin?: boolean;
   isHomeGradientActive?: boolean;
   currentUserProfile?: UserProfile | null;
@@ -55,6 +59,7 @@ export function Navigation({
   openAuthModal,
   openSettingModal,
   onSearchClick,
+  onNewTrip,
   isAdmin = false,
   isHomeGradientActive = false,
   currentUserProfile,
@@ -251,6 +256,11 @@ export function Navigation({
 
         {/* Right: Action Icons (Search, Weather Widget, Hamburger Menu) */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0" ref={dropdownRef}>
+          {/* Desktop: the one main action. Phones use the tab bar's red + */}
+          {isLoggedIn && onNewTrip && (
+            <NewTripButton onClick={onNewTrip} size="sm" className="hidden md:inline-flex mr-1" />
+          )}
+
           {/* Search Button */}
           <button 
             type="button"
@@ -308,7 +318,7 @@ export function Navigation({
           const dx = e.changedTouches[0].clientX - st.x, dy = e.changedTouches[0].clientY - st.y;
           if (dx > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) setShowSettings(false);
         }}
-        className={`tgl-drawer fixed inset-y-0 right-0 z-[100] w-full sm:max-w-md bg-white dark:bg-[#111111] text-black dark:text-white sm:border-l border-black/15 dark:border-white/15 flex flex-col transition-[transform,opacity,visibility] duration-emph ease-emphasized overflow-y-auto overscroll-contain ${
+        className={`tgl-drawer fixed inset-y-0 right-0 z-[100] w-full sm:max-w-md bg-surface dark:bg-surface-dark text-black dark:text-white sm:border-l border-black/15 dark:border-white/15 flex flex-col transition-[transform,opacity,visibility] duration-emph ease-emphasized overflow-y-auto overscroll-contain ${
           showSettings ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible pointer-events-none'
         }`}
         data-open={showSettings || undefined}
@@ -384,52 +394,52 @@ export function Navigation({
             <span className="font-mono text-micro text-black/60 dark:text-white/60 tabular-nums">0:49</span>
           </button>
 
+          {isLoggedIn && ([
+            { label: '예약 지갑', icon: Wallet, onClick: openBookingWallet, i: 7 },
+            { label: '공항 터미널', icon: Ticket, onClick: openDepartureBoard, i: 8 },
+          ]).map(row => {
+            const Icon = row.icon;
+            return (
+              <button
+                key={row.label}
+                type="button"
+                onClick={() => { setShowSettings(false); row.onClick(); }}
+                className="tgl-drawer-item w-full h-14 flex items-center gap-3 text-left border-b border-black/10 dark:border-white/10 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                style={{ ['--i' as string]: row.i }}
+              >
+                <span className="w-8 h-8 shrink-0 rounded-full bg-black/[0.06] dark:bg-white/10 grid place-items-center transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                  <Icon className="w-3.5 h-3.5" />
+                </span>
+                <span className="flex-1 text-sm font-bold">{row.label}</span>
+              </button>
+            );
+          })}
+
           <div
             className="tgl-drawer-item py-3 border-b border-black/10 dark:border-white/10"
-            style={{ ['--i' as string]: 7 }}
+            style={{ ['--i' as string]: 9 }}
             title="나이트 모드 전환 (단축키: ⌘+Shift+L / Ctrl+Shift+L)"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-bold">화면 모드</span>
               <span className="hidden sm:inline font-mono text-micro text-black/60 dark:text-white/60">⌘⇧L</span>
             </div>
-            <div className="relative grid grid-cols-3 h-11 border border-black/15 dark:border-white/15" role="radiogroup" aria-label="화면 모드">
-              {/* The inverted block slides to the chosen mode */}
-              <span
-                className="absolute inset-y-0 w-1/3 bg-black dark:bg-white transition-transform duration-base ease-emphasized"
-                style={{ transform: `translateX(${(['auto', 'light', 'dark'] as const).indexOf(nightModeSetting) * 100}%)` }}
-                aria-hidden
-              />
-              {([
-                { id: 'auto', label: 'AUTO', icon: Clock, title: '저녁 18시 ~ 익일 06시 나이트 모드 자동 적용' },
-                { id: 'light', label: 'LIGHT', icon: Sun, title: '라이트 모드' },
-                { id: 'dark', label: 'DARK', icon: Moon, title: '다크 모드' },
-              ] as const).map(m => {
-                const on = nightModeSetting === m.id;
-                const Icon = m.icon;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    title={m.title}
-                    onClick={() => {
-                      if (setNightModeSetting) setNightModeSetting(m.id);
-                      if (m.id === 'light') setIsDarkMode(false);
-                      else if (m.id === 'dark') setIsDarkMode(true);
-                      else if (!setNightModeSetting) setIsDarkMode(!isDarkMode);
-                    }}
-                    className={`relative z-10 flex items-center justify-center gap-1.5 font-mono text-micro font-bold tracking-wider transition-colors duration-base cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500 ${
-                      on ? 'text-white dark:text-black' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {m.label}
-                  </button>
-                );
-              })}
-            </div>
+            <Segment
+              block
+              ariaLabel="화면 모드"
+              value={nightModeSetting}
+              onChange={(id) => {
+                if (setNightModeSetting) setNightModeSetting(id);
+                if (id === 'light') setIsDarkMode(false);
+                else if (id === 'dark') setIsDarkMode(true);
+                else if (!setNightModeSetting) setIsDarkMode(!isDarkMode);
+              }}
+              options={[
+                { value: 'auto', label: '자동', icon: Clock },
+                { value: 'light', label: '라이트', icon: Sun },
+                { value: 'dark', label: '다크', icon: Moon },
+              ]}
+            />
           </div>
 
           {isLoggedIn && isAdmin && (
@@ -438,7 +448,7 @@ export function Navigation({
               onClick={() => handleMenuNavigate(currentView === 'manage' ? 'home' : 'manage')}
               aria-current={currentView === 'manage' ? 'page' : undefined}
               className="tgl-drawer-item w-full h-14 flex items-center gap-3 text-left border-b border-black/10 dark:border-white/10 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-              style={{ ['--i' as string]: 8 }}
+              style={{ ['--i' as string]: 10 }}
             >
               <span className="w-8 h-8 shrink-0 rounded-full border border-black/20 dark:border-white/20 grid place-items-center">
                 <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -450,7 +460,7 @@ export function Navigation({
         </div>
 
         {/* Account */}
-        <div className="px-5 sm:px-7 py-4 shrink-0 tgl-drawer-item" style={{ ['--i' as string]: 9 }}>
+        <div className="px-5 sm:px-7 py-4 shrink-0 tgl-drawer-item" style={{ ['--i' as string]: 11 }}>
           {isLoggedIn ? (
             <div className="flex items-center justify-between gap-3">
               <button
