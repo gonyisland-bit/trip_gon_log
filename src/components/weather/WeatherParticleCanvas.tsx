@@ -83,6 +83,8 @@ export function WeatherParticleCanvas({ type, intensity, isDarkMode }: WeatherPa
     let fastFrames = 0;
     let lastType: WeatherEffectType | null = null;
     let covered = false;
+    // Page load and closing a full-screen layer are always slow for a moment: don't judge speed then
+    let settle = 3;
     let coverCheck = 0;
 
     const pointer = { x: -9999, y: -9999 };
@@ -107,27 +109,36 @@ export function WeatherParticleCanvas({ type, intensity, isDarkMode }: WeatherPa
       time += dt;
 
       // A full-screen layer (intro, terminal, slideshow, splash) hides the background: idle, and don't judge speed
-      if (--coverCheck <= 0) { covered = !!document.querySelector('[data-bg-cover]'); coverCheck = 20; }
+      if (--coverCheck <= 0) {
+        const was = covered;
+        covered = !!document.querySelector('[data-bg-cover]');
+        if (was && !covered) { settle = 1.5; budget = 1; }
+        coverCheck = 20;
+      }
       if (covered) { ctx.clearRect(0, 0, width, height); slowFrames = 0; fastFrames = 0; raf = requestAnimationFrame(frame); return; }
 
       const { type: t, intensity: k, isDarkMode: dark } = propsRef.current;
+      // The first frame opens on the current weather, already spread over the screen (no fade-in after a reload)
+      const firstFrame = lastType === null;
       // A new weather always starts at full density
       if (t !== lastType) { lastType = t; budget = 1; slowFrames = 0; }
 
       // Shed particles if the device is struggling (>24ms frames for ~1s), restore them after ~2s of smooth frames
-      if (dt > 0.024) { slowFrames++; fastFrames = 0; } else { slowFrames = Math.max(0, slowFrames - 1); fastFrames++; }
+      if (settle > 0) { settle -= dt; slowFrames = 0; }
+      else if (dt > 0.024) { slowFrames++; fastFrames = 0; } else { slowFrames = Math.max(0, slowFrames - 1); fastFrames++; }
       if (slowFrames > 45 && budget > 0.35) { budget -= 0.15; slowFrames = 0; }
-      if (fastFrames > 120 && budget < 1) { budget = Math.min(1, budget + 0.15); fastFrames = 0; }
+      if (fastFrames > 60 && budget < 1) { budget = Math.min(1, budget + 0.2); fastFrames = 0; }
 
       const target = targetStrengths(t, dark);
       const precip = 0.45 + 0.55 * Math.max(0, Math.min(1, k));
       families.forEach(f => {
         const goal = target[f] * (f === 'rain' || f === 'snow' ? precip : 1);
         // ~1.2s ease toward the goal
-        strength[f] += (goal - strength[f]) * Math.min(1, dt * 3);
+        if (firstFrame) strength[f] = goal;
+        else strength[f] += (goal - strength[f]) * Math.min(1, dt * 3);
         const want = Math.round(BASE_COUNT[f] * strength[f] * budget);
         const pool = pools[f];
-        while (pool.length < want) pool.push(spawn(f, pool.length < want * 0.6 && strength[f] > 0.9));
+        while (pool.length < want) pool.push(spawn(f, firstFrame || (pool.length < want * 0.6 && strength[f] > 0.9)));
         if (pool.length > want) pool.length = want;
       });
 
