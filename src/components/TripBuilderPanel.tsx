@@ -3308,7 +3308,7 @@ export function TripBuilderPanel({
                     {presets.filter(p => !p.isCustom).length} AVAILABLE
                   </span>
                 </div>
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                <div className="space-y-1.5">
                   {presets.filter(p => !p.isCustom).map(wp => (
                     <div
                       key={wp.id}

@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { prefersReducedMotion } from '../motion';
 import { useBackToClose } from '../utils/overlayHistory';
 
@@ -81,7 +82,8 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
 
   const dragging = drag > 0;
 
-  return (
+  // Portalled to body: a fixed sheet inside a transformed/clipped ancestor (map panel) would be cut off
+  return createPortal(
     <SheetCloseContext.Provider value={requestClose}>
       <div
         className={`fixed inset-0 flex justify-center ${placement === 'top' ? 'items-start pt-[max(0.5rem,env(safe-area-inset-top,0px))] sm:pt-[12vh] px-2 sm:px-4' : 'items-end sm:items-center sm:p-4'} ${closing ? 'tgl-sheet-backdrop-out' : 'tgl-sheet-backdrop-in'} bg-black/45 backdrop-blur-[2px]`}
@@ -116,7 +118,8 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
           {children}
         </div>
       </div>
-    </SheetCloseContext.Provider>
+    </SheetCloseContext.Provider>,
+    document.body
   );
 }
 
