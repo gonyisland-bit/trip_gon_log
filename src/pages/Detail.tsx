@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, FileText, Clock, Plane, BedDouble, TrainFront, Image as ImageIcon, type LucideIcon } from 'lucide-react';
+import { ChevronUp, ChevronDown, Map as MapIcon, FileText, Clock, Plane, BedDouble, TrainFront, Image as ImageIcon, type LucideIcon } from 'lucide-react';
 import { getDefaultCurrencyForLocation } from '../components/SettlementExpenseInput';
 import { SettlementView } from '../components/SettlementView';
 import { SummaryView } from '../components/SummaryView';
@@ -58,8 +58,9 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
       
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
-        className={`w-full md:w-1/2 flex flex-col bg-paper dark:bg-paper-dark max-md:rounded-t-sheet max-md:-mt-5 max-md:z-10 max-md:shadow-[0_-8px_24px_rgba(0,0,0,0.12)] transition-[height] duration-300 ease-standard flex-grow md:h-full overflow-hidden overflow-x-hidden max-w-full relative ${
-          mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[62dvh] max-md:flex-1 min-h-0'
+        className={`w-full md:w-1/2 flex flex-col bg-paper dark:bg-paper-dark max-md:z-10 transition-[height] duration-300 ease-standard flex-grow md:h-full overflow-hidden overflow-x-hidden max-w-full relative ${
+          // Open over the map, the sheet starts at the page top: no overlap upward, or its handle would be clipped
+          mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[62dvh] max-md:flex-1 min-h-0 max-md:rounded-t-sheet max-md:-mt-5 max-md:shadow-[0_-8px_24px_rgba(0,0,0,0.12)]'
         }`}
       >
         {/* Mobile Bottom Sheet Grab Handle */}
@@ -72,14 +73,18 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           }}
           title="지도/일정 분할 토글"
         >
-          <div className="flex items-center gap-1">
-            <div className="w-10 h-1 bg-black/25 dark:bg-white/25 group-hover/grab:bg-black/40 rounded-full transition-colors" />
-            {mobileSheetSnap === 'expanded' ? (
-              <ChevronDown className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-            ) : (
+          {mobileSheetSnap === 'expanded' ? (
+            <span className="h-8 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-black/[0.06] dark:bg-white/10 text-meta font-bold text-black/75 dark:text-white/75">
+              <MapIcon className="w-3.5 h-3.5" aria-hidden />
+              지도 보기
+              <ChevronDown className="w-3.5 h-3.5" aria-hidden />
+            </span>
+          ) : (
+            <div className="flex items-center gap-1">
+              <div className="w-10 h-1 bg-black/25 dark:bg-white/25 group-hover/grab:bg-black/40 rounded-full transition-colors" />
               <ChevronUp className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-            )}
-          </div>
+            </div>
+          )}
         </div>
         
         {/* Tab Headers - Unified Single-line Sleek Design (SUM, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
