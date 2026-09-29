@@ -1143,9 +1143,6 @@ export function HomePage({
   const handleTripDrop = () => {
     setDraggedTripId(null);
     const orderedIds = localTrips.map(t => t.id);
-    try {
-      localStorage.setItem('journey_order', JSON.stringify(orderedIds));
-    } catch (_) {}
     if (onReorderTrips) onReorderTrips(orderedIds);
   };
 

@@ -425,10 +425,6 @@ function App() {
                     onMoveToPlans={handleMoveToPlans}
                     onMoveToArchive={handleMoveToArchive}
                     onReorderTrips={async (orderedIds) => {
-                      try {
-                        localStorage.setItem('journey_order', JSON.stringify(orderedIds));
-                      } catch (_) {}
-
                       const idMap = new Map(orderedIds.map((id, idx) => [id, idx]));
                       setTrips(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
                       setPlans(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));

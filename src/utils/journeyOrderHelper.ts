@@ -1,69 +1,39 @@
 /**
- * 정렬 순서 단일 소스 원칙 (Single Source of Truth) 헬퍼
- * 
- * 정렬 규칙:
- * 1. 로컬스토리지 journey_order에 사용자 지정 순서가 있으면 우선 반영.
- * 2. 신규 생성 여정 등 journey_order에 아직 등록되지 않은 최신 항목은 무조건 최상단(맨 앞)에 배치.
- * 3. 둘 다 미지정 시 displayOrder 오름차순, displayOrder도 같으면 id(생성시각) 최신순으로 맨 앞에 배치.
+ * 여정 정렬 단일 소스: Firestore에 저장된 displayOrder (모든 기기가 같은 순서를 봄).
+ *
+ * 1. customOrderIds가 주어지면 그 순서를 우선(목록에 없는 항목은 뒤, displayOrder 순).
+ * 2. displayOrder 오름차순, 같으면 id(생성 시각) 최신순.
+ *
+ * 예전에는 기기별 localStorage `journey_order`를 우선해 기기마다 순서가 달랐습니다.
+ * 그 값은 더 이상 읽지 않으며, 남아 있으면 지웁니다.
  */
+try { localStorage.removeItem('journey_order'); } catch (_) {}
+
+function byDisplayOrder(a: { id: number; displayOrder?: number }, b: { id: number; displayOrder?: number }): number {
+  const orderA = a.displayOrder ?? 999999;
+  const orderB = b.displayOrder ?? 999999;
+  if (orderA !== orderB) return orderA - orderB;
+  return b.id - a.id;
+}
+
 export function sortJourneysByOrder<T extends { id: number; displayOrder?: number }>(
   items: T[],
   customOrderIds?: number[]
 ): T[] {
   if (!items || items.length === 0) return [];
-
-  let order: number[] | null = customOrderIds || null;
-  if (!order) {
-    try {
-      const saved = localStorage.getItem('journey_order');
-      if (saved) {
-        order = JSON.parse(saved);
-      }
-    } catch (_) {}
-  }
-
-  // 1. 순서 배열이 있는 경우
-  if (order && Array.isArray(order) && order.length > 0) {
-    const idMap = new Map<number, number>(order.map((id, idx) => [id, idx]));
-    return [...items].sort((a, b) => {
-      const idxA = idMap.has(a.id) ? idMap.get(a.id)! : -1;
-      const idxB = idMap.has(b.id) ? idMap.get(b.id)! : -1;
-
-      // 0순위 항목은 어떤 경우에도 무조건 최상단(맨 앞)에 배치
-      if (idxA === 0) return -1;
-      if (idxB === 0) return 1;
-
-      // 둘 다 저장된 순서가 있는 경우: order 인덱스 오름차순 (0, 1, 2...)
-      if (idxA !== -1 && idxB !== -1) {
-        return idxA - idxB;
-      }
-
-      // a만 order에 있는 경우: order 항목이 미등록 항목보다 우선
-      if (idxA !== -1 && idxB === -1) {
-        return -1;
-      }
-      // b만 order에 있는 경우: b가 우선
-      if (idxA === -1 && idxB !== -1) {
-        return 1;
-      }
-
-      // 둘 다 order에 없는 경우: displayOrder 비교 후 생성 시각(id) 최신순
-      const orderA = a.displayOrder !== undefined ? a.displayOrder : 999999;
-      const orderB = b.displayOrder !== undefined ? b.displayOrder : 999999;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      return b.id - a.id;
-    });
-  }
-
-  // 2. 순서 배열이 없는 경우: displayOrder 기준 (둘 다 없거나 같으면 최신 id 우선)
+  if (!customOrderIds?.length) return [...items].sort(byDisplayOrder);
+  const idMap = new Map<number, number>(customOrderIds.map((id, idx) => [id, idx]));
   return [...items].sort((a, b) => {
-    const orderA = a.displayOrder !== undefined ? a.displayOrder : 999999;
-    const orderB = b.displayOrder !== undefined ? b.displayOrder : 999999;
-    if (orderA !== orderB) {
-      return orderA - orderB;
-    }
-    return b.id - a.id;
+    const idxA = idMap.get(a.id);
+    const idxB = idMap.get(b.id);
+    if (idxA !== undefined && idxB !== undefined) return idxA - idxB;
+    if (idxA !== undefined) return -1;
+    if (idxB !== undefined) return 1;
+    return byDisplayOrder(a, b);
   });
+}
+
+/** Order after putting `newId` in front: every other journey moves back one place */
+export function orderWithNewFirst<T extends { id: number; displayOrder?: number }>(items: T[], newId: number): number[] {
+  return [newId, ...sortJourneysByOrder(items).map(j => j.id).filter(id => id !== newId)];
 }

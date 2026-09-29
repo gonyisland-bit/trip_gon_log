@@ -32,6 +32,7 @@ import type { RemixPayload } from '../components/RemixSheet';
 import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
 import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
+import { orderWithNewFirst } from '../utils/journeyOrderHelper';
 
 export function useAppState() {
   const [initialNavState] = useState(() => getInitialNavigationState());
@@ -1861,12 +1862,12 @@ export function useAppState() {
           memo: st.memo || '', confNo: '', img: st.img, lat: st.lat, lng: st.lng, additionalImages: st.additionalImages || [],
         }));
       });
+      // Everyone else moves back one place, so the new plan is first on every device
+      orderWithNewFirst([...trips, ...plans], newId).slice(1).forEach((id, idx) => {
+        const col = plans.some(p => p.id === id) ? 'plans' : 'trips';
+        batch.update(doc(db, 'users', 'public', col, String(id)), { displayOrder: idx + 1 });
+      });
       await batch.commit();
-      try {
-        const saved = localStorage.getItem('journey_order');
-        const order: number[] = saved ? JSON.parse(saved) : [];
-        localStorage.setItem('journey_order', JSON.stringify([newId, ...order.filter(id => id !== newId)]));
-      } catch (_) {}
       notify(`"${payload.title}" 계획을 만들었습니다.`, 'success');
       navigateTo('detail', newId, true, null, true);
     } catch (err) {
@@ -2264,17 +2265,7 @@ export function useAppState() {
 
     // Calculate front-most display order
     // 신규 여정은 무조건 맨 앞(인덱스 0)에 위치하며, 기존 여정들은 뒤로 차례대로 순차 정렬
-    const allCurrentIds = [...trips, ...plans].map(j => j.id);
-    const saved = localStorage.getItem('journey_order');
-    const existingOrder: number[] = saved ? JSON.parse(saved) : [];
-    const existingCombined = [
-      ...existingOrder.filter(id => allCurrentIds.includes(id)),
-      ...allCurrentIds.filter(id => !existingOrder.includes(id))
-    ];
-    const updatedOrder = [newId, ...existingCombined.filter(id => id !== newId)];
-    try {
-      localStorage.setItem('journey_order', JSON.stringify(updatedOrder));
-    } catch (_) {}
+    const updatedOrder = orderWithNewFirst([...trips, ...plans], newId);
 
     // Ensure unique journey title if identical title already exists
     let finalTitle = (title || '').trim();
