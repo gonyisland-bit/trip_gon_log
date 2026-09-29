@@ -10,10 +10,6 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
-      // Phones held sideways: wide enough for sm:, but too short for desktop-sized cells
-      screens: {
-        land: { raw: '(max-height: 500px) and (orientation: landscape)' },
-      },
       fontFamily: {
         sans: ['Satoshi', 'Inter', '"Noto Sans KR"', 'sans-serif'],
         satoshi: ['Satoshi', '"Noto Sans KR"', 'sans-serif'],
@@ -49,5 +45,11 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Phones held sideways: wide enough for sm:, but too short for desktop-sized cells.
+    // A variant, not a raw screen: any raw screen makes Tailwind drop every max-* variant.
+    function ({ addVariant }) {
+      addVariant('land', '@media (max-height: 500px) and (orientation: landscape)');
+    },
+  ],
 }
