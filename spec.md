@@ -225,7 +225,7 @@
 - v1.3 추가 토큰: `ease-spring`(스프링 안착), `--motion-stagger`(40ms). 인터랙션 클래스: `tgl-press`(누름 축소), `tgl-sweep`(레드 밑줄), `tgl-pop`(아이콘 교체), `tgl-rise`(순차 등장). 헬퍼: `src/motion/`(공유 요소 전환, fly-to, bump).
 
 ### 4.9 카드 (v1.3)
-- 여정(`JourneyCard`): 사진 좌상단에 대형 연도와 월. 사진 아래 기간 → 타이틀 → 멘트 → 헤어라인 아래 장소. 계획 여정은 사진만 흑백(출발 30일 전부터 컬러 복원) + 앰버 점선 테두리 + 사진 우상단 앰버 `PLAN · D-n` 배지 + 앰버 D-day. 목록은 전체 정렬 유지.
+- 여정(`JourneyCard`, v1.3.5): 사진은 `rounded-card`, 상태(LIVE · PLAN · D-n · NEW)는 사진 왼쪽 아래 알약(연도와 겹치지 않게). 목록 보기는 `JourneyListRow`(surface 카드 행: 둥근 썸네일 · 연월 · 상태 알약 · 제목 · 장소 · 날짜 · 일수, 계획은 썸네일에 앰버 점선과 D-n), 보기 전환은 `ViewModeSegment`. 사진 좌상단에 대형 연도와 월. 사진 아래 기간 → 타이틀 → 멘트 → 헤어라인 아래 장소. 계획 여정은 사진만 흑백(출발 30일 전부터 컬러 복원) + 앰버 점선 테두리 + 사진 우상단 앰버 `PLAN · D-n` 배지 + 앰버 D-day. 목록은 전체 정렬 유지.
 - 매거진(`IssueCard`): 3:4 표지가 카드 전체, 뒤에 종이 2장. 호버 시 표지가 책등을 축으로 열림.
 - 포켓: 상세 모달과 같은 둥근 카드(`rounded-2xl`, 알약형 분류 라벨). 분류 라벨, 장소명(1줄) → 위치 → 메모(1줄), 하단 왼쪽 좋아요 · 댓글 말풍선 · 출처, 오른쪽 아래 여정 추가 버튼. 사진은 480px 카드용 사본(`thumbSmallUrl`, 원본이 바뀌면 무효)을 쓰고, 없으면 쓰기 권한이 있는 회원이 포켓에 들어올 때 백그라운드에서 만들어 저장합니다. 상세 모달은 원본을 씁니다.
 - 홈 상단 `JourneyPhaseStrip`: 여행 중 LIVE, 출발 60일 이내 D-n, 그 외 지난 해 같은 주의 여정 회상.
@@ -393,7 +393,8 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [x] P2 이동: 폰 하단 탭바 `TabBar`(홈 · 여정 · +새 여행 · 지도 · 포켓), 독(`QuickActionBar`) 제거, 데스크톱 헤더 `New trip`, 예약 지갑 · 공항 터미널은 햄버거 메뉴로. 지도 화면의 탭바는 P4 지도 작업에서.
 - [x] P3-a 새 여행 4단계 시트(`components/newtrip/`) + 모든 진입점 연결, Surprise는 터미널 왕복, 지도 Trip Guide는 "지도에서 자세히 만들기"로 유지(정리는 P4).
 - [x] P3-b 작성 중 내용 Firestore 초안(`users/{uid}/drafts/newTrip`, 다른 기기에서 이어 만들기), 생성 중 탑승권 전환.
-- [ ] P4 화면 적용: 홈 → 여정 상세 → 지도 시트 → 포켓 → 매거진 → 캘린더 → 모달 바텀시트화. `bg-white`(약 1,100곳)는 화면별로 `bg-surface`로 옮김.
+- [x] P4-a 홈 · 여정 목록 · 여정 카드: 둥근 카드 · 알약 상태, 목록 행 카드화(`JourneyListRow`), 보기 전환 `ViewModeSegment`, 필터 · 검색 · 정렬 알약, 홈 히어로 사진 · 게스트 버튼 · D-day(앰버) · 환율 · 지금 띠 카드화.
+- [ ] P4 화면 적용(나머지 b~e): 홈 → 여정 상세 → 지도 시트 → 포켓 → 매거진 → 캘린더 → 모달 바텀시트화. `bg-white`(약 1,100곳)는 화면별로 `bg-surface`로 옮김.
 - [ ] P5 성능: `backdrop-blur` · `transition-all` 정리, 이미지 사본 확대, 긴 목록 가상화, 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리.
 
 ### V1.3 디자인 리뉴얼 진행 현황 (2026.09.28 기준, 다른 PC에서 이어가기용)
@@ -422,6 +423,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - 버튼: `btn` 전체가 굵은 산세리프 알약으로(h-8 / h-10 / h-12), 보조 버튼은 보더 반전 대신 연한 채움, 새 여행 `NewTripButton`은 빨강 알약(`btn-accent`).
 - 공용 컨트롤 `ui/Segment` · `ui/Chip` · `ui/IconButton` · `ui/Card`(`CardRow`) 추가.
 - AGENTS.md 3장 · spec 4.1 · 4.2 · 4.4를 Swiss Soft 기준으로 갱신.
+- 홈 · 여정 목록(P4-a): 여정 카드 둥글게, 상태 알약은 사진 왼쪽 아래, 목록 보기는 카드 행, 보기 전환 · 필터 · 검색 · 정렬은 알약. 홈 D-day 배지는 의미 색상표대로 앰버.
 - 새 여행 초안 · 탑승권(P3-b): 작성 중 내용을 Firestore에 저장해 다른 기기에서 이어서 만들고, 만드는 동안 탑승권 카드를 보여 줍니다.
 - 새 여행(P3-a): 모든 진입점이 새 여행 4단계 시트(어디로 · 언제 · 누구와 · 미리보기)를 엽니다. 지도 이동 없이 만들고, 여러 도시 · 템플릿은 "지도에서 자세히 만들기"로. 공용 `Sheet`는 `surface` 바탕 · 둥근 모서리, 닫기 전 확인(`confirmClose`)과 `tone="paper"` 지원.
 - 이동(P2): 폰 하단 탭바 `TabBar`가 빠른 실행 독을 대체(홈 · 여정 · 새 여행 · 지도 · 포켓). 데스크톱 헤더에 `New trip`. 햄버거 메뉴에 예약 지갑 · 공항 터미널 줄, 화면 모드는 `Segment`, 메뉴 판은 `surface`. TOP · Intro 안내 · 포켓 선택 바는 탭바 위로.

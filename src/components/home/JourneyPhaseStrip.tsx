@@ -76,7 +76,7 @@ export function JourneyPhaseStrip({ trips, plans, onNavigate }: JourneyPhaseStri
       <button
         type="button"
         onClick={() => onNavigate('detail', trip.id)}
-        className="tgl-press tgl-rise group w-full text-left flex items-stretch gap-4 sm:gap-6 border-y border-black/20 dark:border-white/20 py-3 sm:py-4 cursor-pointer select-none"
+        className="tgl-press tgl-rise group w-full text-left flex items-stretch gap-4 sm:gap-6 rounded-card bg-surface dark:bg-surface-dark px-4 sm:px-5 py-3 sm:py-4 cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
       >
         {/* Big figure: live day, days left, or years ago */}
         <div className="shrink-0 flex flex-col justify-center min-w-[64px] sm:min-w-[96px]">
@@ -108,7 +108,7 @@ export function JourneyPhaseStrip({ trips, plans, onNavigate }: JourneyPhaseStri
         {/* Thumbnail + arrow */}
         <div className="shrink-0 flex items-center gap-3 sm:gap-4">
           {trip.img && (
-            <div className="hidden sm:block w-24 md:w-32 aspect-[4/3] overflow-hidden bg-black/5 dark:bg-white/5">
+            <div className="hidden sm:block w-24 md:w-32 aspect-[4/3] overflow-hidden rounded-thumb bg-black/5 dark:bg-white/5">
               <img
                 src={getEffectiveImageUrl(trip.img)}
                 alt=""

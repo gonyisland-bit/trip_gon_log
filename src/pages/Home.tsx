@@ -5,6 +5,9 @@ import { db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig } from '../types';
 import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
+import { JourneyListRow, type JourneyRowBadge } from '../components/cards/JourneyListRow';
+import { ViewModeSegment } from '../components/ui/ViewModeSegment';
+import { Chip } from '../components/ui/Chip';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
 import { preloadDetailPage } from '../utils/prefetchHelper';
@@ -1185,16 +1188,16 @@ export function HomePage({
                 <button
                   type="button"
                   onClick={() => onOpenAuthModal ? onOpenAuthModal('login') : onNavigate('archive')}
-                  className="px-7 sm:px-8 py-3 sm:py-3.5 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-bold uppercase tracking-widest transition-all cursor-pointer shadow-xl rounded-none"
+                  className="h-12 px-7 sm:px-8 rounded-full bg-surface text-ink hover:bg-white text-sm font-bold transition-colors cursor-pointer shadow-xl"
                 >
-                  SIGN IN
+                  Sign in
                 </button>
                 <button
                   type="button"
                   onClick={() => onOpenAuthModal ? onOpenAuthModal('signup') : onNavigate('archive')}
-                  className="px-7 sm:px-8 py-3 sm:py-3.5 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-bold uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs rounded-none"
+                  className="h-12 px-7 sm:px-8 rounded-full bg-white/20 text-white hover:bg-white/30 text-sm font-bold transition-colors cursor-pointer backdrop-blur-xs"
                 >
-                  JOIN
+                  Join
                 </button>
               </div>
             </div>
@@ -1246,7 +1249,7 @@ export function HomePage({
                     onClick={() => onNavigate('detail', currentHero.id)}
                     onMouseEnter={preloadDetailPage}
                     onTouchStart={preloadDetailPage}
-                    className="relative w-full aspect-[3/4] max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl max-h-[85vh] overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-2xl"
+                    className="relative w-full aspect-[3/4] max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl max-h-[85vh] overflow-hidden rounded-card bg-neutral-900 group cursor-pointer select-none mx-auto shadow-2xl"
                   >
                     {heroJourneys.map((journey, index) => (
                       <HeroMedia
@@ -1456,103 +1459,63 @@ export function HomePage({
             <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
               <div className="flex items-center justify-between md:justify-end gap-2.5 w-full flex-wrap">
                 {/* 1. Simple Tag Filter Button */}
-                <button
-                  type="button"
+                <Chip
+                  size="sm"
+                  icon={Tag}
+                  selected={activeFilter !== 'All'}
                   onClick={() => setIsTagAccordionOpen(prev => !prev)}
-                  className={`text-meta px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-xs transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeFilter !== 'All'
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                      : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
-                  }`}
-                  title="TAG FILTER"
+                  title="태그로 거르기"
                 >
-                  <Tag className="w-3.5 h-3.5" />
-                  <span>{activeFilter === 'All' ? 'TAG' : `#${activeFilter}`}</span>
+                  {activeFilter === 'All' ? 'Tag' : `#${activeFilter}`}
                   {isTagAccordionOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                </button>
+                </Chip>
 
                 {/* Reset Tag filter button if not 'All' */}
                 {activeFilter !== 'All' && (
                   <button
                     type="button"
                     onClick={() => setActiveFilter('All')}
-                    className="text-micro px-1.5 py-1 uppercase font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer flex items-center gap-0.5"
-                    title="RESET"
+                    className="btn btn-ghost btn-sm"
+                    title="필터 지우기"
                   >
                     <X className="w-3 h-3" />
-                    RESET
+                    Reset
                   </button>
                 )}
 
                 {/* 2. View Mode Switcher (Grid / Wide / List) */}
-                <div className="flex items-center border border-black/15 dark:border-white/15 rounded-xs p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleSetCardViewMode('grid')}
-                    className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
-                      cardViewMode === 'grid' 
-                        ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                        : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                    }`}
-                    title="GRID"
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSetCardViewMode('wide')}
-                    className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
-                      cardViewMode === 'wide' 
-                        ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                        : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                    }`}
-                    title="WIDE"
-                  >
-                    <StretchHorizontal className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSetCardViewMode('list')}
-                    className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
-                      cardViewMode === 'list' 
-                        ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                        : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                    }`}
-                    title="LIST"
-                  >
-                    <List className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <ViewModeSegment value={cardViewMode} onChange={handleSetCardViewMode} />
 
                 {/* 3. All Trips Button */}
                 <button 
                   type="button"
                   onClick={() => onNavigate('archive')} 
-                  className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1 cursor-pointer text-black dark:text-white"
-                  title="ALL TRIPS"
+                  className="btn btn-secondary btn-sm shrink-0"
+                  title="전체 여정"
                 >
-                  ALL TRIPS <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                  All trips <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
 
               {/* Collapsible Content: Search input & Tag pills */}
               {isTagAccordionOpen && (
-                <div className="flex flex-col gap-2 p-3 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 rounded-sm shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 mt-1 md:absolute md:top-full md:right-0 md:w-80">
+                <div className="flex flex-col gap-2 p-3 bg-surface dark:bg-surface-dark rounded-card shadow-[0_12px_32px_rgba(0,0,0,0.12)] animate-in fade-in slide-in-from-top-1 duration-150 mt-1 md:absolute md:top-full md:right-0 md:w-80">
                   {/* Tag Search Input */}
                   <div className="relative flex items-center">
-                    <Search className="w-3 h-3 text-black/60 dark:text-white/60 absolute left-2 pointer-events-none" />
+                    <Search className="w-3.5 h-3.5 text-black/60 dark:text-white/60 absolute left-3 pointer-events-none" />
                     <input
                       type="text"
                       value={tagSearchQuery}
                       onChange={(e) => setTagSearchQuery(e.target.value)}
                       placeholder="태그 검색..."
-                      className="w-full pl-7 pr-7 py-1 text-meta bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-sm font-bold outline-none text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50"
+                      className="w-full h-9 pl-8 pr-8 text-[13px] bg-black/[0.05] dark:bg-white/[0.08] rounded-full font-medium outline-none focus-visible:ring-2 focus-visible:ring-red-600 text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50"
                     />
                     {tagSearchQuery && (
                       <button
                         type="button"
                         onClick={() => setTagSearchQuery('')}
-                        className="tap-target absolute right-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+                        className="tap-target absolute right-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+                        aria-label="검색어 지우기"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1562,20 +1525,9 @@ export function HomePage({
                   {/* Tag Buttons */}
                   <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1">
                     {visibleTags.map(f => (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => {
-                          setActiveFilter(f);
-                        }}
-                        className={`text-micro px-2.5 py-1 uppercase font-bold tracking-wider border rounded-sm transition-colors shrink-0 cursor-pointer ${
-                          activeFilter === f
-                            ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
-                            : 'border-black/15 bg-black/4 dark:bg-white/5 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40'
-                        }`}
-                      >
+                      <Chip key={f} size="sm" selected={activeFilter === f} onClick={() => setActiveFilter(f)}>
                         {f === 'All' ? 'All' : `#${f}`}
-                      </button>
+                      </Chip>
                     ))}
                     {visibleTags.length === 0 && (
                       <span className="text-meta text-black/60 dark:text-white/60 py-1 italic">
@@ -1590,121 +1542,35 @@ export function HomePage({
         </div>
 
         {cardViewMode === 'list' ? (
-          <div className="w-full border-b border-black/15 dark:border-white/15">
-            <div className="flex flex-col w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12">
-              {filteredTrips.slice(0, 8).map((trip, index) => {
-                const isCardActive = activeCardId === trip.id;
-                const { year, month } = getYearAndMonth(trip.date);
-                const formattedDate = formatNonRepeatingDate(trip.date);
-                const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
-                const days = calculateDays(trip.date);
-                const planInfo = getUpcomingPlanInfo(trip);
-                const isItemPlan = planInfo.isPlanOrFuture;
-
-                return (
-                  <div
-                    key={trip.id}
-                    onClick={() => onNavigate('detail', trip.id)}
-                    onMouseEnter={preloadDetailPage}
-                    onTouchStart={preloadDetailPage}
-                    className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none rounded-none ${
-                      isCardActive 
-                        ? 'bg-black/[0.05] dark:bg-white/[0.08]' 
-                        : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                    }`}
-                  >
-                    {/* Monospace Index Column: Compact & Slim */}
-                    <div className="w-7 sm:w-8 md:w-9 flex items-center justify-center font-mono font-bold text-meta sm:text-xs text-black/60 dark:text-white/60 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
-                      {issueNumber}
-                    </div>
-
-                    {/* Thumbnail: Unobstructed Clean Photo with Editorial PLAN Overlay */}
-                    <div className="w-24 sm:w-32 aspect-[4/3] self-stretch shrink-0 border-r border-black/10 dark:border-white/10 overflow-hidden rounded-none relative bg-black/10">
-                      <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none" />
-                      {planInfo.isPlanOrFuture && (
-                        <div className="absolute inset-0 pointer-events-none flex items-end justify-between p-1.5 bg-gradient-to-t from-black/70 via-transparent to-transparent">
-                          <span className="font-sans font-extrabold text-xs sm:text-sm text-white/90 tracking-tighter leading-none select-none">
-                            PLAN
-                          </span>
-                          {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
-                            <span className="font-mono text-micro font-bold text-white px-1 rounded bg-amber-600/90 leading-tight">
-                              {planInfo.dDayLabel}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Meta Information Stack */}
-                    <div className="flex-1 min-w-0 py-3 px-3.5 sm:px-5 md:px-6 flex flex-col justify-between gap-1.5">
-                      {/* Top Row: Year/Month & Status Badge */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 font-mono text-[11px] sm:text-xs">
-                          <span className="font-extrabold text-black dark:text-white tracking-tight">{year || '2024'}</span>
-                          {month && <span className="opacity-30">/</span>}
-                          {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
-                        </div>
-                        {(() => {
-                          const liveStatus = getLiveTripStatus(trip.date);
-                          if (liveStatus.isLive) {
-                            return (
-                              <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-red-500/50 flex items-center gap-1.5 leading-none">
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
-                                <span>LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}</span>
-                              </span>
-                            );
-                          }
-                          if (isItemPlan || trip.statusBadge === 'PLAN') {
-                            return (
-                              <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-amber-600 text-white rounded-none leading-none">
-                                PLAN
-                              </span>
-                            );
-                          }
-                          if (trip.statusBadge) {
-                            return (
-                              <span className={`px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono rounded-none leading-none ${
-                                trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                              }`}>
-                                {trip.statusBadge}
-                              </span>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-
-                      {/* Prominent Title */}
-                      <h3 className="font-extrabold text-base sm:text-lg md:text-xl text-black dark:text-white uppercase font-sans tracking-tight truncate group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                        {trip.title}
-                      </h3>
-
-                      {/* Bottom Unified Metadata Bar: Uniform Small Font Weight */}
-                      <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs text-black/60 dark:text-white/60 font-mono">
-                        <div className="flex items-center gap-2 truncate min-w-0">
-                          {trip.locationStr && (
-                            <>
-                              <span className="font-semibold text-black/75 dark:text-white/75 truncate">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
-                              <span className="opacity-40 shrink-0">·</span>
-                            </>
-                          )}
-                          <span className="shrink-0">{formattedDate}</span>
-                          {days > 0 && (
-                            <>
-                              <span className="opacity-40 shrink-0">·</span>
-                              <span className="shrink-0">{days} DAYS</span>
-                            </>
-                          )}
-                        </div>
-                        <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform shrink-0 pl-2">
-                          →
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="flex flex-col gap-2 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-5 sm:py-8">
+            {filteredTrips.slice(0, 8).map((trip) => {
+              const { year, month } = getYearAndMonth(trip.date);
+              const days = calculateDays(trip.date);
+              const planInfo = getUpcomingPlanInfo(trip);
+              const live = getLiveTripStatus(trip.date);
+              const badge: JourneyRowBadge | null = live.isLive
+                ? { kind: 'live', text: `Day ${live.currentDay}/${live.totalDays}` }
+                : planInfo.isPlanOrFuture || trip.statusBadge === 'PLAN'
+                  ? { kind: 'plan', text: 'Plan' }
+                  : trip.statusBadge === 'NEW' ? { kind: 'new', text: 'New' }
+                  : trip.statusBadge === 'EDITING' ? { kind: 'editing', text: 'Editing' } : null;
+              const place = trip.locationStr ? cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ') : '';
+              return (
+                <JourneyListRow
+                  key={trip.id}
+                  img={trip.img}
+                  title={trip.title}
+                  year={year || ''}
+                  month={month}
+                  badge={badge}
+                  dDay={planInfo.isPlanOrFuture && planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' ? planInfo.dDayLabel : undefined}
+                  meta={[place, formatNonRepeatingDate(trip.date), days > 0 ? `${days} days` : ''].filter(Boolean).join(' · ')}
+                  active={activeCardId === trip.id}
+                  onOpen={() => onNavigate('detail', trip.id)}
+                  onPreload={preloadDetailPage}
+                />
+              );
+            })}
           </div>
         ) : (
           <div className={cardViewMode === 'wide' 
@@ -1742,7 +1608,7 @@ export function HomePage({
               onClick={() => onNavigate('archive')}
               className="btn btn-primary btn-lg flex"
             >
-              <span>ALL TRIPS ({filteredTrips.length})</span>
+              <span>All trips ({filteredTrips.length})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -2280,13 +2146,13 @@ export function HomePage({
               <section className="w-full max-w-[1920px] mx-auto mt-12 px-4 sm:px-8 md:px-12 select-none">
                 <div 
                   onClick={() => onNavigate('detail', nextTrip.id)}
-                  className="p-3 sm:p-4 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer group"
+                  className="p-3 sm:p-4 rounded-card bg-surface dark:bg-surface-dark hover:bg-black/[0.02] dark:hover:bg-white/[0.04] transition-colors flex items-center justify-between gap-3 cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="px-2 py-0.5 bg-red-600 text-white font-mono font-extrabold text-xs uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded-full bg-amber-500 text-black font-mono font-bold text-micro uppercase tracking-wider shrink-0">
                       {dDayStr}
                     </span>
-                    <span className="font-mono font-bold text-xs uppercase tracking-wider text-black dark:text-white group-hover:text-red-600 transition-colors">
+                    <span className="font-bold text-sm text-black dark:text-white group-hover:text-red-600 transition-colors truncate">
                       {nextTrip.title}
                     </span>
                     <span className="text-[11px] font-mono text-black/60 dark:text-white/60 hidden sm:inline">
@@ -2294,7 +2160,7 @@ export function HomePage({
                     </span>
                   </div>
                   <div className="flex items-center gap-1 text-xs font-mono font-bold text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors">
-                    <span className="hidden sm:inline">VIEW TRIP</span>
+                    <span className="hidden sm:inline">View trip</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -2305,7 +2171,7 @@ export function HomePage({
           {/* Optional Extended Modules: Live Exchange Rates Compact 1-Row Round Box Widget */}
           {widgetConfig.showExchangeRates && (
             <section className="w-full max-w-[1920px] mx-auto mt-6 sm:mt-8 px-4 sm:px-8 md:px-12 select-none font-mono">
-              <div className="w-full py-2 sm:py-2.5 px-3.5 sm:px-5 rounded-full border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-xs flex items-center justify-between gap-2 sm:gap-4">
+              <div className="w-full py-2 sm:py-2.5 px-3.5 sm:px-5 rounded-full bg-surface dark:bg-surface-dark flex items-center justify-between gap-2 sm:gap-4">
                 {/* Left: Swiss Minimal Icon & Label */}
                 <div className="flex items-center gap-1.5 shrink-0 pr-2 sm:pr-3 border-r border-black/10 dark:border-white/10">
                   <Coins className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />

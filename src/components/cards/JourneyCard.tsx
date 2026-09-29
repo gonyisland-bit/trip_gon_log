@@ -84,8 +84,8 @@ export function JourneyCard({
       {/* Photo with the year */}
       <div
         ref={mediaRef}
-        className={`tgl-journey-media relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 ${
-          isPlan ? 'outline outline-2 outline-dashed -outline-offset-2 outline-amber-500' : ''
+        className={`tgl-journey-media relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden rounded-card bg-black/5 dark:bg-white/5 ${
+          isPlan ? 'outline outline-2 outline-dashed outline-offset-2 outline-amber-500' : ''
         } ${isActive ? 'ring-2 ring-red-600/60 ring-offset-2 dark:ring-offset-[#11110F]' : ''}`}
       >
         {/* Only the photo goes grey, so the plan outline and badge keep their amber */}
@@ -105,17 +105,17 @@ export function JourneyCard({
         </div>
 
         {live.isLive ? (
-          <div className="absolute right-3 top-3 sm:right-4 sm:top-4 flex items-center gap-1.5 font-mono text-micro font-bold tracking-wider text-white pointer-events-none">
+          <div className="absolute left-3 bottom-3 sm:left-4 sm:bottom-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/35 font-mono text-micro font-bold tracking-wider text-white pointer-events-none">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
             <span>DAY {live.currentDay}/{live.totalDays}</span>
           </div>
         ) : isPlan ? (
-          <div className="absolute right-3 top-3 sm:right-4 sm:top-4 flex items-center gap-1 px-1.5 py-0.5 bg-amber-500 text-black font-mono text-micro font-bold tracking-wider pointer-events-none">
+          <div className="absolute left-3 bottom-3 sm:left-4 sm:bottom-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500 text-black font-mono text-micro font-bold tracking-wider pointer-events-none">
             <span>PLAN</span>
             {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && <span className="tabular-nums">· {planInfo.dDayLabel}</span>}
           </div>
         ) : (trip.statusBadge === 'NEW' || trip.statusBadge === 'EDITING') && (
-          <div className="absolute right-3 top-3 sm:right-4 sm:top-4 font-mono text-micro font-bold tracking-wider text-white pointer-events-none flex items-center gap-1.5">
+          <div className="absolute left-3 bottom-3 sm:left-4 sm:bottom-4 px-2.5 py-1 rounded-full bg-black/35 font-mono text-micro font-bold tracking-wider text-white pointer-events-none flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${trip.statusBadge === 'NEW' ? 'bg-red-500' : 'bg-amber-400'}`} />
             <span>{trip.statusBadge}</span>
           </div>
@@ -147,7 +147,7 @@ export function JourneyCard({
       </div>
 
       {/* Place */}
-      <div className="mt-auto pt-2.5 border-t border-black/15 dark:border-white/15 flex items-center justify-between gap-2 font-mono text-micro sm:text-meta uppercase tracking-wider">
+      <div className="mt-auto pt-2.5 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-2 font-mono text-micro sm:text-meta uppercase tracking-wider">
         <span className="truncate text-black/80 dark:text-white/80">{display.line3CountryCity || 'JOURNEY'}</span>
         <ArrowUpRight className="w-4 h-4 shrink-0 text-black dark:text-white transition-transform duration-base ease-emphasized group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-red-600 dark:group-hover:text-red-500" />
       </div>
