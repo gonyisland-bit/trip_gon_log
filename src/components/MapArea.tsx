@@ -1737,10 +1737,14 @@ export function MapArea({
       const endLng = Number(toPoint.lng);
 
       if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng)) {
-        // Calculate heading angle
-        const dy = endLat - startLat;
-        const dx = endLng - startLng;
-        const angle = Math.atan2(dx, dy) * 180 / Math.PI;
+        // Heading on screen (0deg = up). Measured in projected pixels: raw lat/lng deltas skew the
+        // angle away from the drawn line because Mercator stretches latitude
+        const screenAngle = (aLat: number, aLng: number, bLat: number, bLng: number) => {
+          const a = map.project([aLat, aLng], 0);
+          const b = map.project([bLat, bLng], 0);
+          return Math.atan2(b.x - a.x, a.y - b.y) * 180 / Math.PI;
+        };
+        const angle = screenAngle(startLat, startLng, endLat, endLng);
 
         // Resolve vehicle icon src and size
         let src = '/airplane.png';
@@ -1874,10 +1878,10 @@ export function MapArea({
             curLat = inv * inv * startLat + 2 * inv * ease * ctrlLat + ease * ease * endLat;
             curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * endLng;
 
-            // Instantaneous tangent bearing
+            // Instantaneous tangent bearing (a point slightly ahead along the arc)
             const dLat = 2 * inv * (ctrlLat - startLat) + 2 * ease * (endLat - ctrlLat);
             const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (endLng - ctrlLng);
-            curAngle = Math.atan2(dLng, dLat) * 180 / Math.PI;
+            curAngle = screenAngle(curLat, curLng, curLat + dLat * 0.01, curLng + dLng * 0.01);
 
             // Elevation scale: Takeoff (0.9) -> Cruise (1.15) -> Landing (1.0)
             curScale = 0.9 + Math.sin(ease * Math.PI) * 0.25;
