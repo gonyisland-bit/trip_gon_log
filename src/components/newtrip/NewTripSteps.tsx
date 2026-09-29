@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bookmark, Map as MapIcon, Plane, Plus, Search, Shuffle, Ticket, X } from 'lucide-react';
+import { Bookmark, Plane, Plus, Route, Search, Shuffle, X } from 'lucide-react';
 import { Segment } from '../ui/Segment';
 import { Chip } from '../ui/Chip';
 import { Card, CardRow } from '../ui/Card';
@@ -22,8 +22,8 @@ function Heading({ eyebrow, children }: { eyebrow?: string; children: React.Reac
 }
 
 // 1 · Where
-export function StepWhere({ d, recentCities, onSurprise, saved, onResume, onDiscard }: {
-  d: NewTripDraft; recentCities: string[]; onSurprise: () => void;
+export function StepWhere({ d, recentCities, saved, onResume, onDiscard }: {
+  d: NewTripDraft; recentCities: string[];
   /** A draft saved earlier (this or another device) */
   saved?: { label: string; step: number } | null; onResume?: () => void; onDiscard?: () => void;
 }) {
@@ -56,6 +56,7 @@ export function StepWhere({ d, recentCities, onSurprise, saved, onResume, onDisc
   }, [d.cities, d.pocketCityNames, recentCities]);
 
   const pick = (c: DestinationCity) => { d.selectPlace(c, null); setQ(''); };
+  const picked = (c: DestinationCity) => d.allCities.some(x => x.nameEn === c.nameEn);
 
   return (
     <div className="flex flex-col gap-5">
@@ -98,7 +99,31 @@ export function StepWhere({ d, recentCities, onSurprise, saved, onResume, onDisc
         </ul>
       )}
 
-      {(d.city || d.country) && results.length === 0 && (
+      <div className="flex items-center justify-between gap-3">
+        <span className={`text-meta ${muted}`}>{d.multi ? '도시를 누르는 순서대로 들릅니다' : '도시 하나를 고릅니다'}</span>
+        <Chip icon={Route} size="sm" selected={d.multi} onClick={() => d.setMulti(!d.multi)}>여러 도시</Chip>
+      </div>
+
+      {d.allCities.length > 1 && (
+        <Card padding="md" className="flex flex-col gap-2">
+          <span className={`${label} ${muted}`}>Route · {d.allCities.length} cities</span>
+          <ol className="flex flex-wrap items-center gap-1.5">
+            {d.allCities.map((c, i) => (
+              <li key={c.nameEn} className="inline-flex items-center gap-1.5">
+                {i > 0 && <span className={muted} aria-hidden>→</span>}
+                <span className="h-9 pl-3.5 pr-1.5 inline-flex items-center gap-1 rounded-full bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark text-[13px] font-bold">
+                  {c.nameKo}
+                  <button type="button" onClick={() => d.removeCity(c)} aria-label={`${c.nameKo} 빼기`} className="w-6 h-6 rounded-full grid place-items-center hover:bg-white/15">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
+
+      {(d.city || d.country) && d.allCities.length <= 1 && results.length === 0 && (
         <Card padding="sm" className="flex items-center gap-3">
           <span className="w-14 h-14 rounded-thumb overflow-hidden bg-black/[0.06] dark:bg-white/10 shrink-0">
             {d.city?.coverImage && <img src={d.city.coverImage} alt="" className="w-full h-full object-cover" />}
@@ -118,7 +143,7 @@ export function StepWhere({ d, recentCities, onSurprise, saved, onResume, onDisc
           <span className={`${label} ${muted}`}>Quick picks</span>
           <div className="flex flex-wrap gap-1.5">
             {quick.map(({ city, from }) => (
-              <Chip key={city.nameEn} icon={from === 'pocket' ? Bookmark : Plane} selected={d.city?.nameEn === city.nameEn} onClick={() => pick(city)}>
+              <Chip key={city.nameEn} icon={from === 'pocket' ? Bookmark : Plane} selected={picked(city)} onClick={() => pick(city)}>
                 {city.nameKo}
               </Chip>
             ))}
@@ -126,17 +151,6 @@ export function StepWhere({ d, recentCities, onSurprise, saved, onResume, onDisc
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={onSurprise}
-        className="mt-1 w-full flex items-center gap-3 p-4 rounded-card bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark text-left hover:bg-ink/90 dark:hover:bg-ink-dark/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
-      >
-        <span className="w-10 h-10 rounded-full bg-red-600 text-white grid place-items-center shrink-0"><Ticket className="w-4 h-4" /></span>
-        <span className="flex-1 flex flex-col">
-          <span className="text-[15px] font-bold">Surprise</span>
-          <span className="text-meta opacity-70">공항 터미널에서 목적지 뽑기</span>
-        </span>
-      </button>
     </div>
   );
 }
@@ -147,7 +161,7 @@ export function StepWhen({ d }: { d: NewTripDraft }) {
   const best = d.city?.bestMonths ?? [];
   return (
     <div className="flex flex-col gap-5">
-      <Heading eyebrow={d.city ? `${d.city.nameEn} · ${d.city.countryEn}` : d.country?.nameEn}>언제 떠나요?</Heading>
+      <Heading eyebrow={d.allCities.length > 1 ? d.allCities.map(c => c.nameEn).join(' · ') : d.city ? `${d.city.nameEn} · ${d.city.countryEn}` : d.country?.nameEn}>언제 떠나요?</Heading>
 
       {d.city && (
         <Card padding="md" className="flex flex-col gap-2">
@@ -156,7 +170,7 @@ export function StepWhen({ d }: { d: NewTripDraft }) {
             <span className="flex-1 border-t-[1.5px] border-dashed border-black/25 dark:border-white/25" aria-hidden />
             <Plane className="w-4 h-4 rotate-45 shrink-0" aria-hidden />
             <span className="flex-1 border-t-[1.5px] border-dashed border-black/25 dark:border-white/25" aria-hidden />
-            <span className="text-[22px] font-extrabold tracking-tight truncate max-w-[45%]">{d.city.nameKo}</span>
+            <span className="text-[22px] font-extrabold tracking-tight truncate max-w-[45%]">{d.allCities.length > 1 ? `${d.city.nameKo} +${d.allCities.length - 1}` : d.city.nameKo}</span>
           </div>
           <div className={`flex justify-between gap-2 ${label} ${muted}`}>
             <span>ICN</span><span>{formatHours(flightHours(d.city))}</span><span className="truncate">{d.city.countryEn}</span>
@@ -288,7 +302,7 @@ export function StepWho({ d }: { d: NewTripDraft }) {
 }
 
 // 4 · Preview
-export function StepPreview({ d, onOpenMapBuilder }: { d: NewTripDraft; onOpenMapBuilder: () => void }) {
+export function StepPreview({ d }: { d: NewTripDraft }) {
   const p = d.selected;
   return (
     <div className="flex flex-col gap-5">
@@ -340,10 +354,6 @@ export function StepPreview({ d, onOpenMapBuilder }: { d: NewTripDraft; onOpenMa
           )}
         </>
       )}
-
-      <button type="button" onClick={onOpenMapBuilder} className={`self-start inline-flex items-center gap-1.5 text-[13px] font-bold ${muted} hover:text-black dark:hover:text-white underline-offset-4 hover:underline`}>
-        <MapIcon className="w-3.5 h-3.5" />지도에서 자세히 만들기
-      </button>
     </div>
   );
 }

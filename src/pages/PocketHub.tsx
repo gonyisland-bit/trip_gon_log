@@ -598,20 +598,6 @@ export function PocketHubPage({
     const selectedList = spots.filter(s => selectedSpotIds.has(s.id));
     if (selectedList.length === 0) return;
 
-    try {
-      sessionStorage.setItem('builder_selected_pockets', JSON.stringify(selectedList));
-    } catch (_) {}
-
-    const firstCountry = selectedList.find(s => s.country)?.country || '';
-    const firstCity = selectedList.find(s => s.city)?.city || '';
-
-    if (firstCountry) {
-      try { sessionStorage.setItem('builder_target_country', firstCountry); } catch (_) {}
-    }
-    if (firstCity) {
-      try { sessionStorage.setItem('builder_target_city', firstCity); } catch (_) {}
-    }
-
     if (onCreateTripWithPockets) {
       onCreateTripWithPockets(selectedList);
     } else {

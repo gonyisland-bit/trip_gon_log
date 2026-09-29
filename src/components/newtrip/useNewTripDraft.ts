@@ -13,8 +13,12 @@ import { SavedNewTripDraft, saveNewTripDraft } from './newTripDraftStore';
 export type NewTripStep = 0 | 1 | 2 | 3;
 
 export interface NewTripPrefill {
+  /** Re-planning a kept ticket: issuing replaces that ticket */
+  replaceTicketId?: string;
   country?: string;
   city?: string;
+  /** Several stops picked on the map (the first is `city`) */
+  cities?: string[];
   /** YYYY-MM-DD */
   date?: string;
   /** Pocket spots picked in Pocket, placed on day 1 */
@@ -75,6 +79,47 @@ function shiftDays(isoDate: string, days: number): string {
   return iso(d);
 }
 
+/** Spreads `total` nights over `n` stops, at least one each; earlier stops get the remainder */
+function splitNights(total: number, n: number): number[] {
+  const base = Math.floor(total / n);
+  return Array.from({ length: n }, (_, i) => base + (i < total % n ? 1 : 0));
+}
+
+/** One proposal across several cities: each city's plan in turn, the travel day shared */
+function combineProposals(parts: CuratedTripProposal[], cities: DestinationCity[]): CuratedTripProposal {
+  const first = parts[0];
+  let start = first.startDate;
+  const byDate = new Map<string, CuratedTripProposal['timeline'][number]['items']>();
+  parts.forEach(part => {
+    const offset = daysBetween(part.startDate, start);
+    part.timeline.forEach(day => {
+      const date = shiftDays(day.date, offset);
+      byDate.set(date, [...(byDate.get(date) || []), ...day.items]);
+    });
+    start = shiftDays(start, part.durationDays);
+  });
+  const nights = parts.reduce((n, p) => n + p.durationDays, 0);
+  const seen = new Set<string>();
+  return {
+    ...first,
+    id: `multi-${parts.map(p => p.id).join('+')}`,
+    // "교토 골목 미식 여정" → "교토 · 오사카 골목 미식 여정"
+    title: first.title.includes(cities[0].nameKo)
+      ? first.title.replace(cities[0].nameKo, cities.map(c => c.nameKo).join(' · '))
+      : `${cities.map(c => c.nameKo).join(' · ')} 여정`,
+    cityName: cities.map(c => c.nameEn).join(', '),
+    endDate: shiftDays(first.startDate, nights),
+    durationDays: nights,
+    nightsDays: `${nights}박 ${nights + 1}일`,
+    locations: parts.flatMap(p => p.locations).filter(l => {
+      if (seen.has(l.name)) return false;
+      seen.add(l.name);
+      return true;
+    }),
+    timeline: [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, items]) => ({ date, items })),
+  };
+}
+
 function daysBetween(a: string, b: string): number {
   return Math.round((new Date(`${b}T00:00:00`).getTime() - new Date(`${a}T00:00:00`).getTime()) / 86400000);
 }
@@ -103,7 +148,11 @@ function pocketItem(p: SpotPocketItem, idx: number, date: string) {
 }
 
 export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) {
-  const initialCity = prefill.city ? findCityByNameOrAlias(prefill.city) ?? null : null;
+  const prefillCities = (prefill.cities?.length ? prefill.cities : prefill.city ? [prefill.city] : [])
+    .map(n => findCityByNameOrAlias(n))
+    .filter((c): c is DestinationCity => !!c)
+    .filter((c, i, arr) => arr.findIndex(x => x.nameEn === c.nameEn) === i);
+  const initialCity = prefillCities[0] ?? null;
   const initialCountry = initialCity
     ? findCountryByNameOrAlias(initialCity.countryEn) ?? null
     : prefill.country ? findCountryByNameOrAlias(prefill.country) ?? null : null;
@@ -111,6 +160,9 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
   const [step, setStep] = useState<NewTripStep>(initialCity || initialCountry ? 1 : 0);
   const [city, setCity] = useState<DestinationCity | null>(initialCity);
   const [country, setCountry] = useState<DestinationCountry | null>(initialCountry);
+  // Further stops of a multi-city trip, after `city`; picking more than one city needs `multi` on
+  const [extraCities, setExtraCities] = useState<DestinationCity[]>(prefillCities.slice(1));
+  const [multi, setMultiState] = useState(prefillCities.length > 1);
   const [stay, setStay] = useState<StayLength>('mid');
   const [startDate, setStartDate] = useState<string>(prefill.date || '');
   const [members, setMembers] = useState<string[]>([defaultMember || '나']);
@@ -123,14 +175,42 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
   const [includePockets, setIncludePockets] = useState(true);
 
   const selectPlace = (c: DestinationCity | null, co: DestinationCountry | null) => {
+    setProposalId(null);
+    // Multi-city: another city is added as the next stop (tapping a picked one removes it)
+    if (multi && c && city) {
+      if (c.nameEn === city.nameEn) return;
+      setExtraCities(prev => prev.some(x => x.nameEn === c.nameEn) ? prev.filter(x => x.nameEn !== c.nameEn) : [...prev, c]);
+      return;
+    }
     setCity(c);
+    setExtraCities([]);
     setCountry(c ? findCountryByNameOrAlias(c.countryEn) ?? co : co);
+  };
+
+  const removeCity = (c: DestinationCity) => {
+    setProposalId(null);
+    if (city?.nameEn === c.nameEn) {
+      const [next, ...rest] = extraCities;
+      setCity(next ?? null);
+      setExtraCities(rest);
+      setCountry(next ? findCountryByNameOrAlias(next.countryEn) ?? null : null);
+      return;
+    }
+    setExtraCities(prev => prev.filter(x => x.nameEn !== c.nameEn));
+  };
+
+  // Turning multi-city off keeps only the first stop
+  const setMulti = (on: boolean) => {
+    setMultiState(on);
+    if (!on) setExtraCities([]);
     setProposalId(null);
   };
 
+  const allCities = useMemo(() => (city ? [city, ...extraCities] : []), [city, extraCities]);
+
   // Pocket spots for the chosen city (or country): prefilled picks plus the rest, all on by default
   const placePockets = useMemo(() => {
-    const cityNames = city ? [city.nameKo, city.nameEn].map(s => s.toLowerCase()) : [];
+    const cityNames = allCities.flatMap(c => [c.nameKo, c.nameEn]).map(s => s.toLowerCase());
     const countryNames = country ? [country.nameKo, country.nameEn].map(s => s.toLowerCase()) : [];
     return allPockets.filter(p => {
       if (pocketIds.has(p.id)) return true;
@@ -139,7 +219,7 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
       const pk = (p.country || '').trim().toLowerCase();
       return !!pk && countryNames.includes(pk);
     });
-  }, [allPockets, city, country, pocketIds]);
+  }, [allPockets, allCities, country, pocketIds]);
 
   // Spots that go on day 1: the ones picked in Pocket, or every spot saved for this place
   const pocketsToAdd = useMemo(
@@ -161,14 +241,26 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
     setStartDate(thisMonth ? shiftDays(iso(now), 7) : secondFriday(y, m));
   };
 
-  const nights = STAY_NIGHTS[stay];
+  // Every stop gets at least one night
+  const nights = Math.max(STAY_NIGHTS[stay], allCities.length);
   const endDate = startDate ? shiftDays(startDate, nights) : '';
 
   const proposals: CuratedTripProposal[] = useMemo(() => {
     if (step !== 3) return [];
-    const list = generateCuratedTripProposals({
-      theme, country, city, targetYear: year, targetMonth: month, durationDays: nights, seedOffset: seed,
-    });
+    let list: CuratedTripProposal[];
+    if (allCities.length > 1) {
+      const shares = splitNights(nights, allCities.length);
+      const perCity = allCities.map((c, i) => generateCuratedTripProposals({
+        theme, country: findCountryByNameOrAlias(c.countryEn) ?? null, city: c, targetYear: year, targetMonth: month,
+        durationDays: shares[i], seedOffset: seed,
+      }));
+      if (perCity.some(l => !l.length)) return [];
+      list = [0, 1, 2].map(k => combineProposals(perCity.map(l => l[k % l.length]), allCities));
+    } else {
+      list = generateCuratedTripProposals({
+        theme, country, city, targetYear: year, targetMonth: month, durationDays: nights, seedOffset: seed,
+      });
+    }
     // Move each plan onto the chosen departure date, keeping its day order
     if (!startDate) return list.slice(0, 3);
     return list.slice(0, 3).map(p => {
@@ -181,7 +273,7 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
         timeline: p.timeline.map(d => ({ ...d, date: shiftDays(d.date, offset) })),
       };
     });
-  }, [step, theme, country, city, year, month, nights, seed, startDate]);
+  }, [step, theme, country, city, allCities, year, month, nights, seed, startDate]);
 
   const selected = proposals.find(p => p.id === proposalId) ?? proposals[0] ?? null;
 
@@ -228,17 +320,20 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
   useEffect(() => {
     if (!city && !country) return;
     saveNewTripDraft({
-      step, city: city?.nameEn, country: country?.nameEn, stay, startDate, members, theme, includePockets,
+      step, city: city?.nameEn, cities: allCities.map(c => c.nameEn), country: country?.nameEn, stay, startDate, members, theme, includePockets,
       pocketIds: [...pocketIds],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, city, country, stay, startDate, memberKey, theme, includePockets, pocketKey]);
+  }, [step, city, allCities, country, stay, startDate, memberKey, theme, includePockets, pocketKey]);
 
   const resume = (saved: SavedNewTripDraft) => {
     const c = saved.city ? findCityByNameOrAlias(saved.city) ?? null : null;
     const co = c ? findCountryByNameOrAlias(c.countryEn) ?? null : saved.country ? findCountryByNameOrAlias(saved.country) ?? null : null;
     setCity(c);
     setCountry(co);
+    const extra = (saved.cities || []).slice(1).map(n => findCityByNameOrAlias(n)).filter((x): x is DestinationCity => !!x);
+    setExtraCities(extra);
+    setMultiState(extra.length > 0);
     setStay(saved.stay || 'mid');
     // A departure that has passed is dropped; the month picker suggests a new one
     setStartDate(saved.startDate && saved.startDate >= iso(new Date()) ? saved.startDate : '');
@@ -254,7 +349,7 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
 
   return {
     step, setStep, canNext, dirty,
-    city, country, selectPlace,
+    city, country, selectPlace, allCities, multi, setMulti, removeCity,
     stay, setStay, nights, startDate, setStartDate, endDate, month, year, pickMonth,
     members, setMembers, theme, setTheme,
     placePockets, pocketCount: pocketsToAdd.length, pocketCityNames, pocketIds, setPocketIds, includePockets, setIncludePockets,

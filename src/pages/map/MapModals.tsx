@@ -5,7 +5,6 @@ import { db } from '../../firebase';
 import { Trip, Plan, UserProfile } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../../components/SummaryView';
-import { TripBuilderPanel } from '../../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../../utils/weatherApi';
 import { resolveMarkerOverlaps, clusterByPixel } from '../../utils/mapMarkerOverlap';
@@ -26,12 +25,6 @@ export function MapModals({ s }: { s: MapHubState }) {
     onCreateTripForCountry,
     isDarkMode,
     isAdmin,
-    onSaveTrip,
-    initialBuilderOpen,
-    initialBuilderCountry,
-    initialBuilderCity,
-    initialBuilderDate,
-    onBuilderStateChange,
     currentUserProfile,
     mapContainerRef,
     mapRef,
@@ -58,26 +51,6 @@ export function MapModals({ s }: { s: MapHubState }) {
     previewTimeLabel,
     formattedClockTime,
     formattedClockShort,
-    isBuilderOpen,
-    setIsBuilderOpen,
-    builderCountry,
-    setBuilderCountry,
-    builderCountryCode,
-    setBuilderCountryCode,
-    builderCity,
-    setBuilderCity,
-    builderCities,
-    setBuilderCities,
-    builderDate,
-    setBuilderDate,
-    builderRouteLayerRef,
-    builderMarkersRef,
-    builderActiveTargetRef,
-    builderTargetName,
-    setBuilderTargetName,
-    isMapDivergedFromBuilder,
-    setIsMapDivergedFromBuilder,
-    isBuilderOpenRef,
     searchQuery,
     setSearchQuery,
     isSearchExpanded,
@@ -99,9 +72,10 @@ export function MapModals({ s }: { s: MapHubState }) {
     destCityMarkersRef,
     countryCityDotsRef,
     toggleDestCity,
+    isMultiDest,
+    toggleMultiDest,
+    handleStartNewTrip,
     toggleDestCityRef,
-    requestChangeBuilderCity,
-    requestChangeBuilderCityRef,
     isFlyingToCountry,
     setIsFlyingToCountry,
     isFlyingToCountryRef,
@@ -166,11 +140,6 @@ export function MapModals({ s }: { s: MapHubState }) {
     filteredCountries,
     wishlistCountriesData,
     isCurrentCountryFavorite,
-    handleOpenTripBuilder,
-    handleReCenterBuilderTarget,
-    handleCloseTripBuilder,
-    handleBuilderFocusChange,
-    handleCreateJourneyFromPanel,
   } = s;
 
   return (
@@ -260,7 +229,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                           <button
                             type="button"
                             onClick={() => {
-                              handleOpenTripBuilder(country.name, undefined, undefined, country.code);
+                              handleStartNewTrip(country.name);
                             }}
                             className="btn btn-primary btn-sm flex"
                           >
@@ -318,7 +287,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                           <button
                             type="button"
                             onClick={() => {
-                              handleOpenTripBuilder(matchedCountry?.name || '', city, undefined, matchedCountry?.code);
+                              handleStartNewTrip(matchedCountry?.name || '', [city]);
                             }}
                             className="btn btn-primary btn-sm flex"
                           >

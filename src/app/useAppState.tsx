@@ -178,10 +178,6 @@ export function useAppState() {
   const [isShareMode, setIsShareMode] = useState<boolean>(() => initialNavState.isShare);
   const [isManageModalOpen, setIsManageModalOpen] = useState<boolean>(false);
   const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
-  const [createCountryInitial, setCreateCountryInitial] = useState<string>('');
-  const [createCityInitial, setCreateCityInitial] = useState<string>('');
-  const [createDateInitial, setCreateDateInitial] = useState<string>('');
-  const [mapBuilderRequested, setMapBuilderRequested] = useState<boolean>(false);
   // New trip sheet (v1.3.5 P3): null = closed, otherwise the values it opens with
   const [newTripPrefill, setNewTripPrefill] = useState<NewTripPrefill | null>(null);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
@@ -330,14 +326,6 @@ export function useAppState() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [tripsLoaded, setTripsLoaded] = useState<boolean>(false);
   const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
-  const [isMapBuilderActive, setIsMapBuilderActive] = useState<boolean>(false);
-  const [pendingLeaveBuilderModal, setPendingLeaveBuilderModal] = useState<{
-    isOpen: boolean;
-    targetView?: string;
-    targetTripId?: number | null;
-    pushHistory?: boolean;
-    tagFilter?: string | null;
-  }>({ isOpen: false });
   
   const [timelineData, setTimelineData] = useState<TimelineData>(() => {
     try {
@@ -1501,22 +1489,6 @@ export function useAppState() {
     // Close any residual save complete modal upon navigation
     setShowSaveCompleteModal(false);
 
-    // 가이드(TripBuilder) 생성 작업 중 다른 화면으로 벗어나려 할 때 2단계 확인
-    if (!force && currentView === 'map' && isMapBuilderActive && view !== 'map') {
-      setPendingLeaveBuilderModal({
-        isOpen: true,
-        targetView: view,
-        targetTripId: tripId,
-        pushHistory,
-        tagFilter,
-      });
-      return;
-    }
-
-    if (view !== 'map') {
-      setMapBuilderRequested(false);
-    }
-
     // 트립허브나 다른 화면으로 이동 시 잔여 비행기 전환 즉시 강제 취소 (원복 증상 원천 차단)
     if (view !== 'detail' || (tripId !== null && tripId !== flightTransition.targetTripId)) {
       setFlightTransition({ isActive: false, targetTripId: null });
@@ -2207,34 +2179,11 @@ export function useAppState() {
     }
   };
 
-  const handleAddArchive = async () => {
-    if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
-    setCreateModalType('archive');
-    setCreateCountryInitial('');
-    setCreateCityInitial('');
-    setCreateDateInitial('');
-    setMapBuilderRequested(true);
-    navigateTo('map');
-  };
-
   // Every "new trip" entry point opens the new trip sheet
   const handleCreateTripForCountry = (countryName: string, cityName?: string, initialDate?: string, pocketIds?: string[]) => {
     if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
     setCreateModalType('plan');
     setNewTripPrefill({ country: countryName || undefined, city: cityName || undefined, date: initialDate || undefined, pocketIds });
-  };
-
-  // The map's Trip Guide: multi-city, templates and building beside the map
-  const openMapBuilder = (countryName: string, cityName?: string, initialDate?: string) => {
-    if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
-    setCreateCountryInitial(countryName || '');
-    setCreateCityInitial(cityName || '');
-    setCreateDateInitial(initialDate || '');
-    setCreateModalType('plan');
-    setMapBuilderRequested(true);
-    if (currentView !== 'map') {
-      navigateTo('map');
-    }
   };
 
   const handleCreateJourney = async (
@@ -2249,19 +2198,22 @@ export function useAppState() {
     statusBadge?: string,
     country?: string,
     customCoverImg?: string,
-    customTimelineItems?: { date: string; items: any[] }[]
+    customTimelineItems?: { date: string; items: any[] }[],
+    /** Where the journey goes; defaults to the open create modal's kind */
+    kindOverride?: 'archive' | 'plan'
   ) => {
     const user = auth.currentUser;
     if (!user) return;
+    const kind = kindOverride ?? createModalType;
 
     const newId = Date.now();
-    const defaultImg = createModalType === 'archive'
+    const defaultImg = kind === 'archive'
       ? 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800&auto=format&fit=crop'
       : 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=800&auto=format&fit=crop';
     const img = customCoverImg || defaultImg;
 
     const mapImg = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop';
-    const collectionName = createModalType === 'archive' ? 'trips' : 'plans';
+    const collectionName = kind === 'archive' ? 'trips' : 'plans';
 
     // Calculate front-most display order
     // 신규 여정은 무조건 맨 앞(인덱스 0)에 위치하며, 기존 여정들은 뒤로 차례대로 순차 정렬
@@ -2284,7 +2236,7 @@ export function useAppState() {
       id: newId,
       title: finalTitle,
       date: dateRange,
-      tags: createModalType === 'plan' ? [...tags, 'Plan'] : tags,
+      tags: kind === 'plan' ? [...tags, 'Plan'] : tags,
       img,
       mapImg,
       locationStr: location,
@@ -2421,14 +2373,7 @@ export function useAppState() {
         await batch.commit();
       }
 
-      // Clear creator & builder states
-      setMapBuilderRequested(false);
-      setIsMapBuilderActive(false);
-      setCreateCountryInitial('');
-      setCreateCityInitial('');
-      setCreateDateInitial('');
-
-      // Navigate to detail page (force = true prevents leave builder confirm modal)
+      // Navigate to the new journey
       navigateTo('detail', newId, true, null, true);
 
       // Background geocoding
@@ -3008,16 +2953,13 @@ export function useAppState() {
     setHomeMagazineLimit, magazineHubConfig, setMagazineHubConfig, archiveHubConfig,
     setArchiveHubConfig, showSettings, setShowSettings, isEditMode, setIsEditMode, isAuthModalOpen,
     setIsAuthModalOpen, isShareMode, setIsShareMode, isManageModalOpen, setIsManageModalOpen,
-    createModalType, setCreateModalType, createCountryInitial, setCreateCountryInitial,
-    createCityInitial, setCreateCityInitial, createDateInitial, setCreateDateInitial,
-    mapBuilderRequested, setMapBuilderRequested, authModalMode, setAuthModalMode,
+    createModalType, setCreateModalType, authModalMode, setAuthModalMode,
     initialAuthCheckedRef, isSigningUpRef, globalWeatherCity, setGlobalWeatherCity,
     globalWeatherData, setGlobalWeatherData, isGlobalWeatherBgEnabled, setIsGlobalWeatherBgEnabled,
     ambienceOverride, setAmbienceOverride, trips, setTrips, plans, setPlans, trashedJourneys,
     setTrashedJourneys, trashedSections, setTrashedSections, activeTripId, setActiveTripId,
     selectedTagFilter, setSelectedTagFilter, dbError, setDbError, tripsLoaded, setTripsLoaded,
-    plansLoaded, setPlansLoaded, isMapBuilderActive, setIsMapBuilderActive, pendingLeaveBuilderModal,
-    setPendingLeaveBuilderModal, timelineData, setTimelineData, flightsByTrip, setFlightsByTrip,
+    plansLoaded, setPlansLoaded, timelineData, setTimelineData, flightsByTrip, setFlightsByTrip,
     staysByTrip, setStaysByTrip, transitByTrip, setTransitByTrip, homeTitle, setHomeTitle,
     homeSubtitle, setHomeSubtitle, heroJourneyIds, setHeroJourneyIds, editingTripId,
     setEditingTripId, heroMediaType, setHeroMediaType, heroSlideDuration, setHeroSlideDuration,
@@ -3038,7 +2980,7 @@ export function useAppState() {
     handleMoveToArchive, handleMoveToPlans, handleCloneJourney, handleRemixJourney, handleSaveSettings,
     handleSaveMagazineMoments, handleSaveMagazineHubConfig, handleSaveArchiveHubConfig,
     handleSaveMagazineSections, handleUpdateMagazineSections, handleSaveBgmSettings,
-    generateDateList, handleEditTripSave, handleAddArchive, handleCreateTripForCountry, openMapBuilder, newTripPrefill, setNewTripPrefill,
+    generateDateList, handleEditTripSave, handleCreateTripForCountry, newTripPrefill, setNewTripPrefill,
     handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney, handleConfirmDeleteJourney,
     handleRestoreJourney, handlePermanentDeleteJourney, handleDeleteMagazineSection,
     handleRestoreMagazineSection, handlePermanentDeleteMagazineSection, handleBatchPermanentDelete,

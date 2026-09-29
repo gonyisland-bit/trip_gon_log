@@ -9,6 +9,8 @@ export interface SavedNewTripDraft {
   step: 0 | 1 | 2 | 3;
   /** DestinationCity.nameEn */
   city?: string;
+  /** Every stop of a multi-city trip, `city` first */
+  cities?: string[];
   /** DestinationCountry.nameEn */
   country?: string;
   stay: StayLength;

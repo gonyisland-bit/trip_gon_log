@@ -5,7 +5,6 @@ import { db } from '../../firebase';
 import { Trip, Plan, UserProfile } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../../components/SummaryView';
-import { TripBuilderPanel } from '../../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../../utils/weatherApi';
 import { resolveMarkerOverlaps, clusterByPixel } from '../../utils/mapMarkerOverlap';
@@ -34,27 +33,10 @@ export interface MapHubPageProps {
   plans: Plan[];
   onNavigate: (view: string, tripId?: number | null) => void;
   onCreateTripForCountry?: (countryName: string, cityName?: string) => void;
+  /** Opens the New trip sheet with the country and the cities picked on the map */
+  onStartNewTrip?: (countryName: string, cities: string[]) => void;
   isDarkMode: boolean;
   isAdmin?: boolean;
-  onSaveTrip?: (
-    title: string, 
-    dateRange: string, 
-    location: string, 
-    tags: string[], 
-    lat?: number, 
-    lng?: number, 
-    members?: string[], 
-    locations?: { name: string; lat?: number; lng?: number; country?: string }[], 
-    statusBadge?: string, 
-    country?: string,
-    customCoverImg?: string,
-    customTimelineItems?: { date: string; items: any[] }[]
-  ) => void;
-  initialBuilderOpen?: boolean;
-  initialBuilderCountry?: string;
-  initialBuilderCity?: string;
-  initialBuilderDate?: string;
-  onBuilderStateChange?: (isOpen: boolean) => void;
   currentUserProfile?: UserProfile | null;
 }
 
@@ -63,14 +45,9 @@ export function useMapHubState({
   plans,
   onNavigate,
   onCreateTripForCountry,
+  onStartNewTrip,
   isDarkMode,
   isAdmin = false,
-  onSaveTrip,
-  initialBuilderOpen = false,
-  initialBuilderCountry = '',
-  initialBuilderCity = '',
-  initialBuilderDate = '',
-  onBuilderStateChange,
   currentUserProfile,
 }: MapHubPageProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -120,60 +97,6 @@ export function useMapHubState({
     const mm = String(currentClockTime.getMinutes()).padStart(2, '0');
     return `${hh}:${mm}`;
   }, [currentClockTime]);
-
-  // In-place Trip Builder Split-Screen State
-  const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(() => Boolean(initialBuilderOpen));
-  const [builderCountry, setBuilderCountry] = useState<string>(initialBuilderCountry);
-  const [builderCountryCode, setBuilderCountryCode] = useState<string>('');
-  const [builderCity, setBuilderCity] = useState<string>(initialBuilderCity);
-  const [builderCities, setBuilderCities] = useState<string[]>([]);
-  const [builderDate, setBuilderDate] = useState<string>(initialBuilderDate);
-  const builderRouteLayerRef = useRef<any>(null);
-  const builderMarkersRef = useRef<any[]>([]);
-  const builderActiveTargetRef = useRef<{
-    name: string;
-    center?: [number, number];
-    zoom?: number;
-    bounds?: any;
-  } | null>(null);
-  const [builderTargetName, setBuilderTargetName] = useState<string>('');
-  const [isMapDivergedFromBuilder, setIsMapDivergedFromBuilder] = useState<boolean>(false);
-
-  // Sync initial props & sessionStorage pockets
-  useEffect(() => {
-    if (initialBuilderOpen) {
-      setIsBuilderOpen(true);
-      if (initialBuilderCountry) setBuilderCountry(initialBuilderCountry);
-      if (initialBuilderCity) setBuilderCity(initialBuilderCity);
-      if (initialBuilderDate) setBuilderDate(initialBuilderDate);
-      setSelectedCountry(null);
-    } else {
-      try {
-        const storedPockets = sessionStorage.getItem('builder_selected_pockets');
-        const targetCountry = sessionStorage.getItem('builder_target_country');
-        const targetCity = sessionStorage.getItem('builder_target_city');
-        if (storedPockets) {
-          setIsBuilderOpen(true);
-          if (targetCountry) setBuilderCountry(targetCountry);
-          if (targetCity) setBuilderCity(targetCity);
-          setSelectedCountry(null);
-        }
-      } catch (_) {}
-    }
-  }, [initialBuilderOpen, initialBuilderCountry, initialBuilderCity, initialBuilderDate]);
-
-  // Invalidate Leaflet size on builder split change & sync isBuilderOpenRef & notify parent
-  const isBuilderOpenRef = useRef<boolean>(isBuilderOpen);
-  useEffect(() => {
-    isBuilderOpenRef.current = isBuilderOpen;
-    onBuilderStateChange?.(isBuilderOpen);
-    const timer = setTimeout(() => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize();
-      }
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [isBuilderOpen, onBuilderStateChange]);
 
   // 도시 변경 확인 모달 상태 (Trip 가이드 생성 중 다른 도시 선택 시 실수 방지)
 
@@ -276,16 +199,27 @@ export function useMapHubState({
   // Mini dot pins for all cities belonging to selectedCountry
   const countryCityDotsRef = useRef<any[]>([]);
 
+  // One city at a time; with "multiple" on, cities are added in the order they are tapped
+  const [isMultiDest, setIsMultiDest] = useState(false);
+  const isMultiDestRef = useRef(isMultiDest);
+  isMultiDestRef.current = isMultiDest;
   const toggleDestCity = useCallback((cityName: string) => {
     setSelectedDestCities(prev => {
       const isAdding = !prev.includes(cityName);
       if (isAdding) {
         // 도시 선택 시 날씨도 해당 도시로 즉시 자동 동기화
         setActiveWeatherCity(cityName);
-        return [...prev, cityName];
+        return isMultiDestRef.current ? [...prev, cityName] : [cityName];
       } else {
         return prev.filter(c => c !== cityName);
       }
+    });
+  }, []);
+  // Turning "multiple" off keeps the first city
+  const toggleMultiDest = useCallback(() => {
+    setIsMultiDest(on => {
+      if (on) setSelectedDestCities(prev => prev.slice(0, 1));
+      return !on;
     });
   }, []);
 
@@ -293,26 +227,6 @@ export function useMapHubState({
   useEffect(() => {
     toggleDestCityRef.current = toggleDestCity;
   }, [toggleDestCity]);
-
-  // Trip 가이드 활성화 중 도시 변경: 지도·검색에서 고른 도시를 가이드 목적지로 즉시 반영
-  const requestChangeBuilderCity = useCallback((cityName: string, countryName?: string, countryCode?: string) => {
-    if (!cityName) return;
-    if (isBuilderOpenRef.current) {
-      if (builderCity === cityName) return;
-      setBuilderCity(cityName);
-      setBuilderCities([cityName]);
-      if (countryName || selectedCountry?.name) setBuilderCountry(countryName || selectedCountry?.name || '');
-      if (countryCode || selectedCountry?.code) setBuilderCountryCode(countryCode || selectedCountry?.code || '');
-      setActiveWeatherCity(cityName);
-    } else {
-      toggleDestCity(cityName);
-    }
-  }, [builderCity, selectedCountry, toggleDestCity]);
-
-  const requestChangeBuilderCityRef = useRef(requestChangeBuilderCity);
-  useEffect(() => {
-    requestChangeBuilderCityRef.current = requestChangeBuilderCity;
-  }, [requestChangeBuilderCity]);
 
   // Render subtle mini dot pins for all travel destinations in the selected country
   useEffect(() => {
@@ -367,11 +281,7 @@ export function useMapHubState({
       const dotMarker = L.marker([lat, effLng], { icon, zIndexOffset: 1200 }).addTo(map);
       dotMarker.on('click', (e: any) => {
         if (e && e.originalEvent) e.originalEvent.stopPropagation();
-        if (isBuilderOpenRef.current) {
-          requestChangeBuilderCityRef.current(cityName);
-        } else {
-          toggleDestCityRef.current(cityName);
-        }
+        toggleDestCityRef.current(cityName);
       });
       countryCityDotsRef.current.push(dotMarker);
     });
@@ -1347,21 +1257,6 @@ export function useMapHubState({
 
   // Country selection handler: highlights country area and flies airplane from Korea
   const handleSelectCountry = (country: CountryInfo) => {
-    // 트립 가이드가 열려 있으면 선택한 국가(대표 도시)를 가이드 목적지로 즉시 반영.
-    // 이미 가이드 대상인 국가를 다시 고르면 작성 중인 가이드를 초기화하지 않음.
-    if (isBuilderOpenRef.current) {
-      const isSameCountry = (builderCountryCode && builderCountryCode.toUpperCase() === country.code.toUpperCase())
-        || (!builderCountryCode && builderCountry === country.name);
-      if (!isSameCountry) {
-        const targetCity = country.cities?.[0] || '';
-        setBuilderCountry(country.name);
-        setBuilderCountryCode(country.code);
-        setBuilderCity(targetCity);
-        setBuilderCities(targetCity ? [targetCity] : []);
-        if (targetCity) setActiveWeatherCity(targetCity);
-      }
-    }
-
     setIsSearchDropdownOpen(false);
 
     const map = mapRef.current;
@@ -2205,336 +2100,12 @@ export function useMapHubState({
 
   const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
-  // In-place Trip Builder Handlers
-  const handleOpenTripBuilder = useCallback((country?: string, city?: string, date?: string, countryCode?: string, initialCities?: string[]) => {
-    setIsBuilderOpen(true);
-    if (country) setBuilderCountry(country);
-    if (countryCode) setBuilderCountryCode(countryCode);
-    if (city) setBuilderCity(city);
-    if (date) setBuilderDate(date);
-    const targetCities = initialCities && initialCities.length > 0 ? initialCities : (city ? [city] : []);
-    setBuilderCities(targetCities);
-    // 국가 모달은 닫지 않고 유지 (사용자 요청: 나라 모달은 활성상태에서 유지할 것)
+  // New trip from the map: the same sheet as everywhere else, starting with what is picked here
+  const handleStartNewTrip = useCallback((country?: string, cities: string[] = []) => {
     setSelectedPinGroup(null);
     setIsWishlistModalOpen(false);
-
-    // If multiple cities are provided, fit bounds across all cities
-    if (targetCities.length > 1 && mapRef.current) {
-      const L = (window as any).L;
-      if (L) {
-        const curCenterLng = mapRef.current.getCenter()?.lng ?? 126.44;
-        const coords: [number, number][] = [];
-        targetCities.forEach(c => {
-          const cData = findCityByNameOrAlias(c);
-          const cleanKey = c.toLowerCase().replace(/\s+/g, '');
-          const knownCoords = KNOWN_CITY_COORDS[cleanKey] || KNOWN_CITY_COORDS[c];
-          const lat = cData?.lat || knownCoords?.[0];
-          const lng = cData?.lng || knownCoords?.[1];
-          if (lat && lng) {
-            let effLng = lng;
-            let diff = effLng - curCenterLng;
-            while (diff > 180) { effLng -= 360; diff -= 360; }
-            while (diff < -180) { effLng += 360; diff += 360; }
-            coords.push([lat, effLng]);
-          }
-        });
-        if (coords.length > 1) {
-          const bounds = L.latLngBounds(coords);
-          mapRef.current.fitBounds(bounds, { padding: [80, 80], maxZoom: 12 });
-          return;
-        }
-      }
-    }
-
-    // If city is provided, fly to it immediately with continuous longitude and adaptive zoom
-    if (city) {
-      const cityData = findCityByNameOrAlias(city);
-      if (cityData && mapRef.current) {
-        const curCenterLng = mapRef.current.getCenter()?.lng ?? 126.44;
-        let effLng = cityData.lng;
-        let diff = effLng - curCenterLng;
-        while (diff > 180) { effLng -= 360; diff -= 360; }
-        while (diff < -180) { effLng += 360; diff += 360; }
-
-        const matched = COUNTRIES_DATA.find(c => 
-          (countryCode && c.code.toLowerCase() === countryCode.toLowerCase()) ||
-          (country && (
-            c.name.toLowerCase() === country.toLowerCase() ||
-            c.nameKo === country ||
-            c.code.toLowerCase() === country.toLowerCase()
-          ))
-        );
-        const cityZoom = Math.max(8.5, (matched?.zoom ?? 5) + 1.5);
-        mapRef.current.flyTo([cityData.lat, effLng], cityZoom, { duration: 1.2 });
-        return;
-      }
-    }
-    // If country is provided, fly to country center
-    if (countryCode || country) {
-      const matched = COUNTRIES_DATA.find(c => 
-        (countryCode && c.code.toLowerCase() === countryCode.toLowerCase()) ||
-        (country && (
-          c.name.toLowerCase() === country.toLowerCase() ||
-          c.nameKo === country ||
-          c.code.toLowerCase() === country.toLowerCase()
-        ))
-      );
-      if (matched && mapRef.current) {
-        mapRef.current.flyTo(matched.center, matched.zoom || 5, { duration: 1.2 });
-      }
-    }
-  }, []);
-
-  // Divergence check effect: detect if user panned away from active builder target
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const checkDivergence = () => {
-      if (!isBuilderOpen || !builderActiveTargetRef.current) {
-        setIsMapDivergedFromBuilder(false);
-        return;
-      }
-      const target = builderActiveTargetRef.current;
-      if (target.bounds) {
-        const intersects = map.getBounds().intersects(target.bounds);
-        setIsMapDivergedFromBuilder(!intersects);
-      } else if (target.center) {
-        const L = (window as any).L;
-        if (L) {
-          const currentCenter = map.getCenter();
-          const targetLatLng = L.latLng(target.center[0], target.center[1]);
-          const dist = currentCenter.distanceTo(targetLatLng); // in meters
-          setIsMapDivergedFromBuilder(dist > 150000); // 150km threshold
-        }
-      }
-    };
-
-    map.on('moveend', checkDivergence);
-    return () => {
-      map.off('moveend', checkDivergence);
-    };
-  }, [isBuilderOpen]);
-
-  const handleReCenterBuilderTarget = useCallback(() => {
-    const target = builderActiveTargetRef.current;
-    const map = mapRef.current;
-    if (!target || !map) return;
-
-    if (target.bounds) {
-      map.fitBounds(target.bounds, { padding: [60, 60], maxZoom: 9 });
-    } else if (target.center) {
-      map.flyTo(target.center, target.zoom || 8.5, { duration: 1.2 });
-    }
-    setIsMapDivergedFromBuilder(false);
-  }, []);
-
-  const handleCloseTripBuilder = useCallback(() => {
-    setIsBuilderOpen(false);
-    setBuilderCountry('');
-    setBuilderCity('');
-    setBuilderCities([]);
-    setBuilderDate('');
-    if (builderRouteLayerRef.current) {
-      builderRouteLayerRef.current.remove();
-      builderRouteLayerRef.current = null;
-    }
-    builderMarkersRef.current.forEach(m => {
-      try { m.remove(); } catch (_) {}
-    });
-    builderMarkersRef.current = [];
-    builderActiveTargetRef.current = null;
-    setBuilderTargetName('');
-    setIsMapDivergedFromBuilder(false);
-
-    // Cleanly restore the map back to default global view (South Korea center)
-    handleResetToDefaultView();
-    setTimeout(() => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize();
-      }
-    }, 250);
-  }, []);
-
-  const handleBuilderFocusChange = useCallback((data: {
-    country?: DestinationCountry | null;
-    city?: DestinationCity | null;
-    preset?: PresetTripPlan | null;
-    locations?: { name: string; lat?: number; lng?: number }[];
-  }) => {
-    if (!mapRef.current) return;
-
-    // 현재 지도 중심 경도 기준 연속 경도 계산 (아시아 중심 뷰 wrap 단절 및 지도 튐 완전 방지)
-    const curCenterLng = mapRef.current.getCenter()?.lng ?? 126.44;
-    const getContinuousLng = (lng: number, refLng: number = curCenterLng) => {
-      let diff = lng - refLng;
-      while (diff > 180) { lng -= 360; diff -= 360; }
-      while (diff < -180) { lng += 360; diff += 360; }
-      return lng;
-    };
-
-    // Clean previous route and builder markers
-    if (builderRouteLayerRef.current) {
-      builderRouteLayerRef.current.remove();
-      builderRouteLayerRef.current = null;
-    }
-    builderMarkersRef.current.forEach(m => {
-      try { m.remove(); } catch (_) {}
-    });
-    builderMarkersRef.current = [];
-
-    // 트립 빌더에서 국가 변경 시 지도 핀, 에어리어, 국가 모달 실시간 동기화 (요청 3)
-    let matchedCountryInfo: CountryInfo | undefined;
-    if (data.country) {
-      matchedCountryInfo = COUNTRIES_DATA.find(c => 
-        c.code.toLowerCase() === data.country?.code.toLowerCase() ||
-        c.name.toLowerCase() === data.country?.nameEn.toLowerCase() ||
-        c.nameKo === data.country?.nameKo
-      );
-      if (matchedCountryInfo) {
-        setSelectedCountry(matchedCountryInfo);
-        setSearchQuery(matchedCountryInfo.name);
-        updateCountryHighlightAndPin(matchedCountryInfo);
-        if (matchedCountryInfo.cities && matchedCountryInfo.cities.length > 0) {
-          setActiveWeatherCity(matchedCountryInfo.cities[0]);
-        }
-      }
-    }
-
-    const validLocs = (data.locations || [])
-      .filter(l => l.lat && l.lng)
-      .map(l => ({
-        ...l,
-        lng: getContinuousLng(l.lng!)
-      }));
-    const L = (window as any).L;
-
-    if (validLocs.length > 0 && L) {
-      const latLngs = validLocs.map(l => [l.lat!, l.lng!]);
-      
-      // Create polyline route connecting locations
-      if (validLocs.length > 1) {
-        const polyline = L.polyline(latLngs, {
-          color: '#dc2626',
-          weight: 3,
-          dashArray: '6, 6',
-          opacity: 0.85,
-        }).addTo(mapRef.current);
-        builderRouteLayerRef.current = polyline;
-
-        // Add Swiss Minimal numbered badge markers for each stop
-        validLocs.forEach((loc, idx) => {
-          const numStr = String(idx + 1).padStart(2, '0');
-          const stopIcon = L.divIcon({
-            className: 'custom-builder-stop-icon',
-            html: `
-              <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-                <div style="background: #111111; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
-                  ${numStr}
-                </div>
-                <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
-                  ${loc.name}
-                </div>
-              </div>
-            `,
-            iconSize: [60, 42],
-            iconAnchor: [30, 11],
-          });
-
-          const stopMarker = L.marker([loc.lat!, loc.lng!], { icon: stopIcon, interactive: false }).addTo(mapRef.current);
-          builderMarkersRef.current.push(stopMarker);
-        });
-
-        const bounds = polyline.getBounds();
-        const targetTitle = data.preset?.title || validLocs.map(l => l.name).join(' · ');
-        builderActiveTargetRef.current = { name: targetTitle, bounds };
-        setBuilderTargetName(targetTitle);
-        setIsMapDivergedFromBuilder(false);
-        mapRef.current.fitBounds(bounds, { padding: [60, 60], maxZoom: 9 });
-      } else {
-        // Single location
-        const loc = validLocs[0];
-        const stopIcon = L.divIcon({
-          className: 'custom-builder-single-stop',
-          html: `
-            <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-              <div style="background: #dc2626; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
-                01
-              </div>
-              <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
-                ${loc.name}
-              </div>
-            </div>
-          `,
-          iconSize: [60, 42],
-          iconAnchor: [30, 11],
-        });
-        const stopMarker = L.marker([loc.lat!, loc.lng!], { icon: stopIcon, interactive: false }).addTo(mapRef.current);
-        builderMarkersRef.current.push(stopMarker);
-
-        const targetTitle = data.preset?.title || loc.name;
-        builderActiveTargetRef.current = { name: targetTitle, center: [loc.lat!, loc.lng!], zoom: 8.5 };
-        setBuilderTargetName(targetTitle);
-        setIsMapDivergedFromBuilder(false);
-        mapRef.current.flyTo([loc.lat!, loc.lng!], 8.5, { duration: 1.2 });
-      }
-      return;
-    }
-
-    if (data.city && data.city.lat && data.city.lng) {
-      const targetTitle = data.city.nameKo || data.city.nameEn;
-      const cLng = getContinuousLng(data.city.lng);
-      builderActiveTargetRef.current = { name: targetTitle, center: [data.city.lat, cLng], zoom: 8.5 };
-      setBuilderTargetName(targetTitle);
-      setIsMapDivergedFromBuilder(false);
-      mapRef.current.flyTo([data.city.lat, cLng], 8.5, { duration: 1.2 });
-      return;
-    }
-
-    if (matchedCountryInfo) {
-      const targetTitle = data.country?.nameKo || data.country?.nameEn || matchedCountryInfo.nameKo;
-      const cLng = getContinuousLng(matchedCountryInfo.center[1]);
-      const targetCenter: [number, number] = [matchedCountryInfo.center[0], cLng];
-      builderActiveTargetRef.current = { name: targetTitle, center: targetCenter, zoom: matchedCountryInfo.zoom || 5 };
-      setBuilderTargetName(targetTitle);
-      setIsMapDivergedFromBuilder(false);
-      mapRef.current.flyTo(targetCenter, matchedCountryInfo.zoom || 5, { duration: 1.2 });
-    }
-  }, [updateCountryHighlightAndPin]);
-
-  const handleCreateJourneyFromPanel = useCallback((
-    title: string,
-    dateRange: string,
-    location: string,
-    tags: string[],
-    lat?: number,
-    lng?: number,
-    members?: string[],
-    locations?: { name: string; lat?: number; lng?: number; country?: string }[],
-    statusBadge?: string,
-    country?: string,
-    customCoverImg?: string,
-    customTimelineItems?: { date: string; items: any[] }[]
-  ) => {
-    if (onSaveTrip) {
-      onSaveTrip(
-        title,
-        dateRange,
-        location,
-        tags,
-        lat,
-        lng,
-        members,
-        locations,
-        statusBadge,
-        country,
-        customCoverImg,
-        customTimelineItems
-      );
-    }
-    handleCloseTripBuilder();
-  }, [onSaveTrip, handleCloseTripBuilder]);
-
+    onStartNewTrip?.(country || '', cities);
+  }, [onStartNewTrip]);
 
   return {
     trips,
@@ -2543,12 +2114,6 @@ export function useMapHubState({
     onCreateTripForCountry,
     isDarkMode,
     isAdmin,
-    onSaveTrip,
-    initialBuilderOpen,
-    initialBuilderCountry,
-    initialBuilderCity,
-    initialBuilderDate,
-    onBuilderStateChange,
     currentUserProfile,
     mapContainerRef,
     mapRef,
@@ -2575,26 +2140,6 @@ export function useMapHubState({
     previewTimeLabel,
     formattedClockTime,
     formattedClockShort,
-    isBuilderOpen,
-    setIsBuilderOpen,
-    builderCountry,
-    setBuilderCountry,
-    builderCountryCode,
-    setBuilderCountryCode,
-    builderCity,
-    setBuilderCity,
-    builderCities,
-    setBuilderCities,
-    builderDate,
-    setBuilderDate,
-    builderRouteLayerRef,
-    builderMarkersRef,
-    builderActiveTargetRef,
-    builderTargetName,
-    setBuilderTargetName,
-    isMapDivergedFromBuilder,
-    setIsMapDivergedFromBuilder,
-    isBuilderOpenRef,
     searchQuery,
     setSearchQuery,
     isSearchExpanded,
@@ -2616,9 +2161,11 @@ export function useMapHubState({
     destCityMarkersRef,
     countryCityDotsRef,
     toggleDestCity,
+    isMultiDest,
+    toggleMultiDest,
+    handleStartNewTrip,
+    onStartNewTrip,
     toggleDestCityRef,
-    requestChangeBuilderCity,
-    requestChangeBuilderCityRef,
     isFlyingToCountry,
     setIsFlyingToCountry,
     isFlyingToCountryRef,
@@ -2683,11 +2230,6 @@ export function useMapHubState({
     filteredCountries,
     wishlistCountriesData,
     isCurrentCountryFavorite,
-    handleOpenTripBuilder,
-    handleReCenterBuilderTarget,
-    handleCloseTripBuilder,
-    handleBuilderFocusChange,
-    handleCreateJourneyFromPanel,
   };
 }
 

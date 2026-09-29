@@ -5,7 +5,6 @@ import { db } from '../../firebase';
 import { Trip, Plan, UserProfile } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../../components/SummaryView';
-import { TripBuilderPanel } from '../../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../../utils/weatherApi';
 import { resolveMarkerOverlaps, clusterByPixel } from '../../utils/mapMarkerOverlap';
@@ -28,12 +27,6 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
     onCreateTripForCountry,
     isDarkMode,
     isAdmin,
-    onSaveTrip,
-    initialBuilderOpen,
-    initialBuilderCountry,
-    initialBuilderCity,
-    initialBuilderDate,
-    onBuilderStateChange,
     currentUserProfile,
     mapContainerRef,
     mapRef,
@@ -60,26 +53,6 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
     previewTimeLabel,
     formattedClockTime,
     formattedClockShort,
-    isBuilderOpen,
-    setIsBuilderOpen,
-    builderCountry,
-    setBuilderCountry,
-    builderCountryCode,
-    setBuilderCountryCode,
-    builderCity,
-    setBuilderCity,
-    builderCities,
-    setBuilderCities,
-    builderDate,
-    setBuilderDate,
-    builderRouteLayerRef,
-    builderMarkersRef,
-    builderActiveTargetRef,
-    builderTargetName,
-    setBuilderTargetName,
-    isMapDivergedFromBuilder,
-    setIsMapDivergedFromBuilder,
-    isBuilderOpenRef,
     searchQuery,
     setSearchQuery,
     isSearchExpanded,
@@ -101,9 +74,10 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
     destCityMarkersRef,
     countryCityDotsRef,
     toggleDestCity,
+    isMultiDest,
+    toggleMultiDest,
+    handleStartNewTrip,
     toggleDestCityRef,
-    requestChangeBuilderCity,
-    requestChangeBuilderCityRef,
     isFlyingToCountry,
     setIsFlyingToCountry,
     isFlyingToCountryRef,
@@ -168,21 +142,16 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
     filteredCountries,
     wishlistCountriesData,
     isCurrentCountryFavorite,
-    handleOpenTripBuilder,
-    handleReCenterBuilderTarget,
-    handleCloseTripBuilder,
-    handleBuilderFocusChange,
-    handleCreateJourneyFromPanel,
   } = s;
 
-  // Phones: the card is a bottom sheet over the map, like the Trip Guide (half, full over the map, pull down to close)
+  // Phones: the card is a bottom sheet over the map (half, full over the map, pull down to close)
   const [isPhone, setIsPhone] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
   useEffect(() => {
     const onResize = () => setIsPhone(window.innerWidth < 640);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  const isCardOpen = !!selectedCountry && !isFlyingToCountry && !isBuilderOpen;
+  const isCardOpen = !!selectedCountry && !isFlyingToCountry;
   const [sheetAreaHeight, setSheetAreaHeight] = useState(0);
   const countrySheet = useSnapSheet({
     enabled: isCardOpen && isPhone && sheetAreaHeight > 0,
@@ -199,7 +168,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
     ro.observe(el);
     return () => ro.disconnect();
   }, [isCardOpen, isPhone, countrySheet.containerRef]);
-  const phoneSheet = isPhone && !isBuilderOpen;
+  const phoneSheet = isPhone;
 
   return (
     <>
@@ -210,11 +179,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
           data-sheet-snap={countrySheet.panelHeight !== undefined ? countrySheet.snap : undefined}
           className={phoneSheet
             ? 'absolute inset-0 z-[500] translate-y-full flex flex-col bg-surface dark:bg-surface-dark rounded-t-sheet shadow-[0_-8px_24px_rgba(0,0,0,0.18)] will-change-transform'
-            : `${isBuilderOpen ? 'hidden lg:block' : 'block'} fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 ${
-              isBuilderOpen ? 'sm:left-6 sm:right-auto' : 'sm:left-auto sm:right-6'
-            } w-full sm:w-[380px] max-h-[65vh] sm:max-h-[82vh] bg-surface dark:bg-surface-dark rounded-t-sheet sm:rounded-card shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
-              isBuilderOpen ? 'sm:slide-in-from-left' : 'sm:slide-in-from-right'
-            } duration-200`}
+            : `block fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 sm:left-auto sm:right-6 w-full sm:w-[380px] max-h-[65vh] sm:max-h-[82vh] bg-surface dark:bg-surface-dark rounded-t-sheet sm:rounded-card shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-right duration-200`}
         >
           {phoneSheet && (
             <button
@@ -489,6 +454,20 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                 <div className="text-micro sm:text-meta font-mono font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60">
                   DESTINATIONS ({selectedCountry.cities.length})
                 </div>
+                <div className="flex items-center gap-2">
+                {/* One city by default; "multiple" lets the trip visit several, in the order tapped */}
+                <button
+                  type="button"
+                  onClick={toggleMultiDest}
+                  aria-pressed={isMultiDest}
+                  className={`h-7 px-2.5 rounded-full text-micro sm:text-meta font-bold transition-colors cursor-pointer ${
+                    isMultiDest
+                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
+                      : 'border border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:border-black dark:hover:border-white'
+                  }`}
+                >
+                  여러 도시
+                </button>
                 {selectedDestCities.length > 0 && (
                   <button
                     type="button"
@@ -498,6 +477,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                     RESET ({selectedDestCities.length})
                   </button>
                 )}
+                </div>
               </div>
               <div className="flex flex-wrap gap-1 font-['Inter',sans-serif]">
                 {selectedCountry.cities.map(city => {
@@ -547,10 +527,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
               <NewTripButton
                 size="sm"
                 block
-                onClick={() => {
-                  const targetCity = selectedDestCities.length > 0 ? selectedDestCities[0] : undefined;
-                  handleOpenTripBuilder(selectedCountry.name, targetCity, undefined, selectedCountry.code, selectedDestCities);
-                }}
+                onClick={() => handleStartNewTrip(selectedCountry.name, selectedDestCities)}
                 title="선택된 장소 또는 국가 기준으로 새로운 트립 생성"
                 label={selectedDestCities.length > 0 ? `New trip (${selectedDestCities.length})` : 'New trip'}
               />

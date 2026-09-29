@@ -1,30 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BedDouble, CalendarDays, ChevronLeft, ChevronRight, Plane, Ticket, Volume2, VolumeX, X } from 'lucide-react';
-import { getSavedPockets } from '../../utils/pocketStorage';
+import { PencilLine, Plane, Plus, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { LobbyScene } from './LobbyScene';
 import { TerminalWeatherPicker } from './TerminalWeatherPicker';
 import { getWeatherMeta } from '../../utils/weatherApi';
 import { resolveWeatherEffectType } from '../WeatherEffectLayer';
 import { precipitationIntensity } from '../weather/WeatherParticleCanvas';
-import type { DestinationCity } from '../../data/worldDestinations';
 import { confirmDialog, notify } from '../../utils/feedback';
 import { prefersReducedMotion } from '../../motion';
 import { useBackToClose } from '../../utils/overlayHistory';
-import {
-  DepartureFilters, DepartureTicket, FLIGHT_OPTIONS, candidates, dailyPick, defaultFilters, flightHours, flightNumber,
-  formatHours, gateFor, isBestSeason, loadTickets, makeTicket, readCachedTickets, saveTickets, selectableMonths, targetMonth, todayKey,
-} from './departureData';
-import { NewTripButton } from '../NewTripButton';
+import { IconButton } from '../ui/IconButton';
+import { DepartureTicket, TicketStore, daysUntil, formatHours, loadTickets, readCachedTickets, removeTicket, ticketCity } from './departureData';
 
-// Airport terminal (v1.3, renamed from Departure Board): a split-flap board that picks the next trip.
-// Filters narrow the pool, SPIN rolls the letters to a destination, and a result
-// can open the Trip Guide or be kept as a ticket. One free "today's ticket" a day.
+// Airport terminal (spec 3.2): where a planned trip waits before it becomes a journey.
+// Tickets are issued from the New trip sheet. The black split-flap board shows the chosen
+// ticket (destination, dates, stay, party, gate); another ticket rolls the board over to it.
+// Boarding creates the journey from the ticket and opens it.
 
-const FLAP_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:';
+const FLAP_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:+';
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-// How many years after this one the departure month can reach
-const DEPART_YEARS_AHEAD = 3;
 
 // ── Flap sound: short filtered noise clicks, synthesised on demand ──
 function useFlapSound(muted: boolean) {
@@ -58,7 +52,7 @@ function useFlapSound(muted: boolean) {
 
 // ── One row of flaps that rolls to `text` whenever `rollKey` changes ──
 function FlapRow({ text, cells, rollKey, size = 'md', onFlip, tone = 'ink' }: {
-  text: string; cells: number; rollKey: number; size?: 'lg' | 'md' | 'sm'; onFlip?: () => void; tone?: 'ink' | 'amber' | 'red';
+  text: string; cells: number; rollKey: number; size?: 'lg' | 'md'; onFlip?: () => void; tone?: 'ink' | 'amber' | 'red';
 }) {
   const target = useMemo(() => text.toUpperCase().padEnd(cells, ' ').slice(0, cells).split(''), [text, cells]);
   const [shown, setShown] = useState<string[]>(() => Array(cells).fill(' '));
@@ -66,13 +60,13 @@ function FlapRow({ text, cells, rollKey, size = 'md', onFlip, tone = 'ink' }: {
   shownRef.current = shown;
 
   useEffect(() => {
-    // Before the first spin, or under reduced motion, show the text without rolling
-    if (rollKey === 0 || prefersReducedMotion()) { setShown(target); return; }
+    if (prefersReducedMotion()) { setShown(target); return; }
     const timers: number[] = [];
     target.forEach((goal, idx) => {
       let cur = Math.max(0, FLAP_CHARS.indexOf(shownRef.current[idx] ?? ' '));
       const goalIdx = Math.max(0, FLAP_CHARS.indexOf(goal));
-      const steps = ((goalIdx - cur + FLAP_CHARS.length) % FLAP_CHARS.length) + FLAP_CHARS.length * (1 + (idx % 2));
+      // A short roll: straight to the letter, plus one lap on alternate cells
+      const steps = ((goalIdx - cur + FLAP_CHARS.length) % FLAP_CHARS.length) + (idx % 2 ? 0 : 6);
       let n = 0;
       const tick = () => {
         if (n >= steps) {
@@ -84,43 +78,27 @@ function FlapRow({ text, cells, rollKey, size = 'md', onFlip, tone = 'ink' }: {
         setShown(prev => { const next = [...prev]; next[idx] = ch; return next; });
         onFlip?.();
         n++;
-        timers.push(window.setTimeout(tick, 16 + idx * 1.5));
+        timers.push(window.setTimeout(tick, 18 + idx * 1.5));
       };
-      timers.push(window.setTimeout(tick, idx * 40));
+      timers.push(window.setTimeout(tick, idx * 35));
     });
     return () => timers.forEach(t => clearTimeout(t));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rollKey, target.join('')]);
 
   const dims = size === 'lg'
-    ? 'w-[clamp(16px,min(5.4vw,4.4vh),48px)] h-[clamp(24px,min(7.8vw,6.4vh),64px)] text-[clamp(14px,min(4.4vw,3.8vh),38px)]'
-    : size === 'md'
-      ? 'w-[clamp(13px,min(3.2vw,2.6vh),22px)] h-[clamp(19px,min(4.4vw,3.6vh),30px)] text-[clamp(11px,min(2.5vw,2.2vh),18px)]'
-      : 'w-[13px] h-[19px] text-[11px]';
+    ? 'w-[clamp(17px,5.2vw,40px)] h-[clamp(26px,7.6vw,54px)] text-[clamp(15px,4.3vw,32px)]'
+    : 'w-[clamp(14px,3.4vw,22px)] h-[clamp(21px,4.8vw,30px)] text-[clamp(12px,2.7vw,17px)]';
   const color = tone === 'amber' ? 'text-amber-400' : tone === 'red' ? 'text-red-500' : 'text-[#F2F2EE]';
   return (
     <div className="flex gap-[3px]" aria-label={text}>
       {shown.map((ch, i) => (
         <span key={i} className={`tgl-flap relative grid place-items-center rounded-[3px] bg-[#1B1B1F] font-mono font-semibold ${dims} ${color}`}>
-          {ch === ' ' ? ' ' : ch}
+          {ch === ' ' ? ' ' : ch}
         </span>
       ))}
     </div>
   );
-}
-
-interface DepartureBoardProps {
-  onClose: () => void;
-  onBuildTrip: (city: { countryEn: string; cityKo: string; cityEn: string; year: number; month: number }) => void;
-  onOpenPocket?: () => void;
-  isDarkMode?: boolean;
-  // Same weather the app ambience shows; undefined draws a clear sky
-  weatherCode?: number;
-  precipitationProb?: number;
-  /** This user's weather location, shown and changed from the top bar */
-  weatherCityName?: string;
-  weatherCityEn?: string;
-  weatherTemp?: number;
 }
 
 // Airport chime: two soft sine notes, like a terminal announcement
@@ -145,22 +123,66 @@ function playChime() {
 }
 
 const MUTE_KEY = 'tgl_departure_muted';
+const label = 'font-mono text-micro font-bold uppercase tracking-wider';
+const muted = 'text-black/60 dark:text-white/60';
 
-export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode = true, weatherCode, precipitationProb = 0, weatherCityName, weatherCityEn, weatherTemp }: DepartureBoardProps) {
+/** "10 NOV" from YYYY-MM-DD */
+function boardDate(iso?: string): string {
+  if (!iso) return '';
+  const [, m, d] = iso.split('-').map(Number);
+  return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]}`;
+}
+
+/** "10.09 – 10.12" */
+function shortRange(t: DepartureTicket): string {
+  if (!t.startDate) return `${t.year}.${String(t.month).padStart(2, '0')} · 일정 미정`;
+  const f = (s: string) => s.slice(5).replace('-', '.');
+  return `${f(t.startDate)} – ${t.endDate ? f(t.endDate) : ''}`;
+}
+
+function ticketStatus(t: DepartureTicket): { text: string; tone: 'ink' | 'amber' | 'red' } {
+  if (!t.startDate) return { text: 'PLANNING', tone: 'amber' };
+  const days = daysUntil(t.startDate);
+  if (days < 0) return { text: 'DEPARTED', tone: 'ink' };
+  if (days === 0) return { text: 'BOARDING', tone: 'red' };
+  return { text: `D-${days}`, tone: 'amber' };
+}
+
+interface DepartureBoardProps {
+  onClose: () => void;
+  /** Creates the journey from the ticket; the terminal then removes the ticket and closes */
+  onBoard: (ticket: DepartureTicket) => Promise<void>;
+  /** Opens the New trip sheet; with a ticket, to re-plan it */
+  onPlan: (ticket?: DepartureTicket) => void;
+  /** Ticket to show first (just issued) */
+  initialTicketId?: string;
+  isDarkMode?: boolean;
+  // Same weather the app ambience shows; undefined draws a clear sky
+  weatherCode?: number;
+  precipitationProb?: number;
+  /** This user's weather location, shown and changed from the top bar */
+  weatherCityName?: string;
+  weatherCityEn?: string;
+  weatherTemp?: number;
+}
+
+export function DepartureBoard({
+  onClose, onBoard, onPlan, initialTicketId, isDarkMode = true,
+  weatherCode, precipitationProb = 0, weatherCityName, weatherCityEn, weatherTemp,
+}: DepartureBoardProps) {
   const weatherType = resolveWeatherEffectType(weatherCode, precipitationProb);
   const weatherIntensity = precipitationIntensity(weatherCode, precipitationProb);
-  const [filters, setFilters] = useState<DepartureFilters>(() => defaultFilters());
-  const [city, setCity] = useState<DestinationCity | null>(null);
+  const [store, setStore] = useState<TicketStore>(() => readCachedTickets());
+  const [selectedId, setSelectedId] = useState<string | null>(initialTicketId ?? null);
   const [rollKey, setRollKey] = useState(0);
-  const [booted, setBooted] = useState(false);
-  const [spinning, setSpinning] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [boarding, setBoarding] = useState(false);
   const [muted, setMuted] = useState(() => { try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return false; } });
-  const [view, setView] = useState<'board' | 'tickets'>('board');
-  const [store, setStore] = useState(() => readCachedTickets());
-  const [kept, setKept] = useState(false);
   const [clock, setClock] = useState(() => new Date());
-  const [monthOpen, setMonthOpen] = useState(false);
+  const flip = useFlapSound(muted);
+  // The back gesture steps out of the terminal (straight away: the exit animation is for the close button)
+  useBackToClose(true, onClose);
+
   // When the window weather changes, name the place and sky on the glass for a moment
   const [skyNote, setSkyNote] = useState<string | null>(null);
   const skyKey = `${weatherCityEn || ''}|${weatherCode ?? ''}`;
@@ -168,41 +190,17 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
   useEffect(() => {
     if (firstSky.current) { firstSky.current = false; return; }
     if (weatherCode === undefined) return;
-    const label = getWeatherMeta(weatherCode, precipitationProb, weatherTemp).labelKo;
-    setSkyNote(`${weatherCityName || weatherCityEn || ''} · ${label}${weatherTemp !== undefined ? ` ${weatherTemp}°` : ''}`);
+    const meta = getWeatherMeta(weatherCode, precipitationProb, weatherTemp).labelKo;
+    setSkyNote(`${weatherCityName || weatherCityEn || ''} · ${meta}${weatherTemp !== undefined ? ` ${weatherTemp}°` : ''}`);
     const t = window.setTimeout(() => setSkyNote(null), 2800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skyKey]);
-  const monthRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-  // The month grid closes on an outside tap or Esc
-  useEffect(() => {
-    if (!monthOpen) return;
-    const onDown = (e: PointerEvent) => { const t = e.target as Node; if (!monthRef.current?.contains(t) && !gridRef.current?.contains(t)) setMonthOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setMonthOpen(false); } };
-    document.addEventListener('pointerdown', onDown);
-    window.addEventListener('keydown', onKey, true);
-    return () => { document.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey, true); };
-  }, [monthOpen]);
-  const flip = useFlapSound(muted);
-  // The back gesture steps out of the lobby (straight away: the exit animation is for the close button)
-  useBackToClose(true, onClose);
 
-  const pool = useMemo(() => candidates(filters), [filters]);
-  const { year, month } = targetMonth(filters);
-  const dailyClaimed = store.lastDaily === todayKey();
-  const thisYear = new Date().getFullYear();
-
-  // Places already kept in the pocket for the landed city
-  const pocketCount = useMemo(() => {
-    if (!city) return 0;
-    const names = [city.nameEn.toLowerCase(), city.nameKo];
-    return getSavedPockets().filter(p => {
-      const c = (p.city || '').toLowerCase();
-      return names.some(n => n && (c === n || c.includes(n)));
-    }).length;
-  }, [city]);
+  const tickets = store.items;
+  const ticket = tickets.find(t => t.id === selectedId) ?? tickets[0] ?? null;
+  const city = ticket ? ticketCity(ticket) : undefined;
+  const status = ticket ? ticketStatus(ticket) : null;
 
   const requestClose = useCallback(() => {
     if (prefersReducedMotion()) { onClose(); return; }
@@ -210,31 +208,16 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
     window.setTimeout(onClose, 420);
   }, [onClose]);
 
-  const land = useCallback((next: DestinationCity) => {
-    setCity(next);
-    setKept(false);
-    setSpinning(true);
+  const select = (t: DepartureTicket) => {
+    if (t.id === ticket?.id) return;
+    setSelectedId(t.id);
     setRollKey(k => k + 1);
-    window.setTimeout(() => setSpinning(false), prefersReducedMotion() ? 0 : 1900);
-  }, []);
+  };
 
-  const spin = useCallback(() => {
-    if (spinning) return;
-    if (!pool.length) { notify('조건에 맞는 출발편이 없습니다. 비행 시간이나 시기를 바꿔 보세요.'); return; }
-    let next = pool[Math.floor(Math.random() * pool.length)];
-    if (pool.length > 1) while (next.nameEn === city?.nameEn) next = pool[Math.floor(Math.random() * pool.length)];
-    land(next);
-  }, [spinning, pool, city, land]);
-
-  const build = useCallback((c: { countryEn: string; cityKo: string; cityEn: string; year: number; month: number }) => {
-    onClose();
-    onBuildTrip(c);
-  }, [onClose, onBuildTrip]);
-
-  // Arrival: the chime, then the board wakes up and rolls to WELCOME
+  // Arrival: the chime, then the board rolls to the ticket
   useEffect(() => {
     if (!muted) playChime();
-    const t = window.setTimeout(() => { setBooted(true); setRollKey(k => k + 1); }, prefersReducedMotion() ? 0 : 650);
+    const t = window.setTimeout(() => setRollKey(k => k + 1), prefersReducedMotion() ? 0 : 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -242,338 +225,210 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
   useEffect(() => { loadTickets().then(setStore).catch(() => {}); }, []);
   useEffect(() => { const t = setInterval(() => setClock(new Date()), 15000); return () => clearInterval(t); }, []);
   useEffect(() => { try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch {} }, [muted]);
-
-  // Keyboard: Esc closes, Space spins, Enter builds the landed trip
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const onControl = (e.target as HTMLElement)?.closest?.('button, input, select, textarea');
-      if (e.key === 'Escape') requestClose();
-      else if (e.key === ' ' && !onControl && view === 'board') { e.preventDefault(); spin(); }
-      else if (e.key === 'Enter' && !onControl && city && !spinning && view === 'board') build({ countryEn: city.countryEn, cityKo: city.nameKo, cityEn: city.nameEn, year, month });
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') requestClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [requestClose, spin, build, city, spinning, view, year, month]);
-
+  }, [requestClose]);
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  const persist = async (nextStore: typeof store) => {
-    setStore(nextStore);
-    try { await saveTickets(nextStore); } catch { notify('티켓 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'error'); }
+  const board = async () => {
+    if (!ticket?.plan || boarding) return;
+    const ok = await confirmDialog(`'${ticket.plan.title}' 여정을 만들까요? 탑승한 티켓은 목록에서 사라집니다.`, { title: 'BOARDING', confirmLabel: '탑승' });
+    if (!ok) return;
+    setBoarding(true);
+    try {
+      await onBoard(ticket);
+    } catch {
+      notify('여정을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+      setBoarding(false);
+      return;
+    }
+    // The journey exists now: the ticket has been used
+    await removeTicket(ticket.id).catch(() => {});
+    onClose();
   };
 
-  const claimDaily = async () => {
-    const pick = dailyPick(filters);
-    if (!pick || dailyClaimed) return;
-    land(pick);
-    await persist({ items: [makeTicket(pick, filters, true), ...store.items], lastDaily: todayKey() });
-    setKept(true);
-    notify(`오늘의 티켓: ${pick.nameKo}`, 'success');
+  const remove = async () => {
+    if (!ticket) return;
+    if (!(await confirmDialog(`${ticket.cityKo} 티켓을 삭제할까요?`, { title: 'DELETE TICKET', confirmLabel: '삭제' }))) return;
+    try {
+      setStore(await removeTicket(ticket.id));
+      setSelectedId(null);
+      setRollKey(k => k + 1);
+    } catch {
+      notify('티켓을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+    }
   };
 
-  const keep = async () => {
-    if (!city || kept) return;
-    await persist({ ...store, items: [makeTicket(city, filters), ...store.items] });
-    setKept(true);
-    notify('티켓을 보관했습니다.', 'success');
-  };
-
-  const removeTicket = async (t: DepartureTicket) => {
-    if (!(await confirmDialog(`${t.cityKo} 티켓을 삭제할까요?`))) return;
-    await persist({ ...store, items: store.items.filter(x => x.id !== t.id) });
-  };
-
-  // Departure month: from this month up to December three years ahead, picked by year then month
-  const monthIndex = (y: number, m: number) => y * 12 + (m - 1);
-  const firstIndex = monthIndex(thisYear, selectableMonths(thisYear)[0]);
-  const lastYear = thisYear + DEPART_YEARS_AHEAD;
-  const lastIndex = monthIndex(lastYear, 12);
-  const [gridYear, setGridYear] = useState(filters.year);
-  useEffect(() => { if (monthOpen) setGridYear(filters.year); }, [monthOpen, filters.year]);
-  // Best-season count per calendar month (it depends on the month, not the year)
-  const bestByMonth = useMemo(
-    () => MONTHS.map((_, i) => candidates({ ...filters, month: i + 1 }).filter(c => isBestSeason(c, i + 1)).length),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filters.stay, filters.flight],
-  );
-  const topBest = Math.max(1, ...bestByMonth);
-  const stepMonth = (dir: 1 | -1) => setFilters(f => {
-    const next = Math.min(lastIndex, Math.max(firstIndex, monthIndex(f.year, f.month) + dir));
-    return { ...f, year: Math.floor(next / 12), month: (next % 12) + 1 };
-  });
-
-  // Four other departures, reshuffled on every roll
-  const others = useMemo(() => {
-    const rest = pool.filter(c => c.nameEn !== city?.nameEn);
-    const start = rest.length ? (rollKey * 7) % rest.length : 0;
-    return [...rest.slice(start), ...rest.slice(0, start)].filter((_, i) => i % 3 === 0).slice(0, 4);
-  }, [pool, city, rollKey]);
-  const status = city ? (isBestSeason(city, month) ? 'BEST SEASON' : 'ON TIME') : booted ? 'BOARDING' : '';
-
-  // One filter = one bordered segmented control, so Stay / Flight / Departs read as three separate groups
-  const Segments = ({ label, icon: Icon, children }: { label: string; icon: React.ElementType; children: React.ReactNode }) => (
-    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" role="group" aria-label={label}>
-      <Icon className="hidden sm:block w-3.5 h-3.5 text-black/60 dark:text-white/60" aria-hidden />
-      <div className="flex h-7 sm:h-8 border border-black/30 dark:border-white/30 divide-x divide-black/15 dark:divide-white/15">
-        {children}
-      </div>
-    </div>
-  );
-  const Seg = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`tgl-press h-full px-1.5 sm:px-2.5 font-mono text-[11px] sm:text-meta uppercase tracking-wide sm:tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
-        active ? 'bg-[#0B0B0C] text-white dark:bg-[#F2F2EE] dark:text-black' : 'text-black/70 hover:bg-black/5 hover:text-black dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white'
-      }`}
-    >
-      {children}
-    </button>
-  );
-  const Label = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-    <span className={`font-mono text-[10px] sm:text-micro tracking-[0.14em] sm:tracking-[0.16em] uppercase text-black/60 dark:text-white/55 shrink-0 select-none ${className}`}>{children}</span>
-  );
+  const stops = ticket?.cities?.length ? ticket.cities : ticket ? [{ en: ticket.cityEn, ko: ticket.cityKo }] : [];
+  const destination = ticket ? (stops.length > 1 ? `${stops[0].en} +${stops.length - 1}` : ticket.cityEn) : 'WELCOME';
 
   return (
     <div
       role="dialog"
       data-bg-cover
       aria-label="공항 터미널"
-      className={`fixed inset-0 z-[190] bg-[#F2F2EE] text-[#0B0B0C] dark:bg-[#0B0B0C] dark:text-[#F2F2EE] transition-colors duration-700 overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
+      className={`fixed inset-0 z-[190] bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
     >
-      <div className="h-full flex flex-col" style={{ perspective: '1400px', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        {/* Everything above the lobby; scrolls on its own only on very short screens */}
-        <div className={`flex-none w-full max-w-5xl mx-auto px-3 sm:px-8 pt-2 sm:pt-4 flex flex-col gap-2 sm:gap-3 max-h-[calc(100%-120px)] overflow-y-auto hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
-          {/* Top bar */}
-          <div className="flex items-center justify-between gap-2 sm:gap-3 border-b border-black/15 dark:border-white/15 pb-1.5 sm:pb-2">
-            <div className="flex items-baseline gap-2 sm:gap-3">
-              <span className="font-sans font-extrabold text-base sm:text-xl tracking-tight">Terminal 1 <span className="text-black/40 dark:text-white/40 font-normal">·</span> Departures</span>
-              <span className="font-mono text-micro sm:text-meta text-black/60 dark:text-white/60 tabular-nums">ICN · {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <TerminalWeatherPicker name={weatherCityName} nameEn={weatherCityEn} temp={weatherTemp} code={weatherCode} pop={precipitationProb} />
-              <button type="button" onClick={() => setView(v => (v === 'board' ? 'tickets' : 'board'))} className="tgl-press h-7 sm:h-8 px-2 sm:px-2.5 inline-flex items-center gap-1 sm:gap-1.5 border border-black/25 hover:border-black dark:border-white/25 dark:hover:border-white font-mono text-[11px] sm:text-meta uppercase tracking-wider cursor-pointer" aria-label={view === 'board' ? '보관한 티켓' : '보드로 돌아가기'}>
-                <Ticket className="w-3.5 h-3.5" />
-                <span className="tabular-nums">{view === 'board' ? store.items.length : 'Board'}</span>
-              </button>
-              <button type="button" onClick={() => setMuted(m => !m)} className="tgl-press tap-target w-7 sm:w-8 h-7 sm:h-8 grid place-items-center border border-black/25 hover:border-black dark:border-white/25 dark:hover:border-white cursor-pointer" aria-label={muted ? '소리 켜기' : '소리 끄기'}>
-                {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-              </button>
-              <button type="button" onClick={requestClose} className="tgl-press tap-target w-7 sm:w-8 h-7 sm:h-8 grid place-items-center border border-black/25 hover:bg-black hover:text-white dark:border-white/25 dark:hover:bg-white dark:hover:text-black cursor-pointer" aria-label="닫기">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+      <div className="h-full flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        {/* Top bar */}
+        <div className="shrink-0 w-full max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-tight">공항 터미널</span>
+            <span className={`${label} ${muted} tabular-nums`}>Terminal 1 · ICN {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
           </div>
-
-          {view === 'board' ? (
-            <>
-              {/* Filters: strictly single line, no horizontal scroll, fit to container */}
-              <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-6 py-0.5 w-full">
-                <Segments label="체류 기간" icon={BedDouble}>
-                  <Seg active={filters.stay === 'short'} onClick={() => setFilters(f => ({ ...f, stay: 'short' }))}>2–3박</Seg>
-                  <Seg active={filters.stay === 'mid'} onClick={() => setFilters(f => ({ ...f, stay: 'mid' }))}>4–5박</Seg>
-                  <Seg active={filters.stay === 'long'} onClick={() => setFilters(f => ({ ...f, stay: 'long' }))}>6박+</Seg>
-                </Segments>
-                <Segments label="비행 시간" icon={Plane}>
-                  {FLIGHT_OPTIONS.map(o => (
-                    <Seg key={o.value} active={filters.flight === o.value} onClick={() => setFilters(f => ({ ...f, flight: o.value }))}>
-                      {o.value === '10+' ? (<><span className="sm:hidden">10H</span><span className="hidden sm:inline">10H+</span></>) : o.label}
-                    </Seg>
-                  ))}
-                </Segments>
-                <div className="relative flex items-center gap-1.5 sm:gap-2 shrink-0" ref={monthRef} role="group" aria-label="출발 시기">
-                  <CalendarDays className="hidden sm:block w-3.5 h-3.5 text-black/60 dark:text-white/60" aria-hidden />
-                  <div className="flex h-7 sm:h-8 border border-black/30 dark:border-white/30 divide-x divide-black/15 dark:divide-white/15">
-                    <button type="button" onClick={() => stepMonth(-1)} disabled={monthIndex(year, month) <= firstIndex} className="tgl-press hidden sm:grid w-7 place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 달">
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <button type="button" onClick={() => setMonthOpen(o => !o)} aria-expanded={monthOpen} aria-haspopup="dialog" className={`tgl-press h-full px-2 sm:px-2.5 inline-flex items-center gap-1 font-mono text-[11px] sm:text-meta tracking-wide tabular-nums cursor-pointer transition-colors ${monthOpen ? 'bg-[#0B0B0C] text-white dark:bg-[#F2F2EE] dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/10'}`} aria-label="출발 연월 선택">
-                      <CalendarDays className="sm:hidden w-3 h-3" aria-hidden />
-                      {MONTHS[month - 1]} <span className="sm:hidden">{String(year).slice(2)}</span><span className="hidden sm:inline">{year}</span>
-                    </button>
-                    <button type="button" onClick={() => stepMonth(1)} disabled={monthIndex(year, month) >= lastIndex} className="tgl-press hidden sm:grid w-7 place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 달">
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Year and month picker, anchored to Departs so the layout never shifts */}
-                  {monthOpen && (
-                    <div
-                      role="dialog"
-                      aria-label="출발 연월 선택"
-                      ref={gridRef}
-                      className="absolute z-50 top-full right-0 sm:left-0 sm:right-auto mt-1.5 w-[272px] sm:w-[312px] p-2.5 sm:p-3 bg-[#F2F2EE] dark:bg-[#161618] border border-black/20 dark:border-white/20 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150"
-                    >
-                      <div className="flex items-center justify-between mb-2.5">
-                        <div className="flex items-center border border-black/30 dark:border-white/30 divide-x divide-black/15 dark:divide-white/15 h-8">
-                          <button type="button" onClick={() => setGridYear(y => y - 1)} disabled={gridYear <= thisYear} className="tgl-press w-8 h-full grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="이전 해">
-                            <ChevronLeft className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="px-3 font-mono text-meta font-bold tabular-nums" aria-live="polite">{gridYear}</span>
-                          <button type="button" onClick={() => setGridYear(y => y + 1)} disabled={gridYear >= lastYear} className="tgl-press w-8 h-full grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-25 cursor-pointer disabled:cursor-not-allowed" aria-label="다음 해">
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        <span className="inline-flex items-center gap-1.5 font-mono text-micro text-black/60 dark:text-white/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />베스트 시즌
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-1">
-                        {MONTHS.map((label, i) => {
-                          const m = i + 1;
-                          const on = gridYear === filters.year && m === filters.month;
-                          const past = monthIndex(gridYear, m) < firstIndex;
-                          const best = bestByMonth[i];
-                          return (
-                            <button
-                              key={label}
-                              type="button"
-                              disabled={past}
-                              onClick={() => { setFilters(f => ({ ...f, year: gridYear, month: m })); setMonthOpen(false); }}
-                              aria-pressed={on}
-                              aria-label={`${gridYear}년 ${m}월${best ? `, 베스트 시즌 ${best}곳` : ''}`}
-                              className={`tgl-press relative h-9 sm:h-10 grid place-items-center font-mono text-micro sm:text-meta tracking-wider border transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
-                                on ? 'bg-[#0B0B0C] text-white border-[#0B0B0C] dark:bg-[#F2F2EE] dark:text-black dark:border-[#F2F2EE]' : 'border-black/15 hover:border-black dark:border-white/15 dark:hover:border-white'
-                              }`}
-                            >
-                              {label}
-                              {!past && best >= topBest * 0.25 && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500" style={{ opacity: 0.35 + 0.65 * (best / topBest) }} />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Board */}
-              <div className="dark relative border border-white/15 p-2.5 sm:p-4 flex flex-col gap-2 sm:gap-3 bg-[#101012] text-[#F2F2EE]">
-                <div className="flex flex-wrap items-end gap-x-3 sm:gap-x-4 gap-y-2 sm:gap-y-3">
-                  <div className="flex flex-col gap-0.5 sm:gap-1">
-                    <Label>Flight</Label>
-                    <FlapRow text={city ? flightNumber(city).replace(' ', '') : booted ? 'TG001' : ''} cells={5} rollKey={rollKey} size="md" onFlip={flip} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0 overflow-x-auto hide-scrollbar">
-                    <Label>Destination</Label>
-                    <FlapRow text={city ? city.nameEn : booted ? 'WELCOME' : ''} cells={12} rollKey={rollKey} size="lg" onFlip={flip} />
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-x-3 sm:gap-x-5 gap-y-1.5 sm:gap-y-2">
-                  <div className="flex flex-col gap-0.5 sm:gap-1">
-                    <Label>Time</Label>
-                    <FlapRow text={city ? formatHours(flightHours(city)).replace(/ /g, '') : ''} cells={6} rollKey={rollKey} size="md" onFlip={flip} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 sm:gap-1">
-                    <Label>Gate</Label>
-                    <FlapRow text={city ? gateFor(city) : ''} cells={3} rollKey={rollKey} size="md" onFlip={flip} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 sm:gap-1">
-                    <Label>Departs</Label>
-                    <FlapRow text={city || booted ? `${MONTHS[month - 1]} ${year}` : ''} cells={8} rollKey={rollKey} size="md" onFlip={flip} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 sm:gap-1">
-                    <Label>Status</Label>
-                    <FlapRow text={status} cells={11} rollKey={rollKey} size="md" onFlip={flip} tone={status === 'BEST SEASON' ? 'amber' : status === 'BOARDING' ? 'red' : 'ink'} />
-                  </div>
-                </div>
-
-                {/* Result: the city, its photo, and what is already in the pocket */}
-                <div className="h-9 sm:h-11 border-t border-white/10 pt-1 flex items-center">
-                  {city && !spinning ? (
-                    <div className="tgl-rise flex gap-2 sm:gap-3 items-center min-w-0">
-                      {city.coverImage && (
-                        <img src={getEffectiveImageUrl(city.coverImage)} alt={city.nameKo} loading="lazy" className="w-11 sm:w-14 h-8 sm:h-10 object-cover shrink-0" />
-                      )}
-                      <span className="text-sm sm:text-base font-extrabold tracking-tight shrink-0">{city.nameKo}</span>
-                      <span className="text-xs sm:text-sm text-white/65 truncate">{[city.countryKo, ...(city.iconicSpots || []).slice(0, 2)].join(' · ')}</span>
-                      {pocketCount > 0 && (
-                        <button type="button" onClick={() => { onClose(); onOpenPocket?.(); }} className="tgl-sweep shrink-0 font-mono text-micro sm:text-meta text-amber-300 cursor-pointer">
-                          포켓 {pocketCount}곳
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="font-mono text-micro sm:text-meta uppercase tracking-widest text-white/45">
-                      {spinning ? 'Now boarding…' : `${pool.length} destinations · Space to spin`}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions, then the other departures on one line */}
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <button type="button" onClick={spin} disabled={spinning} className="tgl-press h-8.5 sm:h-10 px-5 sm:px-7 bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs sm:text-sm uppercase tracking-[0.16em] sm:tracking-[0.2em] disabled:opacity-60 cursor-pointer">
-                  {city ? 'Spin again' : 'Spin'}
-                </button>
-                {!dailyClaimed && (
-                  <button type="button" onClick={claimDaily} disabled={spinning} className="tgl-press h-8.5 sm:h-10 px-3 sm:px-4 border border-amber-600/70 text-amber-700 dark:border-amber-400/70 dark:text-amber-300 hover:bg-amber-400 hover:text-black font-mono text-micro sm:text-meta font-bold uppercase tracking-wider transition-colors cursor-pointer">
-                    오늘의 티켓
-                  </button>
-                )}
-                {city && !spinning && (
-                  <>
-                    <NewTripButton size="lg" className="max-sm:h-9" onClick={() => build({ countryEn: city.countryEn, cityKo: city.nameKo, cityEn: city.nameEn, year, month })} />
-                    <button type="button" onClick={keep} disabled={kept} className="tgl-press h-8.5 sm:h-10 px-3 sm:px-4 border border-black/40 hover:border-black dark:border-white/40 dark:hover:border-white text-xs sm:text-sm disabled:opacity-60 cursor-pointer">
-                      {kept ? '보관됨' : '티켓 보관'}
-                    </button>
-                  </>
-                )}
-              </div>
-              {others.length > 0 && (
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 overflow-hidden whitespace-nowrap border-t border-black/10 dark:border-white/10 pt-1.5 sm:pt-2">
-                  <Label>Also</Label>
-                  {others.map((c, i) => (
-                    <button key={`${c.nameEn}-${rollKey}`} type="button" onClick={() => !spinning && land(c)} className="tgl-rise shrink-0 font-mono text-micro sm:text-meta uppercase tracking-wider text-black/75 hover:text-red-600 dark:text-white/75 dark:hover:text-red-400 cursor-pointer" style={{ '--i': i } as React.CSSProperties}>
-                      {c.nameEn} <span className={isBestSeason(c, month) ? 'text-amber-600 dark:text-amber-400' : 'text-black/50 dark:text-white/45'}>{formatHours(flightHours(c)).replace(' ', '')}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            /* Kept tickets */
-            <div className="flex flex-col gap-3 pb-2">
-              <Label>Kept tickets · {store.items.length}</Label>
-              {store.items.length === 0 ? (
-                <p className="text-black/60 dark:text-white/60 text-sm py-8 text-center">아직 보관한 티켓이 없습니다.</p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {store.items.map((t, i) => (
-                    <div key={t.id} className="tgl-rise relative bg-white border border-black/15 dark:border-transparent dark:bg-[#F2F2EE] text-black flex" style={{ '--i': i } as React.CSSProperties}>
-                      <div className="flex-1 p-4 flex flex-col gap-1 min-w-0">
-                        <span className="font-mono text-micro tracking-[0.16em] uppercase text-black/55">ICN → {t.flightNo} · Gate {t.gate}</span>
-                        <span className="font-sans font-extrabold text-2xl tracking-tight uppercase truncate">{t.cityEn}</span>
-                        <span className="text-sm text-black/65">{t.cityKo} · {t.countryKo}</span>
-                        <div className="flex gap-2 pt-2">
-                          <NewTripButton size="sm" onClick={() => build({ countryEn: t.countryEn, cityKo: t.cityKo, cityEn: t.cityEn, year: t.year, month: t.month })} />
-                          <button type="button" onClick={() => removeTicket(t)} className="tgl-press h-8 px-3 border border-black/25 text-meta cursor-pointer hover:border-black">삭제</button>
-                        </div>
-                      </div>
-                      {/* Stub */}
-                      <div className="w-20 border-l-2 border-dashed border-black/25 flex flex-col items-center justify-center gap-1 font-mono">
-                        <span className="text-lg font-bold">{MONTHS[t.month - 1]}</span>
-                        <span className="text-micro text-black/55 tabular-nums">{t.year}</span>
-                        {t.daily && <span className="mt-1 px-1.5 py-0.5 border border-red-600 text-red-600 text-micro font-bold">TODAY</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            <TerminalWeatherPicker name={weatherCityName} nameEn={weatherCityEn} temp={weatherTemp} code={weatherCode} pop={precipitationProb} />
+            <IconButton icon={muted ? VolumeX : Volume2} label={muted ? '소리 켜기' : '소리 끄기'} size="sm" onClick={() => setMuted(m => !m)} />
+            <IconButton icon={X} label="닫기" size="sm" onClick={requestClose} />
+          </div>
         </div>
 
-        {/* The lobby fills the rest of the screen: glass wall, planes, travelers */}
-        <div className="tgl-lobby-scene relative flex-1 min-h-[140px] sm:min-h-[180px] w-full overflow-hidden mt-1.5 sm:mt-3">
+        {/* Board, the ticket's actions, then every ticket */}
+        <div className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${leaving ? '' : 'tgl-board-in'}`}>
+          <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 pb-5 flex flex-col gap-4">
+            <section aria-label="출발 안내판" className="dark rounded-card bg-[#101012] text-[#F2F2EE] p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+              <div className="flex items-center justify-between">
+                <span className={`${label} text-white/55`}>Departures</span>
+                <span className={`${label} text-white/55 tabular-nums`}>{ticket ? `Ticket ${tickets.indexOf(ticket) + 1}/${tickets.length}` : 'No tickets'}</span>
+              </div>
+              <div className="flex flex-wrap items-end gap-x-3 sm:gap-x-4 gap-y-2">
+                <div className="flex flex-col gap-1">
+                  <span className={`${label} text-white/55`}>Flight</span>
+                  <FlapRow text={ticket ? ticket.flightNo.replace(' ', '') : 'TG000'} cells={5} rollKey={rollKey} onFlip={flip} />
+                </div>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className={`${label} text-white/55`}>Destination</span>
+                  <FlapRow text={destination} cells={11} rollKey={rollKey} size="lg" onFlip={flip} />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-2.5">
+                <div className="flex flex-col gap-1">
+                  <span className={`${label} text-white/55`}>Departs</span>
+                  <FlapRow text={ticket?.startDate ? boardDate(ticket.startDate) : ticket ? `${MONTHS[ticket.month - 1]} ${String(ticket.year).slice(2)}` : ''} cells={6} rollKey={rollKey} onFlip={flip} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={`${label} text-white/55`}>Return</span>
+                  <FlapRow text={boardDate(ticket?.endDate)} cells={6} rollKey={rollKey} onFlip={flip} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={`${label} text-white/55`}>Stay</span>
+                  <FlapRow text={ticket?.nights ? `${ticket.nights}N${ticket.nights + 1}D` : ''} cells={4} rollKey={rollKey} onFlip={flip} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={`${label} text-white/55`}>Pax</span>
+                  <FlapRow text={ticket?.members?.length ? String(ticket.members.length) : ''} cells={2} rollKey={rollKey} onFlip={flip} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={`${label} text-white/55`}>Gate</span>
+                  <FlapRow text={ticket?.gate || ''} cells={3} rollKey={rollKey} onFlip={flip} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={`${label} text-white/55`}>Status</span>
+                  <FlapRow text={status?.text || ''} cells={8} rollKey={rollKey} onFlip={flip} tone={status?.tone} />
+                </div>
+              </div>
+
+              {/* The trip in words: title, route, party */}
+              <div className="border-t border-white/10 pt-3 flex gap-3 items-center min-h-[52px]">
+                {ticket ? (
+                  <>
+                    {(ticket.plan?.coverImg || city?.coverImage) && (
+                      <img src={getEffectiveImageUrl(ticket.plan?.coverImg || city?.coverImage || '')} alt="" loading="lazy" className="w-14 h-14 rounded-thumb object-cover shrink-0" />
+                    )}
+                    <span key={ticket.id} className="tgl-rise flex-1 min-w-0 flex flex-col gap-0.5">
+                      <span className="text-[15px] sm:text-[17px] font-extrabold leading-snug line-clamp-2">{ticket.plan?.title || `${ticket.cityKo} 여행`}</span>
+                      <span className="text-[13px] text-white/65 truncate">
+                        서울 → {stops.map(s => s.ko).join(' → ')}
+                        {ticket.members?.length ? ` · ${ticket.members.join(', ')}` : ''}
+                      </span>
+                      <span className={`${label} text-white/45`}>{formatHours(ticket.hours)} · {ticket.countryKo}</span>
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[14px] text-white/65">New trip에서 여행을 계획하고 티켓을 발권하면 여기에 표시됩니다.</span>
+                )}
+              </div>
+            </section>
+
+            {/* This ticket's actions */}
+            {ticket ? (
+              <div className="flex items-center gap-2">
+                {ticket.plan ? (
+                  <button type="button" className="btn btn-accent btn-lg flex-1" onClick={board} disabled={boarding}>
+                    <Plane className="w-4 h-4 shrink-0 rotate-45" aria-hidden />
+                    {boarding ? '탑승 중' : '탑승 · 여정 만들기'}
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-accent btn-lg flex-1" onClick={() => onPlan(ticket)}>
+                    <Ticket className="w-4 h-4 shrink-0" aria-hidden />
+                    일정 정하고 발권
+                  </button>
+                )}
+                {ticket.plan && <IconButton icon={PencilLine} label="다시 계획하기" onClick={() => onPlan(ticket)} disabled={boarding} />}
+                <IconButton icon={Trash2} label="티켓 삭제" onClick={remove} disabled={boarding} />
+              </div>
+            ) : (
+              <button type="button" className="btn btn-accent btn-lg w-full" onClick={() => onPlan()}>
+                <Plus className="w-4 h-4 shrink-0" aria-hidden />
+                New trip
+              </button>
+            )}
+
+            {/* Every ticket; tapping one rolls the board over to it */}
+            {tickets.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className={`${label} ${muted}`}>My tickets · {tickets.length}</span>
+                  <button type="button" onClick={() => onPlan()} className={`inline-flex items-center gap-1 h-8 px-3 rounded-full text-meta font-bold ${muted} hover:text-ink dark:hover:text-ink-dark hover:bg-black/[0.05] dark:hover:bg-white/10`}>
+                    <Plus className="w-3.5 h-3.5" aria-hidden />새 티켓
+                  </button>
+                </div>
+                <ul className="-mx-4 sm:mx-0 px-4 sm:px-0 flex gap-2 overflow-x-auto hide-scrollbar snap-x" aria-label="보관한 티켓">
+                  {tickets.map(t => {
+                    const on = t.id === ticket?.id;
+                    const st = ticketStatus(t);
+                    const n = t.cities?.length || 1;
+                    return (
+                      <li key={t.id} className="snap-start shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => select(t)}
+                          aria-pressed={on}
+                          className={`w-[216px] h-full flex rounded-card overflow-hidden text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
+                            on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.03] dark:hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          <span className="flex-1 min-w-0 p-3.5 flex flex-col gap-0.5">
+                            <span className={`${label} ${on ? 'opacity-70' : muted}`}>{t.flightNo} · Gate {t.gate}</span>
+                            <span className="text-[19px] font-extrabold tracking-tight uppercase truncate">{t.cityEn}{n > 1 ? ` +${n - 1}` : ''}</span>
+                            <span className={`text-meta truncate ${on ? 'opacity-75' : muted}`}>{shortRange(t)}</span>
+                          </span>
+                          {/* Stub */}
+                          <span className={`w-14 border-l-[1.5px] border-dashed flex flex-col items-center justify-center gap-0.5 font-mono ${on ? 'border-white/25 dark:border-black/25' : 'border-black/15 dark:border-white/15'}`}>
+                            <span className="text-[13px] font-bold">{MONTHS[t.month - 1]}</span>
+                            <span className={`text-micro font-bold ${st.tone === 'amber' ? 'text-amber-600 dark:text-amber-400' : st.tone === 'red' ? 'text-red-600 dark:text-red-400' : on ? 'opacity-70' : muted}`}>{t.startDate ? st.text : 'TBD'}</span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* The lobby below: glass wall, planes, travelers */}
+        <div className="tgl-lobby-scene relative shrink-0 w-full h-[20dvh] min-h-[110px] max-h-[220px] overflow-hidden">
           <LobbyScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
           {skyNote && (
-            <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider backdrop-blur-sm pointer-events-none">
+            <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
               {skyNote}
             </div>

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Compass, Sun, Moon } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
@@ -17,6 +17,7 @@ import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
 import { FeedbackHost } from './components/FeedbackHost';
+import { notify } from './utils/feedback';
 
 
 // Lazy loaded secondary pages & modals with auto retry on reconnect
@@ -50,7 +51,7 @@ const RemixSheet = lazyWithRetry(() => import('./components/RemixSheet').then(m 
 // Intro 2.0 (Three.js) loads only when opened
 const IntroView = lazyWithRetry(() => import('./intro/IntroView').then(m => ({ default: m.IntroView })));
 
-// A departure date for the Trip Guide: a week out this month, otherwise the first Friday of the month
+// A departure date for a ticket kept with only a month: a week out this month, otherwise the first Friday
 function departureDate(year: number, month: number): string {
   const now = new Date();
   let d = new Date(year, month - 1, 1);
@@ -70,11 +71,11 @@ function App() {
     isAuthReady, superAdminEmail, magazineMoments, magazineSections, homeMagazineSectionId,
     homeMagazineLimit, magazineHubConfig, archiveHubConfig, showSettings, setShowSettings,
     isAuthModalOpen, setIsAuthModalOpen, isShareMode, isManageModalOpen, setIsManageModalOpen,
-    createCountryInitial, createCityInitial, createDateInitial, mapBuilderRequested, authModalMode,
+    authModalMode,
     setAuthModalMode, isSigningUpRef, globalWeatherData, globalWeatherCity, isGlobalWeatherBgEnabled, ambienceOverride,
     trips, setTrips, plans, setPlans, trashedJourneys, trashedSections, selectedTagFilter, dbError,
-    tripsLoaded, plansLoaded, setIsMapBuilderActive, pendingLeaveBuilderModal,
-    setPendingLeaveBuilderModal, timelineData, setTimelineData, flightsByTrip, staysByTrip,
+    tripsLoaded, plansLoaded,
+    timelineData, setTimelineData, flightsByTrip, staysByTrip,
     transitByTrip, homeTitle, homeSubtitle, heroJourneyIds, editingTripId, setEditingTripId,
     heroMediaType, heroSlideDuration, heroAutoSlide, marqueeShow, marqueeMessage, marqueeSpeed,
     homeGradientEnabled, homeGradientFrom, homeGradientTo, landingHeroImage, landingHeroMedia,
@@ -87,8 +88,8 @@ function App() {
     handleFlightHalfway, handleFlightComplete, handleSearchResultClick, handleMoveToArchive,
     handleMoveToPlans, handleCloneJourney, handleSaveSettings, handleSaveMagazineMoments,
     handleSaveMagazineHubConfig, handleSaveArchiveHubConfig, handleSaveMagazineSections,
-    handleUpdateMagazineSections, handleSaveBgmSettings, handleEditTripSave, handleAddArchive,
-    handleCreateTripForCountry, openMapBuilder, newTripPrefill, setNewTripPrefill, handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney,
+    handleUpdateMagazineSections, handleSaveBgmSettings, handleEditTripSave,
+    handleCreateTripForCountry, newTripPrefill, setNewTripPrefill, handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney,
     handleConfirmDeleteJourney, handleRestoreJourney, handlePermanentDeleteJourney,
     handleDeleteMagazineSection, handleRestoreMagazineSection, handlePermanentDeleteMagazineSection,
     handleBatchPermanentDelete, activeFlights, activeStays, activeTransits, existingTags,
@@ -102,6 +103,11 @@ function App() {
   });
 
   const [isDepartureOpen, setIsDepartureOpen] = useState(false);
+  // The ticket the terminal opens on (just issued from the New trip sheet)
+  const [departureTicketId, setDepartureTicketId] = useState<string | undefined>(undefined);
+  const issuedTicketRef = useRef<string | null>(null);
+  // The sheet was opened from the terminal: closing it walks back there
+  const backToTerminalRef = useRef<{ ticketId?: string } | null>(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
@@ -129,7 +135,7 @@ function App() {
     if (isIntroOpen && uid) setDoc(doc(db, 'users', uid, 'settings', 'intro'), { seenAt: Date.now(), watched: true }, { merge: true }).catch(() => {});
   }, [isIntroOpen]);
   useEffect(() => {
-    const openDeparture = () => setIsDepartureOpen(true);
+    const openDeparture = () => { setDepartureTicketId(undefined); setIsDepartureOpen(true); };
     const openWallet = () => setIsWalletOpen(true);
     const togglePalette = () => setIsPaletteOpen(v => !v);
     const openRemixSheet = (e: Event) => { const id = (e as CustomEvent<number>).detail; if (typeof id === 'number') setRemixSourceId(id); };
@@ -374,7 +380,7 @@ function App() {
                     trips={trips} 
                     plans={plans} 
                     onNavigate={navigateTo} 
-                    onAddArchive={handleAddArchive}
+                    onAddArchive={() => handleCreateTripForCountry('')}
                     isLoggedIn={isLoggedIn}
                     onDeleteTrip={handleDeleteJourney}
                     onEditTrip={(id) => setEditingTripId(id)}
@@ -403,12 +409,10 @@ function App() {
                     onCreateTripForCountry={handleCreateTripForCountry}
                     isDarkMode={isDarkMode}
                     isAdmin={isAdmin}
-                    onSaveTrip={handleCreateJourney}
-                    initialBuilderOpen={mapBuilderRequested}
-                    initialBuilderCountry={createCountryInitial}
-                    initialBuilderCity={createCityInitial}
-                    initialBuilderDate={createDateInitial}
-                    onBuilderStateChange={setIsMapBuilderActive}
+                    onStartNewTrip={(country, cities) => {
+                      if (!isLoggedIn) { notify('로그인 후 이용 가능합니다.'); return; }
+                      setNewTripPrefill({ country: country || undefined, city: cities[0], cities });
+                    }}
                     currentUserProfile={currentUserProfile}
                   />
                 </div>
@@ -713,25 +717,6 @@ function App() {
             onCancel={() => setJourneyDeleteConfirm({ isOpen: false, tripId: null, title: '' })}
           />
 
-          {/* Leave Trip Builder Swiss Minimal Confirmation Modal */}
-          <ConfirmModal
-            isOpen={pendingLeaveBuilderModal.isOpen}
-            title="LEAVE BUILDER"
-            message={`작성 중인 여정 설정이 저장되지 않을 수 있습니다.\n정말 다른 화면으로 이동하시겠습니까?`}
-            confirmLabel="Leave"
-            cancelLabel="Continue"
-            confirmVariant="danger"
-            iconType="alert"
-            onConfirm={() => {
-              const { targetView, targetTripId, pushHistory, tagFilter } = pendingLeaveBuilderModal;
-              setIsMapBuilderActive(false);
-              setPendingLeaveBuilderModal({ isOpen: false });
-              if (targetView) {
-                navigateTo(targetView, targetTripId, pushHistory, tagFilter || null, true);
-              }
-            }}
-            onCancel={() => setPendingLeaveBuilderModal({ isOpen: false })}
-          />
         </Suspense>
 
         {/* Phone tab bar across hubs (v1.3.5). On the map it steps aside while a sheet is open; detail and manage keep their own bottom controls */}
@@ -833,10 +818,29 @@ function App() {
               prefill={newTripPrefill}
               defaultMember={currentUserProfile?.firstName || currentUserProfile?.username || auth.currentUser?.email?.split('@')[0] || '나'}
               recentCities={[...plans, ...trips].flatMap(j => (j.locations?.length ? j.locations.map(l => l.name) : [j.locationStr])).filter(Boolean).slice(0, 12)}
-              onClose={() => setNewTripPrefill(null)}
-              onCreate={(p) => handleCreateJourney(p.title, p.dateRange, p.location, p.tags, p.lat, p.lng, p.members, p.locations, 'NEW', p.country, p.coverImg, p.timeline)}
-              onSurprise={openDepartureBoard}
-              onOpenMapBuilder={(country, city, date) => openMapBuilder(country, city, date)}
+              onClose={() => {
+                setNewTripPrefill(null);
+                // A ticket was just issued: walk into the terminal with it
+                const back = backToTerminalRef.current;
+                backToTerminalRef.current = null;
+                if (issuedTicketRef.current || back) {
+                  setDepartureTicketId(issuedTicketRef.current ?? back?.ticketId);
+                  issuedTicketRef.current = null;
+                  setIsDepartureOpen(true);
+                }
+              }}
+              onIssue={async (plan, info) => {
+                // Issued, not created yet: the ticket waits in the airport terminal until boarding
+                const { issueTicket, putTicket } = await import('./components/departure/departureData');
+                const ticket = issueTicket({ ...info, plan });
+                try {
+                  await putTicket(ticket, newTripPrefill.replaceTicketId);
+                } catch {
+                  notify('티켓을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+                  throw new Error('ticket not saved');
+                }
+                issuedTicketRef.current = ticket.id;
+              }}
             />
           </Suspense>
           </LayerBoundary>
@@ -851,8 +855,24 @@ function App() {
           <Suspense fallback={null}>
             <DepartureBoard
               onClose={() => setIsDepartureOpen(false)}
-              onBuildTrip={({ countryEn, cityKo, year, month }) => { setIsDepartureOpen(false); handleCreateTripForCountry(countryEn, cityKo, departureDate(year, month)); }}
-              onOpenPocket={() => navigateTo('pocket')}
+              initialTicketId={departureTicketId}
+              onBoard={async (t) => {
+                const p = t.plan!;
+                await handleCreateJourney(p.title, p.dateRange, p.location, p.tags, p.lat, p.lng, p.members, p.locations, 'NEW', p.country, p.coverImg, p.timeline, 'plan');
+              }}
+              onPlan={(t) => {
+                setIsDepartureOpen(false);
+                backToTerminalRef.current = { ticketId: t?.id };
+                if (!t) { handleCreateTripForCountry(''); return; }
+                if (!isLoggedIn) return;
+                setNewTripPrefill({
+                  country: t.countryEn,
+                  city: t.cityEn,
+                  cities: t.cities?.map(c => c.en),
+                  date: t.startDate ?? departureDate(t.year, t.month),
+                  replaceTicketId: t.id,
+                });
+              }}
               isDarkMode={isDarkMode}
               weatherCode={ambienceOverride?.weatherCode ?? globalWeatherData?.weatherCode}
               weatherCityName={globalWeatherCity?.name}

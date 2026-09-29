@@ -5,7 +5,6 @@ import { db } from '../../firebase';
 import { Trip, Plan, UserProfile } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../../components/SummaryView';
-import { TripBuilderPanel } from '../../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../../utils/weatherApi';
 import { resolveMarkerOverlaps, clusterByPixel } from '../../utils/mapMarkerOverlap';
@@ -26,12 +25,6 @@ export function MapTopBar({ s }: { s: MapHubState }) {
     onCreateTripForCountry,
     isDarkMode,
     isAdmin,
-    onSaveTrip,
-    initialBuilderOpen,
-    initialBuilderCountry,
-    initialBuilderCity,
-    initialBuilderDate,
-    onBuilderStateChange,
     currentUserProfile,
     mapContainerRef,
     mapRef,
@@ -58,26 +51,6 @@ export function MapTopBar({ s }: { s: MapHubState }) {
     previewTimeLabel,
     formattedClockTime,
     formattedClockShort,
-    isBuilderOpen,
-    setIsBuilderOpen,
-    builderCountry,
-    setBuilderCountry,
-    builderCountryCode,
-    setBuilderCountryCode,
-    builderCity,
-    setBuilderCity,
-    builderCities,
-    setBuilderCities,
-    builderDate,
-    setBuilderDate,
-    builderRouteLayerRef,
-    builderMarkersRef,
-    builderActiveTargetRef,
-    builderTargetName,
-    setBuilderTargetName,
-    isMapDivergedFromBuilder,
-    setIsMapDivergedFromBuilder,
-    isBuilderOpenRef,
     searchQuery,
     setSearchQuery,
     isSearchExpanded,
@@ -99,9 +72,10 @@ export function MapTopBar({ s }: { s: MapHubState }) {
     destCityMarkersRef,
     countryCityDotsRef,
     toggleDestCity,
+    isMultiDest,
+    toggleMultiDest,
+    handleStartNewTrip,
     toggleDestCityRef,
-    requestChangeBuilderCity,
-    requestChangeBuilderCityRef,
     isFlyingToCountry,
     setIsFlyingToCountry,
     isFlyingToCountryRef,
@@ -166,11 +140,6 @@ export function MapTopBar({ s }: { s: MapHubState }) {
     filteredCountries,
     wishlistCountriesData,
     isCurrentCountryFavorite,
-    handleOpenTripBuilder,
-    handleReCenterBuilderTarget,
-    handleCloseTripBuilder,
-    handleBuilderFocusChange,
-    handleCreateJourneyFromPanel,
   } = s;
 
   return (
@@ -368,32 +337,17 @@ export function MapTopBar({ s }: { s: MapHubState }) {
           onOpenPlaces={() => setIsPlaceListModalOpen(true)}
         />
 
-        {/* Trip builder and re-center stay one tap away */}
-        <div className="flex items-stretch h-8 sm:h-9 border border-black/20 dark:border-white/20 bg-surface/95 dark:bg-surface-dark/95 shadow-2xl divide-x divide-black/15 dark:divide-white/15 z-10 shrink-0">
-          <button
-            type="button"
-            onClick={() => { if (isBuilderOpen) handleCloseTripBuilder(); else handleOpenTripBuilder(); }}
-            className={`h-full px-2.5 sm:px-3 text-xs font-mono font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
-              isBuilderOpen
-                ? 'bg-red-600 text-white dark:bg-red-500 dark:text-black'
-                : 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:opacity-85'
-            }`}
-            title={isBuilderOpen ? "CLOSE TRIP BUILDER" : "CREATE NEW TRIP"}
-          >
-            <Plus className={`w-3.5 h-3.5 ${isBuilderOpen ? 'rotate-45' : ''} transition-transform`} />
-            <span className="hidden sm:inline">TRIP</span>
-          </button>
-          {isBuilderOpen && builderTargetName && (
-            <button
-              type="button"
-              onClick={handleReCenterBuilderTarget}
-              className="tap-target h-full px-2.5 sm:px-3 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
-              title={`RE-CENTER TO: ${builderTargetName}`}
-            >
-              <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-            </button>
-          )}
-        </div>
+        {/* New trip: the same sheet as everywhere, starting with the country and cities picked here */}
+        <button
+          type="button"
+          onClick={() => handleStartNewTrip(selectedCountry?.name, selectedCountry ? selectedDestCities : [])}
+          className="h-8 sm:h-9 px-3 sm:px-3.5 rounded-full bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-2xl text-xs font-bold flex items-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shrink-0 z-10"
+          title="새 여행"
+          aria-label="새 여행"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">New trip</span>
+        </button>
 
         {/* Real-time Clock & Day/Night Shade Toggle Pill Widget (Native App Pill Style) */}
         <div className="flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full border border-black/20 dark:border-white/20 bg-surface/95 dark:bg-surface-dark/95 shadow-2xl z-10 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0 transition">

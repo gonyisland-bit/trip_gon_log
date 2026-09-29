@@ -59,7 +59,7 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
         aria-expanded={open}
         aria-haspopup="listbox"
         title="창밖 날씨 위치"
-        className="tgl-press h-7 sm:h-8 px-2 sm:px-2.5 inline-flex items-center gap-1 sm:gap-1.5 border border-black/25 hover:border-black dark:border-white/25 dark:hover:border-white font-mono text-[11px] sm:text-meta cursor-pointer"
+        className="tgl-press h-9 px-3 inline-flex items-center gap-1.5 rounded-full bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] font-mono text-[11px] sm:text-meta cursor-pointer"
       >
         {Icon && <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
         {temp !== undefined && <span className="tabular-nums font-bold">{temp}°</span>}
@@ -67,7 +67,7 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
         <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div role="listbox" aria-label="창밖 날씨 위치" className="absolute right-0 top-full mt-1.5 z-40 w-60 max-h-80 overflow-y-auto overscroll-contain bg-[#F2F2EE] dark:bg-[#161618] border border-black/20 dark:border-white/20 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div role="listbox" aria-label="창밖 날씨 위치" className="absolute right-0 top-full mt-1.5 z-40 w-60 max-h-80 overflow-y-auto overscroll-contain rounded-card bg-surface dark:bg-surface-dark shadow-[0_12px_32px_rgba(0,0,0,0.16)] py-1 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="px-3 py-2 border-b border-black/10 dark:border-white/10 font-mono text-micro uppercase tracking-[0.16em] text-black/60 dark:text-white/60">Window weather</div>
           <CurrentLocationRow selected={nameEn === CURRENT_LOCATION_EN} onLocated={pick} />
           {cities.map(c => {

@@ -1,18 +1,27 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, Plane, X } from 'lucide-react';
+import { ChevronLeft, Plane, Ticket, X } from 'lucide-react';
 import { Sheet, useSheetClose } from '../Sheet';
 import { IconButton } from '../ui/IconButton';
-import { NewTripButton } from '../NewTripButton';
 import { confirmDialog } from '../../utils/feedback';
 import { NewTripCreatePayload, NewTripDraft, NewTripPrefill, NewTripStep, useNewTripDraft } from './useNewTripDraft';
 import { StepPreview, StepWhen, StepWhere, StepWho } from './NewTripSteps';
 import { SavedNewTripDraft, clearNewTripDraft, loadNewTripDraft } from './newTripDraftStore';
-import { findCityByNameOrAlias, findCountryByNameOrAlias } from '../../data/worldDestinations';
+import { DestinationCity, findCityByNameOrAlias, findCountryByNameOrAlias } from '../../data/worldDestinations';
 import { prefersReducedMotion } from '../../motion';
 
-// New trip (v1.3.5 P3, spec 3.2): the one way to start a trip, from anywhere.
-// Four steps in one sheet — where, when, who & style, preview — then Create trip.
+// New trip (spec 3.2): the one way to start a trip, from anywhere (menus, map, calendar, pocket).
+// Four steps in one sheet — where, when, who & style, preview — then the ticket is issued and the
+// airport terminal opens on it; boarding there creates the journey.
 // Phones: a full-height bottom sheet. Desktop: a centred dialog.
+
+/** What the ticket shows on the terminal board */
+export interface NewTripTicketInfo {
+  cities: DestinationCity[];
+  startDate: string;
+  endDate: string;
+  nights: number;
+  members: string[];
+}
 
 interface NewTripSheetProps {
   prefill: NewTripPrefill;
@@ -20,11 +29,8 @@ interface NewTripSheetProps {
   /** Cities of past trips, for quick picks */
   recentCities: string[];
   onClose: () => void;
-  onCreate: (payload: NewTripCreatePayload) => Promise<void> | void;
-  /** Surprise: pick a destination in the airport terminal (its result reopens this sheet) */
-  onSurprise: () => void;
-  /** The map's Trip Guide, for multi-city and template trips */
-  onOpenMapBuilder: (country: string, city: string, date: string) => void;
+  /** Saves the ticket and opens the terminal on it */
+  onIssue: (payload: NewTripCreatePayload, info: NewTripTicketInfo) => Promise<void> | void;
 }
 
 const STEP_LABELS = ['어디로', '언제', '누구와', '미리보기'];
@@ -46,7 +52,7 @@ export function NewTripSheet(props: NewTripSheetProps) {
   );
 }
 
-function SheetBody({ d, busy, setBusy, recentCities, onCreate, onSurprise, onOpenMapBuilder, onClose }: NewTripSheetProps & {
+function SheetBody({ d, busy, setBusy, recentCities, onIssue, onClose }: NewTripSheetProps & {
   d: NewTripDraft; busy: boolean; setBusy: (b: boolean) => void;
 }) {
   const close = useSheetClose();
@@ -69,30 +75,30 @@ function SheetBody({ d, busy, setBusy, recentCities, onCreate, onSurprise, onOpe
     document.querySelector('[data-newtrip-scroll]')?.scrollTo({ top: 0 });
   };
 
-  const create = async () => {
+  const issue = async () => {
     const payload = d.buildPayload();
-    if (!payload) return;
-    const ok = await confirmDialog(`'${payload.title}' 여정을 만들까요?`, { title: 'CREATE TRIP', confirmLabel: 'Create trip' });
+    const p = d.selected;
+    if (!payload || !p) return;
+    const ok = await confirmDialog(`'${payload.title}' 티켓을 발권할까요? 공항 터미널에서 탑승하면 여정이 만들어집니다.`, { title: 'ISSUE TICKET', confirmLabel: '발권' });
     if (!ok) return;
     setBusy(true);
-    // Boarding pass while the trip is saved; at least a beat so it reads, skipped for reduced motion
+    const cities = d.allCities.length ? d.allCities : [p.cityObj];
+    // Boarding pass while the ticket is saved; at least a beat so it reads, skipped for reduced motion
     const reduced = prefersReducedMotion();
-    if (!reduced) setPassing({ title: payload.title, city: payload.location, dates: payload.dateRange });
+    if (!reduced) setPassing({ title: payload.title, city: cities.map(c => c.nameKo).join(' · '), dates: payload.dateRange });
     try {
-      await Promise.all([onCreate(payload), new Promise(r => setTimeout(r, reduced ? 0 : 1400))]);
+      await Promise.all([
+        onIssue(payload, { cities, startDate: p.startDate, endDate: p.endDate, nights: p.durationDays, members: payload.members }),
+        new Promise(r => setTimeout(r, reduced ? 0 : 1200)),
+      ]);
       clearNewTripDraft();
       onClose();
+    } catch {
+      // Not saved (the caller has said why): the sheet stays open to try again
     } finally {
       setBusy(false);
       setPassing(null);
     }
-  };
-
-  // Leaving for another screen: skip the close confirmation, nothing is lost that the target does not carry
-  const surprise = () => { onClose(); onSurprise(); };
-  const mapBuilder = () => {
-    onClose();
-    onOpenMapBuilder(d.country?.nameEn || d.city?.countryEn || '', d.city?.nameKo || '', d.startDate);
   };
 
   return (
@@ -125,7 +131,6 @@ function SheetBody({ d, busy, setBusy, recentCities, onCreate, onSurprise, onOpe
           <StepWhere
             d={d}
             recentCities={recentCities}
-            onSurprise={surprise}
             saved={saved && savedLabel && !d.city && !d.country ? { label: savedLabel, step: saved.step } : null}
             onResume={() => { if (saved) d.resume(saved); setSaved(null); }}
             onDiscard={() => { clearNewTripDraft(); setSaved(null); }}
@@ -133,7 +138,7 @@ function SheetBody({ d, busy, setBusy, recentCities, onCreate, onSurprise, onOpe
         )}
         {d.step === 1 && <StepWhen d={d} />}
         {d.step === 2 && <StepWho d={d} />}
-        {d.step === 3 && <StepPreview d={d} onOpenMapBuilder={mapBuilder} />}
+        {d.step === 3 && <StepPreview d={d} />}
       </div>
 
       {passing && <BoardingPass {...passing} />}
@@ -141,7 +146,10 @@ function SheetBody({ d, busy, setBusy, recentCities, onCreate, onSurprise, onOpe
       {/* Bottom: always in reach */}
       <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-black/[0.06] dark:border-white/10 flex gap-2">
         {last ? (
-          <NewTripButton kind="create" size="lg" block onClick={create} disabled={!d.canNext || busy} />
+          <button type="button" className="btn btn-accent btn-lg w-full" onClick={issue} disabled={!d.canNext || busy}>
+            <Ticket className="w-4 h-4 shrink-0" aria-hidden />
+            티켓 발권
+          </button>
         ) : (
           <>
             {d.step > 0 && (
@@ -182,7 +190,7 @@ function BoardingPass({ title, city, dates }: { title: string; city: string; dat
           <span className="font-mono text-micro uppercase tracking-wider text-black/60 dark:text-white/60">{dates}</span>
         </div>
       </div>
-      <span className="sr-only">여정을 만드는 중</span>
+      <span className="sr-only">티켓을 발권하는 중</span>
     </div>
   );
 }
