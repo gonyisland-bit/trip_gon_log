@@ -25,6 +25,7 @@ import {
   Eye,
   EyeOff,
   ListMusic,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   bgmPlayer,
@@ -102,6 +103,10 @@ export function Lightbox({
   const [isBgmPlaying, setIsBgmPlaying] = useState(() => bgmPlayer.isPlaying());
   const [currentBgmTrack, setCurrentBgmTrack] = useState<BgmTrack | null>(() => bgmPlayer.getCurrentTrack());
   const [isTrackListOpen, setIsTrackListOpen] = useState(false);
+  // Phones: speed, music and caption details live in one panel that only opens on request
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsOpenRef = useRef(false);
+  settingsOpenRef.current = isSettingsOpen;
   const [isBgmShuffle, setIsBgmShuffle] = useState(() => bgmPlayer.isShuffle());
   const bgmPopoverRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +164,8 @@ export function Lightbox({
     setIsBgmShuffle(next);
   }, []);
 
+  useEffect(() => { if (!isSlideshow) setIsSettingsOpen(false); }, [isSlideshow]);
+
   const handleChangeInterval = useCallback((newInterval: number) => {
     setSlideshowInterval(newInterval);
     saveStoredSlideshowInterval(newInterval);
@@ -169,7 +176,7 @@ export function Lightbox({
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     if (isSlideshow && !isPaused) {
       controlsTimeoutRef.current = setTimeout(() => {
-        setIsControlsVisible(false);
+        if (!settingsOpenRef.current) setIsControlsVisible(false);
       }, 2500);
     }
   }, [isSlideshow, isPaused]);
@@ -1085,7 +1092,7 @@ export function Lightbox({
                     key={item.val}
                     type="button"
                     onClick={() => handleChangeInterval(item.val)}
-                    className={`px-1.5 py-0.5 font-mono text-micro uppercase transition-all rounded-xs cursor-pointer ${
+                    className={`px-3 py-1.5 sm:px-1.5 sm:py-0.5 font-mono text-micro uppercase transition-all rounded-xs cursor-pointer ${
                       slideshowInterval === item.val
                         ? 'bg-red-500 text-white font-bold shadow-xs'
                         : 'text-white/60 hover:text-white'
@@ -1274,34 +1281,92 @@ export function Lightbox({
                 isControlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
               }`}
             >
-              <div className="flex items-center justify-center gap-4">
-                <button onClick={handlePrev} className="tap-target w-11 h-11 rounded-full bg-white/10 text-white grid place-items-center" aria-label="이전">
-                  <ChevronLeft className="w-5 h-5" />
+              {/* Details panel: only when asked for */}
+              {isSettingsOpen && (
+                <div className="flex flex-col gap-3 p-3 bg-black/85 backdrop-blur-md border border-white/20 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-micro uppercase tracking-widest text-white/60">전환 시간</span>
+                    {renderSpeed()}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={handleToggleMute} className="tap-target w-9 h-9 grid place-items-center bg-white/10 text-white shrink-0" aria-label={volume === 0 ? '음소거 해제' : '음소거'}>
+                      {volume === 0 ? <VolumeX className="w-4 h-4 opacity-60" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+                    <input
+                      type="range" min={0} max={100} value={volume}
+                      onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                      className="flex-1 min-w-0 accent-red-500"
+                      aria-label="볼륨"
+                    />
+                    <span className="w-9 text-right font-mono text-micro font-bold text-white/80 tabular-nums shrink-0">{volume}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setIsTrackListOpen(prev => !prev)} className={`flex-1 min-w-0 h-9 px-3 flex items-center gap-2 bg-white/10 text-left ${isBgmPlaying ? 'text-red-400' : 'text-white/70'}`}>
+                      <ListMusic className="w-4 h-4 shrink-0" />
+                      <span className="truncate text-xs font-bold">{currentBgmTrack?.title || (isBgmPlaying ? 'BGM ON' : 'BGM OFF')}</span>
+                    </button>
+                    <button type="button" onClick={handleToggleShuffle} className={`tap-target w-9 h-9 grid place-items-center shrink-0 ${isBgmShuffle ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`} aria-label={isBgmShuffle ? '셔플 끄기' : '셔플 켜기'}>
+                      <Shuffle className="w-4 h-4" />
+                    </button>
+                    <button type="button" onClick={() => bgmPlayer.next()} className="tap-target w-9 h-9 grid place-items-center bg-white/10 text-white shrink-0" aria-label="다음 곡">
+                      <SkipForward className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {isTrackListOpen && (
+                    <div className="max-h-36 overflow-y-auto overscroll-contain border border-white/15">
+                      {bgmPlayer.getPlayableTracks().length === 0 ? (
+                        <div className="p-3 text-center text-xs text-white/60 font-mono">재생 가능한 음원이 없습니다</div>
+                      ) : bgmPlayer.getPlayableTracks().map((track, idx) => {
+                        const on = currentBgmTrack?.id === track.id;
+                        return (
+                          <button key={track.id} type="button" onClick={() => { bgmPlayer.playTrackById(track.id); setIsTrackListOpen(false); }}
+                            className={`w-full text-left px-3 py-2 flex items-center justify-between text-xs font-mono ${on ? 'bg-red-500/20 text-red-400 font-bold' : 'text-white/80'}`}>
+                            <span className="truncate pr-2"><span className="opacity-40">#{idx + 1}</span> {track.title}</span>
+                            {on && <Check className="w-3.5 h-3.5 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setIsCleanView((prev) => !prev)} className={`flex-1 h-9 px-3 flex items-center justify-center gap-2 text-xs font-bold ${isCleanView ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`}>
+                      {isCleanView ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      <span>{isCleanView ? '자막 보이기' : '자막 숨기기'}</span>
+                    </button>
+                    <button type="button" onClick={handleStopSlideshow} className="flex-1 h-9 px-3 flex items-center justify-center gap-2 bg-white/10 text-white text-xs font-bold">
+                      <SkipBack className="w-4 h-4" />
+                      <span>갤러리로</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Everyday row: sound, previous, play, next, details */}
+              <div className="flex items-center justify-between gap-3">
+                <button type="button" onClick={handleToggleMute} className={`tap-target w-11 h-11 rounded-full grid place-items-center ${volume > 0 ? 'bg-white/10 text-red-400' : 'bg-white/10 text-white/60'}`} aria-label={volume === 0 ? '소리 켜기' : '소리 끄기'}>
+                  {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                 </button>
-                <button onClick={handleTogglePause} className="tap-target w-12 h-12 rounded-full bg-white text-black grid place-items-center" aria-label={isPaused ? '재생' : '일시정지'}>
-                  {isPaused ? <Play className="w-5 h-5 fill-current translate-x-[1px]" /> : <Pause className="w-5 h-5" />}
-                </button>
-                <button onClick={handleNext} className="tap-target w-11 h-11 rounded-full bg-white/10 text-white grid place-items-center" aria-label="다음">
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                {renderBgmGroup('up')}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsCleanView((prev) => !prev)}
-                    className={`tap-target w-9 h-9 rounded-full grid place-items-center ${isCleanView ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`}
-                    aria-label={isCleanView ? '자막 보이기' : '자막 숨기기'}
-                  >
-                    {isCleanView ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                <div className="flex items-center gap-4">
+                  <button onClick={handlePrev} className="tap-target w-11 h-11 rounded-full bg-white/10 text-white grid place-items-center" aria-label="이전">
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <button type="button" onClick={handleStopSlideshow} className="tap-target h-9 px-3 rounded-full bg-white/10 text-white grid place-items-center" aria-label="갤러리로">
-                    <SkipBack className="w-3.5 h-3.5" />
+                  <button onClick={handleTogglePause} className="tap-target w-12 h-12 rounded-full bg-white text-black grid place-items-center" aria-label={isPaused ? '재생' : '일시정지'}>
+                    {isPaused ? <Play className="w-5 h-5 fill-current translate-x-[1px]" /> : <Pause className="w-5 h-5" />}
+                  </button>
+                  <button onClick={handleNext} className="tap-target w-11 h-11 rounded-full bg-white/10 text-white grid place-items-center" aria-label="다음">
+                    <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => { if (isSettingsOpen) setTimeout(resetControlsTimer, 0); setIsSettingsOpen(v => !v); setIsTrackListOpen(false); }}
+                  className={`tap-target w-11 h-11 rounded-full grid place-items-center ${isSettingsOpen ? 'bg-white text-black' : 'bg-white/10 text-white'}`}
+                  aria-label={isSettingsOpen ? '설정 닫기' : '설정'}
+                  aria-expanded={isSettingsOpen}
+                >
+                  <SlidersHorizontal className="w-5 h-5" />
+                </button>
               </div>
-              <div className="flex justify-center">{renderSpeed()}</div>
             </div>
 
             {/* 3. Progress bar & Dot indicators (Auto-hide on idle) */}
@@ -1359,7 +1424,7 @@ export function Lightbox({
       {/* ── SWISS MINIMAL VOLUME HUD INDICATOR ── */}
       {isSlideshow && (
         <div
-          className={`fixed right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 pointer-events-auto transition-all duration-300 ${
+          className={`max-sm:hidden fixed right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 pointer-events-auto transition-all duration-300 ${
             isVolumeHudVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'
           }`}
           onMouseEnter={() => {

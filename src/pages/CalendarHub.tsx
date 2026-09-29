@@ -2353,10 +2353,11 @@ export function CalendarHubPage({
 
                 // Circular badge styling based on Concept B & Swiss Minimal (웹 반응형 대형 스케일업)
                 const wxOn = isWeatherMode && cell.isCurrentMonth;
-                // 날씨 모드 모바일: 세로로 긴 칸(52px)에 숫자 · 아이콘 · 기온을 넉넉히 배치
-                const cellH = wxOn ? 'h-[52px]' : 'h-10';
-                const cellRound = wxOn ? 'rounded-[20px] sm:rounded-full' : 'rounded-full';
-                let circleClasses = `w-10 ${cellH} sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 ${cellRound} sm:aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer`;
+                // 날씨 모드 모바일: 원형은 유지하고 지름만 46px로 키워 숫자 · 아이콘 · 기온 간격 확보
+                const cellW = wxOn ? 'w-[46px]' : 'w-10';
+                const cellH = wxOn ? 'h-[46px]' : 'h-10';
+                const cellRound = 'rounded-full';
+                let circleClasses = `${cellW} ${cellH} sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 ${cellRound} sm:aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer`;
                 let textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none';
 
                 const isSelectedDate = !!(selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr);
@@ -2425,7 +2426,7 @@ export function CalendarHubPage({
                         )}
 
                         {/* 3. 중앙 정원: 날짜 원형 버튼과 100% 일치하는 라운드 베이스 */}
-                        <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 ${cellH} sm:h-12 md:h-14 lg:h-16 ${cellRound} ${ribbonColor}`} />
+                        <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 ${cellW} sm:w-12 md:w-14 lg:w-16 ${cellH} sm:h-12 md:h-14 lg:h-16 ${cellRound} ${ribbonColor}`} />
                       </div>
                     )}
 
@@ -2462,7 +2463,7 @@ export function CalendarHubPage({
                         const isOrangeBg = hasTrip;
 
                         return (
-                          <div className="flex flex-col items-center justify-between h-full w-full pt-1.5 pb-2 sm:py-1.5 pointer-events-none select-none">
+                          <div className="flex flex-col items-center justify-between h-full w-full pt-2 pb-2.5 sm:py-1.5 pointer-events-none select-none">
                             {/* 1. 상단: 날짜 일자 숫자 */}
                             <span className={`text-micro sm:text-meta font-mono leading-none ${
                               isOrangeBg 
@@ -2478,7 +2479,7 @@ export function CalendarHubPage({
 
                             {/* 2. 중앙 메인: 날씨 아이콘 */}
                             <div className={`my-auto flex items-center justify-center ${isForecast ? '' : 'opacity-60'}`}>
-                              <WeatherIconComponent className={`w-[15px] h-[15px] sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
+                              <WeatherIconComponent className={`w-[14px] h-[14px] sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
                                 isOrangeBg 
                                   ? 'text-white stroke-[2.4] drop-shadow-xs' 
                                   : cell.isToday
