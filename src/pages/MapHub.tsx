@@ -204,7 +204,7 @@ export function MapHubPage(props: MapHubPageProps) {
   });
 
   return (
-    <main ref={mainRef} className={`relative w-full h-[calc(100vh-56px)] supports-[height:100dvh]:h-[calc(100dvh-56px)] flex flex-col lg:flex-row bg-white dark:bg-[#141414] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
+    <main ref={mainRef} className={`relative w-full h-[calc(100vh-56px)] supports-[height:100dvh]:h-[calc(100dvh-56px)] flex flex-col lg:flex-row bg-paper dark:bg-paper-dark overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
       {/* MAP VIEW CONTAINER (Full screen or Split 58% on Desktop / 38vh on Mobile). isolate keeps Leaflet's z-indexes inside it */}
       <div className={`relative isolate ${isBuilderOpen ? 'tgl-map-picking' : ''} transition-all duration-300 ease-in-out ${

@@ -50,7 +50,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
       </div>
 
       {/* Swiss Minimal Sub-Nav Bar (4-Col Grid: Single row on both Mobile & Desktop) */}
-      <div className="sticky top-0 z-20 bg-[#FAF9F6] dark:bg-[#141414] py-2.5 -mx-4 sm:-mx-8 px-4 sm:px-8 border-b border-black/15 dark:border-white/15">
+      <div className="sticky top-0 z-20 bg-[#FAF9F6] dark:bg-[#11110F] py-2.5 -mx-4 sm:-mx-8 px-4 sm:px-8 border-b border-black/15 dark:border-white/15">
         <div className="grid grid-cols-4 gap-1 sm:gap-2 w-full">
           {([
             { id: 'ui', label: 'UI' },
@@ -587,7 +587,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               className={`p-4 border cursor-pointer transition-all ${
                 mapTileStyle === 'esri'
                   ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
-                  : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
+                  : 'bg-white dark:bg-[#11110F] border-black/20 dark:border-white/20 hover:border-black'
               }`}
             >
               <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
@@ -607,7 +607,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
               className={`p-4 border cursor-pointer transition-all ${
                 mapTileStyle === 'google'
                   ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
-                  : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
+                  : 'bg-white dark:bg-[#11110F] border-black/20 dark:border-white/20 hover:border-black'
               }`}
             >
               <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
@@ -817,7 +817,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
           </div>
 
           {/* Swiss Minimal One-Touch Optimizer Bar */}
-          <div className="border border-black/15 dark:border-white/15 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-[#141414]">
+          <div className="border border-black/15 dark:border-white/15 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-[#11110F]">
             <div className="flex flex-col gap-0.5 min-w-0">
               <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-black dark:text-white" />
@@ -919,7 +919,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
 
           {/* Empty Trash State */}
           {trashedJourneys.length === 0 && trashedSections.length === 0 && (
-            <div className="p-12 text-center border border-dashed border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex flex-col items-center justify-center gap-2">
+            <div className="p-12 text-center border border-dashed border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] flex flex-col items-center justify-center gap-2">
               <Trash2 className="w-8 h-8 text-black/60 dark:text-white/60 stroke-[1.5]" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                 휴지통이 비어 있습니다
@@ -946,7 +946,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                       className={`p-3.5 border transition-all flex items-center justify-between gap-4 cursor-pointer ${
                         isSelected
                           ? 'border-red-600 bg-red-500/10 shadow-xs'
-                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:border-black/30 dark:hover:border-white/30'
+                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:border-black/30 dark:hover:border-white/30'
                       }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
@@ -1013,7 +1013,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                       className={`p-3.5 border transition-all flex items-center justify-between gap-4 cursor-pointer ${
                         isSelected
                           ? 'border-red-600 bg-red-500/10 shadow-xs'
-                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:border-black/30 dark:hover:border-white/30'
+                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:border-black/30 dark:hover:border-white/30'
                       }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">

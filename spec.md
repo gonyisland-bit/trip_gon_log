@@ -136,18 +136,20 @@
 
 ## 4. 디자인 시스템 및 스타일 가이드 (Design System & UI Specs)
 
-### 4.1 디자인 컨셉: 스위스 국제 타이포그래피 스타일 (Swiss International Style)
-- **단순함과 기능성**: 시각적 장식을 배제하고 명확한 그리드, 타이포그래피 계층, 여백의 조화로 완성.
+### 4.1 디자인 컨셉: Swiss Soft (v1.3.5)
+- **단순함과 기능성**: 시각적 장식을 배제하고 명확한 타이포그래피 계층과 여백으로 완성. 조작하는 부분(버튼 · 선택 · 카드 · 시트)은 앱처럼 부드럽게: 따뜻한 오프화이트 바탕, 채움으로 구분하는 둥근 카드, 알약 모양 컨트롤.
+- **표면 두 단계**: 바탕 `paper`, 카드 · 시트 · 모달 `surface`. 구분은 보더가 아니라 채움으로 하고, 보더는 입력칸과 비선택 칩에만 씁니다.
 - **이모지 사용 지양**: 라벨, 버튼, 메뉴에 비규격 이모지 사용을 엄격히 금지하며, 일관된 굵기의 Lucide 아이콘으로 통일.
-- **단일 얇은 보더**: 이중 컨테이너 및 무거운 그림자 박스를 지양하고, `border border-black/20 dark:border-white/20`의 단일 헤어라인 보더 적용.
+- **모서리 네 단계**: `rounded-sheet`(28px, 바텀시트 윗모서리) · `rounded-card`(20px, 카드 · 모달) · `rounded-thumb`(14px, 썸네일 · 날짜 칸) · `rounded-full`(버튼 · 세그먼트 · 칩 · 배지 · 탭바). 그 외 임의 모서리 값은 쓰지 않습니다. 이중 컨테이너와 무거운 그림자는 쓰지 않고, 떠 있는 요소(탭바 · 시트 · 선택된 세그먼트)에만 약한 그림자를 줍니다.
 
 ### 4.2 컬러 팔레트 (Color Palette)
 디자인 기준 문서는 `AGENTS.md`가 유일합니다. 기본은 무채색이며, 색은 아래 의미 색상표에 적힌 의미로만 씁니다(v1.3.4). 같은 의미는 앱 전체에서 같은 색입니다.
 
 | 토큰명 | 라이트 모드 (Light) | 다크 모드 (Dark) | 용도 및 의미 |
 | :--- | :--- | :--- | :--- |
-| **Background Base** | `#FFFFFF` | `#141414` | 전체 페이지 및 메인 캔버스 배경 |
-| **Card / Surface** | `#FFFFFF` / `#FAF9F6` | `#181818` / `#1E1E1E` | 모달, 플로팅 패널, 팝오버 표면 |
+| **Paper** (`bg-paper`) | `#F6F4EF` | `#11110F` (`bg-paper-dark`) | 전체 페이지 · 헤더 · 허브 바탕 |
+| **Surface** (`bg-surface`) | `#FFFDF9` | `#1A1A17` (`bg-surface-dark`) | 카드, 모달, 시트, 팝오버 표면 |
+| **Ink** (`bg-ink` · `text-ink`) | `#141412` | `#EFECE6` (`*-ink-dark`) | 주 버튼 채움, 선택된 칩, 제목 |
 | **Text Primary** | `#000000` (`text-black`) | `#FFFFFF` (`text-white`) | 주요 헤드라인, 장소명, 핵심 수치 |
 | **Text Secondary** | `rgba(0,0,0,0.6)` | `rgba(255,255,255,0.6)` | 보조 설명, 날짜, 서브타이틀 |
 | **Text Muted** | `rgba(0,0,0,0.4)` | `rgba(255,255,255,0.4)` | 메타데이터, 단위, 플레이스홀더 |
@@ -181,13 +183,12 @@
 
 ### 4.4 UI 컴포넌트 규격
 - **버튼 (Buttons)**:
-  - 각진 형태(`rounded-none` 또는 `rounded-sm`)의 스위스 미니멀 스타일.
-  - 고유 높이: `h-8` (스몰/보조), `h-9` (기본), `h-10` (강조 액션).
-  - 호버 인터랙션: 반전 컬러 (`hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black`).
+  - 알약 형태(`rounded-full`), 굵은 산세리프(대문자 변환 없음). 모노 대문자는 버튼이 아닌 메타 라벨에만 씁니다.
   - 공용 클래스(`src/index.css` `@layer components`): 텍스트 버튼은 `btn` + 역할 하나 + 크기를 씁니다.
-    - 역할: `btn-primary`(먹색 채움, 화면·모달의 주 동작 하나), `btn-secondary`(단일 보더, 호버 반전: 취소 · 보조 동작), `btn-danger`(빨강 채움: 삭제 확인처럼 되돌릴 수 없는 실행), `btn-outline-danger`(빨강 보더: 삭제 확인을 여는 버튼), `btn-ghost`(텍스트만).
-    - 크기: `btn-sm`(h-8), `btn`(h-9), `btn-lg`(h-10). 모노 대문자, `rounded-sm`, 포커스는 빨간 링.
-    - 여정 생성은 어디서나 `NewTripButton` 하나: 시작은 `New trip`(Plus), 확정은 `Create trip`(Check). 스크롤 패널 안의 확정 버튼은 `StickyTripAction`으로 하단에 고정. 장소를 기존 여정에 넣는 버튼은 `Add to trip`으로 구분.
+    - 역할: `btn-primary`(먹색 알약, 화면·모달의 주 동작 하나), `btn-accent`(빨강 알약: 새 여행처럼 앱의 대표 동작), `btn-secondary`(연한 채움 알약: 취소 · 보조 동작), `btn-danger`(빨강 알약: 삭제 확인처럼 되돌릴 수 없는 실행), `btn-outline-danger`(빨강 보더: 삭제 확인을 여는 버튼), `btn-ghost`(텍스트만).
+    - 크기: `btn-sm`(h-8), `btn`(h-10), `btn-lg`(h-12). 포커스는 빨간 링.
+  - 공용 컨트롤(`src/components/ui/`): `Segment`(연한 트랙 위 흰 알약, 서로 배타적인 값 · 보기 전환), `Chip`(아이콘 + 라벨 알약, 선택 시 먹색, `tone="season"`은 에메랄드 테두리), `IconButton`(44px 원: surface · ink · accent · 사진 위 glass), `Card` · `CardRow`(surface 채움 카드, 썸네일 · 제목 · 메타 목록 행, 현재 항목은 빨간 링).
+    - 여정 생성은 어디서나 `NewTripButton` 하나(빨강 알약 `btn-accent`): 시작은 `New trip`(Plus), 확정은 `Create trip`(Check). 스크롤 패널 안의 확정 버튼은 `StickyTripAction`으로 하단에 고정. 장소를 기존 여정에 넣는 버튼은 `Add to trip`으로 구분.
     - 예외: 선택 상태가 있는 토글 · 세그먼트, 알약형 필터 칩, 사진이나 어두운 배경 위 버튼(랜딩, 라이트박스, Memory Reel, 공항 터미널), 아이콘만 있는 버튼. 저장 완료 · 승인 같은 성공 동작은 에메랄드를 유지합니다.
 - **모달 (Modals)**:
   - 딤 배경: `bg-black/60 backdrop-blur-xs`.
@@ -376,10 +377,15 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [ ] 여행 경비 영수증 다중 파일 실시간 OCR 정산 모듈 고도화.
 - [ ] 날씨 API 실시간 연동을 통한 여정 일자별 예보 자동 업데이트.
 
-### v1.3.5 리팩토링 기획 (2026.09.29 작성, 미착수 · 다른 곳에서 이어가기)
-- 기획서: Claude 아티팩트 "Tripgon v1.3.5 리팩토링 기획"(https://claude.ai/artifact/Nv5vDWaZBQHgNy9eqHBSzH). P0 5가지는 완료.
-- 제안: 디자인 Swiss Soft(라운드 카드 · 오프화이트 · 알약 컨트롤, 모바일 모달은 바텀시트), 모바일 하단 탭바(홈 · 여정 · 새 여행 · 지도 · 포켓)로 헤더 탭 · 서랍 · 독 통합, 새 여행 4단계 시트(어디로 → 언제 → 누구와·스타일 → 미리보기, 터미널은 Surprise로 흡수), 목록 이미지 사본 확대 · 블러/transition-all 축소 · 큰 파일 분리.
-- 결정 대기: 디자인 방향(Swiss Soft 여부), 하단 탭바, 여행 만들기 통합. 결정 후 P1부터 v1.3.5로 버전 올림.
+### v1.3.5 Swiss Soft 전환 (2026.09.29 결정, 진행 중)
+- 기획서: "Tripgon v1.3.5 리팩토링 기획"(https://claude.ai/artifact/Nv5vDWaZBQHgNy9eqHBSzH), 시안: "Tripgon v1.3.5 디자인 시안"(https://claude.ai/artifact/7SAqvaj8XJeSsW5tJWbXtV, 채택 B 줄), P1 계획: "Swiss Soft 구현 계획"(https://claude.ai/artifact/LwjuJNmHntf9tmMvM2AG9C).
+- 결정: 디자인은 B Swiss Soft(오프화이트 · 둥근 카드 · 알약 컨트롤, 버튼 글자는 굵은 산세리프, 다크는 따뜻한 먹색 #11110F).
+- [x] P0 요청 5가지.
+- [x] P1 토대: `paper` · `surface` · `ink` 색, `rounded-sheet` · `card` · `thumb` 모서리 토큰, 알약 `btn`(+ `btn-accent`), `ui/Segment` · `Chip` · `IconButton` · `Card`, 지침 문서, v1.3.5.
+- [ ] P2 이동: 모바일 하단 탭바(홈 · 여정 · +새 여행 · 지도 · 포켓), 독(`QuickActionBar`) 제거, 햄버거는 설정 · 계정 · 나머지 허브.
+- [ ] P3 새 여행 4단계 시트(어디로 → 언제 → 누구와·스타일 → 미리보기), 가이드 · 터미널(Surprise) · 포켓 생성 흐름 통합.
+- [ ] P4 화면 적용: 홈 → 여정 상세 → 지도 시트 → 포켓 → 매거진 → 캘린더 → 모달 바텀시트화. `bg-white`(약 1,100곳)는 화면별로 `bg-surface`로 옮김.
+- [ ] P5 성능: `backdrop-blur` · `transition-all` 정리, 이미지 사본 확대, 긴 목록 가상화, 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리.
 
 ### V1.3 디자인 리뉴얼 진행 현황 (2026.09.28 기준, 다른 PC에서 이어가기용)
 - [x] **P0 기반 정비**: 버전 1.3.0 단일 소스, AGENTS.md 5장 버전 지침, 모션 토큰 v2 · `src/motion/`.
@@ -401,6 +407,12 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - 작업 메모: 로그인 없이는 허브 화면이 보이지 않아, 검증은 임시 미리보기 페이지(`*-preview.html` + `src/__*Preview.tsx`)로 컴포넌트를 띄워 확인하고 커밋 전에 삭제했습니다. 같은 폴더에서 다른 세션이 5173 포트를 쓰는 경우 `.claude/launch.json`에 5174 포트 설정을 추가해 사용했습니다(이 파일은 저장소에 포함되지 않음).
 
 ## 7. 변경 이력 (Changelog)
+
+### v1.3.5 (2026.09.29)
+- 디자인 방향을 Swiss Soft로 전환(P1 토대). 앱 바탕 오프화이트 `paper`(#F6F4EF), 다크는 따뜻한 먹색 #11110F(기존 #141414 대체), 카드 표면 `surface`, 모서리 토큰 4단계.
+- 버튼: `btn` 전체가 굵은 산세리프 알약으로(h-8 / h-10 / h-12), 보조 버튼은 보더 반전 대신 연한 채움, 새 여행 `NewTripButton`은 빨강 알약(`btn-accent`).
+- 공용 컨트롤 `ui/Segment` · `ui/Chip` · `ui/IconButton` · `ui/Card`(`CardRow`) 추가.
+- AGENTS.md 3장 · spec 4.1 · 4.2 · 4.4를 Swiss Soft 기준으로 갱신.
 
 ### v1.3.4 (2026.09.29)
 - 재생 도크: 갤러리 슬라이드쇼 · Memory Reel · Playlog · Intro가 공용 `PlayerDock` / `PlayerTopBar`를 사용. 슬라이드쇼의 데스크톱 상단 버튼 바, 좌우 화살표, 세로 볼륨 HUD, 하단 여러 줄 배치를 위 한 줄(진행 칸 · 카운터 · 닫기) + 아래 도크 한 줄로 통일. 썸네일 이동은 설정 패널로, 캡션은 좌측 정렬(필름 날짜 오렌지 유지).

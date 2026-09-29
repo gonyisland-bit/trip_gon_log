@@ -32,7 +32,7 @@ export function NewTripButton({
       disabled={disabled}
       title={title}
       aria-label={typeof text === 'string' ? text : undefined}
-      className={`btn btn-primary ${sizeClass} ${block ? 'w-full' : ''} ${compact ? 'max-sm:w-8 max-sm:px-0' : ''} ${className}`}
+      className={`btn btn-accent ${sizeClass} ${block ? 'w-full' : ''} ${compact ? (size === 'sm' ? 'max-sm:w-8' : 'max-sm:w-10') + ' max-sm:px-0' : ''} ${className}`}
     >
       <Icon className={size === 'lg' ? 'w-4 h-4 shrink-0' : 'w-3.5 h-3.5 shrink-0'} aria-hidden />
       <span className={`truncate ${compact ? 'max-sm:hidden' : ''}`}>{text}</span>
@@ -43,7 +43,7 @@ export function NewTripButton({
 /** Keeps a trip-confirm button in view at the bottom of a scrolling panel (offset by the panel's p-4/p-5 so it sits on the edge) */
 export function StickyTripAction({ children }: { children: React.ReactNode }) {
   return (
-    <div className="sticky -bottom-4 sm:-bottom-5 z-10 -mx-4 sm:-mx-5 px-4 sm:px-5 py-3 bg-white/95 dark:bg-[#121212]/95 border-t border-black/10 dark:border-white/10">
+    <div className="sticky -bottom-4 sm:-bottom-5 z-10 -mx-4 sm:-mx-5 px-4 sm:px-5 py-3 bg-surface/95 dark:bg-surface-dark/95 border-t border-black/10 dark:border-white/10">
       {children}
     </div>
   );

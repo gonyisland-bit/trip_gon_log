@@ -73,7 +73,7 @@ export function JourneyCard({
       onPointerLeave={resetParallax}
       tabIndex={0}
       aria-label={`${year} ${trip.title}`}
-      className="tgl-journey-card tgl-rise group relative flex flex-col gap-3 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-[#141414]"
+      className="tgl-journey-card tgl-rise group relative flex flex-col gap-3 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-[#11110F]"
       style={{ '--i': index } as React.CSSProperties}
       draggable={draggable}
       onDragStart={onDragStart}
@@ -86,7 +86,7 @@ export function JourneyCard({
         ref={mediaRef}
         className={`tgl-journey-media relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 ${
           isPlan ? 'outline outline-2 outline-dashed -outline-offset-2 outline-amber-500' : ''
-        } ${isActive ? 'ring-2 ring-red-600/60 ring-offset-2 dark:ring-offset-[#141414]' : ''}`}
+        } ${isActive ? 'ring-2 ring-red-600/60 ring-offset-2 dark:ring-offset-[#11110F]' : ''}`}
       >
         {/* Only the photo goes grey, so the plan outline and badge keep their amber */}
         <div

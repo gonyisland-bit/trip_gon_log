@@ -79,7 +79,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
               handleAddCalendarWeatherCity(placeName, coords, address, countryName, cityName);
             }}
             placeholder="도시명 검색 (예: 서울, 도쿄, 오사카, 파리, 삿포로, 런던, 뉴욕...)"
-            className="w-full h-9 px-3 text-xs bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
+            className="w-full h-9 px-3 text-xs bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
           />
           <span className="text-meta text-black/60 dark:text-white/60 font-mono">
             * 검색 후 선택 시 한글 정규화 도시명과 공식 영문 코드가 자동 등록되며, 실시간 클라우드에 영속 저장됩니다.

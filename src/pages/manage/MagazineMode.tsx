@@ -342,7 +342,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                 </span>
               </div>
 
-              <div className="w-full flex-1 min-h-[340px] sm:min-h-[360px] p-3.5 bg-white dark:bg-[#141414] border border-black/15 dark:border-white/15 shadow-sm flex flex-col items-center justify-between">
+              <div className="w-full flex-1 min-h-[340px] sm:min-h-[360px] p-3.5 bg-white dark:bg-[#11110F] border border-black/15 dark:border-white/15 shadow-sm flex flex-col items-center justify-between">
                 {/* MOUTHWASH Card Top Bold Title */}
                 <div className="min-h-[2.8rem] flex items-center justify-center mb-1 px-1 w-full">
                   <h4 className="text-sm sm:text-base font-satoshi font-extrabold uppercase tracking-tight text-center leading-[1.12] text-black dark:text-white line-clamp-2">

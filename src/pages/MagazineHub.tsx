@@ -1340,7 +1340,7 @@ export function MagazineHubPage({
           )}
 
           {/* 2-2. SECTION NAVIGATOR / SELECTOR */}
-          <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border-b border-black/15 dark:border-white/15 px-3 sm:px-8 md:px-12 py-2.5 transition-colors">
+          <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 dark:bg-[#11110F]/95 backdrop-blur-md border-b border-black/15 dark:border-white/15 px-3 sm:px-8 md:px-12 py-2.5 transition-colors">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               {/* Phones: one picker for the current section, with previous / next */}
               {(() => {
@@ -1534,7 +1534,7 @@ export function MagazineHubPage({
                           </div>
                         </div>
 
-                        <div className="p-2.5 flex items-center justify-between text-meta font-mono font-bold text-black/70 dark:text-white/70 bg-[#FAF9F6] dark:bg-[#141414] border-t border-black/5 dark:border-white/5">
+                        <div className="p-2.5 flex items-center justify-between text-meta font-mono font-bold text-black/70 dark:text-white/70 bg-[#FAF9F6] dark:bg-[#11110F] border-t border-black/5 dark:border-white/5">
                           <span className="truncate font-sans font-semibold uppercase">{sec.title}</span>
                           <ArrowRight className="w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:translate-x-0.5 group-hover:text-red-600 dark:group-hover:text-red-400 transition-all shrink-0" />
                         </div>

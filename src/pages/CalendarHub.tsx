@@ -2034,7 +2034,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
-                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title={viewMode === 'month' ? "이전 달" : "이전 연도"}
               >
                 <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -2043,7 +2043,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={handleGoToday}
-                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-micro sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-micro sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title="오늘 날짜로 이동"
               >
                 TODAY
@@ -2052,7 +2052,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
-                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title={viewMode === 'month' ? "다음 달" : "다음 연도"}
               >
                 <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -3093,7 +3093,7 @@ export function CalendarHubPage({
       {isEventModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
-            className="w-full max-w-lg bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 rounded-md shadow-2xl p-5 sm:p-6 overflow-hidden"
+            className="w-full max-w-lg bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 rounded-md shadow-2xl p-5 sm:p-6 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -3279,7 +3279,7 @@ export function CalendarHubPage({
           onClick={() => setViewingEvent(null)}
         >
           <div 
-            className="w-full max-w-md bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 rounded-none shadow-2xl p-6 overflow-hidden relative"
+            className="w-full max-w-md bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 rounded-none shadow-2xl p-6 overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar: Category, Edit Icon, Share, Close */}
@@ -3406,7 +3406,7 @@ export function CalendarHubPage({
           onClick={() => setViewingTrip(null)}
         >
           <div 
-            className="w-full max-w-sm bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl p-5 overflow-hidden relative"
+            className="w-full max-w-sm bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 shadow-2xl p-5 overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar: Journey Type Badge & Close */}
@@ -3710,7 +3710,7 @@ export function CalendarHubPage({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl p-6 sm:p-7 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
+            className="w-full max-w-lg bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 shadow-2xl p-6 sm:p-7 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
           >
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10 shrink-0">

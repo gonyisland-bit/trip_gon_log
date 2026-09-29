@@ -152,8 +152,8 @@ export function Navigation({
   }, [showSettings, setShowSettings]);
 
   const navBgClass = showSettings 
-    ? 'bg-white dark:bg-[#141414]' 
-    : (isHomeGradientActive ? 'bg-white/30 backdrop-blur-md' : 'bg-white dark:bg-[#141414]');
+    ? 'bg-paper dark:bg-paper-dark' 
+    : (isHomeGradientActive ? 'bg-white/30 backdrop-blur-md' : 'bg-paper dark:bg-paper-dark');
 
   return (
     <nav className={`tgl-site-header sticky top-0 z-30 w-full ${navBgClass} border-b border-black/10 dark:border-white/10 transition-colors duration-300 select-none`}>

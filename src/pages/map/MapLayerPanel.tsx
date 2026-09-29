@@ -95,7 +95,7 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
           <div
             role="dialog"
             aria-label="지도 레이어"
-            className={`${closing ? 'tgl-sheet-out' : 'tgl-sheet-in'} z-[61] max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white dark:bg-[#141414] text-black dark:text-white border-t sm:border border-black/20 dark:border-white/20 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] sm:shadow-2xl`}
+            className={`${closing ? 'tgl-sheet-out' : 'tgl-sheet-in'} z-[61] max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white dark:bg-[#11110F] text-black dark:text-white border-t sm:border border-black/20 dark:border-white/20 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] sm:shadow-2xl`}
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             <div className="sm:hidden w-10 h-1 bg-black/20 dark:bg-white/20 mx-auto mt-2" />

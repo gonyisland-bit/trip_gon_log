@@ -18,6 +18,18 @@ export default {
         serif: ['Satoshi', 'Inter', '"Noto Sans KR"', 'sans-serif'],
         mono: ['"SF Mono"', 'Consolas', '"Noto Sans KR"', 'monospace'],
       },
+      // Swiss Soft grounds (spec 4.2): paper = page, surface = cards and sheets, ink = text and primary fills
+      colors: {
+        paper: { DEFAULT: '#F6F4EF', dark: '#11110F' },
+        surface: { DEFAULT: '#FFFDF9', dark: '#1A1A17' },
+        ink: { DEFAULT: '#141412', dark: '#EFECE6' },
+      },
+      // Corner steps (spec 4.4): sheet > card > thumb; controls use rounded-full
+      borderRadius: {
+        sheet: '28px',
+        card: '20px',
+        thumb: '14px',
+      },
       // Layer tokens: named steps instead of ad-hoc z-[n] values (see spec 4.13)
       zIndex: {
         float: '40',       // in-page docks, FABs, map controls

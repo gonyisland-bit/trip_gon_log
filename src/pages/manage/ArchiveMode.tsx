@@ -1037,7 +1037,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                   className={`p-2.5 border transition-all flex items-center gap-2.5 cursor-pointer rounded-none ${
                     isSelected
                       ? 'bg-white dark:bg-[#181818] border-red-600 dark:border-red-500 shadow-md ring-1 ring-red-600/30'
-                      : 'bg-white/60 dark:bg-[#141414]/60 border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
+                      : 'bg-white/60 dark:bg-[#11110F]/60 border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
                   }`}
                 >
                   {/* Drag Grip handle */}

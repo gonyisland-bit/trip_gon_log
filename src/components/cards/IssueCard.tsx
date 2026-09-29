@@ -69,7 +69,7 @@ export const IssueCard = memo(function IssueCard({ coverImg, issueNumber, dateLa
       onKeyDown={(e) => { if (e.key === 'Enter') open(); }}
       tabIndex={0}
       aria-label={`NO. ${issueNumber} ${title}`}
-      className={`tgl-issue-card tgl-rise group ${opening ? 'pointer-events-none' : ''} relative pr-2.5 pb-2.5 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-[#141414]`}
+      className={`tgl-issue-card tgl-rise group ${opening ? 'pointer-events-none' : ''} relative pr-2.5 pb-2.5 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-[#11110F]`}
       style={{ '--i': index } as React.CSSProperties}
     >
       {/* Sheets behind the cover */}

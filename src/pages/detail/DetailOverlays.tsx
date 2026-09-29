@@ -82,7 +82,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
           onClick={() => setIsSwitcherOpen(false)}
         >
           <div 
-            className="w-full max-w-lg bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden text-black dark:text-white animate-in zoom-in-95 duration-150"
+            className="w-full max-w-lg bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden text-black dark:text-white animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}

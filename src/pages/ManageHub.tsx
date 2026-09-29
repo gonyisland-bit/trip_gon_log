@@ -41,7 +41,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
   } = s;
 
   return (
-    <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#141414] text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">
+    <main className="min-h-screen w-full bg-paper dark:bg-paper-dark text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">
       
       {/* 1. Header Toolbar with Swiss Minimal Mode Switcher */}
       <div className="border-b border-black/15 dark:border-white/15 px-3 sm:px-8 py-2.5 bg-white dark:bg-[#111111] flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 sticky top-0 z-30 relative">
