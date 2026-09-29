@@ -24,10 +24,14 @@ interface SheetProps {
   /** Add a history entry so the back gesture closes the sheet (skip when the caller already does) */
   backToClose?: boolean;
   zIndex?: number;
+  /** Asked before a close from the backdrop, Escape, the grip or a close control; resolve false to stay open */
+  confirmClose?: () => boolean | Promise<boolean>;
+  /** paper: a page-coloured sheet whose cards (surface) stand out on it */
+  tone?: 'surface' | 'paper';
   children: React.ReactNode;
 }
 
-export function Sheet({ onClose, label, placement = 'center', panelClassName = '', locked = false, backToClose = true, zIndex = 195, children }: SheetProps) {
+export function Sheet({ onClose, label, placement = 'center', panelClassName = '', locked = false, backToClose = true, zIndex = 195, confirmClose, tone = 'surface', children }: SheetProps) {
   const [closing, setClosing] = useState(false);
   // The enter animation holds its end transform while applied, which would pin the panel during a drag
   const [entered, setEntered] = useState(false);
@@ -35,9 +39,18 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
   const dragRef = useRef<{ y: number; t: number; id: number } | null>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const confirmRef = useRef(confirmClose);
+  confirmRef.current = confirmClose;
+  const askingRef = useRef(false);
 
-  const requestClose = useCallback(() => {
-    if (locked || closing) return;
+  const requestClose = useCallback(async () => {
+    if (locked || closing || askingRef.current) return;
+    if (confirmRef.current) {
+      askingRef.current = true;
+      const ok = await confirmRef.current();
+      askingRef.current = false;
+      if (!ok) return;
+    }
     if (prefersReducedMotion()) { closeRef.current(); return; }
     setClosing(true);
     window.setTimeout(() => closeRef.current(), EXIT_MS);
@@ -47,7 +60,7 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
   useBackToClose(backToClose, () => { if (!locked) closeRef.current(); });
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') requestClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') void requestClose(); };
     window.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -74,7 +87,7 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
     const h = panel?.getBoundingClientRect().height || 400;
     if (dy > h * 0.25 || speed > 0.6) {
       setDrag(0);
-      requestClose();
+      void requestClose();
     } else {
       setDrag(0);
     }
@@ -84,11 +97,11 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
 
   // Portalled to body: a fixed sheet inside a transformed/clipped ancestor (map panel) would be cut off
   return createPortal(
-    <SheetCloseContext.Provider value={requestClose}>
+    <SheetCloseContext.Provider value={() => { void requestClose(); }}>
       <div
         className={`fixed inset-0 flex justify-center ${placement === 'top' ? 'items-start pt-[max(0.5rem,env(safe-area-inset-top,0px))] sm:pt-[12vh] px-2 sm:px-4' : 'items-end sm:items-center sm:p-4'} ${closing ? 'tgl-sheet-backdrop-out' : 'tgl-sheet-backdrop-in'} bg-black/45 backdrop-blur-[2px]`}
         style={{ zIndex }}
-        onMouseDown={requestClose}
+        onMouseDown={() => { void requestClose(); }}
       >
         <div
           role="dialog"
@@ -96,7 +109,7 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
           aria-label={label}
           data-sheet-panel
           onMouseDown={e => e.stopPropagation()}
-          className={`relative w-full flex flex-col bg-white dark:bg-[#161616] text-black dark:text-white border border-black/20 dark:border-white/20 shadow-[0_24px_64px_rgba(0,0,0,0.3)] ${closing ? (placement === 'top' ? 'tgl-dialog-out' : 'tgl-sheet-out') : entered ? '' : (placement === 'top' ? 'tgl-dialog-in' : 'tgl-sheet-in')} ${panelClassName}`}
+          className={`relative w-full flex flex-col ${tone === 'paper' ? 'bg-paper dark:bg-paper-dark' : 'bg-surface dark:bg-surface-dark'} text-black dark:text-white shadow-[0_24px_64px_rgba(0,0,0,0.3)] ${placement === 'top' ? 'rounded-card' : 'rounded-t-sheet sm:rounded-card'} overflow-hidden ${closing ? (placement === 'top' ? 'tgl-dialog-out' : 'tgl-sheet-out') : entered ? '' : (placement === 'top' ? 'tgl-dialog-in' : 'tgl-sheet-in')} ${panelClassName}`}
           onAnimationEnd={e => { if (e.target === e.currentTarget && !closing) setEntered(true); }}
           style={{
             paddingBottom: placement === 'top' ? undefined : 'env(safe-area-inset-bottom, 0px)',
@@ -113,7 +126,7 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
             onPointerCancel={onGripUp}
             aria-hidden
           >
-            <span className="w-10 h-1 bg-black/20 dark:bg-white/25" />
+            <span className="w-10 h-1 rounded-full bg-black/20 dark:bg-white/25" />
           </div>}
           {children}
         </div>

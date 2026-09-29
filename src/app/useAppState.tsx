@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, startTransition } from 'react';
+import type { NewTripPrefill } from '../components/newtrip/useNewTripDraft';
 import { scheduleIdlePrefetch } from '../utils/prefetchHelper';
 import { fetchCoordinates } from '../utils/googleMapsHelper';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections, syncSectionItemsWithTimeline } from '../utils/magazineHelper';
@@ -180,6 +181,8 @@ export function useAppState() {
   const [createCityInitial, setCreateCityInitial] = useState<string>('');
   const [createDateInitial, setCreateDateInitial] = useState<string>('');
   const [mapBuilderRequested, setMapBuilderRequested] = useState<boolean>(false);
+  // New trip sheet (v1.3.5 P3): null = closed, otherwise the values it opens with
+  const [newTripPrefill, setNewTripPrefill] = useState<NewTripPrefill | null>(null);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const initialAuthCheckedRef = useRef<boolean>(false);
   // Prevents onAuthStateChanged from triggering login flow during account creation+signOut cycle
@@ -2213,7 +2216,15 @@ export function useAppState() {
     navigateTo('map');
   };
 
-  const handleCreateTripForCountry = (countryName: string, cityName?: string, initialDate?: string) => {
+  // Every "new trip" entry point opens the new trip sheet
+  const handleCreateTripForCountry = (countryName: string, cityName?: string, initialDate?: string, pocketIds?: string[]) => {
+    if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
+    setCreateModalType('plan');
+    setNewTripPrefill({ country: countryName || undefined, city: cityName || undefined, date: initialDate || undefined, pocketIds });
+  };
+
+  // The map's Trip Guide: multi-city, templates and building beside the map
+  const openMapBuilder = (countryName: string, cityName?: string, initialDate?: string) => {
     if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
     setCreateCountryInitial(countryName || '');
     setCreateCityInitial(cityName || '');
@@ -3036,7 +3047,7 @@ export function useAppState() {
     handleMoveToArchive, handleMoveToPlans, handleCloneJourney, handleRemixJourney, handleSaveSettings,
     handleSaveMagazineMoments, handleSaveMagazineHubConfig, handleSaveArchiveHubConfig,
     handleSaveMagazineSections, handleUpdateMagazineSections, handleSaveBgmSettings,
-    generateDateList, handleEditTripSave, handleAddArchive, handleCreateTripForCountry,
+    generateDateList, handleEditTripSave, handleAddArchive, handleCreateTripForCountry, openMapBuilder, newTripPrefill, setNewTripPrefill,
     handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney, handleConfirmDeleteJourney,
     handleRestoreJourney, handlePermanentDeleteJourney, handleDeleteMagazineSection,
     handleRestoreMagazineSection, handlePermanentDeleteMagazineSection, handleBatchPermanentDelete,

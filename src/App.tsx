@@ -24,6 +24,7 @@ const ManageHubPage = lazyWithRetry(() => import('./pages/ManageHub').then(m => 
 const JourneyDetailPage = lazyWithRetry(() => import('./pages/Detail').then(m => ({ default: m.JourneyDetailPage })));
 const CalendarHubPage = lazyWithRetry(() => import('./pages/CalendarHub').then(m => ({ default: m.CalendarHubPage })));
 const PocketHubPage = lazyWithRetry(() => import('./pages/PocketHub').then(m => ({ default: m.PocketHubPage })));
+const NewTripSheet = lazyWithRetry(() => import('./components/newtrip/NewTripSheet').then(m => ({ default: m.NewTripSheet })));
 
 const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
 const SettingsModal = lazyWithRetry(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -86,7 +87,7 @@ function App() {
     handleMoveToPlans, handleCloneJourney, handleSaveSettings, handleSaveMagazineMoments,
     handleSaveMagazineHubConfig, handleSaveArchiveHubConfig, handleSaveMagazineSections,
     handleUpdateMagazineSections, handleSaveBgmSettings, handleEditTripSave, handleAddArchive,
-    handleCreateTripForCountry, handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney,
+    handleCreateTripForCountry, openMapBuilder, newTripPrefill, setNewTripPrefill, handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney,
     handleConfirmDeleteJourney, handleRestoreJourney, handlePermanentDeleteJourney,
     handleDeleteMagazineSection, handleRestoreMagazineSection, handlePermanentDeleteMagazineSection,
     handleBatchPermanentDelete, activeFlights, activeStays, activeTransits, existingTags,
@@ -520,7 +521,7 @@ function App() {
                     onCreateTripWithPockets={(selectedPockets) => {
                       const firstCountry = selectedPockets.find(p => p.country)?.country || '';
                       const firstCity = selectedPockets.find(p => p.city)?.city || '';
-                      handleCreateTripForCountry(firstCountry, firstCity);
+                      handleCreateTripForCountry(firstCountry, firstCity, undefined, selectedPockets.map(p => p.id));
                     }}
                     onAddTimelineItemToTrip={async (tripId, newItem) => {
                       const date = newItem.date || '2025.04.12';
@@ -821,6 +822,23 @@ function App() {
           </LayerBoundary>
         )}
 
+        {/* New trip: one sheet for every entry point (v1.3.5 P3) */}
+        {newTripPrefill && isLoggedIn && (
+          <LayerBoundary name="새 여행" onClose={() => setNewTripPrefill(null)}>
+          <Suspense fallback={null}>
+            <NewTripSheet
+              prefill={newTripPrefill}
+              defaultMember={currentUserProfile?.firstName || currentUserProfile?.username || auth.currentUser?.email?.split('@')[0] || '나'}
+              recentCities={[...plans, ...trips].flatMap(j => (j.locations?.length ? j.locations.map(l => l.name) : [j.locationStr])).filter(Boolean).slice(0, 12)}
+              onClose={() => setNewTripPrefill(null)}
+              onCreate={(p) => handleCreateJourney(p.title, p.dateRange, p.location, p.tags, p.lat, p.lng, p.members, p.locations, 'NEW', p.country, p.coverImg, p.timeline)}
+              onSurprise={openDepartureBoard}
+              onOpenMapBuilder={(country, city, date) => openMapBuilder(country, city, date)}
+            />
+          </Suspense>
+          </LayerBoundary>
+        )}
+
         {/* First visit after sign-in: one hint to watch the intro */}
         {isLoggedIn && !showSplash && !isIntroOpen && currentView === 'home' && <IntroTip />}
 
@@ -830,7 +848,7 @@ function App() {
           <Suspense fallback={null}>
             <DepartureBoard
               onClose={() => setIsDepartureOpen(false)}
-              onBuildTrip={({ countryEn, cityKo, year, month }) => handleCreateTripForCountry(countryEn, cityKo, departureDate(year, month))}
+              onBuildTrip={({ countryEn, cityKo, year, month }) => { setIsDepartureOpen(false); handleCreateTripForCountry(countryEn, cityKo, departureDate(year, month)); }}
               onOpenPocket={() => navigateTo('pocket')}
               isDarkMode={isDarkMode}
               weatherCode={ambienceOverride?.weatherCode ?? globalWeatherData?.weatherCode}
