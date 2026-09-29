@@ -351,7 +351,7 @@ export function MapModals({ s }: { s: MapHubState }) {
           onClick={() => setSelectedPinGroup(null)}
         >
           <div 
-            className="w-full max-w-lg bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl p-6 select-none"
+            className="w-full max-w-lg bg-surface dark:bg-surface-dark rounded-card shadow-2xl p-6 select-none"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
@@ -451,7 +451,7 @@ export function MapModals({ s }: { s: MapHubState }) {
           onClick={() => setIsPlaceListModalOpen(false)}
         >
           <div 
-            className="relative w-full max-w-xl bg-white dark:bg-[#151515] border border-black/15 dark:border-white/15 shadow-2xl p-4 sm:p-6 flex flex-col max-h-[82vh] overflow-hidden select-none"
+            className="relative w-full max-w-xl bg-surface dark:bg-surface-dark rounded-card shadow-2xl p-4 sm:p-6 flex flex-col max-h-[82vh] overflow-hidden select-none"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}

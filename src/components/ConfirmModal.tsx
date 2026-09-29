@@ -155,7 +155,7 @@ export function ConfirmModal({
       onClick={() => handleImmediateClose(onCancel)}
     >
       <div 
-        className={`relative w-full max-w-sm bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 text-black dark:text-white transition-transform duration-300 ${
+        className={`relative w-full max-w-sm bg-surface dark:bg-surface-dark rounded-card shadow-2xl p-5 sm:p-6 flex flex-col gap-4 text-black dark:text-white transition-transform duration-300 ${
           isFadingOut ? 'scale-95' : 'scale-100'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -164,7 +164,7 @@ export function ConfirmModal({
         <button
           type="button"
           onClick={() => handleImmediateClose(onCancel)}
-          className="tap-target absolute top-3.5 right-3.5 p-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+          className="tap-target absolute top-3 right-3 w-8 h-8 grid place-items-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
           title="닫기 (ESC)"
         >
           <X className="w-4 h-4" />
@@ -184,7 +184,7 @@ export function ConfirmModal({
         </p>
 
         {/* Action Buttons: Clean 1-Row Grid with Short Labels */}
-        <div className={`grid ${gridColsClass} gap-1.5 pt-3 border-t border-black/10 dark:border-white/10`}>
+        <div className={`grid ${gridColsClass} gap-2 pt-1`}>
           {!singleButton && (
             <button
               type="button"

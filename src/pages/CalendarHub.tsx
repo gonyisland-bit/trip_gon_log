@@ -1850,7 +1850,7 @@ export function CalendarHubPage({
 
               {/* Scrollable Year Dropdown Popover */}
               {isYearDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 z-50 w-36 sm:w-44 max-h-64 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm font-mono animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute top-full left-0 mt-2 z-50 w-36 sm:w-44 max-h-64 overflow-y-auto rounded-card bg-surface dark:bg-surface-dark shadow-[0_12px_32px_rgba(0,0,0,0.14)] py-1 text-sm font-mono animate-in fade-in zoom-in-95 duration-150">
                   {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => {
                     const isSelected = year === currentYear;
                     return (
@@ -2034,7 +2034,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
-                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface dark:bg-surface-dark hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title={viewMode === 'month' ? "이전 달" : "이전 연도"}
               >
                 <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -2043,7 +2043,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={handleGoToday}
-                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-micro sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full bg-surface dark:bg-surface-dark hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-micro sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title="오늘 날짜로 이동"
               >
                 TODAY
@@ -2052,7 +2052,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
-                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#11110F] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface dark:bg-surface-dark hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title={viewMode === 'month' ? "다음 달" : "다음 연도"}
               >
                 <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -2060,7 +2060,7 @@ export function CalendarHubPage({
             </div>
 
             {/* 2. [ MONTH | YEAR ] View Mode Switcher */}
-            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-micro sm:text-xs font-bold shrink-0">
+            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/[0.06] dark:bg-white/10 rounded-full font-mono text-micro sm:text-xs font-bold shrink-0">
               <button
                 type="button"
                 onClick={() => toggleViewMode('month')}
@@ -2546,7 +2546,7 @@ export function CalendarHubPage({
                   href={weatherUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full mt-3 p-3 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.03] flex flex-row items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group select-none animate-in fade-in duration-200 no-underline text-inherit"
+                  className="w-full mt-3 p-3 rounded-card bg-surface dark:bg-surface-dark flex flex-row items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group select-none animate-in fade-in duration-200 no-underline text-inherit"
                   title={`${selectedWeatherDay.city.name} OpenWeatherMap 공식 예보 사이트 새 창 이동`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -2561,7 +2561,7 @@ export function CalendarHubPage({
                         <span className="text-meta font-bold text-red-600 dark:text-red-400 uppercase truncate">
                           {selectedWeatherDay.city.name} ({selectedWeatherDay.city.nameEn})
                         </span>
-                        <span className="shrink-0 text-micro font-bold uppercase tracking-widest px-1 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60">
+                        <span className="shrink-0 text-micro font-bold uppercase tracking-widest px-2 rounded-full bg-black/[0.06] dark:bg-white/10 text-black/60 dark:text-white/60">
                           {selectedWeatherDay.isForecast ? '예보' : '평년'}
                         </span>
                       </div>
@@ -3093,7 +3093,7 @@ export function CalendarHubPage({
       {isEventModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
-            className="w-full max-w-lg bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 rounded-md shadow-2xl p-5 sm:p-6 overflow-hidden"
+            className="w-full max-w-lg bg-surface dark:bg-surface-dark rounded-card shadow-2xl p-5 sm:p-6 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -3126,7 +3126,7 @@ export function CalendarHubPage({
                   placeholder="예: 도쿄 출장, 가족 모임, 프로젝트 마감"
                   value={eventFormTitle}
                   onChange={(e) => setEventFormTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-bold text-black dark:text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
+                  className="w-full px-3 py-2 rounded-thumb border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.06] text-base sm:text-sm font-bold text-black dark:text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                 />
               </div>
 
@@ -3148,7 +3148,7 @@ export function CalendarHubPage({
                           setEventFormEndDate(e.target.value);
                         }
                       }}
-                      className="block w-full max-w-full box-border min-w-0 pl-2.5 pr-1 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:appearance-none"
+                      className="block w-full max-w-full box-border min-w-0 pl-2.5 pr-1 py-2 rounded-thumb border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.06] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                   <div className="min-w-0 w-full max-w-full relative overflow-hidden box-border">
@@ -3159,7 +3159,7 @@ export function CalendarHubPage({
                       min={eventFormStartDate}
                       value={eventFormEndDate}
                       onChange={(e) => setEventFormEndDate(e.target.value)}
-                      className="block w-full max-w-full box-border min-w-0 pl-2.5 pr-1 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:appearance-none"
+                      className="block w-full max-w-full box-border min-w-0 pl-2.5 pr-1 py-2 rounded-thumb border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.06] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
@@ -3179,7 +3179,7 @@ export function CalendarHubPage({
                         key={cat.id}
                         type="button"
                         onClick={() => setEventFormCategory(cat.id)}
-                        className={`p-2 rounded-sm border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        className={`h-9 px-3 rounded-full border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           isSelected
                             ? 'border-red-600 bg-red-600/10 text-red-600 dark:text-red-400 shadow-2xs'
                             : 'border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
@@ -3203,7 +3203,7 @@ export function CalendarHubPage({
                   placeholder="참고 사항, 항공편, 숙소 예약 번호 등 간단한 메모"
                   value={eventFormMemo}
                   onChange={(e) => setEventFormMemo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm text-black dark:text-white outline-none focus:border-red-600 resize-none"
+                  className="w-full px-3 py-2 rounded-thumb border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.06] text-base sm:text-sm text-black dark:text-white outline-none focus:border-red-600 resize-none"
                 />
               </div>
 
@@ -3235,7 +3235,7 @@ export function CalendarHubPage({
                       <button
                         type="button"
                         onClick={() => setIsConfirmingDelete(true)}
-                        className="p-2 rounded-sm border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+                        className="h-9 px-3 rounded-full border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
                         title="일정 삭제"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -3279,7 +3279,7 @@ export function CalendarHubPage({
           onClick={() => setViewingEvent(null)}
         >
           <div 
-            className="w-full max-w-md bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 rounded-none shadow-2xl p-6 overflow-hidden relative"
+            className="w-full max-w-md bg-surface dark:bg-surface-dark rounded-card shadow-2xl p-6 overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar: Category, Edit Icon, Share, Close */}
@@ -3406,7 +3406,7 @@ export function CalendarHubPage({
           onClick={() => setViewingTrip(null)}
         >
           <div 
-            className="w-full max-w-sm bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 shadow-2xl p-5 overflow-hidden relative"
+            className="w-full max-w-sm bg-surface dark:bg-surface-dark rounded-card shadow-2xl p-5 overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar: Journey Type Badge & Close */}
@@ -3610,7 +3610,7 @@ export function CalendarHubPage({
             ref={quickViewRef}
             role="region"
             aria-label="선택한 날짜"
-            className={`pointer-events-auto w-full max-w-md border border-black/20 dark:border-white/20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] text-black dark:text-white select-none transition-[transform,opacity] duration-300 ease-out ${
+            className={`pointer-events-auto w-full max-w-md rounded-card bg-surface/95 dark:bg-surface-dark/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] text-black dark:text-white select-none transition-[transform,opacity] duration-300 ease-out ${
               isQuickViewAnimOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
             }`}
           >
@@ -3686,7 +3686,7 @@ export function CalendarHubPage({
                 ) : (
                   <ul className="flex flex-col gap-1.5">
                     {quickViewDate.items.map((it, idx) => (
-                      <li key={idx} className="flex items-center justify-between gap-3 px-2.5 py-2 border border-black/15 dark:border-white/15">
+                      <li key={idx} className="flex items-center justify-between gap-3 px-3 py-2 rounded-thumb bg-black/[0.03] dark:bg-white/[0.06]">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: it.categoryColor || (it.isPlan ? '#3b82f6' : '#ef4444') }} />
                           <span className="text-sm font-bold truncate">{it.title}</span>
@@ -3710,7 +3710,7 @@ export function CalendarHubPage({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-white dark:bg-[#11110F] border border-black/20 dark:border-white/20 shadow-2xl p-6 sm:p-7 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
+            className="w-full max-w-lg bg-surface dark:bg-surface-dark rounded-card shadow-2xl p-6 sm:p-7 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
           >
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10 shrink-0">

@@ -354,7 +354,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-md bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 p-6 md:p-8 shadow-2xl flex flex-col z-10 transition-colors duration-300 text-black dark:text-white my-auto shrink-0 animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-md bg-surface dark:bg-surface-dark rounded-card p-6 md:p-8 shadow-2xl flex flex-col z-10 transition-colors duration-300 text-black dark:text-white my-auto shrink-0 animate-in fade-in zoom-in-95 duration-150">
         
         {/* Close Button */}
         <button 

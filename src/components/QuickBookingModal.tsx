@@ -102,7 +102,7 @@ function QuickBookingModalContent({
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-xl bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 rounded-xl shadow-2xl flex flex-col overflow-hidden text-black dark:text-white max-h-[92vh]"
+        className="w-full max-w-xl bg-surface dark:bg-surface-dark rounded-card shadow-2xl flex flex-col overflow-hidden text-black dark:text-white max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

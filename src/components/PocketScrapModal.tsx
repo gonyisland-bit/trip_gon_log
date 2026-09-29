@@ -390,7 +390,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       onClick={handleAttemptClose}
     >
       <div 
-        className="w-full max-w-xl bg-white dark:bg-[#121214] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-xl bg-surface dark:bg-surface-dark rounded-card shadow-2xl flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
