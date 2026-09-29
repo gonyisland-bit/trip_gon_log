@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, LogOut, User, Sun, Moon, Search, Home, Archive as ArchiveIcon, Compass, X, SlidersHorizontal } from 'lucide-react';
+import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
@@ -9,7 +9,16 @@ import { PasswordVerifyModal } from './PasswordVerifyModal';
 import { ProfileEditModal } from './ProfileEditModal';
 import { MiniWeatherWidget } from './MiniWeatherWidget';
 import { confirmDialog } from '../utils/feedback';
-import { openIntro } from '../intro/openIntro';
+import { openIntro, prefetchIntro } from '../intro/openIntro';
+
+const HUBS = [
+  { view: 'home', label: 'Home' },
+  { view: 'archive', label: 'Trip' },
+  { view: 'magazine', label: 'Magazine' },
+  { view: 'map', label: 'Map' },
+  { view: 'calendar', label: 'Calendar' },
+  { view: 'pocket', label: 'Pocket' },
+];
 
 interface NavigationProps {
   currentView: string;
@@ -53,6 +62,7 @@ export function Navigation({
   const currentUser = auth.currentUser;
   const displayName = currentUserProfile?.username || currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
 
   const [isPasswordVerifyOpen, setIsPasswordVerifyOpen] = useState(false);
   const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
@@ -117,6 +127,14 @@ export function Navigation({
       navigateTo(view);
     }
   };
+
+  // The page underneath stays put while the menu is open
+  useEffect(() => {
+    if (!showSettings) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [showSettings]);
 
   // Close menu on Escape key
   useEffect(() => {
@@ -247,19 +265,19 @@ export function Navigation({
           <button 
             type="button"
             onClick={() => setShowSettings(!showSettings)}
-            className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer flex items-center justify-center ${
+            aria-expanded={showSettings}
+            className={`w-11 h-11 -mr-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
               showSettings 
                 ? 'bg-black text-white dark:bg-white dark:text-black' 
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
             }`}
             title={showSettings ? "메뉴 닫기 (ESC)" : "메뉴 열기"}
-            aria-label="Toggle navigation menu"
+            aria-label={showSettings ? "메뉴 닫기" : "메뉴 열기"}
           >
-            {showSettings ? (
-              <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-            ) : (
-              <Menu className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-            )}
+            <span className="relative w-[18px] h-3" data-open={showSettings || undefined} aria-hidden>
+              <span className="tgl-burger-line absolute left-0 right-0 top-0 h-[2px] rounded-full bg-current" />
+              <span className="tgl-burger-line absolute left-0 right-0 bottom-0 h-[2px] rounded-full bg-current" />
+            </span>
           </button>
         </div>
       </div>
@@ -272,283 +290,207 @@ export function Navigation({
         }`}
       />
 
-      {/* Swiss Minimal Typography Drawer Menu (Mobile Fullscreen / Desktop Slide-over Drawer) */}
-      <div 
-        style={{ backgroundColor: isDarkMode ? '#111111' : '#FFFFFF' }}
-        className={`fixed inset-y-0 right-0 z-[100] w-full sm:max-w-md !bg-white dark:!bg-[#111111] border-l border-black/15 dark:border-white/15 flex flex-col justify-between p-5 sm:p-7 md:p-8 transition-all duration-300 ease-out shadow-2xl overflow-y-auto ${
-          showSettings 
-            ? 'translate-x-0 pointer-events-auto opacity-100 visible' 
-            : 'translate-x-full pointer-events-none opacity-0 invisible'
+      {/* Drawer menu: full screen on phones, a slide-over panel from sm up.
+          Big type for the six hubs, then compact rows for intro, screen mode and (admins) settings. */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="메뉴"
+        aria-hidden={!showSettings}
+        onTouchStart={(e) => { swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+        onTouchEnd={(e) => {
+          const st = swipeRef.current;
+          swipeRef.current = null;
+          if (!st) return;
+          const dx = e.changedTouches[0].clientX - st.x, dy = e.changedTouches[0].clientY - st.y;
+          if (dx > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) setShowSettings(false);
+        }}
+        className={`tgl-drawer fixed inset-y-0 right-0 z-[100] w-full sm:max-w-md bg-white dark:bg-[#111111] text-black dark:text-white sm:border-l border-black/15 dark:border-white/15 flex flex-col transition-[transform,opacity,visibility] duration-emph ease-emphasized overflow-y-auto overscroll-contain ${
+          showSettings ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible pointer-events-none'
         }`}
+        data-open={showSettings || undefined}
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-4 shrink-0">
-          <div 
+        <div className="flex items-center justify-between h-14 sm:h-16 px-5 sm:px-7 border-b border-black/10 dark:border-white/10 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', boxSizing: 'content-box' }}>
+          <button
+            type="button"
             onClick={() => {
               setShowSettings(false);
               window.dispatchEvent(new CustomEvent('triggerSplashScreen'));
               navigateTo('home');
             }}
-            className="flex items-center cursor-pointer group"
+            className="h-11 flex items-center cursor-pointer group"
             title="Tripgon log 홈으로 이동 (스플래시 실행)"
           >
-            <img 
-              src="/tripgon-logotype.svg" 
-              alt="Tripgon log" 
-              className="h-5 sm:h-6 w-auto object-contain dark:invert transition-opacity group-hover:opacity-80 select-none" 
-            />
-          </div>
+            <img src="/tripgon-logotype.svg" alt="Tripgon log" className="h-5 sm:h-6 w-auto object-contain dark:invert transition-opacity group-hover:opacity-80 select-none" />
+          </button>
           <button
             type="button"
             onClick={() => setShowSettings(false)}
-            className="tap-target p-1.5 sm:p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black dark:text-white transition-colors cursor-pointer"
+            className="w-11 h-11 -mr-2 grid place-items-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            aria-label="메뉴 닫기"
             title="메뉴 닫기 (ESC)"
           >
-            <X className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Editorial Menu List - Enhanced App Style Swiss Typography */}
-        <div className="flex flex-col space-y-3 sm:space-y-4 md:space-y-4.5 my-auto py-3 sm:py-4 shrink min-h-0">
+        {/* Hubs: large type, the current one marked in red */}
+        <nav className="flex flex-col px-5 sm:px-7 pt-4 pb-3 flex-1 justify-center min-h-0" aria-label="허브">
+          {HUBS.map((hub, i) => {
+            const active = currentView === hub.view;
+            return (
+              <button
+                key={hub.view}
+                type="button"
+                onClick={() => handleMenuNavigate(hub.view)}
+                aria-current={active ? 'page' : undefined}
+                className="tgl-drawer-item group flex items-center min-h-12 sm:min-h-14 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                style={{ ['--i' as string]: i }}
+              >
+                <span className={`font-mono text-xs font-bold w-8 shrink-0 tabular-nums ${active ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className={`font-['Inter',sans-serif] text-[28px] sm:text-[34px] leading-none font-extrabold uppercase tracking-tight transition-[color,transform] duration-base group-hover:translate-x-1 ${
+                  active ? 'text-black dark:text-white' : 'text-black/75 dark:text-white/75 group-hover:text-black dark:group-hover:text-white'
+                }`}>
+                  {hub.label}
+                </span>
+                {active && <span className="ml-3 w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500" aria-hidden />}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Utilities: intro, screen mode, admin settings */}
+        <div className="px-5 sm:px-7 border-t border-black/10 dark:border-white/10 shrink-0">
           <button
-            onClick={() => handleMenuNavigate('home')}
-            className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
+            type="button"
+            onClick={() => { setShowSettings(false); openIntro(); }}
+            onPointerEnter={prefetchIntro}
+            onTouchStart={prefetchIntro}
+            onFocus={prefetchIntro}
+            className="tgl-drawer-item w-full h-14 flex items-center gap-3 text-left border-b border-black/10 dark:border-white/10 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            style={{ ['--i' as string]: 6 }}
           >
-            <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-              01
+            <span className="w-8 h-8 shrink-0 rounded-full bg-black text-white dark:bg-white dark:text-black grid place-items-center transition-colors group-hover:bg-red-600 dark:group-hover:bg-red-500 dark:group-hover:text-white">
+              <Play className="w-3.5 h-3.5 fill-current translate-x-[1px]" />
             </span>
-            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
-              currentView === 'home' 
-                ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
-                : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
-            }`}>
-              HOME
-            </span>
+            <span className="flex-1 text-sm font-bold">소개 영상</span>
+            <span className="font-mono text-micro text-black/60 dark:text-white/60 tabular-nums">0:49</span>
           </button>
 
-          <button
-            onClick={() => handleMenuNavigate('archive')}
-            className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
+          <div
+            className="tgl-drawer-item py-3 border-b border-black/10 dark:border-white/10"
+            style={{ ['--i' as string]: 7 }}
+            title="나이트 모드 전환 (단축키: ⌘+Shift+L / Ctrl+Shift+L)"
           >
-            <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-              02
-            </span>
-            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
-              currentView === 'archive' 
-                ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
-                : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
-            }`}>
-              TRIP
-            </span>
-          </button>
-
-          <button
-            onClick={() => handleMenuNavigate('magazine')}
-            className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
-          >
-            <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-              03
-            </span>
-            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
-              currentView === 'magazine' 
-                ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
-                : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
-            }`}>
-              MAGAZINE
-            </span>
-          </button>
-
-          <button
-            onClick={() => handleMenuNavigate('map')}
-            className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
-          >
-            <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-              04
-            </span>
-            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
-              currentView === 'map' 
-                ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
-                : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
-            }`}>
-              MAP
-            </span>
-          </button>
-
-          <button
-            onClick={() => handleMenuNavigate('calendar')}
-            className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
-          >
-            <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-              05
-            </span>
-            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
-              currentView === 'calendar' 
-                ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
-                : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
-            }`}>
-              CALENDAR
-            </span>
-          </button>
-
-          <button
-            onClick={() => handleMenuNavigate('pocket')}
-            className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
-          >
-            <span className="font-mono text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-              06
-            </span>
-            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
-              currentView === 'pocket' 
-                ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
-                : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
-            }`}>
-              POCKET
-            </span>
-          </button>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold">화면 모드</span>
+              <span className="hidden sm:inline font-mono text-micro text-black/60 dark:text-white/60">⌘⇧L</span>
+            </div>
+            <div className="relative grid grid-cols-3 h-11 border border-black/15 dark:border-white/15" role="radiogroup" aria-label="화면 모드">
+              {/* The inverted block slides to the chosen mode */}
+              <span
+                className="absolute inset-y-0 w-1/3 bg-black dark:bg-white transition-transform duration-base ease-emphasized"
+                style={{ transform: `translateX(${(['auto', 'light', 'dark'] as const).indexOf(nightModeSetting) * 100}%)` }}
+                aria-hidden
+              />
+              {([
+                { id: 'auto', label: 'AUTO', icon: Clock, title: '저녁 18시 ~ 익일 06시 나이트 모드 자동 적용' },
+                { id: 'light', label: 'LIGHT', icon: Sun, title: '라이트 모드' },
+                { id: 'dark', label: 'DARK', icon: Moon, title: '다크 모드' },
+              ] as const).map(m => {
+                const on = nightModeSetting === m.id;
+                const Icon = m.icon;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    title={m.title}
+                    onClick={() => {
+                      if (setNightModeSetting) setNightModeSetting(m.id);
+                      if (m.id === 'light') setIsDarkMode(false);
+                      else if (m.id === 'dark') setIsDarkMode(true);
+                      else if (!setNightModeSetting) setIsDarkMode(!isDarkMode);
+                    }}
+                    className={`relative z-10 flex items-center justify-center gap-1.5 font-mono text-micro font-bold tracking-wider transition-colors duration-base cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500 ${
+                      on ? 'text-white dark:text-black' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {isLoggedIn && isAdmin && (
             <button
+              type="button"
               onClick={() => handleMenuNavigate(currentView === 'manage' ? 'home' : 'manage')}
-              className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
+              aria-current={currentView === 'manage' ? 'page' : undefined}
+              className="tgl-drawer-item w-full h-14 flex items-center gap-3 text-left border-b border-black/10 dark:border-white/10 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              style={{ ['--i' as string]: 8 }}
             >
-              <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-                07
+              <span className="w-8 h-8 shrink-0 rounded-full border border-black/20 dark:border-white/20 grid place-items-center">
+                <SlidersHorizontal className="w-3.5 h-3.5" />
               </span>
-              <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
-                currentView === 'manage' 
-                  ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
-                  : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
-              }`}>
-                SETTINGS
-              </span>
+              <span className={`flex-1 text-sm font-bold ${currentView === 'manage' ? 'text-red-600 dark:text-red-400' : ''}`}>SETTINGS</span>
+              <span className="font-mono text-micro tracking-widest px-1.5 py-0.5 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60">ADMIN</span>
             </button>
           )}
-
-          <button
-            onClick={() => { setShowSettings(false); openIntro(); }}
-            className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
-          >
-            <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-              {isLoggedIn && isAdmin ? '08' : '07'}
-            </span>
-            <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white">
-              INTRO
-            </span>
-          </button>
-
-          {/* Swiss Minimal 3-Way Segmented Control for Night Mode with Hover Shortcut Tooltip */}
-          <div 
-            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 sm:pt-3.5 border-t border-black/5 dark:border-white/5"
-            title="나이트 모드 전환 (단축키: ⌘+Shift+L / Ctrl+Shift+L)"
-          >
-            <div className="flex items-center">
-              <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
-                {isLoggedIn && isAdmin ? '09' : '08'}
-              </span>
-              <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight text-black/80 dark:text-white/80">
-                NIGHT MODE
-              </span>
-              <span 
-                className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-meta font-mono font-medium bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 ml-2.5 select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" 
-                title="키보드 단축키 (순환: AUTO → DAY → NIGHT)"
-              >
-                ⌘⇧L
-              </span>
-            </div>
-            <div className="flex items-center self-start sm:self-auto p-0.5 sm:p-1 bg-black/5 dark:bg-white/10 rounded border border-black/10 dark:border-white/15 font-mono text-meta sm:text-xs font-bold tracking-wider shrink-0">
-              <button
-                type="button"
-                onClick={() => setNightModeSetting ? setNightModeSetting('auto') : setIsDarkMode(!isDarkMode)}
-                className={`px-2 sm:px-2.5 py-1 rounded transition-colors ${
-                  nightModeSetting === 'auto'
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                }`}
-                title="저녁 18시 ~ 익일 06시 나이트 모드 자동 적용"
-              >
-                AUTO
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (setNightModeSetting) setNightModeSetting('light');
-                  setIsDarkMode(false);
-                }}
-                className={`px-2 sm:px-2.5 py-1 rounded transition-colors ${
-                  nightModeSetting === 'light'
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                LIGHT
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (setNightModeSetting) setNightModeSetting('dark');
-                  setIsDarkMode(true);
-                }}
-                className={`px-2 sm:px-2.5 py-1 rounded transition-colors ${
-                  nightModeSetting === 'dark'
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                DARK
-              </button>
-            </div>
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="pt-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-mono shrink-0">
+        {/* Account */}
+        <div className="px-5 sm:px-7 py-4 shrink-0 tgl-drawer-item" style={{ ['--i' as string]: 9 }}>
           {isLoggedIn ? (
-              <div className="flex items-center justify-between w-full">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSettings(false);
-                    setIsPasswordVerifyOpen(true);
-                  }}
-                  className="flex items-center gap-2.5 text-left cursor-pointer group"
-                  title="내 프로필 수정 (암호 확인 후 진입)"
-                >
-                  <UserProfileAvatar profile={currentUserProfile} size="sm" fallbackName={displayName} />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-black dark:text-white uppercase tracking-wider group-hover:text-red-600 transition-colors">
-                      {displayName}
-                    </span>
-                    <span className="text-micro text-black/60 dark:text-white/60 font-mono">
-                      프로필 수정
-                    </span>
-                  </div>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="font-extrabold text-red-600 dark:text-red-400 hover:underline cursor-pointer tracking-widest uppercase"
-                >
-                  LOGOUT
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-6">
-                <button
-                  onClick={() => { setShowSettings(false); openAuthModal('login'); }}
-                  className="font-extrabold uppercase tracking-widest hover:underline cursor-pointer text-black dark:text-white"
-                >
-                  LOGIN
-                </button>
-                <span className="text-black/60 dark:text-white/60">/</span>
-                <button
-                  onClick={() => { setShowSettings(false); openAuthModal('signup'); }}
-                  className="font-extrabold uppercase tracking-widest hover:underline cursor-pointer text-black dark:text-white"
-                >
-                  SIGN UP
-                </button>
-              </div>
-            )}
-          </div>
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowSettings(false); setIsPasswordVerifyOpen(true); }}
+                className="min-h-11 flex items-center gap-2.5 text-left cursor-pointer group min-w-0"
+                title="내 프로필 수정 (암호 확인 후 진입)"
+              >
+                <UserProfileAvatar profile={currentUserProfile} size="sm" fallbackName={displayName} />
+                <span className="flex flex-col min-w-0">
+                  <span className="text-sm font-bold uppercase tracking-wider truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">{displayName}</span>
+                  <span className="text-meta text-black/60 dark:text-white/60">프로필 수정</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="h-11 px-4 shrink-0 inline-flex items-center gap-2 border border-black/15 dark:border-white/15 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors font-mono text-xs font-bold uppercase tracking-widest cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowSettings(false); openAuthModal('login'); }}
+                className="h-11 bg-black text-white dark:bg-white dark:text-black hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors font-mono text-xs font-bold uppercase tracking-widest cursor-pointer"
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowSettings(false); openAuthModal('signup'); }}
+                className="h-11 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs font-bold uppercase tracking-widest cursor-pointer"
+              >
+                Sign up
+              </button>
+            </div>
+          )}
         </div>
+      </div>
 
       {/* Password Verification Modal before accessing profile */}
       {isPasswordVerifyOpen && currentUser?.email && (
