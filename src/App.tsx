@@ -796,7 +796,7 @@ function App() {
 
         {/* Swiss Minimal Night Mode 3-Tier Cycle HUD Indicator */}
         <div
-          className={`fixed top-6 left-1/2 -translate-x-1/2 z-[999999] pointer-events-none transition-all duration-300 ease-out ${
+          className={`fixed top-6 left-1/2 -translate-x-1/2 z-system pointer-events-none transition-all duration-300 ease-out ${
             nightModeHud.visible
               ? 'opacity-100 translate-y-0 scale-100'
               : 'opacity-0 -translate-y-3 scale-95'
@@ -806,7 +806,7 @@ function App() {
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-full border border-black/15 dark:border-white/20 bg-white/95 dark:bg-[#121214]/95 text-black dark:text-white shadow-xl backdrop-blur-md">
             {nightModeHud.mode === 'auto' && (
               <>
-                <Compass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
+                <Compass className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span className="font-mono text-xs font-extrabold tracking-wider uppercase">AUTO (18:00 - 06:00)</span>
               </>
             )}
@@ -818,7 +818,7 @@ function App() {
             )}
             {nightModeHud.mode === 'dark' && (
               <>
-                <Moon className="w-3.5 h-3.5 text-indigo-400 stroke-[2.5]" />
+                <Moon className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span className="font-mono text-xs font-extrabold tracking-wider uppercase">NIGHT MODE</span>
               </>
             )}

@@ -165,7 +165,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-nested flex items-center justify-center p-3 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
@@ -526,7 +526,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
       {/* Full-size High-Res Image Lightbox Popup */}
       {isLightboxOpen && spot.thumbnailUrl && (
         <div 
-          className="fixed inset-0 z-[100000] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
+          className="fixed inset-0 z-nested bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
           onClick={() => setIsLightboxOpen(false)}
         >
           <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>

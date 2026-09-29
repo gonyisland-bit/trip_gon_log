@@ -81,7 +81,7 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
 
   return (
     <div 
-      className="fixed inset-0 z-[999999] pointer-events-none overflow-hidden flex items-center justify-center select-none"
+      className="fixed inset-0 z-system pointer-events-none overflow-hidden flex items-center justify-center select-none"
       aria-hidden="true"
     >
       <style>{`

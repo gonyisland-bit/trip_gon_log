@@ -467,7 +467,7 @@ export function SettingsModal({
                             </div>
                             <div className="text-micro text-black/60 dark:text-white/60 font-medium flex items-center gap-1.5 mt-0.5">
                               <span>{journey.date}</span>
-                              {isPlan && <span className="text-blue-500 dark:text-blue-400 font-bold">PLAN</span>}
+                              {isPlan && <span className="text-amber-600 dark:text-amber-400 font-bold">PLAN</span>}
                             </div>
                           </div>
                           {/* Check */}

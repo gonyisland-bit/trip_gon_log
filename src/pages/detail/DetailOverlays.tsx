@@ -41,7 +41,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
       {mapConfirm && (
         <div 
           onClick={() => setMapConfirm(null)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal flex items-center justify-center p-4 animate-in fade-in duration-200"
         >
           <div 
             onClick={(e) => e.stopPropagation()}

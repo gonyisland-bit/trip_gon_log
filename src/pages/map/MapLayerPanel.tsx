@@ -124,7 +124,7 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-black/65 dark:text-white/65">
                   <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-black" />태양 바로 아래</span>
                   <span className="inline-flex items-center gap-1.5"><span className="w-4 h-px bg-black dark:bg-white" />낮과 밤 경계</span>
-                  <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-yellow-300 shadow-[0_0_4px_2px_rgba(245,158,11,0.5)]" />도시 불빛</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-300 shadow-[0_0_4px_2px_rgba(245,158,11,0.5)]" />도시 불빛</span>
                 </div>
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <span className="font-mono text-meta font-bold tabular-nums">

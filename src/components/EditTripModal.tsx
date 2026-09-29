@@ -657,7 +657,7 @@ export function EditTripModal({
                     : 'bg-transparent text-black/60 dark:text-white/60 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${isPlanJourney ? 'bg-blue-500' : 'bg-transparent'}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${isPlanJourney ? 'bg-amber-500' : 'bg-transparent'}`} />
                 <span>PLAN (계획)</span>
               </button>
             </div>
@@ -1330,7 +1330,7 @@ export function EditTripModal({
               {([
                 { id: 'NEW', label: 'NEW', activeBg: 'bg-red-600 text-white border-red-600' },
                 { id: 'EDITING', label: 'EDITING', activeBg: 'bg-amber-600 text-white border-amber-600' },
-                { id: 'PLAN', label: 'PLAN', activeBg: 'bg-blue-600 text-white border-blue-600' },
+                { id: 'PLAN', label: 'PLAN', activeBg: 'bg-amber-600 text-white border-amber-600' },
               ] as const).map((badgeOpt) => {
                 const isActive = statusBadge === badgeOpt.id;
                 return (

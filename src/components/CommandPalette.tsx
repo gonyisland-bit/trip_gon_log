@@ -155,7 +155,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
             aria-activedescendant={rows[active] ? `cp-${rows[active].id}` : undefined}
             autoComplete="off"
             spellCheck={false}
-            className="flex-1 min-w-0 bg-transparent outline-none text-base placeholder:text-black/40 dark:placeholder:text-white/40"
+            className="flex-1 min-w-0 bg-transparent outline-none text-base placeholder:text-black/50 dark:placeholder:text-white/50"
           />
           <kbd className="shrink-0 font-mono text-micro px-1.5 py-0.5 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60">ESC</kbd>
         </div>

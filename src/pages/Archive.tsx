@@ -1017,7 +1017,7 @@ export function ArchiveHubPage({
                                     PLAN
                                   </span>
                                   {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
-                                    <span className="font-mono text-micro font-bold text-white px-1 rounded bg-blue-600/90 leading-tight">
+                                    <span className="font-mono text-micro font-bold text-white px-1 rounded bg-amber-600/90 leading-tight">
                                       {planInfo.dDayLabel}
                                     </span>
                                   )}
@@ -1035,7 +1035,7 @@ export function ArchiveHubPage({
                                   {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
                                 </div>
                                 {isPlanOrFuture || trip.statusBadge === 'PLAN' ? (
-                                  <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
+                                  <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-amber-600 text-white rounded-none leading-none">
                                     PLAN
                                   </span>
                                 ) : trip.statusBadge ? (

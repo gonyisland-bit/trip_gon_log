@@ -255,7 +255,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : isSavingAll))}
           className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer border ${
             (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess)
-              ? 'bg-green-600 text-white border-green-600 scale-105'
+              ? 'bg-emerald-600 text-white border-emerald-600 scale-105'
               : 'bg-black text-white dark:bg-white dark:text-black border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
           }`}
           title="변경사항 저장 (단축키: Ctrl + S)"
@@ -713,7 +713,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           <div className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <RotateCcw className="w-4 h-4 text-black/70 dark:text-white/70" />
                 <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                   매거진 섹션 복구 (RESTORE MAGAZINE SECTIONS)
                 </h3>
@@ -781,9 +781,9 @@ export function ManageHubPage(props: ManageHubPageProps) {
             </div>
 
             {/* Option 3: Firestore Data Restore */}
-            <div className="p-3.5 border border-blue-500/20 bg-blue-500/5 flex flex-col gap-2">
+            <div className="p-3.5 border border-black/20 dark:border-white/20 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-extrabold uppercase text-blue-700 dark:text-blue-300">
+                <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
                   3. 서버(Firestore) 저장본 확인 및 복원
                 </span>
                 <button
@@ -792,14 +792,14 @@ export function ManageHubPage(props: ManageHubPageProps) {
                     await handleLoadFirestoreMagazineSections();
                   }}
                   disabled={isLoadingFirestoreMag}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs font-mono font-bold uppercase tracking-wider hover:bg-blue-700 cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white cursor-pointer disabled:opacity-50"
                 >
                   {isLoadingFirestoreMag ? '조회 중...' : '서버 데이터 조회'}
                 </button>
               </div>
               {firestoreMagSections && (
-                <div className="flex items-center justify-between pt-2 border-t border-blue-500/20">
-                  <span className="text-[11px] font-mono text-blue-800 dark:text-blue-200">
+                <div className="flex items-center justify-between pt-2 border-t border-black/10 dark:border-white/10">
+                  <span className="text-micro font-mono text-black/70 dark:text-white/70">
                     서버 저장본: 총 {firestoreMagSections.length}개 섹션 ({firestoreMagLoadedAt})
                   </span>
                   <button
@@ -808,7 +808,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                       handleForceRestoreSectionsFromFirestore();
                       setShowRestoreModal(false);
                     }}
-                    className="px-2.5 py-1 bg-blue-600 text-white text-[11px] font-mono font-bold uppercase cursor-pointer hover:bg-blue-700"
+                    className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black text-micro font-mono font-bold uppercase cursor-pointer hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white"
                   >
                     이 데이터로 복원
                   </button>

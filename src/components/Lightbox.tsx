@@ -35,6 +35,7 @@ import {
   saveStoredSlideshowInterval,
   BgmTrack,
 } from '../utils/audioHelper';
+import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from './player/PlayerDock';
 
 export interface LightboxImageMeta {
   url: string;
@@ -108,7 +109,6 @@ export function Lightbox({
   const settingsOpenRef = useRef(false);
   settingsOpenRef.current = isSettingsOpen;
   const [isBgmShuffle, setIsBgmShuffle] = useState(() => bgmPlayer.isShuffle());
-  const bgmPopoverRef = useRef<HTMLDivElement>(null);
 
   // Volume HUD state
   const [volume, setVolume] = useState(() => bgmPlayer.getVolumePercent());
@@ -192,21 +192,6 @@ export function Lightbox({
     });
     return () => unsub();
   }, []);
-
-  // Close BGM track list popover when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (bgmPopoverRef.current && !bgmPopoverRef.current.contains(e.target as Node)) {
-        setIsTrackListOpen(false);
-      }
-    };
-    if (isTrackListOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isTrackListOpen]);
 
   // True crossfade: old image fades out on top while new is already visible underneath
   const [fadeOutSrc, setFadeOutSrc] = useState<string | null>(null);
@@ -959,154 +944,30 @@ export function Lightbox({
     setIsDragging(false);
   }
 
-  // Phones show the slideshow's music and speed controls in the bottom bar, desktops in the top bar
-  const isCompactSlideshow = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches;
-  const renderBgmGroup = (placement: 'up' | 'down') => (
-    <>
-              {/* BGM Controls Group */}
-              <div className="relative flex items-center bg-white/10 rounded-sm border border-white/20 px-1 py-0.5 gap-0.5" ref={placement === (isCompactSlideshow ? 'up' : 'down') ? bgmPopoverRef : undefined}>
-                {/* Mute / Unmute Toggle */}
-                <button
-                  onClick={handleToggleMute}
-                  className={`p-1 text-micro transition-all cursor-pointer ${
-                    volume > 0 ? 'text-red-400 font-extrabold' : 'text-white/60 hover:text-white'
-                  }`}
-                  title={volume === 0 ? '음소거 해제 (M)' : '음소거 (M)'}
-                >
-                  {volume === 0 ? (
-                    <VolumeX className="w-3.5 h-3.5 opacity-60" />
-                  ) : volume < 50 ? (
-                    <Volume1 className="w-3.5 h-3.5 text-red-400" />
-                  ) : (
-                    <Volume2 className="w-3.5 h-3.5 text-red-400" />
-                  )}
-                </button>
-
-                {/* Volume Percent HUD Trigger Button */}
-                <button
-                  type="button"
-                  onClick={showVolumeHud}
-                  className="px-1 py-0.5 font-mono text-micro font-bold text-white/80 hover:text-red-400 transition-colors cursor-pointer border-r border-white/15 pr-1.5"
-                  title="볼륨 조절 (방향키 ↑/↓, 마우스 휠)"
-                >
-                  {volume}%
-                </button>
-
-                {/* Track Title Button: Click to open track list selector */}
-                <button
-                  onClick={() => setIsTrackListOpen(prev => !prev)}
-                  className={`hidden sm:flex items-center gap-1 px-1.5 py-0.5 text-micro font-extrabold uppercase tracking-wider transition-all cursor-pointer max-w-[120px] truncate ${
-                    isBgmPlaying ? 'text-red-400' : 'text-white/70 hover:text-white'
-                  }`}
-                  title="클릭하여 음원 선택"
-                >
-                  <span className="truncate">{currentBgmTrack?.title || (isBgmPlaying ? 'BGM ON' : 'BGM OFF')}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsTrackListOpen(prev => !prev)}
-                  className={`sm:hidden tap-target p-1 transition-colors cursor-pointer ${isBgmPlaying ? 'text-red-400' : 'text-white/70'}`}
-                  aria-label="음원 선택"
-                >
-                  <ListMusic className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Shuffle Mode Toggle */}
-                <button
-                  type="button"
-                  onClick={handleToggleShuffle}
-                  className={`tap-target p-1 transition-colors cursor-pointer border-l border-white/15 ${
-                    isBgmShuffle ? 'text-red-400 bg-white/10' : 'text-white/60 hover:text-white'
-                  }`}
-                  title={isBgmShuffle ? '셔플 재생 중 (클릭 시 순차 재생)' : '순차 재생 중 (클릭 시 셔플 재생)'}
-                >
-                  <Shuffle className="w-3 h-3" />
-                </button>
-
-                {/* Next Track Button */}
-                <button
-                  onClick={() => bgmPlayer.next()}
-                  className="tap-target p-1 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer border-l border-white/15"
-                  title="다음 배경음악 트랙"
-                >
-                  <SkipForward className="w-3 h-3" />
-                </button>
-
-                {/* Swiss Minimal Track Selector Popover (Opens downwards below top control bar) */}
-                {isTrackListOpen && (
-                  <div className={`absolute ${placement === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 max-w-[calc(100vw-2rem)] max-h-64 overflow-y-auto bg-black/95 backdrop-blur-md border border-white/20 rounded-sm shadow-2xl p-1 z-50 animate-in fade-in duration-150`}>
-                    <div className="px-2 py-1.5 border-b border-white/10 flex items-center justify-between text-meta font-mono text-white/60 uppercase tracking-widest">
-                      <span>BGM PLAYLIST</span>
-                      <span className="text-red-400 font-bold">{bgmPlayer.getPlayableTracks().length} TRACKS</span>
-                    </div>
-                    <div className="flex flex-col gap-0.5 mt-1">
-                      {bgmPlayer.getPlayableTracks().length === 0 ? (
-                        <div className="p-3 text-center text-xs text-white/60 font-mono">
-                          재생 가능한 음원이 없습니다
-                        </div>
-                      ) : (
-                        bgmPlayer.getPlayableTracks().map((track, idx) => {
-                          const isSelected = currentBgmTrack?.id === track.id;
-                          return (
-                            <button
-                              key={track.id}
-                              type="button"
-                              onClick={() => {
-                                bgmPlayer.playTrackById(track.id);
-                                setIsTrackListOpen(false);
-                              }}
-                              className={`w-full text-left px-2.5 py-1.5 rounded-xs flex items-center justify-between transition-colors text-xs font-mono cursor-pointer ${
-                                isSelected
-                                  ? 'bg-red-500/20 text-red-400 font-bold'
-                                  : 'text-white/80 hover:bg-white/10 hover:text-white'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 min-w-0 pr-2">
-                                <span className="text-meta opacity-40 shrink-0">#{idx + 1}</span>
-                                <span className="truncate">{track.title}</span>
-                              </div>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-red-400 shrink-0" />}
-                            </button>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-    </>
-  );
+  // Slideshow speed (interval) selector, shown in the dock's settings panel
   const renderSpeed = () => (
-    <>
-              {/* Slideshow Speed (Interval) Selector */}
-              <div className="flex items-center bg-white/10 rounded-sm border border-white/20 p-0.5">
-                {[
-                  { label: '3s', val: 3000 },
-                  { label: '4s', val: 4000 },
-                  { label: '6s', val: 6000 },
-                  { label: '8s', val: 8000 },
-                ].map((item) => (
-                  <button
-                    key={item.val}
-                    type="button"
-                    onClick={() => handleChangeInterval(item.val)}
-                    className={`px-3 py-1.5 sm:px-1.5 sm:py-0.5 font-mono text-micro uppercase transition-all rounded-xs cursor-pointer ${
-                      slideshowInterval === item.val
-                        ? 'bg-red-500 text-white font-bold shadow-xs'
-                        : 'text-white/60 hover:text-white'
-                    }`}
-                    title={`슬라이드 전환 속도 ${item.label}`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-    </>
+    <div className="flex items-center bg-white/10 border border-white/20 p-0.5">
+      {[
+        { label: '3s', val: 3000 },
+        { label: '4s', val: 4000 },
+        { label: '6s', val: 6000 },
+        { label: '8s', val: 8000 },
+      ].map((item) => (
+        <button
+          key={item.val}
+          type="button"
+          onClick={() => handleChangeInterval(item.val)}
+          className={`px-2.5 py-1 font-mono text-micro uppercase transition-colors cursor-pointer ${
+            slideshowInterval === item.val ? 'bg-red-500 text-white font-bold' : 'text-white/60 hover:text-white'
+          }`}
+          aria-pressed={slideshowInterval === item.val}
+          title={`슬라이드 전환 속도 ${item.label}`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
   );
-
   // Format date: YYYY.MM.DD → 'MM / DD / YYYY' film stamp style
   function formatFilmDate(dateStr?: string) {
     if (!dateStr) return '';
@@ -1119,7 +980,7 @@ export function Lightbox({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden ${
+      className={`fixed inset-0 z-player bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden ${
         isSlideshow && !isControlsVisible ? 'cursor-none [&_*]:!cursor-none' : ''
       }`}
       onMouseMove={resetControlsTimer}
@@ -1157,10 +1018,27 @@ export function Lightbox({
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* ── SLIDESHOW MODE OVERLAY (Auto-hide controls on idle) ── */}
+      {/* ── SLIDESHOW: one line on top (progress, count, close), one dock at the bottom ── */}
+      {isSlideshow && (
+        <PlayerTopBar
+          visible={isControlsVisible}
+          count={images.length}
+          index={currentIndex}
+          progress={slideProgress / 100}
+          countLabel={<>{currentIndex + 1} / {images.length}</>}
+          label={isPaused ? (
+            <span className="inline-flex items-center gap-1.5 text-white/85">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              PAUSED
+            </span>
+          ) : undefined}
+          onClose={() => { handleStopSlideshow(); onClose(); }}
+        />
+      )}
+
       {isSlideshow && (
         <div
-          className="absolute inset-0 z-30 flex flex-col justify-between pointer-events-none select-none"
+          className="absolute inset-0 z-30 flex flex-col pointer-events-none select-none"
           onMouseEnter={() => {
             if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
           }}
@@ -1168,59 +1046,7 @@ export function Lightbox({
             resetControlsTimer();
           }}
         >
-          {/* Top bar. Phones keep it to the count and close; the rest moves to the bottom bar (below). */}
-          <div
-            className={`pointer-events-auto flex justify-between items-center gap-3 px-4 sm:px-5 pb-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent transition-opacity duration-300 ${
-              isControlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-            style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))' }}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-white/60 text-meta font-bold uppercase tracking-widest tabular-nums">
-                {currentIndex + 1} / {images.length}
-              </span>
-              {/* Paused: a dot, so nothing in the bar moves */}
-              <span className={`w-1.5 h-1.5 rounded-full bg-red-500 transition-opacity ${isPaused ? 'opacity-100 animate-pulse' : 'opacity-0'}`} aria-label={isPaused ? '일시정지됨' : undefined} />
-            </div>
-            <div className="hidden sm:flex items-center gap-2">
-              <button onClick={handlePrev} className="tap-target p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer" title="이전 (←)">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button onClick={handleTogglePause} className="tap-target p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer" title={isPaused ? '재생 (Space)' : '일시정지 (Space)'}>
-                {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-              </button>
-              <button onClick={handleNext} className="tap-target p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer" title="다음 (→)">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              <div className="h-4 w-[1px] bg-white/20 mx-1" />
-              {renderBgmGroup('down')}
-              {renderSpeed()}
-
-              <button
-                type="button"
-                onClick={() => setIsCleanView((prev) => !prev)}
-                className={`tap-target p-2 rounded-full transition-all cursor-pointer ${isCleanView ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                title={isCleanView ? '자막 보이기 (C)' : '자막 숨기기 (C)'}
-              >
-                {isCleanView ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
-
-              <div className="h-4 w-[1px] bg-white/20 mx-1" />
-              <button
-                onClick={handleStopSlideshow}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 text-white text-micro font-extrabold uppercase tracking-widest transition-all border border-white/20 cursor-pointer"
-                title="슬라이드쇼 종료 (ESC)"
-              >
-                <SkipBack className="w-3.5 h-3.5" />
-                갤러리로
-              </button>
-            </div>
-            {/* Room for the close button, which lives outside the auto-hiding bar */}
-            <span className="w-10 h-10 shrink-0" aria-hidden />
-          </div>
-
-          {/* Center Spacer: click to toggle pause/play (a tap that only wakes the controls does not pause) */}
+          {/* Tap the picture to pause or play (a tap that only wakes the controls does not pause) */}
           <div
             onClick={() => {
               if (wokeControlsRef.current) { wokeControlsRef.current = false; return; }
@@ -1229,69 +1055,77 @@ export function Lightbox({
             className="flex-grow pointer-events-auto cursor-pointer"
           />
 
-          {/* Bottom Area: Persistent Caption + Auto-hiding Dimmer & Progress */}
-          <div className="relative w-full flex flex-col items-center">
-            {/* 1. Bottom Dark Dimmer Gradient (Auto-hide on idle) */}
+          <div className="relative w-full flex flex-col gap-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}>
             <div
-              className={`absolute inset-0 -top-24 bg-gradient-to-t from-black/85 via-black/40 to-transparent transition-opacity duration-300 pointer-events-none ${
-                isControlsVisible ? 'opacity-100' : 'opacity-0'
+              className={`absolute inset-x-0 bottom-0 -top-24 bg-gradient-to-t from-black/80 via-black/35 to-transparent transition-opacity duration-300 pointer-events-none ${
+                isControlsVisible || !isCleanView ? 'opacity-100' : 'opacity-0'
               }`}
             />
 
-            {/* 2. Persistent Caption (Stays visible even when controls auto-hide, hidden only in Clean View) */}
+            {/* Caption stays while the controls hide; only the caption toggle removes it */}
             {!isCleanView && (() => {
               const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
               const secondaryLoc = (currentMeta.location && currentMeta.location.trim() !== primaryTitle) ? currentMeta.location.trim() : '';
               const extraNote = (currentMeta.imgNote && currentMeta.imgNote.trim() !== primaryTitle && currentMeta.imgNote.trim() !== secondaryLoc) ? currentMeta.imgNote.trim() : '';
-
               if (!primaryTitle && !currentMeta.date && !secondaryLoc && !extraNote) return null;
-
               return (
-                <div className="relative z-10 text-center max-w-xl px-4 pb-3 transition-all duration-300 pointer-events-none select-none">
+                <div key={currentIndex} className={`relative z-10 w-full max-w-2xl px-4 sm:px-8 pointer-events-none tgl-reel-caption drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] transition-opacity duration-base ${isSettingsOpen ? 'opacity-0' : ''}`}>
+                  {(currentMeta.date || secondaryLoc) && (
+                    <div className="flex items-center gap-2 min-w-0 font-mono text-micro sm:text-meta font-bold uppercase tracking-[0.16em]">
+                      {/* Film date stamp keeps its orange */}
+                      {currentMeta.date && <span className="shrink-0 tabular-nums" style={{ color: '#f97316' }}>{formatFilmDate(currentMeta.date)}</span>}
+                      {currentMeta.date && secondaryLoc && <span className="w-4 h-px bg-white/50 shrink-0" />}
+                      {secondaryLoc && <span className="truncate text-white/85">{secondaryLoc}</span>}
+                    </div>
+                  )}
                   {primaryTitle && (
-                    <div className="text-white font-bold text-sm md:text-base tracking-wide uppercase mb-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
+                    <div className="mt-1 text-white text-lg sm:text-2xl font-extrabold tracking-[-0.02em] leading-tight break-keep line-clamp-2">
                       {primaryTitle}
                     </div>
                   )}
-                  {currentMeta.date && (
-                    <div
-                      className="font-mono font-bold tracking-widest drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]"
-                      style={{ color: '#f97316', fontSize: 'clamp(11px, 1.4vw, 16px)', letterSpacing: '0.12em' }}
-                    >
-                      {formatFilmDate(currentMeta.date)}
-                    </div>
+                  {extraNote && !secondaryLoc && (
+                    <div className="mt-1 text-white/80 text-xs sm:text-sm truncate">{extraNote}</div>
                   )}
-                  {secondaryLoc ? (
-                    <div className="text-white/90 text-xs mt-1 max-w-lg truncate flex items-center justify-center gap-1 font-sans drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
-                      <MapPin className="w-3 h-3 text-red-400 shrink-0 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]" />
-                      <span>{secondaryLoc}</span>
-                    </div>
-                  ) : extraNote ? (
-                    <div className="text-white/80 text-xs mt-1 max-w-lg truncate drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
-                      {extraNote}
-                    </div>
-                  ) : null}
                 </div>
               );
             })()}
 
-            {/* Phone controls (the desktop keeps them in the top bar) */}
-            <div
-              className={`sm:hidden relative z-10 w-full px-4 pb-2 flex flex-col gap-2 transition-opacity duration-300 ${
-                isControlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-              }`}
-            >
-              {/* Details panel: only when asked for */}
-              {isSettingsOpen && (
-                <div className="flex flex-col gap-3 p-3 bg-black/85 backdrop-blur-md border border-white/20 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-mono text-micro uppercase tracking-widest text-white/60">전환 시간</span>
-                    {renderSpeed()}
-                  </div>
+            <PlayerDock
+              className="relative z-10 self-center"
+              visible={isControlsVisible}
+              playing={!isPaused}
+              onTogglePlay={handleTogglePause}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              prevLabel="이전 (←)"
+              nextLabel="다음 (→)"
+              leading={
+                <DockButton label={volume === 0 ? '소리 켜기 (M)' : '소리 끄기 (M)'} onClick={handleToggleMute}>
+                  {volume === 0 ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
+                </DockButton>
+              }
+              trailing={
+                <DockButton
+                  label={isSettingsOpen ? '설정 닫기' : '설정'}
+                  active={isSettingsOpen}
+                  aria-expanded={isSettingsOpen}
+                  onClick={() => { if (isSettingsOpen) setTimeout(resetControlsTimer, 0); setIsSettingsOpen(v => !v); setIsTrackListOpen(false); }}
+                >
+                  <SlidersHorizontal className="w-5 h-5" />
+                </DockButton>
+              }
+              hud={isVolumeHudVisible && !isSettingsOpen ? (
+                <div className="flex items-center gap-2 px-3 h-8 bg-black/70 backdrop-blur-md border border-white/20 text-white font-mono text-micro tabular-nums animate-in fade-in duration-150">
+                  {volume === 0 ? <VolumeX className="w-3.5 h-3.5 opacity-60" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  <span className="w-24 h-[2px] bg-white/20 overflow-hidden"><span className="block h-full bg-red-500" style={{ width: `${volume}%` }} /></span>
+                  <span className="w-8 text-right">{volume}%</span>
+                </div>
+              ) : undefined}
+              panel={isSettingsOpen ? (
+                <DockPanel>
+                  <DockPanelRow label="전환 시간">{renderSpeed()}</DockPanelRow>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={handleToggleMute} className="tap-target w-9 h-9 grid place-items-center bg-white/10 text-white shrink-0" aria-label={volume === 0 ? '음소거 해제' : '음소거'}>
-                      {volume === 0 ? <VolumeX className="w-4 h-4 opacity-60" /> : <Volume2 className="w-4 h-4" />}
-                    </button>
+                    <span className="font-mono text-micro uppercase tracking-widest text-white/60 w-16 shrink-0">볼륨</span>
                     <input
                       type="range" min={0} max={100} value={volume}
                       onChange={(e) => handleVolumeChange(Number(e.target.value))}
@@ -1300,196 +1134,64 @@ export function Lightbox({
                     />
                     <span className="w-9 text-right font-mono text-micro font-bold text-white/80 tabular-nums shrink-0">{volume}%</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setIsTrackListOpen(prev => !prev)} className={`flex-1 min-w-0 h-9 px-3 flex items-center gap-2 bg-white/10 text-left ${isBgmPlaying ? 'text-red-400' : 'text-white/70'}`}>
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" onClick={() => setIsTrackListOpen(prev => !prev)} aria-expanded={isTrackListOpen} className={`flex-1 min-w-0 h-9 px-3 flex items-center gap-2 bg-white/10 hover:bg-white/15 text-left ${isBgmPlaying ? 'text-red-400' : 'text-white/80'}`}>
                       <ListMusic className="w-4 h-4 shrink-0" />
                       <span className="truncate text-xs font-bold">{currentBgmTrack?.title || (isBgmPlaying ? 'BGM ON' : 'BGM OFF')}</span>
                     </button>
-                    <button type="button" onClick={handleToggleShuffle} className={`tap-target w-9 h-9 grid place-items-center shrink-0 ${isBgmShuffle ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`} aria-label={isBgmShuffle ? '셔플 끄기' : '셔플 켜기'}>
+                    <button type="button" onClick={handleToggleShuffle} className={`tap-target w-9 h-9 grid place-items-center shrink-0 ${isBgmShuffle ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/15 text-white'}`} aria-label={isBgmShuffle ? '셔플 끄기' : '셔플 켜기'} aria-pressed={isBgmShuffle}>
                       <Shuffle className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => bgmPlayer.next()} className="tap-target w-9 h-9 grid place-items-center bg-white/10 text-white shrink-0" aria-label="다음 곡">
+                    <button type="button" onClick={() => bgmPlayer.next()} className="tap-target w-9 h-9 grid place-items-center bg-white/10 hover:bg-white/15 text-white shrink-0" aria-label="다음 곡">
                       <SkipForward className="w-4 h-4" />
                     </button>
                   </div>
                   {isTrackListOpen && (
-                    <div className="max-h-36 overflow-y-auto overscroll-contain border border-white/15">
+                    <div className="max-h-36 overflow-y-auto overscroll-contain border border-white/15 shrink-0">
                       {bgmPlayer.getPlayableTracks().length === 0 ? (
                         <div className="p-3 text-center text-xs text-white/60 font-mono">재생 가능한 음원이 없습니다</div>
                       ) : bgmPlayer.getPlayableTracks().map((track, idx) => {
                         const on = currentBgmTrack?.id === track.id;
                         return (
                           <button key={track.id} type="button" onClick={() => { bgmPlayer.playTrackById(track.id); setIsTrackListOpen(false); }}
-                            className={`w-full text-left px-3 py-2 flex items-center justify-between text-xs font-mono ${on ? 'bg-red-500/20 text-red-400 font-bold' : 'text-white/80'}`}>
-                            <span className="truncate pr-2"><span className="opacity-40">#{idx + 1}</span> {track.title}</span>
+                            className={`w-full text-left px-3 py-2 flex items-center justify-between text-xs font-mono ${on ? 'bg-red-500/20 text-red-400 font-bold' : 'text-white/80 hover:bg-white/10'}`}>
+                            <span className="truncate pr-2"><span className="opacity-60">#{idx + 1}</span> {track.title}</span>
                             {on && <Check className="w-3.5 h-3.5 shrink-0" />}
                           </button>
                         );
                       })}
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setIsCleanView((prev) => !prev)} className={`flex-1 h-9 px-3 flex items-center justify-center gap-2 text-xs font-bold ${isCleanView ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`}>
+                  {images.length > 1 && (
+                    <div className="flex gap-1 overflow-x-auto hide-scrollbar shrink-0 -mx-1 px-1">
+                      {images.map((img, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          ref={idx === currentIndex ? (el) => el?.scrollIntoView({ block: 'nearest', inline: 'center' }) : undefined}
+                          onClick={() => onNavigate(idx)}
+                          className={`w-11 h-11 shrink-0 overflow-hidden border ${idx === currentIndex ? 'border-red-500' : 'border-white/15 opacity-70 hover:opacity-100'}`}
+                          aria-label={`${idx + 1}번째 사진`}
+                          aria-current={idx === currentIndex}
+                        >
+                          <img src={img.url} alt="" loading="lazy" className="w-full h-full object-cover" draggable={false} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" onClick={() => setIsCleanView((prev) => !prev)} aria-pressed={isCleanView} className={`flex-1 h-9 px-3 flex items-center justify-center gap-2 text-xs font-bold ${isCleanView ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/15 text-white'}`}>
                       {isCleanView ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       <span>{isCleanView ? '자막 보이기' : '자막 숨기기'}</span>
                     </button>
-                    <button type="button" onClick={handleStopSlideshow} className="flex-1 h-9 px-3 flex items-center justify-center gap-2 bg-white/10 text-white text-xs font-bold">
+                    <button type="button" onClick={handleStopSlideshow} className="flex-1 h-9 px-3 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white text-xs font-bold">
                       <SkipBack className="w-4 h-4" />
                       <span>갤러리로</span>
                     </button>
                   </div>
-                </div>
-              )}
-
-              {/* Everyday row: sound, previous, play, next, details */}
-              <div className="flex items-center justify-between gap-3">
-                <button type="button" onClick={handleToggleMute} className={`tap-target w-11 h-11 rounded-full grid place-items-center ${volume > 0 ? 'bg-white/10 text-red-400' : 'bg-white/10 text-white/60'}`} aria-label={volume === 0 ? '소리 켜기' : '소리 끄기'}>
-                  {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                </button>
-                <div className="flex items-center gap-4">
-                  <button onClick={handlePrev} className="tap-target w-11 h-11 rounded-full bg-white/10 text-white grid place-items-center" aria-label="이전">
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button onClick={handleTogglePause} className="tap-target w-12 h-12 rounded-full bg-white text-black grid place-items-center" aria-label={isPaused ? '재생' : '일시정지'}>
-                    {isPaused ? <Play className="w-5 h-5 fill-current translate-x-[1px]" /> : <Pause className="w-5 h-5" />}
-                  </button>
-                  <button onClick={handleNext} className="tap-target w-11 h-11 rounded-full bg-white/10 text-white grid place-items-center" aria-label="다음">
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { if (isSettingsOpen) setTimeout(resetControlsTimer, 0); setIsSettingsOpen(v => !v); setIsTrackListOpen(false); }}
-                  className={`tap-target w-11 h-11 rounded-full grid place-items-center ${isSettingsOpen ? 'bg-white text-black' : 'bg-white/10 text-white'}`}
-                  aria-label={isSettingsOpen ? '설정 닫기' : '설정'}
-                  aria-expanded={isSettingsOpen}
-                >
-                  <SlidersHorizontal className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* 3. Progress bar & Dot indicators (Auto-hide on idle) */}
-            <div
-              style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
-              className={`relative z-10 w-full flex flex-col items-center gap-3 transition-opacity duration-300 ${
-                isControlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-              }`}
-            >
-              {/* Progress bar */}
-              <div className="w-full max-w-xs h-[2px] bg-white/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-red-500 rounded-full transition-none"
-                  style={{ width: `${isPaused ? slideProgress : slideProgress}%` }}
-                />
-              </div>
-
-              {/* Dot indicators - 멈추었을 때(isPaused)에만 등장 */}
-              {isPaused && (
-                <div className="flex gap-1.5 flex-wrap justify-center max-w-sm max-h-16 overflow-y-auto px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full border border-white/15 animate-in fade-in duration-200 hide-scrollbar pointer-events-auto">
-                  {images.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onNavigate(idx);
-                      }}
-                      className={`rounded-full transition-all duration-200 cursor-pointer ${
-                        idx === currentIndex
-                          ? 'w-4 h-1.5 bg-red-500'
-                          : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/70'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isSlideshow && (
-        <button
-          type="button"
-          onClick={() => { handleStopSlideshow(); onClose(); }}
-          className={`fixed z-[45] right-3 sm:right-4 w-10 h-10 rounded-full grid place-items-center text-white bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/20 transition-opacity duration-300 cursor-pointer ${isControlsVisible ? 'opacity-100' : 'opacity-40'}`}
-          style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.25rem))' }}
-          aria-label="닫기"
-          title="닫기"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      )}
-
-      {/* ── SWISS MINIMAL VOLUME HUD INDICATOR ── */}
-      {isSlideshow && (
-        <div
-          className={`max-sm:hidden fixed right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 pointer-events-auto transition-all duration-300 ${
-            isVolumeHudVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'
-          }`}
-          onMouseEnter={() => {
-            if (volumeHudTimerRef.current) clearTimeout(volumeHudTimerRef.current);
-          }}
-          onMouseLeave={() => {
-            showVolumeHud();
-          }}
-        >
-          <div className="bg-black/90 backdrop-blur-md border border-white/20 px-2.5 py-3.5 flex flex-col items-center gap-2.5 shadow-2xl rounded-xs min-w-[48px]">
-            {/* Volume Up Button */}
-            <button
-              type="button"
-              onClick={handleVolumeUp}
-              className="tap-target p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
-              title="볼륨 올리기 (↑)"
-            >
-              <ChevronUp className="w-4 h-4" />
-            </button>
-
-            {/* Vertical Volume Gauge */}
-            <div
-              className="w-1.5 h-28 bg-white/20 rounded-full overflow-hidden flex flex-col justify-end cursor-pointer relative"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const clickY = e.clientY - rect.top;
-                const pct = Math.round((1 - clickY / rect.height) * 100);
-                handleVolumeChange(pct);
-              }}
-              title={`볼륨: ${volume}%`}
-            >
-              <div
-                className="w-full bg-red-500 transition-all duration-75 rounded-full"
-                style={{ height: `${volume}%` }}
-              />
-            </div>
-
-            {/* Volume Down Button */}
-            <button
-              type="button"
-              onClick={handleVolumeDown}
-              className="tap-target p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
-              title="볼륨 내리기 (↓)"
-            >
-              <ChevronDown className="w-4 h-4" />
-            </button>
-
-            {/* Mute/Icon + Percentage */}
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              className="flex flex-col items-center gap-0.5 mt-0.5 text-white/80 hover:text-red-400 transition-colors cursor-pointer"
-              title={volume === 0 ? '음소거 해제 (M)' : '음소거 (M)'}
-            >
-              {volume === 0 ? (
-                <VolumeX className="w-3.5 h-3.5 opacity-60 text-red-400" />
-              ) : volume < 50 ? (
-                <Volume1 className="w-3.5 h-3.5 text-red-400" />
-              ) : (
-                <Volume2 className="w-3.5 h-3.5 text-red-400" />
-              )}
-              <span className="font-mono text-micro font-bold text-white tracking-tighter">
-                {volume}%
-              </span>
-            </button>
+                </DockPanel>
+              ) : undefined}
+            />
           </div>
         </div>
       )}
@@ -1617,10 +1319,10 @@ export function Lightbox({
         onWheel={isSlideshow ? handleSlideshowWheel : handleWheel}
       >
         {/* Left Arrow */}
-        {images.length > 1 && (!isSlideshow || isControlsVisible) && (
+        {images.length > 1 && !isSlideshow && (
           <button
             onClick={handlePrev}
-            className={`${isSlideshow ? 'max-sm:hidden ' : ''}tap-target absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
+            className={`tap-target absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
               isSlideshow && !isControlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
             title="이전 사진 (←)"
@@ -1723,10 +1425,10 @@ export function Lightbox({
         </div>
 
         {/* Right Arrow */}
-        {images.length > 1 && (!isSlideshow || isControlsVisible) && (
+        {images.length > 1 && !isSlideshow && (
           <button
             onClick={handleNext}
-            className={`${isSlideshow ? 'max-sm:hidden ' : ''}tap-target absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
+            className={`tap-target absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
               isSlideshow && !isControlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
             title="다음 사진 (→)"

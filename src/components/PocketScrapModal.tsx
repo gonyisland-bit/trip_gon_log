@@ -34,7 +34,7 @@ const renderPlatformBadge = (platform: SpotPocketPlatform) => {
   const p = platform.toLowerCase();
   if (p === 'instagram') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-gradient-to-r from-pink-500/15 via-red-500/15 to-amber-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/30">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-transparent text-black dark:text-white border border-black/20 dark:border-white/20">
         INSTAGRAM
       </span>
     );
@@ -386,7 +386,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
+      className="fixed inset-0 z-modal bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
       onClick={handleAttemptClose}
     >
       <div 

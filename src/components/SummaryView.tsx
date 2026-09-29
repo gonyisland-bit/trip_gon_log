@@ -1070,7 +1070,7 @@ export function SummaryView({
       {capturedImg && createPortal(
         <div 
           onClick={() => setCapturedImg(null)}
-          className="fixed inset-0 z-[100000] bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-150"
+          className="fixed inset-0 z-nested bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-150"
         >
           <div 
             onClick={(e) => e.stopPropagation()}

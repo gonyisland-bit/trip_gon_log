@@ -149,7 +149,7 @@ export function ConfirmModal({
 
   return createPortal(
     <div 
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs select-none transition-opacity duration-300 ${
+      className={`fixed inset-0 z-modal flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs select-none transition-opacity duration-300 ${
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       onClick={() => handleImmediateClose(onCancel)}

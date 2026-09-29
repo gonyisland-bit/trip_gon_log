@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackToClose } from '../../utils/overlayHistory';
-import { Pause, Play, Volume2, VolumeX, X } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
+import { PlayerDock, PlayerTopBar, DockButton } from '../player/PlayerDock';
 import { getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval } from '../../utils/audioHelper';
 import { prefersReducedMotion } from '../../motion';
 
@@ -78,6 +79,12 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       return i + 1;
     });
   }, [shots.length]);
+
+  const goBack = useCallback(() => {
+    shotStartRef.current = performance.now();
+    setIndex(i => Math.max(0, i - 1));
+    setEnded(false);
+  }, []);
 
   // Music
   useEffect(() => {
@@ -157,7 +164,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       if (e.key === 'Escape') onClose();
       else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
       else if (e.key === 'ArrowRight') advance();
-      else if (e.key === 'ArrowLeft') { shotStartRef.current = performance.now(); setIndex(i => Math.max(0, i - 1)); setEnded(false); }
+      else if (e.key === 'ArrowLeft') goBack();
     };
     window.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
@@ -166,7 +173,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [advance, onClose]);
+  }, [advance, goBack, onClose]);
 
   // Controls fade out while watching
   useEffect(() => {
@@ -224,31 +231,22 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       {/* Legibility */}
       <div className="absolute inset-0 z-[3] pointer-events-none bg-gradient-to-t from-black/75 via-black/5 to-black/40" />
 
-      {/* Progress segments */}
-      <div className="absolute top-0 inset-x-0 z-[5] flex gap-1 px-4 sm:px-8" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))' }}>
-        {shots.map((_, i) => (
-          <div key={i} className="h-[2px] flex-1 bg-white/25 overflow-hidden">
-            <div
-              key={`${i}-${index}-${playing}`}
-              className="h-full bg-white origin-left"
-              style={{
-                transform: i < index || ended ? 'scaleX(1)' : 'scaleX(0)',
-                animation: i === index && !ended && playing && !reduced ? `tglReelProgress ${shotDuration}ms linear forwards` : undefined,
-              }}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Masthead */}
-      <div style={{ top: 'calc(max(1rem, env(safe-area-inset-top, 0px)) + 1rem)' }} className="absolute left-4 right-4 sm:left-8 sm:right-8 z-[5] flex items-center justify-between font-mono text-micro sm:text-meta tracking-[0.18em] uppercase text-white/85">
-        <span>Memory Reel · {title}</span>
-        <span className="tabular-nums">{String(Math.min(index + 1, shots.length)).padStart(2, '0')} / {String(shots.length).padStart(2, '0')}</span>
-      </div>
+      <PlayerTopBar
+        visible={chromeVisible || !playing || ended}
+        count={shots.length}
+        index={ended ? shots.length : index}
+        segmentMs={!reduced && !ended ? shotDuration : undefined}
+        progress={reduced ? 0 : undefined}
+        running={playing}
+        segmentKey={`${index}-${playing}`}
+        countLabel={<>{String(Math.min(index + 1, shots.length)).padStart(2, '0')} / {String(shots.length).padStart(2, '0')}</>}
+        label={`Memory Reel · ${title}`}
+        onClose={onClose}
+      />
 
       {/* Lower third */}
       {shot && !ended && (
-        <div key={index} className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-24 sm:bottom-20 z-[5] max-w-3xl tgl-reel-caption">
+        <div key={index} className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-28 sm:bottom-24 z-[5] max-w-3xl tgl-reel-caption">
           <div className="flex items-center gap-2 font-mono text-micro sm:text-meta tracking-[0.16em] uppercase text-white/85">
             <span className="w-6 h-px bg-red-500" />
             {[shot.location || shot.place, shot.date].filter(Boolean).join(' · ')}
@@ -281,23 +279,25 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
         </div>
       )}
 
-      {/* Controls: bottom-centre transport pill, the same place and shape as Playlog and the photo slideshow */}
-      <div
-        className={`absolute left-1/2 -translate-x-1/2 z-[7] flex items-center gap-1 p-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 transition-opacity duration-base ${chromeVisible || !playing || ended ? 'opacity-100' : 'opacity-0'}`}
-        style={{ bottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
-      >
-        {!ended && (
-          <button type="button" onClick={(e) => { e.stopPropagation(); setPlaying(p => !p); }} className="tgl-press tap-target w-10 h-10 rounded-full bg-white text-black hover:bg-neutral-200 flex items-center justify-center transition-colors" aria-label={playing ? '일시정지' : '재생'}>
-            {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current translate-x-[1px]" />}
-          </button>
-        )}
-        <button type="button" onClick={(e) => { e.stopPropagation(); setMuted(m => !m); }} className="tgl-press tap-target w-10 h-10 rounded-full text-white/85 hover:bg-white/15 flex items-center justify-center transition-colors" aria-label={muted ? '소리 켜기' : '소리 끄기'}>
-          {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-        </button>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onClose(); }} className="tgl-press tap-target w-10 h-10 rounded-full text-white/85 hover:bg-white/15 flex items-center justify-center transition-colors" aria-label="닫기">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
+      {/* Controls: the shared player dock */}
+      {!ended && (
+        <PlayerDock
+          className="absolute left-1/2 -translate-x-1/2 z-[7]"
+          style={{ bottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+          visible={chromeVisible || !playing}
+          playing={playing}
+          onTogglePlay={() => setPlaying(p => !p)}
+          onPrev={goBack}
+          onNext={advance}
+          prevLabel="이전 (←)"
+          nextLabel="다음 (→)"
+          leading={
+            <DockButton label={muted ? '소리 켜기' : '소리 끄기'} onClick={() => setMuted(m => !m)}>
+              {muted ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
+            </DockButton>
+          }
+        />
+      )}
     </div>
   );
 }

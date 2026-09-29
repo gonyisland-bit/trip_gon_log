@@ -439,7 +439,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
 
                               {/* Slot Number & Type Badge */}
                               <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/80 text-white font-mono text-micro font-bold uppercase tracking-wider flex items-center gap-1">
-                                {item.type === 'video' ? <Film className="w-2.5 h-2.5 text-red-400" /> : <ImageIcon className="w-2.5 h-2.5 text-blue-400" />}
+                                {item.type === 'video' ? <Film className="w-2.5 h-2.5 text-red-400" /> : <ImageIcon className="w-2.5 h-2.5 text-white/80" />}
                                 <span>#{idx + 1}</span>
                               </div>
 
@@ -772,7 +772,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
               <div className="flex flex-col gap-1.5 p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-blue-600 dark:text-blue-500" />
+                    <Globe className="w-4 h-4 text-black/70 dark:text-white/70" />
                     <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                       실시간 세계 날씨 위젯
                     </span>

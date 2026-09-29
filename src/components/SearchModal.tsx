@@ -206,13 +206,13 @@ export function SearchModal({
     switch (type) {
       case 'trip':
       case 'plan':
-        return <Compass className="w-4 h-4 text-emerald-500" />;
+        return <Compass className="w-4 h-4 text-black/70 dark:text-white/70" />;
       case 'timeline':
-        return <Clock className="w-4 h-4 text-blue-500" />;
+        return <Clock className="w-4 h-4 text-black/70 dark:text-white/70" />;
       case 'flight':
-        return <Plane className="w-4 h-4 text-sky-500 animate-pulse" />;
+        return <Plane className="w-4 h-4 text-black/70 dark:text-white/70" />;
       case 'stay':
-        return <Bed className="w-4 h-4 text-indigo-500" />;
+        return <Bed className="w-4 h-4 text-black/70 dark:text-white/70" />;
       case 'transit':
         return <Train className="w-4 h-4 text-amber-500" />;
       default:
@@ -223,15 +223,15 @@ export function SearchModal({
   const getBadge = (type: string) => {
     switch (type) {
       case 'trip':
-        return <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Journey</span>;
+        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Journey</span>;
       case 'plan':
-        return <span className="bg-teal-500/10 text-teal-600 dark:text-teal-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Plan</span>;
+        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Plan</span>;
       case 'timeline':
-        return <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Log</span>;
+        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Log</span>;
       case 'flight':
-        return <span className="bg-sky-500/10 text-sky-600 dark:text-sky-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Flight</span>;
+        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Flight</span>;
       case 'stay':
-        return <span className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Hotel</span>;
+        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Hotel</span>;
       case 'transit':
         return <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Transit</span>;
       default:
@@ -240,7 +240,7 @@ export function SearchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-modal flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-2xl bg-white dark:bg-[#151515] border border-black/10 dark:border-white/10 shadow-2xl rounded-none mt-16 md:mt-24 flex flex-col max-h-[75vh] overflow-hidden text-black dark:text-white">
         
         {/* Search Input Header */}

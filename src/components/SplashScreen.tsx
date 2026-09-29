@@ -143,7 +143,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     <div
       ref={rootRef}
       onClick={handleSkip}
-      className="fixed inset-0 z-[999999] flex items-center justify-center select-none cursor-pointer bg-[#FAF9F6] dark:bg-[#111111]"
+      className="fixed inset-0 z-system flex items-center justify-center select-none cursor-pointer bg-[#FAF9F6] dark:bg-[#111111]"
       aria-label="Tripgon log"
       role="presentation"
     >

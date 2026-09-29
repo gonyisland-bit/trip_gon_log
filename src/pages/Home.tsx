@@ -1627,7 +1627,7 @@ export function HomePage({
                             PLAN
                           </span>
                           {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
-                            <span className="font-mono text-micro font-bold text-white px-1 rounded bg-blue-600/90 leading-tight">
+                            <span className="font-mono text-micro font-bold text-white px-1 rounded bg-amber-600/90 leading-tight">
                               {planInfo.dDayLabel}
                             </span>
                           )}
@@ -1656,7 +1656,7 @@ export function HomePage({
                           }
                           if (isItemPlan || trip.statusBadge === 'PLAN') {
                             return (
-                              <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
+                              <span className="px-2 py-0.5 text-micro sm:text-meta font-extrabold uppercase tracking-wider font-mono bg-amber-600 text-white rounded-none leading-none">
                                 PLAN
                               </span>
                             );
@@ -2207,7 +2207,7 @@ export function HomePage({
                         btnStyle += 'bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-xs scale-105';
                         numStyle += 'text-white dark:text-black';
                       } else if (cell.hasTrip) {
-                        btnStyle += 'bg-[#FF4500] hover:bg-[#E03E00] text-white font-extrabold shadow-xs';
+                        btnStyle += 'bg-red-600 hover:bg-red-700 text-white font-extrabold shadow-xs';
                         numStyle += 'text-white';
                       } else {
                         btnStyle += 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20';

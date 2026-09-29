@@ -314,7 +314,7 @@ export function ProfileEditModal({
   return createPortal(
     <>
       <div 
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto"
+        className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto"
         onClick={onClose}
       >
         <div 
@@ -650,7 +650,7 @@ export function ProfileEditModal({
       {/* Sub-Modal: 1:1 Profile Avatar Picker (Icon Grid or Image Upload) */}
       {isAvatarPickerOpen && (
         <div 
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-player flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
           onClick={() => setIsAvatarPickerOpen(false)}
         >
           <div 

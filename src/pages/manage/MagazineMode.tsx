@@ -245,7 +245,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
             className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer text-black dark:text-white transition-colors"
             title="유실된 매거진 섹션 복구 (기본 섹션 복구 또는 로컬 백업 스냅샷에서 불러오기)"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <RotateCcw className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
             <span>RESTORE</span>
           </button>
           <button
@@ -1072,7 +1072,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
           onClick={() => handleSaveMagazine()}
           disabled={isSavingMagazine}
           className={`px-8 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity shadow-md ${
-            magazineSaveSuccess ? '!bg-green-600 !text-white' : ''
+            magazineSaveSuccess ? '!bg-emerald-600 !text-white' : ''
           }`}
         >
           {magazineSaveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}

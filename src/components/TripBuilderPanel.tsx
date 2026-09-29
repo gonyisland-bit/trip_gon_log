@@ -624,10 +624,10 @@ export function TripBuilderPanel({
                 const catMeta = {
                   food: { bg: 'bg-red-500/10 text-red-600 dark:text-red-400', label: 'FOOD', icon: Utensils },
                   cafe: { bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400', label: 'CAFE', icon: ShoppingBag },
-                  spot: { bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400', label: 'SPOT', icon: MapPin },
-                  shopping: { bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400', label: 'SHOPPING', icon: ShoppingBag },
-                  tip: { bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', label: 'TIP', icon: Sparkles },
-                }[spot.category] || { bg: 'bg-blue-500/10 text-blue-600', label: 'SPOT', icon: MapPin };
+                  spot: { bg: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70', label: 'SPOT', icon: MapPin },
+                  shopping: { bg: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70', label: 'SHOPPING', icon: ShoppingBag },
+                  tip: { bg: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70', label: 'TIP', icon: Sparkles },
+                }[spot.category] || { bg: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70', label: 'SPOT', icon: MapPin };
 
                 const CatIcon = catMeta.icon;
                 const locationText = [spot.city, spot.country].filter(Boolean).join(' · ');
@@ -2471,7 +2471,7 @@ export function TripBuilderPanel({
                       <div className={`rounded-xl p-3 space-y-1.5 transition-all ${containerCls}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${isWarning ? 'bg-red-500 animate-pulse' : isBest ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${isWarning ? 'bg-red-500 animate-pulse' : isBest ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                             <span className="text-xs font-bold text-black dark:text-white">
                               {activeMonth}월 여행 시즌 리포트
                             </span>

@@ -41,7 +41,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
       {/* Action Toast */}
       {userActionToast && (
         <div className="p-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-          <Check className="w-4 h-4 text-green-400 dark:text-green-600" />
+          <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
           <span>{userActionToast}</span>
         </div>
       )}
@@ -384,7 +384,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           <button
                             type="button"
                             onClick={() => handleApproveUser(user)}
-                            className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-green-600 dark:hover:bg-green-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-emerald-600 dark:hover:bg-emerald-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
                           >
                             APPROVE
                           </button>

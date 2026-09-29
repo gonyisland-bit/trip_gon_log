@@ -22,6 +22,14 @@ export default {
         serif: ['Satoshi', 'Inter', '"Noto Sans KR"', 'sans-serif'],
         mono: ['"SF Mono"', 'Consolas', '"Noto Sans KR"', 'monospace'],
       },
+      // Layer tokens: named steps instead of ad-hoc z-[n] values (see spec 4.13)
+      zIndex: {
+        float: '40',       // in-page docks, FABs, map controls
+        modal: '9999',     // dialogs and sheets over a page
+        player: '10000',   // full-screen players (slideshow, Intro)
+        nested: '100000',  // viewers opened from inside a modal
+        system: '999999', // splash, transitions, system HUD
+      },
       // Legibility floor: nothing smaller than `micro`. Size only (line-height inherits, like the arbitrary sizes they replace)
       fontSize: {
         micro: '11px', // uppercase mono labels, badges, coordinates

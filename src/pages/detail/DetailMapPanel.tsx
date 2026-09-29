@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, ChevronLeft, ChevronRight, Play, Pause, SkipForward, SkipBack, X as CloseIcon, X } from 'lucide-react';
+import { DockButton } from '../../components/player/PlayerDock';
 import { MapArea } from '../../components/MapArea';
 import { cleanAdministrativeDistricts } from '../../components/SummaryView';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
@@ -267,131 +268,88 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                   }
                 }
               }}
-              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 bg-[#2E2E33] text-white border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-md p-1 ${
+              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 bg-black/70 text-white border border-white/15 backdrop-blur-md p-1 ${
                 isCinematicMode
-                  ? 'h-9.5 sm:h-10 w-[calc(100%-1.5rem)] max-w-[480px] justify-between'
-                  : 'h-9.5 sm:h-10 w-auto justify-center hover:scale-105 active:scale-95 cursor-pointer group'
+                  ? 'h-11 w-[calc(100%-1.5rem)] max-w-[480px] justify-between'
+                  : 'h-10 w-auto justify-center hover:scale-105 active:scale-95 cursor-pointer group'
               }`}
             >
-              {/* Collapsed State: Monochromatic Solid Capsule with Flush Concentric Play Button & 'Playlog' */}
+              {/* Collapsed: play circle + 'Playlog' */}
               {!isCinematicMode ? (
                 <button
                   onClick={handleStartPlaylog}
-                  className="w-full h-full flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none pl-0.5 pr-2.5 sm:pr-3"
+                  className="w-full h-full flex items-center gap-2 cursor-pointer select-none pl-0.5 pr-3"
                   title="플레이로그 시작 (Space)"
                   aria-label="Playlog"
                 >
-                  {/* Left: White Circular Play Button (Aspect-square and exact concentric inset) */}
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 aspect-square shrink-0 rounded-full bg-white text-black flex items-center justify-center shadow-xs group-hover:bg-neutral-100 transition-colors">
-                    <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black text-black ml-0.5" />
+                  <div className="w-8 h-8 aspect-square shrink-0 rounded-full bg-white text-black flex items-center justify-center group-hover:bg-neutral-200 transition-colors">
+                    <Play className="w-3 h-3 fill-black text-black ml-0.5" />
                   </div>
-
-                  {/* Clean Sans-Serif Title: Playlog */}
-                  <span className="text-xs sm:text-[13px] font-sans font-bold tracking-tight text-white whitespace-nowrap select-none">
+                  <span className="text-xs sm:text-meta font-sans font-bold tracking-tight text-white whitespace-nowrap select-none">
                     Playlog
                   </span>
                 </button>
               ) : (
-                /* Expanded State: Left White Toggle Circle + Middle Track + Right White Capsule Controller */
-                currentCinematicItem && (() => {
-                  return (
-                    <div className="w-full h-full flex items-center justify-between gap-1.5 sm:gap-2 select-none animate-in fade-in duration-200">
-                      {/* 1. Left: White Circular Toggle (Pause / Play) - Exactly matches w-7 h-7 sm:w-8 sm:h-8 aspect-square */}
-                      <button
-                        onClick={() => setIsCinematicPaused(p => !p)}
-                        className="w-7 h-7 sm:w-8 sm:h-8 aspect-square shrink-0 rounded-full bg-white text-black flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-neutral-200"
-                        title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
-                      >
-                        {isCinematicPaused ? (
-                          <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black text-black ml-0.5" />
-                        ) : (
-                          <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black text-black" />
-                        )}
-                      </button>
+                /* Expanded: the shared player dock language (prev · play · next | spot and progress | speed · close) */
+                currentCinematicItem && (
+                  <div className="w-full h-full flex items-center gap-0.5 select-none animate-in fade-in duration-200">
+                    <DockButton label="이전 스팟 (←)" className="!w-9 !h-9" onClick={() => setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length)}>
+                      <ChevronLeft className="w-4 h-4" />
+                    </DockButton>
+                    <button
+                      onClick={() => setIsCinematicPaused(p => !p)}
+                      className="tgl-press w-9 h-9 aspect-square shrink-0 rounded-full bg-white text-black flex items-center justify-center cursor-pointer hover:bg-neutral-200 transition-colors"
+                      aria-label={isCinematicPaused ? '재생' : '일시정지'}
+                      title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
+                    >
+                      {isCinematicPaused ? <Play className="w-3.5 h-3.5 fill-black ml-0.5" /> : <Pause className="w-3.5 h-3.5 fill-black" />}
+                    </button>
+                    <DockButton label="다음 스팟 (→)" className="!w-9 !h-9" onClick={() => setCinematicIndex(prev => (prev + 1) % cinematicItems.length)}>
+                      <ChevronRight className="w-4 h-4" />
+                    </DockButton>
+                    <span className="w-px h-5 bg-white/20 mx-1 shrink-0" aria-hidden />
 
-                      {/* 2. Middle: Spot Name + Progress Track + Counter */}
-                      <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0 mx-0.5">
-                        <span className="text-xs sm:text-[12.5px] font-bold text-white tracking-tight truncate max-w-[110px] sm:max-w-[160px] font-sans">
+                    {/* Spot name, progress with the walker, count */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 px-1">
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <span className="text-xs font-bold text-white tracking-tight truncate font-sans">
                           {currentCinematicItem.place || 'Spot'}
                         </span>
-
-                        <div className="flex-1 min-w-[45px] relative h-2 sm:h-2.5 flex items-center">
-                          <div 
-                            className="absolute inset-0 rounded-full overflow-hidden opacity-40 bg-white/20"
-                            style={{
-                              background: 'repeating-linear-gradient(-45deg, rgba(255,255,255,0.15), rgba(255,255,255,0.15) 2.5px, rgba(255,255,255,0.3) 2.5px, rgba(255,255,255,0.3) 5px)' 
-                            }}
-                          />
-                          {/* Hardware-Accelerated Progress Track (Zero React Re-render) */}
-                          <div 
-                            key={`progress-${cinematicIndex}-${cinematicSpeed}`}
-                            className="absolute top-0 bottom-0 left-0 bg-white rounded-l-full animate-cinematic-progress"
-                            style={{
-                              animationDuration: `${cinematicSpeed}ms`,
-                              animationPlayState: isCinematicPaused ? 'paused' : 'running'
-                            }}
-                          />
-                          {/* Hardware-Accelerated Walker Runner (Zero React Re-render) */}
-                          <div 
-                            key={`walker-${cinematicIndex}-${cinematicSpeed}`}
-                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 animate-cinematic-walker flex items-center justify-center pointer-events-none"
-                            style={{
-                              animationDuration: `${cinematicSpeed}ms`,
-                              animationPlayState: isCinematicPaused ? 'paused' : 'running'
-                            }}
-                          >
-                            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-white border border-neutral-900 shadow-xs flex items-center justify-center">
-                              <img src="/walker.png" alt="Walker" className="w-2 h-2 object-contain" />
-                            </div>
-                          </div>
-                        </div>
-
-                        <span className="text-micro sm:text-micro font-mono font-bold text-white/60 shrink-0">
+                        <span className="text-micro font-mono font-bold text-white/60 shrink-0 tabular-nums">
                           {String(cinematicIndex + 1).padStart(2, '0')}/{String(cinematicItems.length).padStart(2, '0')}
                         </span>
                       </div>
-
-                      {/* 3. Right: Independent White Capsule Controller with Bold Borderless Speed Button */}
-                      <div className="bg-white text-black rounded-full h-7 sm:h-8 px-2 sm:px-2.5 flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
-                        <button
-                          onClick={() => setCinematicSpeed(s => s === 3600 ? 1800 : (s === 1800 ? 7200 : 3600))}
-                          className="px-1 py-0.5 text-xs sm:text-[13px] font-mono font-extrabold text-black hover:text-blue-600 transition-colors cursor-pointer select-none leading-none tracking-tight"
-                          title="재생 속도 (1X / 2X / 0.5X)"
+                      <div className="relative h-[2px] bg-white/25">
+                        <div
+                          key={`progress-${cinematicIndex}-${cinematicSpeed}`}
+                          className="absolute top-0 bottom-0 left-0 bg-red-500 animate-cinematic-progress"
+                          style={{ animationDuration: `${cinematicSpeed}ms`, animationPlayState: isCinematicPaused ? 'paused' : 'running' }}
+                        />
+                        <div
+                          key={`walker-${cinematicIndex}-${cinematicSpeed}`}
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 animate-cinematic-walker flex items-center justify-center pointer-events-none"
+                          style={{ animationDuration: `${cinematicSpeed}ms`, animationPlayState: isCinematicPaused ? 'paused' : 'running' }}
                         >
-                          {cinematicSpeed === 1800 ? '2X' : (cinematicSpeed === 7200 ? '0.5X' : '1X')}
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-                          }}
-                          className="tap-target p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
-                          title="이전 스팟 (←)"
-                        >
-                          <SkipBack className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-                          }}
-                          className="tap-target p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
-                          title="다음 스팟 (→)"
-                        >
-                          <SkipForward className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => setIsCinematicMode(false)}
-                          className="tap-target p-1 text-black/60 hover:text-black transition-colors cursor-pointer ml-0.5"
-                          title="종료 (Esc)"
-                        >
-                          <CloseIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        </button>
+                          <div className="w-3.5 h-3.5 rounded-full bg-white border border-neutral-900 flex items-center justify-center">
+                            <img src="/walker.png" alt="" className="w-2 h-2 object-contain" />
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  );
-                })()
+
+                    <span className="w-px h-5 bg-white/20 mx-1 shrink-0" aria-hidden />
+                    <button
+                      onClick={() => setCinematicSpeed(s => s === 3600 ? 1800 : (s === 1800 ? 7200 : 3600))}
+                      className="tgl-press h-9 min-w-9 px-1.5 shrink-0 rounded-full text-xs font-mono font-extrabold text-white/85 hover:text-white hover:bg-white/15 transition-colors cursor-pointer tabular-nums"
+                      title="재생 속도 (1X / 2X / 0.5X)"
+                    >
+                      {cinematicSpeed === 1800 ? '2X' : (cinematicSpeed === 7200 ? '.5X' : '1X')}
+                    </button>
+                    <DockButton label="종료 (Esc)" className="!w-9 !h-9" onClick={() => setIsCinematicMode(false)}>
+                      <CloseIcon className="w-4 h-4" />
+                    </DockButton>
+                  </div>
+                )
               )}
             </div>
           )}

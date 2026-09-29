@@ -30,11 +30,11 @@ const TYPE_CODES: { [key: string]: string } = {
 };
 
 const TYPE_COLORS: { [key: string]: string } = {
-  timeline: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  flight: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
-  stay: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
-  transit: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  custom: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+  timeline: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70',
+  flight: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70',
+  stay: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70',
+  transit: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70',
+  custom: 'bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70',
 };
 
 const formatNumberWithCommas = (val: string): string => {
@@ -441,7 +441,7 @@ export function SettlementView({
       {/* Lightbox for attachments (Rendered in Portal) */}
       {lightboxUrl && createPortal(
         <div
-          className="fixed inset-0 z-[100000] bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-nested bg-black/90 flex items-center justify-center p-4"
           onClick={() => setLightboxUrl(null)}
         >
           <button className="tap-target absolute top-4 right-4 text-white/70 hover:text-white p-2" onClick={() => setLightboxUrl(null)}>
@@ -458,7 +458,7 @@ export function SettlementView({
 
       {/* Image Share / Download Modal (Rendered in Portal) */}
       {capturedImg && createPortal(
-        <div className="fixed inset-0 z-[100000] bg-black/80 flex flex-col items-center justify-center p-4">
+        <div className="fixed inset-0 z-nested bg-black/80 flex flex-col items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1a1a1a] p-5 rounded-lg max-w-2xl w-full flex flex-col gap-4 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center border-b pb-2.5 border-black/5 dark:border-white/10">
               <span className="text-xs font-extrabold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">

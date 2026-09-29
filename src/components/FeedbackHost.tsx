@@ -60,7 +60,7 @@ export function FeedbackHost() {
     <>
       {createPortal(
         <div
-          className="fixed z-[10000] left-1/2 -translate-x-1/2 bottom-[max(16px,env(safe-area-inset-bottom))] w-[calc(100vw-32px)] max-w-md flex flex-col gap-2 pointer-events-none"
+          className="fixed z-player left-1/2 -translate-x-1/2 bottom-[max(16px,env(safe-area-inset-bottom))] w-[calc(100vw-32px)] max-w-md flex flex-col gap-2 pointer-events-none"
           aria-live="polite"
           role="status"
         >

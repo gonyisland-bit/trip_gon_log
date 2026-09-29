@@ -91,7 +91,7 @@ function QuickBookingModalContent({
 
   const modalNode = (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-modal flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
@@ -122,7 +122,7 @@ function QuickBookingModalContent({
           <div className="p-3 sm:p-4 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-lg space-y-3">
             <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60">
               <span className="flex items-center gap-1.5 font-bold text-black dark:text-white">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                <Sparkles className="w-3.5 h-3.5 text-red-500" />
                 자동 감지된 여정 파라미터
               </span>
               <span className="text-meta">수정 시 링크 즉시 반영</span>
@@ -241,7 +241,7 @@ function QuickBookingModalContent({
                 className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
                     스카이스캐너
                   </span>
                   <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
@@ -259,7 +259,7 @@ function QuickBookingModalContent({
                 className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
                     네이버 항공권
                   </span>
                   <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
@@ -277,7 +277,7 @@ function QuickBookingModalContent({
                 className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-rose-600 dark:group-hover:text-rose-400 truncate">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
                     구글 플라이트
                   </span>
                   <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
@@ -328,7 +328,7 @@ function QuickBookingModalContent({
                 className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
                     부킹닷컴
                   </span>
                   <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
@@ -346,7 +346,7 @@ function QuickBookingModalContent({
                 className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-rose-500 truncate">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
                     에어비앤비
                   </span>
                   <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />

@@ -157,10 +157,10 @@ export function TimelineItemPlaceInput({
         <button 
           type="button"
           onClick={() => toggleFrequentPlace(item)}
-          className="tap-target p-1 hover:text-yellow-500 text-black/60 dark:text-white/60 transition-colors shrink-0"
+          className="tap-target p-1 hover:text-amber-500 text-black/60 dark:text-white/60 transition-colors shrink-0"
           title={isFrequent(inputRef.current?.value || filterVal) ? "자주 가는 장소 등록 해제" : "자주 가는 장소로 등록"}
         >
-          <Star className={`w-3.5 h-3.5 ${isFrequent(inputRef.current?.value || filterVal) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
+          <Star className={`w-3.5 h-3.5 ${isFrequent(inputRef.current?.value || filterVal) ? 'fill-amber-400 text-amber-500' : ''}`} />
         </button>
       </div>
 

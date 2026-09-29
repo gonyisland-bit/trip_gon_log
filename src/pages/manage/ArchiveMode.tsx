@@ -218,7 +218,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     onClick={() => handleSaveJourney()}
                     disabled={isSavingTrip}
                     className={`px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-extrabold uppercase tracking-widest font-sans flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity ${
-                      tripSaveSuccess ? '!bg-green-600 !text-white' : ''
+                      tripSaveSuccess ? '!bg-emerald-600 !text-white' : ''
                     }`}
                   >
                     {tripSaveSuccess ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
@@ -286,7 +286,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                     {([
                       { id: 'NEW', label: 'NEW', activeBg: 'bg-red-600 text-white border-red-600' },
                       { id: 'EDITING', label: 'EDITING', activeBg: 'bg-amber-600 text-white border-amber-600' },
-                      { id: 'PLAN', label: 'PLAN', activeBg: 'bg-blue-600 text-white border-blue-600' },
+                      { id: 'PLAN', label: 'PLAN', activeBg: 'bg-amber-600 text-white border-amber-600' },
                     ] as const).map(opt => {
                       const isCurrentPlan = opt.id === 'PLAN' && (editStatusBadge === 'PLAN' || isSelectedPlan);
                       const isActive = opt.id === 'PLAN' ? isCurrentPlan : editStatusBadge === opt.id;
@@ -1096,7 +1096,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                           EDITING
                         </span>
                       ) : (journey.statusBadge === 'PLAN' || isPlan) ? (
-                        <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-micro font-extrabold uppercase shrink-0">
+                        <span className="px-1.5 py-0.5 bg-amber-600 text-white font-mono text-micro font-extrabold uppercase shrink-0">
                           PLAN
                         </span>
                       ) : null}

@@ -420,7 +420,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                           {cleanTitle}
                         </h4>
                         {isPlan ? (
-                          <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-micro font-extrabold uppercase tracking-widest shrink-0">
+                          <span className="px-1.5 py-0.5 bg-amber-600 text-white font-mono text-micro font-extrabold uppercase tracking-widest shrink-0">
                             PLAN
                           </span>
                         ) : (
@@ -447,7 +447,7 @@ export function MapModals({ s }: { s: MapHubState }) {
       {/* 6. Registered Journey Places Directory Modal (신설) */}
       {isPlaceListModalOpen && (
         <div 
-          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-modal bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setIsPlaceListModalOpen(false)}
         >
           <div 

@@ -2115,7 +2115,7 @@ export function CalendarHubPage({
                 onClick={toggleWeatherBg}
                 className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border text-meta sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs ${
                   isWeatherBgEnabled
-                    ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-600/20'
+                    ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
                     : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/60 dark:text-white/60'
                 }`}
                 title={isWeatherBgEnabled ? "날씨 배경 애니메이션 끄기" : "날씨 배경 애니메이션 켜기 (비/눈/햇살 모션)"}
@@ -3774,7 +3774,7 @@ export function CalendarHubPage({
                             {item.journey.title}
                           </span>
                           {item.isPlan && (
-                            <span className="text-micro font-mono font-bold px-1.5 py-0.5 rounded bg-blue-600/10 text-blue-600 dark:text-blue-400 shrink-0">
+                            <span className="text-micro font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
                               PLAN
                             </span>
                           )}

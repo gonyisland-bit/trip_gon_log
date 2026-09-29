@@ -90,8 +90,8 @@ export function TopProgressBar({ isNavigating }: { isNavigating: boolean }) {
   if (!isNavigating) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[9999] h-[2px] bg-transparent overflow-hidden pointer-events-none">
-      <div className="h-full bg-gradient-to-r from-red-500 via-rose-500 to-red-600 animate-[progress_1s_ease-in-out_infinite] origin-left" 
+    <div className="fixed top-0 left-0 right-0 z-modal h-[2px] bg-transparent overflow-hidden pointer-events-none">
+      <div className="h-full bg-gradient-to-r from-red-500 via-red-400 to-red-600 animate-[progress_1s_ease-in-out_infinite] origin-left" 
         style={{
           animation: 'indeterminateProgress 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite'
         }}
