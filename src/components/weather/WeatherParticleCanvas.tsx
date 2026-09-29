@@ -79,7 +79,11 @@ export function WeatherParticleCanvas({ type, intensity, isDarkMode }: WeatherPa
     const pools: Record<Family, Particle[]> = { rain: [], snow: [], stars: [], motes: [] };
     const strength: Record<Family, number> = { rain: 0, snow: 0, stars: 0, motes: 0 };
     const splashes: { x: number; y: number; t: number }[] = [];
-    let budget = 1; // shrinks when frames run long
+    let budget = 1; // shrinks when frames run long, grows back when they recover
+    let fastFrames = 0;
+    let lastType: WeatherEffectType | null = null;
+    let covered = false;
+    let coverCheck = 0;
 
     const pointer = { x: -9999, y: -9999 };
     const onPointer = (e: PointerEvent) => { pointer.x = e.clientX; pointer.y = e.clientY; };
@@ -102,11 +106,19 @@ export function WeatherParticleCanvas({ type, intensity, isDarkMode }: WeatherPa
       last = now;
       time += dt;
 
-      // Shed particles if the device is struggling (>24ms frames for ~1s)
-      if (dt > 0.024) slowFrames++; else slowFrames = Math.max(0, slowFrames - 1);
-      if (slowFrames > 45 && budget > 0.35) { budget -= 0.15; slowFrames = 0; }
+      // A full-screen layer (intro, terminal, slideshow, splash) hides the background: idle, and don't judge speed
+      if (--coverCheck <= 0) { covered = !!document.querySelector('[data-bg-cover]'); coverCheck = 20; }
+      if (covered) { ctx.clearRect(0, 0, width, height); slowFrames = 0; fastFrames = 0; raf = requestAnimationFrame(frame); return; }
 
       const { type: t, intensity: k, isDarkMode: dark } = propsRef.current;
+      // A new weather always starts at full density
+      if (t !== lastType) { lastType = t; budget = 1; slowFrames = 0; }
+
+      // Shed particles if the device is struggling (>24ms frames for ~1s), restore them after ~2s of smooth frames
+      if (dt > 0.024) { slowFrames++; fastFrames = 0; } else { slowFrames = Math.max(0, slowFrames - 1); fastFrames++; }
+      if (slowFrames > 45 && budget > 0.35) { budget -= 0.15; slowFrames = 0; }
+      if (fastFrames > 120 && budget < 1) { budget = Math.min(1, budget + 0.15); fastFrames = 0; }
+
       const target = targetStrengths(t, dark);
       const precip = 0.45 + 0.55 * Math.max(0, Math.min(1, k));
       families.forEach(f => {

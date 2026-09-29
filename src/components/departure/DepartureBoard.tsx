@@ -296,6 +296,7 @@ export function DepartureBoard({ onClose, onBuildTrip, onOpenPocket, isDarkMode 
   return (
     <div
       role="dialog"
+      data-bg-cover
       aria-label="Departure Board"
       className={`fixed inset-0 z-[190] bg-[#F2F2EE] text-[#0B0B0C] dark:bg-[#0B0B0C] dark:text-[#F2F2EE] transition-colors duration-700 overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
     >

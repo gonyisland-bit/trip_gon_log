@@ -980,6 +980,7 @@ export function Lightbox({
 
   return createPortal(
     <div
+      data-bg-cover
       className={`fixed inset-0 z-player bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden ${
         isSlideshow && !isControlsVisible ? 'cursor-none [&_*]:!cursor-none' : ''
       }`}

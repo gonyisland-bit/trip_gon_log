@@ -198,6 +198,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
     <div
       role="dialog"
       aria-label={`${title} Memory Reel`}
+      data-bg-cover
       className="fixed inset-0 z-[200] bg-black text-white select-none overflow-hidden"
       onPointerMove={() => setChromeVisible(true)}
       onClick={() => setChromeVisible(true)}

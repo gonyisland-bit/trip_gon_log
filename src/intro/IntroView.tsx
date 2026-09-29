@@ -221,6 +221,7 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
     <div
       role="dialog"
       aria-label="Tripgon log 소개 영상"
+      data-bg-cover
       className="fixed inset-0 z-player bg-black text-white select-none overflow-hidden"
       onPointerMove={(e) => { if (e.pointerType === 'mouse') setChrome(true); }}
     >
