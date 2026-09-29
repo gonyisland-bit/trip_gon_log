@@ -22,7 +22,11 @@ function Heading({ eyebrow, children }: { eyebrow?: string; children: React.Reac
 }
 
 // 1 · Where
-export function StepWhere({ d, recentCities, onSurprise }: { d: NewTripDraft; recentCities: string[]; onSurprise: () => void }) {
+export function StepWhere({ d, recentCities, onSurprise, saved, onResume, onDiscard }: {
+  d: NewTripDraft; recentCities: string[]; onSurprise: () => void;
+  /** A draft saved earlier (this or another device) */
+  saved?: { label: string; step: number } | null; onResume?: () => void; onDiscard?: () => void;
+}) {
   const [q, setQ] = useState('');
   const results = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -56,6 +60,19 @@ export function StepWhere({ d, recentCities, onSurprise }: { d: NewTripDraft; re
   return (
     <div className="flex flex-col gap-5">
       <Heading eyebrow="Where">어디로 떠나요?</Heading>
+
+      {saved && (
+        <Card padding="md" className="flex flex-col gap-3">
+          <span className="flex flex-col gap-0.5">
+            <span className={`${label} text-amber-700 dark:text-amber-400`}>Draft · {saved.step + 1}/4</span>
+            <span className="text-[16px] font-bold">{saved.label} 여행을 만들던 중이었어요</span>
+          </span>
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-primary flex-1" onClick={onResume}>이어서 만들기</button>
+            <button type="button" className="btn btn-secondary" onClick={onDiscard}>새로 시작</button>
+          </div>
+        </Card>
+      )}
 
       <label className="relative block">
         <span className="sr-only">도시 검색</span>

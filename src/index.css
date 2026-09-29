@@ -1317,6 +1317,13 @@ input[type="datetime-local"] { min-width: 0; max-width: 100%; }
   .tgl-sheet-in, .tgl-sheet-out, .tgl-dialog-in, .tgl-dialog-out, .tgl-sheet-backdrop-in, .tgl-sheet-backdrop-out { animation: none; }
 }
 
+/* New trip: the boarding pass rises in while the trip saves, its plane crossing the route */
+.tgl-pass { animation: tglPassIn 520ms var(--ease-spring, cubic-bezier(.2, 1.4, .4, 1)) both; }
+.tgl-pass-plane { animation: tglPassFly 1200ms var(--ease-standard) 200ms both; }
+@keyframes tglPassIn { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes tglPassFly { 0% { transform: translateX(-40px) rotate(45deg); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateX(40px) rotate(45deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tgl-pass, .tgl-pass-plane { animation: none; } }
+
 /* Phone tab bar (components/TabBar): floating chrome sits above it while it is up */
 :root { --tabbar-lift: 0px; }
 @media (max-width: 767px) {

@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   DestinationCity, DestinationCountry, WORLD_CITIES, findCityByNameOrAlias, findCountryByNameOrAlias,
 } from '../../data/worldDestinations';
 import { CuratedTripProposal, generateCuratedTripProposals } from '../../utils/tripRecommender';
 import { getSavedPockets } from '../../utils/pocketStorage';
 import { SpotPocketItem } from '../../types';
+import { SavedNewTripDraft, saveNewTripDraft } from './newTripDraftStore';
 
 // State for the new trip sheet (v1.3.5 P3): where → when → who → preview.
 // Proposals come from the same engine as the map's Trip Guide; this hook only collects the answers.
@@ -221,6 +222,33 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
     };
   };
 
+  // Keep the draft in the cloud while it has a destination (see newTripDraftStore)
+  const pocketKey = [...pocketIds].join(',');
+  const memberKey = members.join('|');
+  useEffect(() => {
+    if (!city && !country) return;
+    saveNewTripDraft({
+      step, city: city?.nameEn, country: country?.nameEn, stay, startDate, members, theme, includePockets,
+      pocketIds: [...pocketIds],
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, city, country, stay, startDate, memberKey, theme, includePockets, pocketKey]);
+
+  const resume = (saved: SavedNewTripDraft) => {
+    const c = saved.city ? findCityByNameOrAlias(saved.city) ?? null : null;
+    const co = c ? findCountryByNameOrAlias(c.countryEn) ?? null : saved.country ? findCountryByNameOrAlias(saved.country) ?? null : null;
+    setCity(c);
+    setCountry(co);
+    setStay(saved.stay || 'mid');
+    // A departure that has passed is dropped; the month picker suggests a new one
+    setStartDate(saved.startDate && saved.startDate >= iso(new Date()) ? saved.startDate : '');
+    if (saved.members?.length) setMembers(saved.members);
+    setTheme(saved.theme || 'all');
+    setIncludePockets(saved.includePockets !== false);
+    setPocketIds(new Set(saved.pocketIds || []));
+    setStep((saved.step ?? 1) as NewTripStep);
+  };
+
   const canNext = step === 0 ? !!(city || country) : step === 3 ? !!selected : true;
   const dirty = !!(city || country) || !!startDate;
 
@@ -231,7 +259,7 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
     members, setMembers, theme, setTheme,
     placePockets, pocketCount: pocketsToAdd.length, pocketCityNames, pocketIds, setPocketIds, includePockets, setIncludePockets,
     proposals, selected, setProposalId, shuffle: () => { setSeed(s => s + 1); setProposalId(null); },
-    buildPayload,
+    buildPayload, resume,
     cities: WORLD_CITIES,
   };
 }

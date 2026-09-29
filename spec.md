@@ -130,7 +130,9 @@
    - 2 언제: 서울 → 도착지 비행 시간 카드, 기간 세그먼트(2–3박 · 4–5박 · 6박+ = 3 · 4 · 6박), 앞으로 12개월 칩(베스트 시즌은 에메랄드 테두리), 출발일(월을 고르면 둘째 금요일, 이번 달이면 1주 뒤). 비우면 가장 가까운 좋은 시기.
    - 3 누구와 · 스타일: 동행 이름, 스타일 칩(추천 · 미식 · 쇼핑 · 자연 · 액티비티 · 예술), 그 도시의 포켓 장소 1일차에 넣기.
    - 4 미리보기: 추천 엔진(`generateCuratedTripProposals`)의 3안을 출발일에 맞춰 보여 주고 다시 섞기, 날짜별 카드. `Create trip` → 확인 → 여정 상세로 이동. "지도에서 자세히 만들기"는 같은 조건으로 지도의 Trip Guide를 엽니다(여러 도시 · 템플릿).
-   - 모든 단계는 뒤로 · 건너뛰기 가능, 작성 중 닫으면 확인을 묻습니다. 폰은 전체 높이 바텀시트, 데스크톱은 가운데 대화상자(폭 576px). 시트 바탕은 `paper`, 카드는 `surface`.
+   - 작성 중 내용은 도시가 정해진 뒤부터 Firestore `users/{uid}/drafts/newTrip`에 저장합니다(0.8초 모아 쓰기, 기기에는 즉시 표시용 캐시). 빈 상태로 시트를 열면 1단계 위에 "이어서 만들기 · 새로 시작" 카드를 보여 주고(14일 지난 초안은 제외, 지난 출발일은 비움), 여정을 만들거나 새로 시작하면 지웁니다. 기존 규칙(`users/{userId}/{col}/{rest=**}` 본인만)으로 동작해 규칙 변경은 없습니다.
+   - Create trip을 확정하면 저장하는 동안 탑승권 카드(서울 → 도시, 제목, 날짜)가 떠오르고 비행기가 경로를 가로지른 뒤(최소 1.4초) 여정 상세로 이동합니다. `prefers-reduced-motion`이면 생략.
+   - 모든 단계는 뒤로 · 건너뛰기 가능, 작성 중 닫으면 확인을 묻습니다(내용은 초안으로 남음). 폰은 전체 높이 바텀시트, 데스크톱은 가운데 대화상자(폭 576px). 시트 바탕은 `paper`, 카드는 `surface`.
 1. **2단계 확인 필수 (Two-Step Confirmation)**:
    - 여정 생성, 여정 삭제, 타임라인 삭제, 포켓 삭제 등 데이터 파괴적 동작은 브라우저 기본 `window.confirm` 대신 일관된 디자인의 `ConfirmModal`을 통해 2단계 확인을 거칩니다.
 2. **이탈 방지 (Leave Guard)**:
@@ -390,7 +392,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - [x] P1 토대: `paper` · `surface` · `ink` 색, `rounded-sheet` · `card` · `thumb` 모서리 토큰, 알약 `btn`(+ `btn-accent`), `ui/Segment` · `Chip` · `IconButton` · `Card`, 지침 문서, v1.3.5.
 - [x] P2 이동: 폰 하단 탭바 `TabBar`(홈 · 여정 · +새 여행 · 지도 · 포켓), 독(`QuickActionBar`) 제거, 데스크톱 헤더 `New trip`, 예약 지갑 · 공항 터미널은 햄버거 메뉴로. 지도 화면의 탭바는 P4 지도 작업에서.
 - [x] P3-a 새 여행 4단계 시트(`components/newtrip/`) + 모든 진입점 연결, Surprise는 터미널 왕복, 지도 Trip Guide는 "지도에서 자세히 만들기"로 유지(정리는 P4).
-- [ ] P3-b 작성 중 내용 Firestore 임시 저장(`users/{uid}/drafts/newTrip`, 다른 기기에서 이어 만들기), 생성 직후 탑승권 전환.
+- [x] P3-b 작성 중 내용 Firestore 초안(`users/{uid}/drafts/newTrip`, 다른 기기에서 이어 만들기), 생성 중 탑승권 전환.
 - [ ] P4 화면 적용: 홈 → 여정 상세 → 지도 시트 → 포켓 → 매거진 → 캘린더 → 모달 바텀시트화. `bg-white`(약 1,100곳)는 화면별로 `bg-surface`로 옮김.
 - [ ] P5 성능: `backdrop-blur` · `transition-all` 정리, 이미지 사본 확대, 긴 목록 가상화, 3,000줄 넘는 파일 5개(`useManageHubState` · `CalendarHub` · `useJourneyDetailState` · `TripBuilderPanel` · `useAppState`) 분리.
 
@@ -420,6 +422,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - 버튼: `btn` 전체가 굵은 산세리프 알약으로(h-8 / h-10 / h-12), 보조 버튼은 보더 반전 대신 연한 채움, 새 여행 `NewTripButton`은 빨강 알약(`btn-accent`).
 - 공용 컨트롤 `ui/Segment` · `ui/Chip` · `ui/IconButton` · `ui/Card`(`CardRow`) 추가.
 - AGENTS.md 3장 · spec 4.1 · 4.2 · 4.4를 Swiss Soft 기준으로 갱신.
+- 새 여행 초안 · 탑승권(P3-b): 작성 중 내용을 Firestore에 저장해 다른 기기에서 이어서 만들고, 만드는 동안 탑승권 카드를 보여 줍니다.
 - 새 여행(P3-a): 모든 진입점이 새 여행 4단계 시트(어디로 · 언제 · 누구와 · 미리보기)를 엽니다. 지도 이동 없이 만들고, 여러 도시 · 템플릿은 "지도에서 자세히 만들기"로. 공용 `Sheet`는 `surface` 바탕 · 둥근 모서리, 닫기 전 확인(`confirmClose`)과 `tone="paper"` 지원.
 - 이동(P2): 폰 하단 탭바 `TabBar`가 빠른 실행 독을 대체(홈 · 여정 · 새 여행 · 지도 · 포켓). 데스크톱 헤더에 `New trip`. 햄버거 메뉴에 예약 지갑 · 공항 터미널 줄, 화면 모드는 `Segment`, 메뉴 판은 `surface`. TOP · Intro 안내 · 포켓 선택 바는 탭바 위로.
 
