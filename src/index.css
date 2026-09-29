@@ -1407,3 +1407,24 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
   .tgl-drawer .tgl-drawer-hub { min-height: 36px; }
   .tgl-drawer .tgl-drawer-hub-label { font-size: 21px; }
 }
+
+/* MAP hub zoom: a soft vertical pill. Phones: top right under the search bar, clear of the tab bar.
+   Desktop: bottom right, where the country card (top right) never covers it. */
+.tgl-hub-map .leaflet-top.leaflet-right { top: 60px; }
+@media (min-width: 640px) {
+  .tgl-hub-map .leaflet-top.leaflet-right { top: auto; bottom: 28px; }
+}
+.tgl-hub-map .leaflet-control-zoom.leaflet-bar {
+  margin: 0 12px 0 0; border: 0; border-radius: 9999px; overflow: hidden;
+  background: #FFFDF9; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+}
+.tgl-hub-map .leaflet-control-zoom.leaflet-bar a {
+  width: 40px; height: 40px; line-height: 40px; font-size: 18px; font-weight: 600;
+  background: transparent; color: #141412; border: 0;
+}
+.tgl-hub-map .leaflet-control-zoom.leaflet-bar a:first-child { border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
+.tgl-hub-map .leaflet-control-zoom.leaflet-bar a:hover { background: rgba(0, 0, 0, 0.05); }
+.dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar { background: #1A1A17; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
+.dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a { color: #EDEBE5; }
+.dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:first-child { border-bottom-color: rgba(255, 255, 255, 0.1); }
+.dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:hover { background: rgba(255, 255, 255, 0.08); }

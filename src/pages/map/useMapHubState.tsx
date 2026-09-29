@@ -1573,7 +1573,9 @@ export function useMapHubState({
       worldCopyJump: false,
     });
 
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    // Zoom sits top right under the search bar on phones (the tab bar covers the bottom), bottom right on desktop
+    L.control.zoom({ position: 'topright', zoomInTitle: '확대', zoomOutTitle: '축소' }).addTo(map);
+    map.getContainer().classList.add('tgl-hub-map');
 
     // Dedicated pane for clipped night-time tiles (above base tilePane 200, below overlayPane 400)
     const nightPane = map.createPane('nightTilePane');
