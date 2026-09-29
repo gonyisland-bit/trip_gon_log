@@ -18,17 +18,17 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
         {visitedTabs.has('transit') && (
           <>
             {/* Sort Type Control */}
-            <div className="w-full flex justify-end items-center gap-2 py-2 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15 text-micro md:text-meta font-bold uppercase tracking-widest select-none">
+            <div className="w-full flex justify-end items-center gap-2 py-2 px-4 md:px-6 mt-2 text-micro md:text-meta font-bold uppercase tracking-widest select-none">
             <button 
               onClick={() => setTransitSortType('time')} 
-              className={`px-2.5 py-1 border transition-colors rounded-sm cursor-pointer ${transitSortType === 'time' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+              className={`h-8 px-3 rounded-full border transition-colors cursor-pointer ${transitSortType === 'time' ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
               title="탑승 시간순"
             >
               By time
             </button>
             <button 
               onClick={() => setTransitSortType('type')} 
-              className={`px-2.5 py-1 border transition-colors rounded-sm cursor-pointer ${transitSortType === 'type' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+              className={`h-8 px-3 rounded-full border transition-colors cursor-pointer ${transitSortType === 'type' ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
               title="탑승 종류순"
             >
               By type
@@ -69,7 +69,7 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
               if (items.length === 0) return null;
               return (
                 <div className="w-full flex flex-col">
-                  <div className="flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15">
+                  <div className="flex items-center justify-between py-2.5 px-4 md:px-6 mt-2">
                     <div className="flex items-center gap-2">
                       <IconComponent className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                       <span className="text-meta md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">

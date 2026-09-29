@@ -58,13 +58,13 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
       
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
-        className={`w-full md:w-1/2 flex flex-col bg-white/80 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-[height] duration-300 ease-standard flex-grow md:h-full overflow-hidden overflow-x-hidden max-w-full relative ${
+        className={`w-full md:w-1/2 flex flex-col bg-paper dark:bg-paper-dark max-md:rounded-t-sheet max-md:-mt-5 max-md:z-10 max-md:shadow-[0_-8px_24px_rgba(0,0,0,0.12)] transition-[height] duration-300 ease-standard flex-grow md:h-full overflow-hidden overflow-x-hidden max-w-full relative ${
           mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[62dvh] max-md:flex-1 min-h-0'
         }`}
       >
         {/* Mobile Bottom Sheet Grab Handle */}
         <div 
-          className="md:hidden flex flex-col items-center justify-center py-2 px-4 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/grab"
+          className="md:hidden flex flex-col items-center justify-center pt-2.5 pb-1 px-4 cursor-pointer select-none touch-none shrink-0 group/grab"
           onTouchStart={handleSheetTouchStart}
           onTouchEnd={handleSheetTouchEnd}
           onClick={() => {
@@ -83,14 +83,14 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
         </div>
         
         {/* Tab Headers - Unified Single-line Sleek Design (SUM, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
-        <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap border-b border-black/15 dark:border-white/15 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md transition-colors shrink-0 w-full h-11 sm:h-10">
+        <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap shrink-0 mx-3 sm:mx-4 mt-1 md:mt-3 mb-2 p-1 rounded-full bg-black/[0.06] dark:bg-white/10 h-12 sm:h-11">
           {/* Active tab block slides between tabs */}
           {DETAIL_TABS.some(t => t.id === activeTab) && (
             <span
               aria-hidden="true"
-              className="absolute inset-y-0 left-0 bg-black dark:bg-white pointer-events-none transition-transform duration-base ease-standard motion-reduce:transition-none"
+              className="absolute top-1 bottom-1 left-1 rounded-full bg-surface dark:bg-surface-dark shadow-sm pointer-events-none transition-transform duration-base ease-standard motion-reduce:transition-none"
               style={{
-                width: `${100 / DETAIL_TABS.length}%`,
+                width: `calc((100% - 8px) / ${DETAIL_TABS.length})`,
                 transform: `translateX(${DETAIL_TABS.findIndex(t => t.id === activeTab) * 100}%)`,
               }}
             />
@@ -104,10 +104,10 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
               }}
-              className={`relative z-[1] flex-1 h-full px-0.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 text-micro sm:text-meta md:text-xs font-extrabold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none ${
+              className={`relative z-[1] flex-1 h-full px-0.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 text-micro sm:text-meta md:text-xs font-bold uppercase tracking-wider rounded-full transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
                 activeTab === tab.id
-                  ? 'text-white dark:text-black'
-                  : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
+                  ? 'text-ink dark:text-ink-dark'
+                  : 'text-black/60 dark:text-white/60 hover:text-ink dark:hover:text-ink-dark'
               }`}
             >
               <tab.icon className="w-3.5 h-3.5 shrink-0" aria-hidden />
@@ -238,7 +238,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                   setIsQuickJumpExpanded(true);
                   resetQuickJumpCollapseTimer();
                 }}
-                className="w-10 h-10 rounded-full bg-[#18181B]/95 text-white backdrop-blur-md border border-white/20 shadow-xl flex items-center justify-center cursor-pointer hover:bg-black active:scale-95 transition-all text-xs font-mono font-extrabold"
+                className="w-10 h-10 rounded-full bg-ink/95 text-white shadow-xl flex items-center justify-center cursor-pointer hover:bg-black active:scale-95 transition-all text-xs font-mono font-extrabold"
                 title="날짜 빠른 이동 (클릭하여 일차 펼치기)"
                 aria-label="Expand day quick jump bar"
               >
@@ -249,7 +249,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
               <div 
                 onMouseEnter={resetQuickJumpCollapseTimer}
                 onTouchStart={resetQuickJumpCollapseTimer}
-                className="bg-[#18181B]/95 text-white backdrop-blur-md border border-white/20 shadow-2xl rounded-full p-1 sm:p-1.5 flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200"
+                className="bg-ink/95 text-white shadow-2xl rounded-full p-1 sm:p-1.5 flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200"
               >
                 {/* Scroll to Top Button */}
                 <button

@@ -190,12 +190,12 @@ export function TransitCard({
   return (
     <div 
       onClick={onClick}
-      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 w-full group/ticket ${
+      className={`mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 w-full group/ticket ${
         !isEditMode ? 'cursor-pointer' : ''
       } ${
         isActive 
-          ? 'bg-black/[0.05] dark:bg-white/[0.08] ring-1 ring-inset ring-black/20 dark:ring-white/25 border-b-black/30 dark:border-b-white/30 shadow-xs' 
-          : 'border-b-black/15 dark:border-b-white/15 bg-white dark:bg-[#0A0A0A] hover:bg-black/[0.015] dark:hover:bg-white/[0.015]'
+          ? 'bg-surface dark:bg-surface-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm' 
+          : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'
       }`}
     >
       {/* Header bar */}

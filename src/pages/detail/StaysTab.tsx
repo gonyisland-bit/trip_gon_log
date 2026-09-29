@@ -15,7 +15,7 @@ export function StaysTab({ s }: { s: JourneyDetailState }) {
         {visitedTabs.has('stays') && (
           <>
             {/* 1-Click Stay Search Banner */}
-            <div className="flex items-center justify-between px-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/10 dark:border-white/10 text-xs">
+            <div className="flex items-center justify-between px-4 py-2.5  text-xs">
               <div className="flex items-center gap-2 font-mono">
                 <Bed className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
                 <span className="font-bold tracking-wider text-[11px] uppercase text-black/70 dark:text-white/70">

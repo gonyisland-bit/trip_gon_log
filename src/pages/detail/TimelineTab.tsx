@@ -53,11 +53,11 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
         {visitedTabs.has('timeline') && (
           <>
             {/* Day filter selector bar - Slim and Sticky */}
-            <div className="sticky top-0 z-[35] border-b border-black/15 dark:border-white/15 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md transition-colors shrink-0 w-full flex items-center shadow-xs">
+            <div className="sticky top-0 z-[35] bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-sm transition-colors shrink-0 w-full flex items-center py-1.5">
             {/* Scroll buttons for desktop/web */}
             <button 
               onClick={() => scrollDays('left')}
-              className="tap-target absolute left-0 top-0 bottom-0 px-1.5 bg-gradient-to-r from-white via-white to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+              className="tap-target absolute left-0 top-0 bottom-0 px-1.5 bg-gradient-to-r from-paper via-paper to-transparent dark:from-paper-dark dark:via-paper-dark z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -97,10 +97,10 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         }
                       }
                     }} 
-                    className={`flex-1 min-w-[58px] sm:min-w-[72px] md:min-w-[85px] h-full px-3 flex items-center justify-center border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all whitespace-nowrap cursor-pointer font-['Inter',sans-serif] ${
-                      selectedDate === d.date 
-                        ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-xs' 
-                        : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white font-extrabold'
+                    className={`shrink-0 min-w-[58px] sm:min-w-[72px] h-9 px-3.5 mx-0.5 rounded-full flex items-center justify-center transition-colors whitespace-nowrap cursor-pointer font-['Inter',sans-serif] ${
+                      selectedDate === d.date
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
+                        : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-black dark:text-white font-extrabold'
                     }`}
                   >
                     <span className="text-xs sm:text-[13px] font-extrabold tracking-tight font-['Inter',sans-serif]">
@@ -113,7 +113,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
 
             <button 
               onClick={() => scrollDays('right')}
-              className="tap-target absolute right-0 top-0 bottom-0 px-1.5 bg-gradient-to-l from-white via-white to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+              className="tap-target absolute right-0 top-0 bottom-0 px-1.5 bg-gradient-to-l from-paper via-paper to-transparent dark:from-paper-dark dark:via-paper-dark z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-3.5 h-3.5" />
@@ -276,7 +276,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             setCollapsedDays(prev => [...prev, dVal]);
                           }
                         }}
-                        className={`bg-white/70 dark:bg-[#0A0A0A]/70 backdrop-blur-xs py-3.5 px-4 md:px-6 border-b border-t border-black/15 dark:border-white/15 flex items-center justify-between cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors select-none ${
+                        className={`bg-paper/95 dark:bg-paper-dark/95 py-3 px-4 md:px-6 mt-2 flex items-center justify-between cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors select-none ${
                           highlightedDateSection === item.date ? 'day-section-highlight' : 'tgl-reveal'
                         }`}
                       >
@@ -429,11 +429,11 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                     <div 
                       id={`timeline-item-${item.id}`}
                       ref={el => { itemRefs.current[item.id] = el; }} 
-                      className={`flex flex-col transition-colors w-full border-b border-black/15 dark:border-white/15 ${
-                        isActive 
-                          ? 'bg-black/[0.06] dark:bg-white/[0.09] ring-1 ring-inset ring-black/25 dark:ring-white/30 border-b-black/30 dark:border-b-white/30 shadow-xs' 
-                          : 'hover:bg-black/[0.015] dark:hover:bg-white/[0.02]'
-                      } ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''} ${live && todayMode.pastIds.has(item.id) && !isActive ? 'opacity-60' : ''}`}
+                      className={`flex flex-col transition-colors mx-3 sm:mx-4 my-1 w-auto rounded-card overflow-hidden bg-surface dark:bg-surface-dark ${
+                        isActive
+                          ? 'ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm'
+                          : 'hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'
+                      }${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''} ${live && todayMode.pastIds.has(item.id) && !isActive ? 'opacity-60' : ''}`}
                       draggable={isEditing}
                       onDragStart={(e) => {
                         const target = e.target as HTMLElement;
@@ -837,7 +837,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         {/* Right Column: Full-Height 1:1 Edge-to-Edge Square Grid Thumbnail */}
                         {item.img ? (
                           <div 
-                            className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 overflow-hidden border-l transition-all relative rounded-none ${isActive ? 'border-l-black/30 dark:border-l-white/30' : 'border-black/15 dark:border-white/15'}`}
+                            className="w-24 sm:w-28 md:w-32 aspect-square self-center shrink-0 overflow-hidden m-2 rounded-thumb transition-all relative"
                             onClick={(e) => {
                               if (!isEditing) {
                                 e.stopPropagation();

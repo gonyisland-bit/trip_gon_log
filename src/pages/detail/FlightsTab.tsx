@@ -17,7 +17,7 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
         {visitedTabs.has('flights') && (
           <>
             {/* 1-Click Flight Search Banner */}
-            <div className="flex items-center justify-between px-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/10 dark:border-white/10 text-xs">
+            <div className="flex items-center justify-between px-4 py-2.5  text-xs">
               <div className="flex items-center gap-2 font-mono">
                 <Plane className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
                 <span className="font-bold tracking-wider text-micro uppercase text-black/70 dark:text-white/70" title="실시간 최저가 항공권 비교">
@@ -76,7 +76,7 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
                 if (groupFlights.length === 0) return null;
                 return (
                   <div className="w-full flex flex-col">
-                    <div className="flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15">
+                    <div className="flex items-center justify-between py-2.5 px-4 md:px-6 mt-2">
                       <span className="text-meta md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
                         {groupLabel}
                       </span>
