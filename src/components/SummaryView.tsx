@@ -675,7 +675,7 @@ export function SummaryView({
                 <button
                   id="toggle-all-exclude-btn"
                   onClick={handleToggleAll}
-                  className="p-1 sm:p-1.5 border border-black/15 dark:border-white/15 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xs transition-all cursor-pointer active:scale-95 flex items-center justify-center text-black dark:text-white"
+                  className="p-1 sm:p-1.5 border border-black/15 dark:border-white/15 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xs transition cursor-pointer active:scale-95 flex items-center justify-center text-black dark:text-white"
                   title={areAllExpanded ? "전체 접기 (Collapse All)" : "전체 펼치기 (Expand All)"}
                 >
                   {areAllExpanded ? <ChevronsDownUp className="w-3.5 h-3.5" /> : <ChevronsUpDown className="w-3.5 h-3.5" />}
@@ -748,7 +748,7 @@ export function SummaryView({
               title="숙박 탭으로 이동"
             >
               <span>STAYS</span>
-              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition text-red-600 dark:text-red-400" />
             </button>
             <span className="text-meta sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">{stays.length} PROPERTIES</span>
           </div>
@@ -829,7 +829,7 @@ export function SummaryView({
               title="항공 탭으로 이동"
             >
               <span>FLIGHTS</span>
-              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition text-red-600 dark:text-red-400" />
             </button>
             <span className="text-meta sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">{flights.length} SEGMENTS</span>
           </div>
@@ -904,7 +904,7 @@ export function SummaryView({
                 title="교통 탭으로 이동"
               >
                 <span>TRANSIT</span>
-                <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition text-red-600 dark:text-red-400" />
               </button>
               <span className="text-meta sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">{transits.length} PASSES</span>
             </div>
@@ -1014,7 +1014,7 @@ export function SummaryView({
               title="비용/정산 탭으로 이동"
             >
               <span>COST</span>
-              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition text-red-600 dark:text-red-400" />
             </button>
             <div 
               onClick={() => setIsCostExpanded(v => !v)}

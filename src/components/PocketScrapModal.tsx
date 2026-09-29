@@ -832,7 +832,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       {/* Full-size High-Res Image Lightbox Popup */}
       {isLightboxOpen && selectedImage && (
         <div 
-          className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
+          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
           onClick={() => setIsLightboxOpen(false)}
         >
           <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>

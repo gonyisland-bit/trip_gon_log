@@ -67,7 +67,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMapConfirm(null)}
-                className="flex-1 py-2 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:opacity-85 text-meta font-extrabold uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-sm"
+                className="flex-1 py-2 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:opacity-85 text-meta font-extrabold uppercase tracking-wider rounded-lg transition cursor-pointer flex items-center justify-center shadow-sm"
               >
                 이동 (Y)
               </a>
@@ -243,7 +243,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
               <button
                 type="button"
                 onClick={() => setCostModalItem(null)}
-                className="tap-target p-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:rotate-90 transition-all cursor-pointer"
+                className="tap-target p-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:rotate-90 transition cursor-pointer"
                 title="닫기 (ESC)"
               >
                 <X className="w-5 h-5" />

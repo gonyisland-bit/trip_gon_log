@@ -3561,7 +3561,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 <button
                   type="button"
                   onClick={() => setIsQuickBookingOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/15 dark:border-white/15 text-meta font-mono font-bold uppercase tracking-wider text-black dark:text-white transition-all active:scale-[0.98] cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/15 dark:border-white/15 text-meta font-mono font-bold uppercase tracking-wider text-black dark:text-white transition active:scale-[0.98] cursor-pointer"
                   title="항공권 & 숙소 원클릭 스마트 예약 비교"
                 >
                   <Sparkles className="w-3 h-3 text-emerald-500" />

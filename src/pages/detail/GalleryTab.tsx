@@ -41,7 +41,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                 }`}
               >
                 {/* Film-photo styled image container */}
-                <div className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition-all duration-300 aspect-[4/3] group shrink-0">
+                <div className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition duration-300 aspect-[4/3] group shrink-0">
                   <img
                     src={imgItem.url}
                     alt={imgItem.place || 'Gallery Photo'}
@@ -200,7 +200,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
             >
               {/* Drag & Drop Visual Overlay */}
               {isGalleryDragActive && isLoggedIn && (
-                <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center border-4 border-dashed border-red-600 m-2 transition-all">
+                <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center border-4 border-dashed border-red-600 m-2 transition">
                   <div className="text-white flex flex-col items-center gap-3">
                     <Plus className="w-12 h-12 animate-bounce text-red-500" />
                     <p className="text-sm md:text-base font-extrabold tracking-widest uppercase text-center">

@@ -536,7 +536,7 @@ export function TripBuilderPanel({
   const renderPocketAccordion = (isOpen: boolean, setIsOpen: (open: boolean) => void) => {
     if (totalSavedCount === 0) {
       return (
-        <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 p-3.5 flex items-center justify-between text-xs transition-all">
+        <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 p-3.5 flex items-center justify-between text-xs transition">
           <div className="flex items-center gap-2 text-black/60 dark:text-white/60 font-mono">
             <Bookmark className="w-4 h-4 text-black/60 dark:text-white/60" />
             <span>보관된 포켓 장소가 없습니다. 포켓 허브에서 장소를 스크랩해 보세요.</span>
@@ -547,7 +547,7 @@ export function TripBuilderPanel({
 
     if (relevantPocketSpots.length === 0) {
       return (
-        <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 p-3.5 flex items-center justify-between text-xs transition-all">
+        <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 p-3.5 flex items-center justify-between text-xs transition">
           <div className="flex items-center gap-2 text-black/60 dark:text-white/60 font-mono">
             <Bookmark className="w-4 h-4 text-black/60 dark:text-white/60" />
             <span>선택한 지역과 관련된 보관된 포켓이 없습니다. (총 {totalSavedCount}개 보관됨)</span>
@@ -573,7 +573,7 @@ export function TripBuilderPanel({
     };
 
     return (
-      <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 overflow-hidden transition-all shadow-2xs">
+      <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 overflow-hidden transition shadow-2xs">
         {/* Accordion Header */}
         <button
           type="button"
@@ -1780,7 +1780,7 @@ export function TripBuilderPanel({
   const iconCls = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 dark:text-white/60 pointer-events-none';
 
   // Soft Mobile Native Form Styles (Nou producte reference style)
-  const softInputCls = 'w-full px-4 py-3 text-sm bg-neutral-100 dark:bg-neutral-800/90 rounded-xl text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 font-medium border border-transparent focus:border-black/20 dark:focus:border-white/20 outline-none transition-all';
+  const softInputCls = 'w-full px-4 py-3 text-sm bg-neutral-100 dark:bg-neutral-800/90 rounded-xl text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 font-medium border border-transparent focus:border-black/20 dark:focus:border-white/20 outline-none transition';
   const fieldLabelCls = 'text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1 mb-1.5 font-sans';
 
   const renderSeasonAnalysisBlock = (analysis: any) => {
@@ -2087,7 +2087,7 @@ export function TripBuilderPanel({
             {builderStep === 'criteria' ? (
               <>
                 {/* ─── SOFT ROUND HERO WIDGET (Nou producte reference style) ─── */}
-                <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800/70 p-5 border border-black/5 dark:border-white/5 flex flex-col justify-between min-h-[140px] relative overflow-hidden transition-all">
+                <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800/70 p-5 border border-black/5 dark:border-white/5 flex flex-col justify-between min-h-[140px] relative overflow-hidden transition">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
                       {smartCountry ? `${smartCountry.nameKo} · ${smartCountry.nameEn}` : 'GLOBAL TRIP'}
@@ -2141,7 +2141,7 @@ export function TripBuilderPanel({
                     <button
                       type="button"
                       onClick={() => setIsTemplateDrawerOpen(true)}
-                      className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-neutral-50 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-black dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                      className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-neutral-50 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-black dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer"
                     >
                       <Layers className="w-3.5 h-3.5" />
                       <span>TEMPLATES</span>
@@ -2149,7 +2149,7 @@ export function TripBuilderPanel({
                     <button
                       type="button"
                       onClick={handleSaveCurrentCriteriaAsTemplate}
-                      className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-neutral-50 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-black dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                      className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-neutral-50 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-black dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer"
                       title="현재 설정을 나만의 템플릿으로 저장"
                     >
                       <Bookmark className="w-3.5 h-3.5" />
@@ -3204,7 +3204,7 @@ export function TripBuilderPanel({
                     <div
                       key={tpl.id}
                       onClick={() => applyRoughTemplate(tpl)}
-                      className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer space-y-1.5"
+                      className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold uppercase font-sans tracking-tight">
@@ -3242,7 +3242,7 @@ export function TripBuilderPanel({
                     {presets.filter(p => p.isCustom).map(cp => (
                       <div
                         key={cp.id}
-                        className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-surface dark:bg-surface-dark transition-all flex items-center justify-between gap-3 group"
+                        className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-surface dark:bg-surface-dark transition flex items-center justify-between gap-3 group"
                       >
                         <div
                           onClick={() => applyPresetToCurator(cp)}
@@ -3295,7 +3295,7 @@ export function TripBuilderPanel({
                     <div
                       key={wp.id}
                       onClick={() => applyPresetToCurator(wp)}
-                      className="p-2.5 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white bg-surface dark:bg-surface-dark transition-all cursor-pointer flex items-center justify-between gap-2"
+                      className="p-2.5 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white bg-surface dark:bg-surface-dark transition cursor-pointer flex items-center justify-between gap-2"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">

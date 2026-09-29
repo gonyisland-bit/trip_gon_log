@@ -126,7 +126,7 @@ export function ImageEditOverlay({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`absolute inset-0 bg-black/50 flex items-center justify-center gap-1.5 z-30 transition-all cursor-default
+      className={`absolute inset-0 bg-black/50 flex items-center justify-center gap-1.5 z-30 transition cursor-default
         ${uploading || isDragActive ? 'opacity-100 bg-black/70' : 'opacity-0 group-hover:opacity-100'}
         ${isDragActive ? 'border border-dashed border-red-600 bg-black/70' : ''}
       `}

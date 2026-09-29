@@ -288,7 +288,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                         key={group.city}
                         type="button"
                         onClick={() => setSelectedPinGroup(group)}
-                        className="h-8 px-3 rounded-full text-meta font-bold uppercase tracking-wider bg-black/[0.06] dark:bg-white/10 hover:bg-ink hover:text-surface dark:hover:bg-ink-dark dark:hover:text-paper-dark text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                        className="h-8 px-3 rounded-full text-meta font-bold uppercase tracking-wider bg-black/[0.06] dark:bg-white/10 hover:bg-ink hover:text-surface dark:hover:bg-ink-dark dark:hover:text-paper-dark text-black dark:text-white border border-black/10 dark:border-white/10 transition cursor-pointer flex items-center gap-1.5"
                       >
                         <span>{group.city}</span>
                         <span className="text-micro px-1.5 rounded-full bg-black/10 dark:bg-white/20 font-mono font-bold">

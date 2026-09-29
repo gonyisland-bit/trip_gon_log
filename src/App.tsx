@@ -873,7 +873,7 @@ function App() {
           }`}
           aria-live="polite"
         >
-          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full border border-black/15 dark:border-white/20 bg-white/95 dark:bg-[#121214]/95 text-black dark:text-white shadow-xl backdrop-blur-md">
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full border border-black/15 dark:border-white/20 bg-white/95 dark:bg-[#121214]/95 text-black dark:text-white shadow-xl">
             {nightModeHud.mode === 'auto' && (
               <>
                 <Compass className="w-3.5 h-3.5 stroke-[2.5]" />

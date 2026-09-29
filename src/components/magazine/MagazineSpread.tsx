@@ -27,7 +27,7 @@ interface MagazineSpreadProps {
   tabIdPrefix: string;
 }
 
-const navBtn = 'tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white';
+const navBtn = 'tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white';
 
 export const MagazineSpread = memo(function MagazineSpread({ sections, activeId, onSelect, cardsFor, onOpen, heading, ctaLabel, tabIdPrefix }: MagazineSpreadProps) {
   const touch = useRef<SwipeStart | null>(null);

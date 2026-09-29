@@ -1981,7 +1981,7 @@ export function MapArea({
 
       {/* ── Nearby POI Toggles Overlay (Stays tab only: Minimal Icon Bar) ── */}
       {isStayTab && (
-        <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20 flex items-center gap-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/15 dark:border-white/15 p-1 rounded-md shadow-sm transition-all duration-300">
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20 flex items-center gap-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 border border-black/15 dark:border-white/15 p-1 rounded-md shadow-sm transition duration-300">
           {isPoiExpanded ? (
             <div className="flex items-center gap-1 animate-in fade-in duration-200">
               {/* 편의점 */}
@@ -2076,7 +2076,7 @@ export function MapArea({
             type="button"
             onClick={handleLocateUser}
             disabled={isLocating}
-            className="w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-red-600 dark:hover:text-red-400 active:scale-95"
+            className="w-7 h-7 rounded shadow-sm border transition cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-red-600 dark:hover:text-red-400 active:scale-95"
             title="현재 위치 찾기 (GPS)"
             aria-label="Find my current location"
           >
@@ -2090,7 +2090,7 @@ export function MapArea({
           <button
             type="button"
             onClick={() => setShowPocketPins(prev => !prev)}
-            className={`tap-target w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md active:scale-95 ${
+            className={`tap-target w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 active:scale-95 ${
               showPocketPins
                 ? 'border-red-500/40 text-red-500'
                 : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -2107,7 +2107,7 @@ export function MapArea({
             className={`tap-target w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center ${
               isMapMenuOpen 
                 ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
-                : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white hover:bg-[#F9F8F6] dark:hover:bg-[#111111]'
+                : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white hover:bg-[#F9F8F6] dark:hover:bg-[#111111]'
             }`}
             title="지도 도구 메뉴"
             aria-label="Toggle map tools menu"
@@ -2117,7 +2117,7 @@ export function MapArea({
         </div>
 
         {isMapMenuOpen && (
-          <div className="flex flex-col gap-1 p-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/15 dark:border-white/15 rounded shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="flex flex-col gap-1 p-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 border border-black/15 dark:border-white/15 rounded shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
             <button
               type="button"
               onClick={() => { if (mapRef.current) mapRef.current.zoomIn(); }}

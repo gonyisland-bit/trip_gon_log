@@ -570,7 +570,7 @@ export function JourneyCardMenu({
           onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
           className={variant === 'minimal'
             ? "p-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer bg-transparent border-0 shadow-none"
-            : "p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
+            : "p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
           }
           title="카드 관리 메뉴"
           aria-label="Journey menu"
@@ -1151,7 +1151,7 @@ export function HomePage({
   return (
     <main 
       onClick={() => setActiveCardId(null)} 
-      className="animate-in fade-in duration-700 w-full bg-transparent transition-all"
+      className="animate-in fade-in duration-700 w-full bg-transparent transition"
     >
 
       {/* ===== Hero Section: Guest Fullscreen Landing Hero or Swiss Editorial Hero ===== */}
@@ -1366,7 +1366,7 @@ export function HomePage({
                           <button
                             key={idx}
                             onClick={() => goToSlide(idx)}
-                            className="h-1 rounded-none transition-all cursor-pointer"
+                            className="h-1 rounded-none transition cursor-pointer"
                             style={{
                               width: idx === heroSlide ? '24px' : '8px',
                               backgroundColor: idx === heroSlide ? 'currentColor' : 'rgba(150,150,150,0.3)'
@@ -1422,7 +1422,7 @@ export function HomePage({
                     <button
                       type="button"
                       onClick={() => onNavigate('detail', currentHero.id)}
-                      className="tap-target w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white flex items-center justify-center transition-all hover:scale-105 cursor-pointer text-black dark:text-white shadow-xs"
+                      className="tap-target w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white flex items-center justify-center transition hover:scale-105 cursor-pointer text-black dark:text-white shadow-xs"
                       title="VIEW TRIP"
                     >
                       <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -2066,7 +2066,7 @@ export function HomePage({
                       const isHoliday = cell.isHoliday;
                       const isSat = !isSun && new Date(cell.dateStr).getDay() === 6;
 
-                      let btnStyle = 'w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex flex-col items-center justify-center font-mono transition-all duration-150 cursor-pointer relative mx-auto ';
+                      let btnStyle = 'w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex flex-col items-center justify-center font-mono transition duration-150 cursor-pointer relative mx-auto ';
                       let numStyle = 'text-xs sm:text-sm md:text-base font-extrabold leading-none ';
 
                       if (cell.isToday) {

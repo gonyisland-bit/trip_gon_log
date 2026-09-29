@@ -25,7 +25,7 @@ export function StaysTab({ s }: { s: JourneyDetailState }) {
               <button
                 type="button"
                 onClick={() => setIsQuickBookingOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-meta font-bold tracking-widest uppercase transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-meta font-bold tracking-widest uppercase transition active:scale-[0.98] shadow-xs cursor-pointer"
               >
                 <Sparkles className="w-3 h-3 text-emerald-400" />
                 <span>SMART BOOKING</span>

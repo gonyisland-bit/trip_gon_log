@@ -404,7 +404,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                       setSelectedPinGroup(null);
                       onNavigate('detail', journey.id);
                     }}
-                    className="p-3 border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-between gap-3 cursor-pointer group rounded-none"
+                    className="p-3 border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center justify-between gap-3 cursor-pointer group rounded-none"
                   >
                     <div className="w-12 h-12 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
                       <img
@@ -435,7 +435,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                       </div>
                     </div>
 
-                    <ArrowRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
+                    <ArrowRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-1 transition shrink-0" />
                   </div>
                 );
               })}
@@ -541,7 +541,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                         <span className="text-meta font-sans font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10">
                           {group.journeys.length} Trip
                         </span>
-                        <ArrowRight className="w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                        <ArrowRight className="w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition" />
                       </div>
                     </div>
                   );

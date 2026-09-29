@@ -2034,7 +2034,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
-                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface dark:bg-surface-dark hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface dark:bg-surface-dark hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title={viewMode === 'month' ? "이전 달" : "이전 연도"}
               >
                 <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -2043,7 +2043,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={handleGoToday}
-                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full bg-surface dark:bg-surface-dark hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-micro sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full bg-surface dark:bg-surface-dark hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-micro sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title="오늘 날짜로 이동"
               >
                 TODAY
@@ -2052,7 +2052,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
-                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface dark:bg-surface-dark hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface dark:bg-surface-dark hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title={viewMode === 'month' ? "다음 달" : "다음 연도"}
               >
                 <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -2279,7 +2279,7 @@ export function CalendarHubPage({
                     <button
                       type="button"
                       onClick={() => openNewEventModal(selectedRange.start, selectedRange.end)}
-                      className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-meta sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1 shrink-0"
+                      className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-meta sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition cursor-pointer shadow-xs flex items-center gap-1 shrink-0"
                     >
                       <Plus className="w-3 h-3 stroke-[2.5]" />
                       <span>ADD SCHEDULE</span>
@@ -2546,7 +2546,7 @@ export function CalendarHubPage({
                   href={weatherUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full mt-3 p-3 rounded-card bg-surface dark:bg-surface-dark flex flex-row items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group select-none animate-in fade-in duration-200 no-underline text-inherit"
+                  className="w-full mt-3 p-3 rounded-card bg-surface dark:bg-surface-dark flex flex-row items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition group select-none animate-in fade-in duration-200 no-underline text-inherit"
                   title={`${selectedWeatherDay.city.name} OpenWeatherMap 공식 예보 사이트 새 창 이동`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -2576,7 +2576,7 @@ export function CalendarHubPage({
                   </div>
 
                   {/* 날씨 이동 문구 없이 LUCIDE 대각화살 표기 심플 원형 버튼 (모바일에서도 우측에 1열 안착) */}
-                  <div className="w-8 h-8 rounded-full border border-black/20 dark:border-white/20 group-hover:border-black dark:group-hover:border-white group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black flex items-center justify-center shrink-0 transition-all">
+                  <div className="w-8 h-8 rounded-full border border-black/20 dark:border-white/20 group-hover:border-black dark:group-hover:border-white group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black flex items-center justify-center shrink-0 transition">
                     <ArrowUpRight className="w-4 h-4 stroke-[2.2]" />
                   </div>
                 </a>
@@ -2602,7 +2602,7 @@ export function CalendarHubPage({
                   <button
                     type="button"
                     onClick={() => openNewEventModal(selectedRange?.start, selectedRange?.end)}
-                    className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-meta sm:text-xs font-bold font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs shrink-0"
+                    className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-meta sm:text-xs font-bold font-mono tracking-wider flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs shrink-0"
                   >
                     <Plus className="w-3 h-3 stroke-[2.5]" />
                     <span>ADD</span>
@@ -3126,7 +3126,7 @@ export function CalendarHubPage({
                   placeholder="예: 도쿄 출장, 가족 모임, 프로젝트 마감"
                   value={eventFormTitle}
                   onChange={(e) => setEventFormTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-thumb border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.06] text-base sm:text-sm font-bold text-black dark:text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
+                  className="w-full px-3 py-2 rounded-thumb border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.06] text-base sm:text-sm font-bold text-black dark:text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition"
                 />
               </div>
 
@@ -3514,8 +3514,8 @@ export function CalendarHubPage({
             <div
               ref={tooltipRef}
               onClick={handleNavigateFromTooltip}
-              className={`fixed z-50 pointer-events-auto -translate-x-1/2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-black/95 dark:bg-zinc-900/95 text-white border border-white/20 shadow-xl backdrop-blur-md flex items-center gap-2 text-xs font-mono select-none animate-in fade-in zoom-in-95 duration-150 ${
-                viewMode === 'year' ? 'cursor-pointer hover:border-red-500 hover:scale-[1.02] active:scale-95 transition-all' : ''
+              className={`fixed z-50 pointer-events-auto -translate-x-1/2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-black/95 dark:bg-zinc-900/95 text-white border border-white/20 shadow-xl flex items-center gap-2 text-xs font-mono select-none animate-in fade-in zoom-in-95 duration-150 ${
+                viewMode === 'year' ? 'cursor-pointer hover:border-red-500 hover:scale-[1.02] active:scale-95 transition' : ''
               } ${hoveredTooltip.placement === 'bottom' ? 'translate-y-0 mt-2' : '-translate-y-full mb-2'}`}
               style={{ left: hoveredTooltip.x, top: hoveredTooltip.y }}
               title={viewMode === 'year' ? "클릭하여 월달력으로 이동" : undefined}
@@ -3547,7 +3547,7 @@ export function CalendarHubPage({
           <div
             ref={tooltipRef}
             onClick={handleNavigateFromTooltip}
-            className={`fixed z-50 pointer-events-auto -translate-x-1/2 px-3.5 py-2.5 rounded-lg bg-black/95 dark:bg-zinc-900/95 text-white border border-white/20 shadow-2xl backdrop-blur-md min-w-[180px] max-w-xs animate-in fade-in zoom-in-95 duration-150 select-none ${
+            className={`fixed z-50 pointer-events-auto -translate-x-1/2 px-3.5 py-2.5 rounded-lg bg-black/95 dark:bg-zinc-900/95 text-white border border-white/20 shadow-2xl min-w-[180px] max-w-xs animate-in fade-in zoom-in-95 duration-150 select-none ${
               viewMode === 'year' ? 'cursor-pointer hover:border-red-500 transition-colors' : ''
             } ${hoveredTooltip.placement === 'bottom' ? 'translate-y-0 mt-2' : '-translate-y-full mb-2'}`}
             style={{ left: hoveredTooltip.x, top: hoveredTooltip.y }}
@@ -3610,7 +3610,7 @@ export function CalendarHubPage({
             ref={quickViewRef}
             role="region"
             aria-label="선택한 날짜"
-            className={`pointer-events-auto w-full max-w-md rounded-card bg-surface/95 dark:bg-surface-dark/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] text-black dark:text-white select-none transition-[transform,opacity] duration-300 ease-out ${
+            className={`pointer-events-auto w-full max-w-md rounded-card bg-surface/95 dark:bg-surface-dark/95 shadow-[0_8px_32px_rgba(0,0,0,0.25)] text-black dark:text-white select-none transition-[transform,opacity] duration-300 ease-out ${
               isQuickViewAnimOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
             }`}
           >
@@ -3782,7 +3782,7 @@ export function CalendarHubPage({
                         <span className="text-meta font-mono font-bold px-2 py-0.5 rounded-full bg-red-600 text-white">
                           {daysCount === 1 ? '1 DAY' : `${daysCount} DAYS`}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-red-600 group-hover:translate-x-0.5 transition-all" />
+                        <ChevronRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-red-600 group-hover:translate-x-0.5 transition" />
                       </div>
                     </div>
                   );

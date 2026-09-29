@@ -238,7 +238,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                   setIsQuickJumpExpanded(true);
                   resetQuickJumpCollapseTimer();
                 }}
-                className="w-10 h-10 rounded-full bg-ink/95 text-white shadow-xl flex items-center justify-center cursor-pointer hover:bg-black active:scale-95 transition-all text-xs font-mono font-extrabold"
+                className="w-10 h-10 rounded-full bg-ink/95 text-white shadow-xl flex items-center justify-center cursor-pointer hover:bg-black active:scale-95 transition text-xs font-mono font-extrabold"
                 title="날짜 빠른 이동 (클릭하여 일차 펼치기)"
                 aria-label="Expand day quick jump bar"
               >
@@ -258,7 +258,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                     handleScrollToTop();
                     resetQuickJumpCollapseTimer();
                   }}
-                  className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all text-white/80 hover:text-white cursor-pointer shrink-0"
+                  className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition text-white/80 hover:text-white cursor-pointer shrink-0"
                   title="맨 위로 스크롤 (Scroll to top)"
                 >
                   <ChevronUp className="w-4 h-4" />

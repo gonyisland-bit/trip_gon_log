@@ -246,7 +246,7 @@ function QuickBookingModalContent({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
@@ -264,7 +264,7 @@ function QuickBookingModalContent({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
@@ -282,7 +282,7 @@ function QuickBookingModalContent({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
@@ -317,7 +317,7 @@ function QuickBookingModalContent({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
@@ -335,7 +335,7 @@ function QuickBookingModalContent({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
@@ -353,7 +353,7 @@ function QuickBookingModalContent({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
                 <div className="flex items-center justify-between w-full mb-1">
                   <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-red-600 dark:group-hover:text-red-400 truncate">

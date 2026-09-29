@@ -166,7 +166,7 @@ export function LandingGuestView({
                 onPointerEnter={prefetchIntro}
                 onTouchStart={prefetchIntro}
                 onFocus={prefetchIntro}
-                className="px-5 sm:px-6 py-3.5 sm:py-4 inline-flex items-center gap-2 text-white/90 hover:text-white border border-transparent hover:border-white/40 text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition-all cursor-pointer rounded-none"
+                className="px-5 sm:px-6 py-3.5 sm:py-4 inline-flex items-center gap-2 text-white/90 hover:text-white border border-transparent hover:border-white/40 text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition cursor-pointer rounded-none"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 INTRO
@@ -174,14 +174,14 @@ export function LandingGuestView({
               <button
                 type="button"
                 onClick={() => onOpenAuthModal('login')}
-                className="px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition-all cursor-pointer shadow-xl rounded-none"
+                className="px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition cursor-pointer shadow-xl rounded-none"
               >
                 SIGN IN
               </button>
               <button
                 type="button"
                 onClick={() => onOpenAuthModal('signup')}
-                className="px-7 sm:px-8 py-3.5 sm:py-4 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs rounded-none"
+                className="px-7 sm:px-8 py-3.5 sm:py-4 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition cursor-pointer backdrop-blur-xs rounded-none"
               >
                 JOIN
               </button>

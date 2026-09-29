@@ -1016,7 +1016,7 @@ export function Lightbox({
         {/* Current ambient blurred image */}
         {ambientCurrUrl && (
           <div
-            className="absolute inset-0 scale-125 bg-cover bg-center blur-3xl opacity-80 brightness-115 saturate-150 transition-all duration-500 will-change-transform"
+            className="absolute inset-0 scale-125 bg-cover bg-center blur-3xl opacity-80 brightness-115 saturate-150 transition duration-500 will-change-transform"
             style={{ backgroundImage: `url("${ambientCurrUrl}")` }}
           />
         )}
@@ -1263,7 +1263,7 @@ export function Lightbox({
             {images.length > 1 && (
               <button
                 onClick={handleStartSlideshow}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border border-white/20 hover:bg-white/10 text-white/70 hover:text-white transition-all"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border border-white/20 hover:bg-white/10 text-white/70 hover:text-white transition"
                 title="슬라이드쇼 시작"
               >
                 <Play className="w-3 h-3" />
@@ -1329,7 +1329,7 @@ export function Lightbox({
                 bgmPlayer.stop();
                 onClose();
               }}
-              className="tap-target p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition-all shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
+              className="tap-target p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
               title="나가기 / 닫기 (ESC)"
               aria-label="Close Lightbox"
             >

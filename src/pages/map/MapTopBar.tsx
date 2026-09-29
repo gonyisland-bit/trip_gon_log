@@ -181,7 +181,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
         {/* Country & Continent Search Bar with Integrated Wishlist Star Button (Expandable Swiss Minimal) */}
         <div
           ref={searchContainerRef}
-          className="relative flex items-center bg-surface/95 dark:bg-surface-dark/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30 shrink min-w-0 transition-all duration-200"
+          className="relative flex items-center bg-surface/95 dark:bg-surface-dark/95 border border-black/20 dark:border-white/20 shadow-2xl z-30 shrink min-w-0 transition duration-200"
         >
           {/* Collapsed Search Icon Trigger (Visible when search is closed & empty) */}
           {!isSearchExpanded && !searchQuery ? (
@@ -300,7 +300,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
               />
               <div 
                 ref={searchDropdownRef}
-                className="absolute top-full left-0 mt-1 w-[calc(100vw-24px)] max-w-sm sm:w-full sm:max-w-none bg-surface/95 dark:bg-surface-dark/95 backdrop-blur-md border border-black/15 dark:border-white/15 max-h-60 overflow-y-auto z-[600] shadow-2xl divide-y divide-black/5 dark:divide-white/5"
+                className="absolute top-full left-0 mt-1 w-[calc(100vw-24px)] max-w-sm sm:w-full sm:max-w-none bg-surface/95 dark:bg-surface-dark/95 border border-black/15 dark:border-white/15 max-h-60 overflow-y-auto z-[600] shadow-2xl divide-y divide-black/5 dark:divide-white/5"
               >
                 {filteredCountries.map((c, idx) => {
                   const isSelected = searchSelectedIndex === idx;
@@ -369,7 +369,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
         />
 
         {/* Trip builder and re-center stay one tap away */}
-        <div className="flex items-stretch h-8 sm:h-9 border border-black/20 dark:border-white/20 bg-surface/95 dark:bg-surface-dark/95 backdrop-blur-md shadow-2xl divide-x divide-black/15 dark:divide-white/15 z-10 shrink-0">
+        <div className="flex items-stretch h-8 sm:h-9 border border-black/20 dark:border-white/20 bg-surface/95 dark:bg-surface-dark/95 shadow-2xl divide-x divide-black/15 dark:divide-white/15 z-10 shrink-0">
           <button
             type="button"
             onClick={() => { if (isBuilderOpen) handleCloseTripBuilder(); else handleOpenTripBuilder(); }}
@@ -396,7 +396,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
         </div>
 
         {/* Real-time Clock & Day/Night Shade Toggle Pill Widget (Native App Pill Style) */}
-        <div className="flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full border border-black/20 dark:border-white/20 bg-surface/95 dark:bg-surface-dark/95 backdrop-blur-md shadow-2xl z-10 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0 transition-all">
+        <div className="flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full border border-black/20 dark:border-white/20 bg-surface/95 dark:bg-surface-dark/95 shadow-2xl z-10 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0 transition">
           {/* Live Indicator Pulse Dot */}
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse shrink-0" />
           

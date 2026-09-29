@@ -737,7 +737,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                   <img
                     src={preset.coverImg}
                     alt={preset.title}
-                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover grayscale group-hover:grayscale-0 transition-all shrink-0 border border-black/10 dark:border-white/10"
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover grayscale group-hover:grayscale-0 transition shrink-0 border border-black/10 dark:border-white/10"
                   />
                   <div className="flex flex-col justify-between min-w-0 flex-1">
                     <div>

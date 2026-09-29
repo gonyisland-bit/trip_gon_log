@@ -273,7 +273,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           onClick={() => {
             executeWithGuard(() => navigateSafely(getReturnView()));
           }}
-          className="tap-target w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-surface dark:bg-surface-dark text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+          className="tap-target w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-surface dark:bg-surface-dark text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition cursor-pointer"
           title="뷰 모드로 이동"
         >
           <Eye className="w-5 h-5" />

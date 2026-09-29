@@ -1363,7 +1363,7 @@ export function PocketHubPage({
             <button
               type="button"
               onClick={handleOpenBlankScrapModal}
-              className="w-full sm:w-auto px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[11px] sm:text-xs font-bold tracking-widest uppercase transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              className="w-full sm:w-auto px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[11px] sm:text-xs font-bold tracking-widest uppercase transition shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
               title="포켓 스크랩 & 추가 (단축키: S 또는 Alt+S / Cmd+V 붙여넣기)"
             >
               <Bookmark className="w-3.5 h-3.5 fill-current" />
@@ -1642,7 +1642,7 @@ export function PocketHubPage({
                       )}
 
                       {/* Category */}
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white text-micro font-mono font-bold tracking-wider uppercase flex items-center gap-1.5">
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 dark:bg-black/90 border border-black/10 dark:border-white/15 text-black dark:text-white text-micro font-mono font-bold tracking-wider uppercase flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
                         <span>{meta.label}</span>
                       </div>
@@ -1749,7 +1749,7 @@ export function PocketHubPage({
                     {groupedSpots.map(group => {
                       const isCollapsed = collapsedGroupKeys.has(group.key);
                       return (
-                        <div key={group.key} className="transition-all">
+                        <div key={group.key} className="transition">
                           {/* Section header (Accordion Toggle) */}
                           <div
                             onClick={() => toggleGroupCollapse(group.key)}
@@ -1877,7 +1877,7 @@ export function PocketHubPage({
                           {trip.date || '일정 미지정'} · {trip.locationStr || '위치 미지정'}
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                      <ChevronRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition" />
                     </button>
                   );
                 })

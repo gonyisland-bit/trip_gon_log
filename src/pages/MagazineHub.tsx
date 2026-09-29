@@ -1067,11 +1067,11 @@ export function MagazineHubPage({
         <div className="w-full flex flex-col flex-1 bg-transparent">
           
           {/* Back to Hub Floating / Top Navigation Bar */}
-          <div className="w-full bg-black/90 backdrop-blur-md text-white px-4 sm:px-8 md:px-12 py-3 flex items-center justify-between text-xs font-mono tracking-wider uppercase z-30 border-b border-white/10">
+          <div className="w-full bg-black/90 text-white px-4 sm:px-8 md:px-12 py-3 flex items-center justify-between text-xs font-mono tracking-wider uppercase z-30 border-b border-white/10">
             <button
               type="button"
               onClick={handleBackToHub}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white hover:text-black border border-white/20 hover:border-white text-white font-semibold text-[11px] tracking-widest transition-all duration-200 cursor-pointer group shadow-sm"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white hover:text-black border border-white/20 hover:border-white text-white font-semibold text-[11px] tracking-widest transition duration-200 cursor-pointer group shadow-sm"
             >
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
               <span>ALL ISSUES</span>
@@ -1195,7 +1195,7 @@ export function MagazineHubPage({
                       e.stopPropagation();
                       handlePrevSection();
                     }}
-                    className="tap-target absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
+                    className="tap-target absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
                     title="이전 매거진 섹션"
                     aria-label="Previous magazine section"
                   >
@@ -1208,7 +1208,7 @@ export function MagazineHubPage({
                       e.stopPropagation();
                       handleNextSection();
                     }}
-                    className="tap-target absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
+                    className="tap-target absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
                     title="다음 매거진 섹션"
                     aria-label="Next magazine section"
                   >
@@ -1337,7 +1337,7 @@ export function MagazineHubPage({
           )}
 
           {/* 2-2. SECTION NAVIGATOR / SELECTOR */}
-          <div className="sticky top-14 sm:top-16 z-30 w-full bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-md border-b border-black/[0.06] dark:border-white/10 px-3 sm:px-8 md:px-12 py-2.5 transition-colors">
+          <div className="sticky top-14 sm:top-16 z-30 w-full bg-paper/95 dark:bg-paper-dark/95 border-b border-black/[0.06] dark:border-white/10 px-3 sm:px-8 md:px-12 py-2.5 transition-colors">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               {/* Phones: one picker for the current section, with previous / next */}
               {(() => {
@@ -1533,7 +1533,7 @@ export function MagazineHubPage({
 
                         <div className="p-2.5 flex items-center justify-between text-meta font-mono font-bold text-black/70 dark:text-white/70 bg-[#FAF9F6] dark:bg-[#11110F] border-t border-black/5 dark:border-white/5">
                           <span className="truncate font-sans font-semibold uppercase">{sec.title}</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:translate-x-0.5 group-hover:text-red-600 dark:group-hover:text-red-400 transition-all shrink-0" />
+                          <ArrowRight className="w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:translate-x-0.5 group-hover:text-red-600 dark:group-hover:text-red-400 transition shrink-0" />
                         </div>
                       </div>
                     );

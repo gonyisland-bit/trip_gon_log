@@ -153,7 +153,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                 <button
                   type="button"
                   onClick={() => setIsRadarMinimized(false)}
-                  className={`absolute ${hasPlaylog ? 'bottom-16' : 'bottom-4'} left-4 sm:bottom-6 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black backdrop-blur-md px-2.5 py-1 border border-black/20 dark:border-white/20 shadow-lg rounded-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer hover:border-red-500 transition-all`}
+                  className={`absolute ${hasPlaylog ? 'bottom-16' : 'bottom-4'} left-4 sm:bottom-6 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1 border border-black/20 dark:border-white/20 shadow-lg rounded-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer hover:border-red-500 transition-all`}
                   title="근접 레이더 위젯 열기"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
@@ -167,7 +167,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
 
             // 2. Expanded Mode: Ultra-Compact Minimal HUD
             return (
-              <div className={`absolute ${hasPlaylog ? 'bottom-16' : 'bottom-4'} left-4 sm:bottom-6 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black backdrop-blur-md px-2.5 py-1.5 border border-black/20 dark:border-white/20 shadow-xl rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none max-w-[calc(100vw-32px)]`}>
+              <div className={`absolute ${hasPlaylog ? 'bottom-16' : 'bottom-4'} left-4 sm:bottom-6 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1.5 border border-black/20 dark:border-white/20 shadow-xl rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none max-w-[calc(100vw-32px)]`}>
                 {/* Simple Radar Pulse Indicator */}
                 <div className="relative flex items-center justify-center shrink-0 w-3.5 h-3.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping absolute" />

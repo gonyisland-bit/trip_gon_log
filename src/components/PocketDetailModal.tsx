@@ -176,7 +176,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="tap-target absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-black/60 dark:bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-black dark:hover:bg-white dark:hover:text-black transition-all cursor-pointer shadow-md"
+          className="tap-target absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-black/60 dark:bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-black dark:hover:bg-white dark:hover:text-black transition cursor-pointer shadow-md"
           title="닫기 (ESC)"
         >
           <X className="w-4 h-4 stroke-[2.5]" />
@@ -213,7 +213,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
 
           {/* Top-Left Category Badge */}
           <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-white/95 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/15 text-meta font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-sm text-black dark:text-white">
+            <span className="px-3 py-1 rounded-full bg-white/95 dark:bg-black/90 border border-black/10 dark:border-white/15 text-meta font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-sm text-black dark:text-white">
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
               <span>{meta.label}</span>
             </span>
@@ -254,7 +254,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                   href={googleMapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 hover:bg-black text-white dark:bg-white/90 dark:hover:bg-white dark:text-black backdrop-blur-md text-meta font-mono font-bold tracking-wider uppercase shadow-sm border border-white/20 dark:border-black/20 transition-all cursor-pointer select-none"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 hover:bg-black text-white dark:bg-white/90 dark:hover:bg-white dark:text-black backdrop-blur-md text-meta font-mono font-bold tracking-wider uppercase shadow-sm border border-white/20 dark:border-black/20 transition cursor-pointer select-none"
                   title="Google Maps 열기"
                 >
                   <Navigation className="w-2.5 h-2.5 text-red-500 fill-red-500" />
@@ -526,7 +526,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
       {/* Full-size High-Res Image Lightbox Popup */}
       {isLightboxOpen && spot.thumbnailUrl && (
         <div 
-          className="fixed inset-0 z-nested bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
+          className="fixed inset-0 z-nested bg-black/95 flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
           onClick={() => setIsLightboxOpen(false)}
         >
           <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>

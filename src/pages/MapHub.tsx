@@ -234,7 +234,7 @@ export function MapHubPage(props: MapHubPageProps) {
           <button
             type="button"
             onClick={handleReCenterBuilderTarget}
-            className="flex items-center gap-2 px-3.5 py-2 bg-black dark:bg-white text-white dark:text-black border border-white/20 dark:border-black/20 shadow-2xl hover:bg-black/90 dark:hover:bg-white/90 active:scale-95 transition-all text-xs font-mono font-bold tracking-wider uppercase cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-black dark:bg-white text-white dark:text-black border border-white/20 dark:border-black/20 shadow-2xl hover:bg-black/90 dark:hover:bg-white/90 active:scale-95 transition text-xs font-mono font-bold tracking-wider uppercase cursor-pointer"
           >
             <LocateFixed className="w-3.5 h-3.5 text-red-500 animate-pulse" />
             <span>RE-CENTER: {builderTargetName}</span>

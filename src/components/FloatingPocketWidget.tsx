@@ -375,7 +375,7 @@ export function FloatingPocketWidget({
       <button
         type="button"
         onClick={onToggle}
-        className="w-10 h-10 rounded-full bg-white/95 text-black dark:bg-[#18181B]/95 dark:text-white border border-black/20 dark:border-white/20 shadow-xl hover:border-black dark:hover:border-white transition-all flex items-center justify-center cursor-pointer active:scale-95 relative backdrop-blur-md"
+        className="w-10 h-10 rounded-full bg-white/95 text-black dark:bg-[#18181B]/95 dark:text-white border border-black/20 dark:border-white/20 shadow-xl hover:border-black dark:hover:border-white transition flex items-center justify-center cursor-pointer active:scale-95 relative"
         title="포켓 위젯 열기"
         aria-label="Toggle pocket widget"
       >

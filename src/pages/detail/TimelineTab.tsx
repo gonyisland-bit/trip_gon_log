@@ -53,7 +53,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
         {visitedTabs.has('timeline') && (
           <>
             {/* Day filter selector bar - Slim and Sticky */}
-            <div className="sticky top-0 z-[35] bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-sm transition-colors shrink-0 w-full flex items-center py-1.5">
+            <div className="sticky top-0 z-[35] bg-paper/95 dark:bg-paper-dark/95 transition-colors shrink-0 w-full flex items-center py-1.5">
             {/* Scroll buttons for desktop/web */}
             <button 
               onClick={() => scrollDays('left')}
@@ -208,7 +208,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                 </div>
 
                 {selectedItemIds.length > 0 && (
-                  <div className="sticky top-0 z-20 flex justify-between items-center py-3 px-4 md:px-6 bg-red-600 text-white shadow-md transition-all animate-in slide-in-from-top duration-300">
+                  <div className="sticky top-0 z-20 flex justify-between items-center py-3 px-4 md:px-6 bg-red-600 text-white shadow-md transition animate-in slide-in-from-top duration-300">
                     <div className="text-xs font-bold uppercase tracking-widest">
                       {selectedItemIds.length} items selected
                     </div>
@@ -837,7 +837,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         {/* Right Column: Full-Height 1:1 Edge-to-Edge Square Grid Thumbnail */}
                         {item.img ? (
                           <div 
-                            className="w-24 sm:w-28 md:w-32 aspect-square self-center shrink-0 overflow-hidden m-2 rounded-thumb transition-all relative"
+                            className="w-24 sm:w-28 md:w-32 aspect-square self-center shrink-0 overflow-hidden m-2 rounded-thumb transition relative"
                             onClick={(e) => {
                               if (!isEditing) {
                                 e.stopPropagation();
