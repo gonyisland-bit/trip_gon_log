@@ -1,4 +1,5 @@
 import {
+  Star,
   ChevronUp, ChevronDown, Save, Trash2, RotateCcw, RotateCw, Check, Sliders, X, Image as ImageIcon,
   Search, Loader2, Plus, BookOpen, Sparkles, Layout, RefreshCw
 } from 'lucide-react';
@@ -327,7 +328,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                       히어로 이미지가 지정되지 않았습니다.
                     </span>
                     <span className="text-meta font-mono">
-                      하단 사진에서 [★ SET AS HERO] 버튼을 눌러 지정해주세요.
+                      하단 사진에서 [SET HERO] 버튼을 눌러 지정해주세요.
                     </span>
                   </div>
                 )}
@@ -740,14 +741,14 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                           <button
                             type="button"
                             onClick={() => handleSetAsHeroFromItem(item)}
-                            className={`px-2 py-0.5 text-meta font-mono font-bold uppercase transition-colors cursor-pointer border ${
+                            className={`inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-meta font-mono font-bold uppercase transition-colors cursor-pointer border ${
                               isItemHero
                                 ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
                                 : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
                             }`}
                             title="섹션 히어로로 지정"
                           >
-                            {isItemHero ? '★ HERO' : 'SET HERO'}
+                            {isItemHero ? <><Star className="w-3 h-3 fill-current" aria-hidden />HERO</> : 'SET HERO'}
                           </button>
                         )}
                         <button
@@ -820,8 +821,8 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                           className="w-full h-full object-cover"
                         />
                         {isItemHero && (
-                          <div className="absolute top-2 left-2 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-micro font-mono font-bold px-1.5 py-0.5 shadow-sm">
-                            HERO SELECTED ★
+                          <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-micro font-mono font-bold px-2 py-0.5">
+                            <Star className="w-3 h-3 fill-current" aria-hidden />HERO
                           </div>
                         )}
                       </div>
@@ -1221,7 +1222,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                         <optgroup label="── Already created ──">
                           {createdJourneys.map(j => (
                             <option key={j.id} value={j.id}>
-                              ✓ [생성완료] {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country} · {j.date})
+                              [생성 완료] {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country} · {j.date})
                             </option>
                           ))}
                         </optgroup>

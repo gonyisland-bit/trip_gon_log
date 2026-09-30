@@ -707,17 +707,17 @@ export function ProfileEditModal({
                 <div className="flex items-center gap-1">
                   {[
                     { id: 'all', label: '전체' },
-                    { id: 'face', label: '얼굴/사람' },
-                    { id: 'baby', label: '베이비' },
+                    { id: 'face', label: '사람' },
+                    { id: 'baby', label: '아기' },
                     { id: 'animal', label: '동물' },
                   ].map(cat => (
                     <button
                       key={cat.id}
                       type="button"
                       onClick={() => setSelectedCategory(cat.id as any)}
-                      className={`px-2 py-0.5 text-meta font-mono font-bold border cursor-pointer transition-colors ${
+                      className={`h-7 px-3 rounded-full text-meta font-bold border cursor-pointer transition-colors ${
                         selectedCategory === cat.id
-                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
+                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                           : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                       }`}
                     >
@@ -727,7 +727,7 @@ export function ProfileEditModal({
                 </div>
 
                 {/* Icons Grid */}
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10">
+                <div className="grid grid-cols-5 sm:grid-cols-7 gap-2.5 max-h-52 overflow-y-auto p-1">
                   {filteredIcons.map(item => {
                     const IconComponent = item.icon;
                     const isSelected = profileType === 'icon' && profileIcon === item.id;
@@ -740,16 +740,13 @@ export function ProfileEditModal({
                           setProfileType('icon');
                         }}
                         title={item.label}
-                        className={`p-2 flex flex-col items-center justify-center aspect-square border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'border-red-600 bg-red-600/10 text-red-600 dark:text-red-400 font-bold shadow-xs'
-                            : 'border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black dark:hover:border-white bg-white dark:bg-[#111]'
+                        aria-pressed={isSelected}
+                        aria-label={item.label}
+                        className={`aspect-square rounded-full overflow-hidden transition-transform cursor-pointer ${
+                          isSelected ? 'ring-2 ring-red-600 ring-offset-2 ring-offset-surface dark:ring-offset-surface-dark' : 'hover:scale-105'
                         }`}
                       >
-                        <IconComponent className="w-6 h-6 stroke-[2]" />
-                        <span className="text-micro font-mono mt-1 truncate max-w-full">
-                          {item.label}
-                        </span>
+                        <IconComponent className="w-full h-full block" />
                       </button>
                     );
                   })}

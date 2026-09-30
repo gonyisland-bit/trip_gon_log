@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { DestinationCity, findCityByNameOrAlias } from '../../data/worldDestinations';
 import { cleanForFirestore } from '../../app/appUtils';
@@ -108,59 +108,114 @@ export function ticketCity(t: DepartureTicket): DestinationCity | undefined {
 }
 
 // ── Ticket collection: Firestore users/{uid}/departure/tickets ──
-const CACHE_KEY = 'tgl_departure_tickets';
+// Every device reads the same cloud document once sign-in is known, and follows it live.
+// The per-account localStorage copy only paints the first frame. A device that could not
+// read the cloud copy never writes, so a stale cache cannot overwrite another device's tickets.
+const LEGACY_CACHE_KEY = 'tgl_departure_tickets';
+const cacheKey = (uid?: string | null) => `${LEGACY_CACHE_KEY}:${uid || 'guest'}`;
+const ticketsRef = (uid: string) => doc(db, 'users', uid, 'departure', 'tickets');
 
 export interface TicketStore {
   items: DepartureTicket[];
 }
 
-export function readCachedTickets(): TicketStore {
+function parseStore(raw: string | null): TicketStore | null {
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw);
-      return { items: Array.isArray(data.items) ? data.items : [] };
-    }
-  } catch {}
-  return { items: [] };
+    const data = JSON.parse(raw);
+    return { items: Array.isArray(data.items) ? data.items : [] };
+  } catch {
+    return null;
+  }
 }
 
-function ticketDoc() {
-  const uid = auth.currentUser?.uid;
-  return uid ? doc(db, 'users', uid, 'departure', 'tickets') : null;
+export function readCachedTickets(): TicketStore {
+  try {
+    return parseStore(localStorage.getItem(cacheKey(auth.currentUser?.uid))) ?? { items: [] };
+  } catch {
+    return { items: [] };
+  }
+}
+
+function writeCache(uid: string, store: TicketStore) {
+  try { localStorage.setItem(cacheKey(uid), JSON.stringify(store)); } catch {}
+}
+
+/** Resolves once Firebase knows whether someone is signed in */
+function signedInUser() {
+  return auth.authStateReady().then(() => auth.currentUser);
+}
+
+/** Tickets kept only on this device (the old shared cache), merged into the cloud once */
+async function mergeLegacyCache(uid: string, cloud: TicketStore): Promise<TicketStore> {
+  let legacy: TicketStore | null = null;
+  try { legacy = parseStore(localStorage.getItem(LEGACY_CACHE_KEY)); } catch {}
+  if (!legacy) return cloud;
+  const known = new Set(cloud.items.map(t => t.id));
+  const extra = legacy.items.filter(t => t && t.id && !known.has(t.id));
+  if (extra.length) {
+    const merged = { items: [...cloud.items, ...extra].sort((a, b) => (b.keptAt || 0) - (a.keptAt || 0)) };
+    await setDoc(ticketsRef(uid), { items: cleanForFirestore(merged.items), updatedAt: Date.now() });
+    cloud = merged;
+  }
+  try { localStorage.removeItem(LEGACY_CACHE_KEY); } catch {}
+  return cloud;
+}
+
+/** The cloud copy; throws when it cannot be read, so nothing is saved over it blindly */
+async function readCloud(uid: string): Promise<TicketStore> {
+  const snap = await getDoc(ticketsRef(uid));
+  const data = (snap.exists() ? snap.data() : { items: [] }) as TicketStore;
+  const store = await mergeLegacyCache(uid, { items: Array.isArray(data.items) ? data.items : [] });
+  writeCache(uid, store);
+  return store;
 }
 
 export async function loadTickets(): Promise<TicketStore> {
-  const ref = ticketDoc();
-  if (!ref) return readCachedTickets();
+  const user = await signedInUser();
+  if (!user) return { items: [] };
   try {
-    const snap = await getDoc(ref);
-    const data = (snap.exists() ? snap.data() : { items: [] }) as TicketStore;
-    const store = { items: Array.isArray(data.items) ? data.items : [] };
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(store)); } catch {}
-    return store;
+    return await readCloud(user.uid);
   } catch {
     return readCachedTickets();
   }
 }
 
-export async function saveTickets(store: TicketStore): Promise<void> {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(store)); } catch {}
-  const ref = ticketDoc();
-  if (!ref) return;
-  await setDoc(ref, { items: cleanForFirestore(store.items), updatedAt: Date.now() });
+/** Follows the tickets live, so every device shows the same list; returns the unsubscribe */
+export function subscribeTickets(onChange: (store: TicketStore) => void): () => void {
+  let stop: (() => void) | null = null;
+  let alive = true;
+  signedInUser().then(async user => {
+    if (!alive) return;
+    if (!user) { onChange({ items: [] }); return; }
+    try { await readCloud(user.uid); } catch {}
+    if (!alive) return;
+    stop = onSnapshot(ticketsRef(user.uid), snap => {
+      const data = (snap.exists() ? snap.data() : { items: [] }) as TicketStore;
+      const store = { items: Array.isArray(data.items) ? data.items : [] };
+      writeCache(user.uid, store);
+      onChange(store);
+    }, () => {});
+  });
+  return () => { alive = false; stop?.(); };
+}
+
+/** Read-modify-write against the cloud copy only */
+async function updateTickets(change: (items: DepartureTicket[]) => DepartureTicket[]): Promise<TicketStore> {
+  const user = await signedInUser();
+  if (!user) throw new Error('not signed in');
+  const current = await readCloud(user.uid);
+  const next = { items: change(current.items) };
+  writeCache(user.uid, next);
+  await setDoc(ticketsRef(user.uid), { items: cleanForFirestore(next.items), updatedAt: Date.now() });
+  return next;
 }
 
 /** Adds a ticket at the front, or replaces the one with `replaceId` (a ticket being re-planned) */
 export async function putTicket(ticket: DepartureTicket, replaceId?: string): Promise<void> {
-  const store = await loadTickets();
-  const rest = store.items.filter(t => t.id !== replaceId && t.id !== ticket.id);
-  await saveTickets({ items: [ticket, ...rest] });
+  await updateTickets(items => [ticket, ...items.filter(t => t.id !== replaceId && t.id !== ticket.id)]);
 }
 
 export async function removeTicket(id: string): Promise<TicketStore> {
-  const store = await loadTickets();
-  const next = { items: store.items.filter(t => t.id !== id) };
-  await saveTickets(next);
-  return next;
+  return updateTickets(items => items.filter(t => t.id !== id));
 }

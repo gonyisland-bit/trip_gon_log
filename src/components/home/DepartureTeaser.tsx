@@ -14,8 +14,9 @@ export function DepartureTeaser() {
 
   useEffect(() => {
     let alive = true;
-    import('../departure/departureData').then(async ({ readCachedTickets, loadTickets, daysUntil }) => {
-      const show = (items: Awaited<ReturnType<typeof loadTickets>>['items']) => {
+    let stop: (() => void) | undefined;
+    import('../departure/departureData').then(({ readCachedTickets, subscribeTickets, daysUntil }) => {
+      const show = (items: ReturnType<typeof readCachedTickets>['items']) => {
         if (!alive) return;
         setTickets(items.slice(0, 8).map(t => {
           const days = t.startDate ? daysUntil(t.startDate) : null;
@@ -28,9 +29,11 @@ export function DepartureTeaser() {
         }));
       };
       show(readCachedTickets().items);
-      show((await loadTickets()).items);
+      // Live, so a ticket issued on another device appears here too
+      const unsub = subscribeTickets(store => show(store.items));
+      if (alive) stop = unsub; else unsub();
     }).catch(() => {});
-    return () => { alive = false; };
+    return () => { alive = false; stop?.(); };
   }, []);
 
   useEffect(() => {

@@ -3348,7 +3348,8 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
               {isEditing && (
                 <button
-                  onClick={() => setShowTripDeleteConfirm(true)}
+                  // One confirmation: the app's "move to trash" dialog (the trip can be restored)
+                  onClick={() => { if (trip) onDelete(trip.id); }}
                   className="btn btn-outline-danger btn-sm"
                   title="여정 삭제"
                 >

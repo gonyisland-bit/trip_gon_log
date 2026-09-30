@@ -584,8 +584,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1.5">
                       1:1 프로필 아이콘 선택
                     </label>
-                    <div className="grid grid-cols-6 gap-1 p-1 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
-                      {PROFILE_PRESET_ICONS.slice(0, 12).map((item) => {
+                    <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
+                      {PROFILE_PRESET_ICONS.map((item) => {
                         const IconComp = item.icon;
                         const isSelected = profileIcon === item.id;
                         return (
@@ -594,14 +594,13 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                             type="button"
                             onClick={() => setProfileIcon(item.id)}
                             title={item.label}
-                            className={`p-1.5 flex flex-col items-center justify-center aspect-square border transition-all cursor-pointer ${
-                              isSelected
-                                ? 'border-red-600 bg-red-600/10 text-red-600 font-bold scale-105'
-                                : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/20'
+                            aria-pressed={isSelected}
+                            aria-label={item.label}
+                            className={`aspect-square rounded-full overflow-hidden transition-transform cursor-pointer ${
+                              isSelected ? 'ring-2 ring-red-600 ring-offset-2 ring-offset-surface dark:ring-offset-surface-dark' : 'hover:scale-105'
                             }`}
                           >
-                            <IconComp className="w-4 h-4 stroke-[2.2]" />
-                            <span className="text-micro font-mono mt-0.5">{item.label}</span>
+                            <IconComp className="w-full h-full block" />
                           </button>
                         );
                       })}

@@ -1100,7 +1100,7 @@ export function SummaryView({
             </div>
             
             {/* Action Buttons: ONLY SAVE & SHARE, Inter Bold Minimalist */}
-            <div className="flex items-stretch divide-x divide-black/15 dark:divide-white/15 bg-white dark:bg-[#0E0E0E] shrink-0">
+            <div className="flex items-stretch gap-2 p-3 bg-surface dark:bg-surface-dark shrink-0">
               <button
                 onClick={handleSaveImage}
                 className="btn btn-primary btn-lg flex-1 flex"
@@ -1110,7 +1110,7 @@ export function SummaryView({
               </button>
               <button
                 onClick={handleShareImage}
-                className="flex-1 py-3.5 sm:py-4 bg-transparent text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 text-xs sm:text-sm font-extrabold uppercase tracking-widest font-sans transition-colors flex items-center justify-center gap-2 cursor-pointer rounded-none"
+                className="btn btn-secondary btn-lg flex-1 flex"
               >
                 <Share2 className="w-4 h-4" />
                 <span>SHARE</span>

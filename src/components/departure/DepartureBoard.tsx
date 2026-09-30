@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PencilLine, Plane, Plus, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { PencilLine, Plane, Plus, Ticket, Trash2, Volume2, VolumeX, Wallet, X } from 'lucide-react';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { LobbyScene } from './LobbyScene';
 import { TerminalWeatherPicker } from './TerminalWeatherPicker';
@@ -10,7 +10,8 @@ import { confirmDialog, notify } from '../../utils/feedback';
 import { prefersReducedMotion } from '../../motion';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { IconButton } from '../ui/IconButton';
-import { DepartureTicket, TicketStore, daysUntil, formatHours, loadTickets, readCachedTickets, removeTicket, ticketCity } from './departureData';
+import { Sheet, useSheetClose } from '../Sheet';
+import { DepartureTicket, TicketStore, daysUntil, formatHours, readCachedTickets, removeTicket, subscribeTickets, ticketCity } from './departureData';
 
 // Airport terminal (spec 3.2): where a planned trip waits before it becomes a journey.
 // Tickets are issued from the New trip sheet. The black split-flap board shows the chosen
@@ -181,6 +182,7 @@ export function DepartureBoard({
   const [boarding, setBoarding] = useState(false);
   const [muted, setMuted] = useState(() => { try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return false; } });
   const [clock, setClock] = useState(() => new Date());
+  const [walletOpen, setWalletOpen] = useState(false);
   const flip = useFlapSound(muted);
   // The back gesture steps out of the terminal (straight away: the exit animation is for the close button)
   useBackToClose(true, onClose);
@@ -224,24 +226,24 @@ export function DepartureBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { loadTickets().then(setStore).catch(() => {}); }, []);
-  // A ticket issued (or re-planned) from the sheet over the terminal: read it back and roll the board to it
+  // The same list on every device, followed live (a ticket issued on the phone shows up here too)
+  useEffect(() => subscribeTickets(setStore), []);
+  // A ticket issued (or re-planned) from the sheet over the terminal: roll the board to it
   const shownTicketId = useRef(initialTicketId);
   useEffect(() => {
     if (!initialTicketId || initialTicketId === shownTicketId.current) return;
     shownTicketId.current = initialTicketId;
     setStore(readCachedTickets());
-    loadTickets().then(setStore).catch(() => {});
     setSelectedId(initialTicketId);
     setRollKey(k => k + 1);
   }, [initialTicketId]);
   useEffect(() => { const t = setInterval(() => setClock(new Date()), 15000); return () => clearInterval(t); }, []);
   useEffect(() => { try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch {} }, [muted]);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !covered) requestClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !covered && !walletOpen) requestClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [requestClose, covered]);
+  }, [requestClose, covered, walletOpen]);
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -380,6 +382,12 @@ export function DepartureBoard({
                 )}
                 {ticket.plan && <IconButton icon={PencilLine} label="다시 계획하기" onClick={() => onPlan(ticket)} disabled={boarding} />}
                 <IconButton icon={Trash2} label="티켓 삭제" onClick={remove} disabled={boarding} />
+                {tickets.length > 1 && (
+                  <button type="button" onClick={() => setWalletOpen(true)} className="sm:hidden relative w-11 h-11 shrink-0 rounded-full bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark grid place-items-center" aria-label={`티켓 지갑 · ${tickets.length}장`}>
+                    <Wallet className="w-[18px] h-[18px]" aria-hidden />
+                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white font-mono text-micro font-bold grid place-items-center tabular-nums">{tickets.length}</span>
+                  </button>
+                )}
               </div>
             ) : (
               <button type="button" className="btn btn-accent btn-lg w-full" onClick={() => onPlan()}>
@@ -390,7 +398,7 @@ export function DepartureBoard({
 
             {/* Every ticket; tapping one rolls the board over to it */}
             {tickets.length > 0 && (
-              <div className="flex flex-col gap-2">
+              <div className="hidden sm:flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className={`${label} ${muted}`}>My tickets · {tickets.length}</span>
                   <button type="button" onClick={() => onPlan()} className={`inline-flex items-center gap-1 h-8 px-3 rounded-full text-meta font-bold ${muted} hover:text-ink dark:hover:text-ink-dark hover:bg-black/[0.05] dark:hover:bg-white/10`}>
@@ -398,34 +406,11 @@ export function DepartureBoard({
                   </button>
                 </div>
                 <ul className="flex gap-2 overflow-x-auto hide-scrollbar snap-x rounded-card" aria-label="보관한 티켓">
-                  {tickets.map(t => {
-                    const on = t.id === ticket?.id;
-                    const st = ticketStatus(t);
-                    const n = t.cities?.length || 1;
-                    return (
-                      <li key={t.id} className="snap-start shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => select(t)}
-                          aria-pressed={on}
-                          className={`w-[216px] h-full flex rounded-card overflow-hidden text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
-                            on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.03] dark:hover:bg-white/[0.06]'
-                          }`}
-                        >
-                          <span className="flex-1 min-w-0 px-3.5 py-3 flex flex-col gap-0.5">
-                            <span className={`${label} ${on ? 'opacity-70' : muted}`}>{t.flightNo} · Gate {t.gate}</span>
-                            <span className="text-[19px] font-extrabold tracking-tight uppercase truncate">{t.cityEn}{n > 1 ? ` +${n - 1}` : ''}</span>
-                            <span className={`text-meta truncate ${on ? 'opacity-75' : muted}`}>{shortRange(t)}</span>
-                          </span>
-                          {/* Stub */}
-                          <span className={`w-14 border-l-[1.5px] border-dashed flex flex-col items-center justify-center gap-0.5 font-mono ${on ? 'border-white/25 dark:border-black/25' : 'border-black/15 dark:border-white/15'}`}>
-                            <span className="text-[13px] font-bold">{MONTHS[t.month - 1]}</span>
-                            <span className={`text-micro font-bold ${st.tone === 'amber' ? 'text-amber-600 dark:text-amber-400' : st.tone === 'red' ? 'text-red-600 dark:text-red-400' : on ? 'opacity-70' : muted}`}>{t.startDate ? st.text : 'TBD'}</span>
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
+                  {tickets.map(t => (
+                    <li key={t.id} className="snap-start shrink-0">
+                      <TicketCard t={t} on={t.id === ticket?.id} onSelect={() => select(t)} className="w-[216px] h-full" />
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -445,6 +430,63 @@ export function DepartureBoard({
         </div>
         </div>
       </div>
+
+      {walletOpen && (
+        <Sheet label="티켓 지갑" onClose={() => setWalletOpen(false)} tone="paper" panelClassName="sm:max-w-md max-h-[80dvh]">
+          <TicketWallet tickets={tickets} selectedId={ticket?.id} onSelect={select} onNew={() => { setWalletOpen(false); onPlan(); }} />
+        </Sheet>
+      )}
+    </div>
+  );
+}
+
+/** One ticket with its stub; the chosen one is inked */
+function TicketCard({ t, on, onSelect, className = '' }: { t: DepartureTicket; on: boolean; onSelect: () => void; className?: string }) {
+  const st = ticketStatus(t);
+  const n = t.cities?.length || 1;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={on}
+      className={`${className} flex rounded-card overflow-hidden text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
+        on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.03] dark:hover:bg-white/[0.06]'
+      }`}
+    >
+      <span className="flex-1 min-w-0 px-3.5 py-3 flex flex-col gap-0.5">
+        <span className={`${label} ${on ? 'opacity-70' : muted}`}>{t.flightNo} · Gate {t.gate}</span>
+        <span className="text-[19px] font-extrabold tracking-tight uppercase truncate">{t.cityEn}{n > 1 ? ` +${n - 1}` : ''}</span>
+        <span className={`text-meta truncate ${on ? 'opacity-75' : muted}`}>{shortRange(t)}</span>
+      </span>
+      {/* Stub */}
+      <span className={`w-[4.5rem] shrink-0 border-l-[1.5px] border-dashed flex flex-col items-center justify-center gap-0.5 font-mono ${on ? 'border-white/25 dark:border-black/25' : 'border-black/15 dark:border-white/15'}`}>
+        <span className="text-[13px] font-bold">{MONTHS[t.month - 1]}</span>
+        <span className={`text-micro font-bold ${st.tone === 'amber' ? 'text-amber-600 dark:text-amber-400' : st.tone === 'red' ? 'text-red-600 dark:text-red-400' : on ? 'opacity-70' : muted}`}>{t.startDate ? st.text : 'TBD'}</span>
+      </span>
+    </button>
+  );
+}
+
+/** Phones: every ticket in a wallet sheet, so the board and the lobby fit one screen */
+function TicketWallet({ tickets, selectedId, onSelect, onNew }: {
+  tickets: DepartureTicket[]; selectedId?: string; onSelect: (t: DepartureTicket) => void; onNew: () => void;
+}) {
+  const close = useSheetClose();
+  return (
+    <div className="flex flex-col gap-3 p-4 pt-2 min-h-0">
+      <div className="flex items-center justify-between">
+        <span className="text-[17px] font-extrabold">티켓 지갑 <span className={`${label} ${muted} ml-1`}>{tickets.length}</span></span>
+        <button type="button" onClick={onNew} className="btn btn-secondary btn-sm">
+          <Plus className="w-3.5 h-3.5" aria-hidden />새 티켓
+        </button>
+      </div>
+      <ul className="flex flex-col gap-2 overflow-y-auto overscroll-contain hide-scrollbar" aria-label="보관한 티켓">
+        {tickets.map(t => (
+          <li key={t.id}>
+            <TicketCard t={t} on={t.id === selectedId} onSelect={() => { onSelect(t); close(); }} className="w-full" />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

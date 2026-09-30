@@ -196,7 +196,7 @@ export function MapModals({ s }: { s: MapHubState }) {
               favoriteCountries.length === 0 ? (
                 <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60">
                   즐겨찾기에 등록된 국가가 없습니다. <br />
-                  지도에서 국가를 클릭한 후 ★ WISH 버튼을 눌러보세요.
+                  지도에서 국가를 클릭한 후 WISH 버튼을 눌러보세요.
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
@@ -254,7 +254,7 @@ export function MapModals({ s }: { s: MapHubState }) {
               favoriteCities.length === 0 ? (
                 <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60">
                   즐겨찾기에 등록된 도시가 없습니다. <br />
-                  국가 상세 카드에서 원하는 여행 도시의 ★를 눌러 담아보세요.
+                  국가 상세 카드에서 원하는 여행 도시의 별 아이콘을 눌러 담아보세요.
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">

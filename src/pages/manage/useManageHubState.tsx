@@ -1820,7 +1820,7 @@ export function useManageHubState(props: ManageHubPageProps) {
         localStorage.setItem(`cached_magazine_sections_backup_cleanup_${Date.now()}`, JSON.stringify(sectionsList));
       } catch (_) {}
 
-      logs.push(`[${new Date().toLocaleTimeString()}] 🚀 데이터 최적화 및 클린화 작업 시작...`);
+      logs.push(`[${new Date().toLocaleTimeString()}] 데이터 최적화 및 클린화 작업 시작...`);
 
       // 1. Delete orphaned timeline docs
       for (const item of targetReport.orphanedTimelineDocs) {
@@ -1967,7 +1967,7 @@ export function useManageHubState(props: ManageHubPageProps) {
         }
       }
 
-      logs.push(`[${new Date().toLocaleTimeString()}] ✅ 모든 최적화 및 클린화 작업이 안전하게 완료되었습니다!`);
+      logs.push(`[${new Date().toLocaleTimeString()}] 모든 최적화 및 클린화 작업이 안전하게 완료되었습니다!`);
       setCleanLog(logs);
       setCleanupSummary({ orphanedDeleted, subtitleCleaned, cacheCleaned, magazineOptimized });
       setShowCleanSuccessModal(true);
@@ -1986,22 +1986,22 @@ export function useManageHubState(props: ManageHubPageProps) {
   const handleOneTouchOptimize = async () => {
     if (isScanning || isCleaning) return;
     setIsScanning(true);
-    setCleanLog([`[${new Date().toLocaleTimeString()}] 🔍 데이터베이스 무결성 정밀 스캔 시작...`]);
+    setCleanLog([`[${new Date().toLocaleTimeString()}] 데이터베이스 무결성 정밀 스캔 시작...`]);
     try {
       const report = await handleScanCleanup();
       if (!report) {
-        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ 스캔 중 오류가 발생했습니다.`]);
+        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] 스캔 중 오류가 발생했습니다.`]);
         return;
       }
       if (!report.isClean) {
-        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ⚠️ 정리 대상 발견: 고아 문서 및 캐시 자동 정리 진행...`]);
+        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] 정리 대상 발견: 고아 문서 및 캐시 자동 정리 진행...`]);
         await handleExecuteCleanup(report, true);
       } else {
-        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ 모든 데이터가 100% 정상 최적화 상태입니다 (정리할 찌꺼기 없음).`]);
+        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] 모든 데이터가 100% 정상 최적화 상태입니다 (정리할 찌꺼기 없음).`]);
       }
     } catch (err: any) {
       console.error('One-touch optimize error:', err);
-      setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ 최적화 중 오류: ${err?.message || err}`]);
+      setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] 최적화 중 오류: ${err?.message || err}`]);
     } finally {
       setIsScanning(false);
       setIsCleaning(false);
@@ -4053,7 +4053,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     }
     setSectionsList(firestoreMagSections);
     setActiveMagSectionId(firestoreMagSections[0]?.id || 'main');
-    notify(`✅ Firestore에서 ${firestoreMagSections.length}개 섹션을 현재 편집기로 불러왔습니다.\n매거진 모드로 이동 후 "SAVE MAGAZINE SETTINGS" 버튼으로 최종 저장하세요.`);
+    notify(`Firestore에서 ${firestoreMagSections.length}개 섹션을 현재 편집기로 불러왔습니다.\n매거진 모드로 이동 후 "SAVE MAGAZINE SETTINGS" 버튼으로 최종 저장하세요.`);
     setActiveMode('MAGAZINE');
   };
 

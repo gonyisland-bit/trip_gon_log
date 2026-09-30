@@ -772,8 +772,8 @@ export function useAppState() {
       text = marqueeMessage || '';
     }
 
-    const repeated = Array(6).fill(text).join('   ★   ');
-    return `${repeated}   ★   `;
+    const repeated = Array(6).fill(text).join('   ·   ');
+    return `${repeated}   ·   `;
   }, [marqueeOverrideText, currentView, activeTrip, marqueeMessage, flightsByTrip, staysByTrip]);
 
   const marqueeTrips = useMemo(() => {

@@ -811,7 +811,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold font-mono uppercase">1. 달력 ➔ 2. 날씨</span>
+                    <span className="text-xs font-bold font-mono uppercase">1. 달력 → 2. 날씨</span>
                     <span className="text-meta opacity-70 font-mono">CALENDAR ARCHIVE FIRST</span>
                   </div>
                   {widgetOrder === 'calendar-first' && <Check className="w-4 h-4 shrink-0" />}
@@ -827,7 +827,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold font-mono uppercase">1. 날씨 ➔ 2. 달력</span>
+                    <span className="text-xs font-bold font-mono uppercase">1. 날씨 → 2. 달력</span>
                     <span className="text-meta opacity-70 font-mono">LIVE WEATHER FIRST</span>
                   </div>
                   {widgetOrder === 'weather-first' && <Check className="w-4 h-4 shrink-0" />}
