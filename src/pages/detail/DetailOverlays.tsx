@@ -9,9 +9,8 @@ import type { JourneyDetailState } from './useJourneyDetailState';
 
 export function DetailOverlays({ s }: { s: JourneyDetailState }) {
   const {
-    trip, flights, onDelete, onNavigate, isSwitcherOpen, setIsSwitcherOpen, switcherSearch,
-    setSwitcherSearch, showTripDeleteConfirm, setShowTripDeleteConfirm, costModalItem,
-    setCostModalItem, isQuickBookingOpen, setIsQuickBookingOpen, switcherJourneys,
+    trip, flights, onDelete, onNavigate, showTripDeleteConfirm, setShowTripDeleteConfirm, costModalItem,
+    setCostModalItem, isQuickBookingOpen, setIsQuickBookingOpen,
     showSaveSuccessModal, setShowSaveSuccessModal, mapConfirm, setMapConfirm, isLightboxOpen,
     setIsLightboxOpen, lightboxIndex, setLightboxIndex, showAutosaveModal, tripToUse, minDate,
     maxDate, isCoverModalOpen, setIsCoverModalOpen, coverInputUrl, setCoverInputUrl,
@@ -75,120 +74,6 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
           </div>
         </div>
       )}
-      {/* Quick Journey Switcher Modal */}
-      {isSwitcherOpen && (
-        <div 
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setIsSwitcherOpen(false)}
-        >
-          <div 
-            className="w-full max-w-lg bg-surface dark:bg-surface-dark rounded-card shadow-2xl flex flex-col max-h-[80vh] overflow-hidden text-black dark:text-white animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="p-4 border-b border-black/15 dark:border-white/15 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ArrowRightLeft className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest font-sans">
-                  SWITCH JOURNEY
-                </span>
-              </div>
-              <button 
-                onClick={() => setIsSwitcherOpen(false)}
-                className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Search Box */}
-            <div className="p-3 border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] flex items-center gap-2">
-              <Search className="w-4 h-4 text-black/60 dark:text-white/60 shrink-0" />
-              <input
-                type="text"
-                autoFocus
-                value={switcherSearch}
-                onChange={(e) => setSwitcherSearch(e.target.value)}
-                placeholder="여정 제목, 도시, 국가 검색..."
-                className="w-full bg-transparent border-none outline-none text-xs sm:text-sm font-medium text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50"
-              />
-              {switcherSearch && (
-                <button 
-                  onClick={() => setSwitcherSearch('')}
-                  className="tap-target text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Journey List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-black/10 dark:divide-white/10">
-              {switcherJourneys.length > 0 ? (
-                switcherJourneys.map((item) => {
-                  const isCurrent = trip && item.id === trip.id;
-                  const itemImg = getEffectiveImageUrl(item.img);
-                  return (
-                    <button
-                      key={`${item.type}-${item.id}`}
-                      onClick={() => {
-                        setIsSwitcherOpen(false);
-                        if (!isCurrent) {
-                          onNavigate('detail', item.id);
-                        }
-                      }}
-                      className={`w-full flex items-stretch text-left transition-colors cursor-pointer group hover:bg-black/[0.03] dark:hover:bg-white/[0.03] ${
-                        isCurrent ? 'bg-red-50/50 dark:bg-red-950/20' : ''
-                      }`}
-                    >
-                      {/* 1:1 Thumbnail */}
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 aspect-square bg-black/5 dark:bg-white/5 border-r border-black/10 dark:border-white/10 relative overflow-hidden">
-                        {itemImg ? (
-                          <img src={itemImg} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-black/60 dark:text-white/60 text-xs font-mono">
-                            NO IMG
-                          </div>
-                        )}
-                        <span className="absolute top-1 left-1 text-micro font-mono font-bold px-1 py-0.2 bg-black/70 text-white rounded-none">
-                          {item.type}
-                        </span>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 p-2.5 sm:p-3 flex flex-col justify-center min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs sm:text-sm font-extrabold truncate font-sans ${isCurrent ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
-                            {item.title}
-                          </span>
-                          {isCurrent && (
-                            <span className="text-micro font-bold px-1 py-0.2 bg-red-600 text-white shrink-0">
-                              CURRENT
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-meta sm:text-xs text-black/60 dark:text-white/60 font-mono truncate mt-0.5">
-                          {item.date || 'DATE TBD'} {item.locationStr ? `· ${item.locationStr}` : ''}
-                        </div>
-                      </div>
-
-                      {/* Right indicator */}
-                      <div className="px-3 flex items-center text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0">
-                        <ArrowRight className="w-4 h-4 -translate-x-1 group-hover:translate-x-0 transition-transform" />
-                      </div>
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="py-12 text-center text-xs text-black/60 dark:text-white/60 font-sans">
-                  검색 결과와 일치하는 여정이 없습니다.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Save Success Auto-Dismiss Modal */}
       <ConfirmModal
         isOpen={showSaveSuccessModal}

@@ -117,9 +117,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       setIsQuickJumpExpanded(false);
     }, 3500);
   };
-  // Quick Switcher & Delete Confirm States
-  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
-  const [switcherSearch, setSwitcherSearch] = useState('');
+  // Delete Confirm States
   const [showTripDeleteConfirm, setShowTripDeleteConfirm] = useState(false);
   const [costModalItem, setCostModalItem] = useState<TimelineItem | null>(null);
   const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false);
@@ -135,17 +133,6 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const [isPocketWidgetOpen, setIsPocketWidgetOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isSwitcherOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsSwitcherOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSwitcherOpen]);
-
-  useEffect(() => {
     if (!costModalItem) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -155,38 +142,6 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [costModalItem]);
-
-  const switcherJourneys = useMemo(() => {
-    const list: Array<{ id: number; title: string; date: string; locationStr: string; img?: string; type: 'ARCHIVE' | 'PLAN' }> = [];
-    (allTrips || []).forEach(t => {
-      list.push({
-        id: t.id,
-        title: t.title || 'UNTITLED JOURNEY',
-        date: t.date || '',
-        locationStr: t.locationStr || '',
-        img: t.img,
-        type: 'ARCHIVE'
-      });
-    });
-    (allPlans || []).forEach(p => {
-      list.push({
-        id: p.id,
-        title: p.title || 'UNTITLED PLAN',
-        date: p.date || '',
-        locationStr: p.locationStr || '',
-        img: p.img,
-        type: 'PLAN'
-      });
-    });
-
-    if (!switcherSearch.trim()) return list;
-    const q = switcherSearch.toLowerCase().trim();
-    return list.filter(item => 
-      item.title.toLowerCase().includes(q) ||
-      item.locationStr.toLowerCase().includes(q) ||
-      item.date.toLowerCase().includes(q)
-    );
-  }, [allTrips, allPlans, switcherSearch]);
 
   // Edit / Draft state
   const [isEditing, setIsEditing] = useState(false);
@@ -3613,13 +3568,12 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     flashedItemId, setFlashedItemId, showQuickJump, setShowQuickJump, isQuickJumpExpanded,
     setIsQuickJumpExpanded, quickJumpAutoCollapseTimerRef, activeSpyDate, setActiveSpyDate,
     highlightedDateSection, setHighlightedDateSection, quickJumpChipsRef,
-    resetQuickJumpCollapseTimer, isSwitcherOpen, setIsSwitcherOpen, switcherSearch,
-    setSwitcherSearch, showTripDeleteConfirm, setShowTripDeleteConfirm, costModalItem,
+    resetQuickJumpCollapseTimer, showTripDeleteConfirm, setShowTripDeleteConfirm, costModalItem,
     setCostModalItem, isQuickBookingOpen, setIsQuickBookingOpen, radarItems, setRadarItems,
     activeRadarIndex, setActiveRadarIndex, radarSnoozedUntil, setRadarSnoozedUntil, isRadarMinimized,
     setIsRadarMinimized, radarFocusedSpot, setRadarFocusedSpot, radarRouteTarget,
     setRadarRouteTarget, activeGhostSpotId, setActiveGhostSpotId, isPocketWidgetOpen,
-    setIsPocketWidgetOpen, switcherJourneys, isEditing, setIsEditing, draftTrip, setDraftTrip,
+    setIsPocketWidgetOpen, isEditing, setIsEditing, draftTrip, setDraftTrip,
     draftTimeline, setDraftTimeline, draftFlights, setDraftFlights, draftStays, setDraftStays,
     draftTransits, setDraftTransits, draftTripRef, draftTimelineRef, draftFlightsRef, draftStaysRef,
     draftTransitsRef, undoStackRef, redoStackRef, canUndo, setCanUndo, canRedo, setCanRedo,

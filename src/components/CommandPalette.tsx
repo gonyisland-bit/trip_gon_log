@@ -6,13 +6,15 @@ import { Trip, Plan, SpotPocketItem } from '../types';
 import { getSavedPockets } from '../utils/pocketStorage';
 import { Sheet } from './Sheet';
 import { openIntro } from '../intro/openIntro';
+import { readRecentJourneys } from '../utils/recentJourneys';
+import { shortcutMod } from '../utils/shortcut';
 
 // Command palette (v1.3 P5): Cmd/Ctrl+K. Jump to a journey or a pocket place,
 // or run an app command, from the keyboard alone. The last row hands the
 // query to the full search, which also looks inside timelines and bookings.
 
 
-type Group = '명령' | '여정' | '포켓';
+type Group = '최근 여정' | '명령' | '여정' | '포켓';
 interface Entry {
   id: string;
   group: Group;
@@ -102,9 +104,17 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
     return [...commands, ...journeys, ...places, ...remixes];
   }, [trips, plans, pockets, onNavigate, onNewTrip, onOpenDeparture, onOpenWallet, onKeepPlace, onCycleNightMode, onRemix]);
 
-  // With no query: commands and the five nearest journeys. With one: the best 30 matches, grouped
+  // With no query: the three journeys opened last (or the nearest), then the commands.
+  // With one: the best 30 matches, grouped
+  const [recentIds] = useState(readRecentJourneys);
   const results = useMemo(() => {
-    if (!query.trim()) return [...entries.filter(e => e.group === '명령' && !e.id.startsWith('remix-')), ...entries.filter(e => e.group === '여정').slice(0, 5)];
+    if (!query.trim()) {
+      const journeys = entries.filter(e => e.group === '여정');
+      const byId = new Map(journeys.map(j => [j.id, j]));
+      const recent = recentIds.map(id => byId.get(`trip-${id}`)).filter((e): e is Entry => !!e);
+      const firstThree = (recent.length ? recent : journeys).slice(0, 3).map(e => ({ ...e, group: '최근 여정' as const }));
+      return [...firstThree, ...entries.filter(e => e.group === '명령' && !e.id.startsWith('remix-'))];
+    }
     const order: Group[] = ['명령', '여정', '포켓'];
     return entries
       .map(e => ({ e, s: score(query, e.keywords) }))
@@ -113,7 +123,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
       .slice(0, 30)
       .sort((a, b) => order.indexOf(a.e.group) - order.indexOf(b.e.group) || b.s - a.s)
       .map(x => x.e);
-  }, [entries, query]);
+  }, [entries, query, recentIds]);
 
   const fullSearch: Entry | null = query.trim()
     ? { id: 'full-search', group: '명령', label: `"${query.trim()}" 전체 검색`, hint: '타임라인 · 예약까지', keywords: '', icon: Search, run: () => onFullSearch(query.trim()) }
@@ -136,12 +146,14 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
     if (ev.key === 'ArrowDown') { ev.preventDefault(); setActive(i => (i + 1) % Math.max(1, rows.length)); }
     else if (ev.key === 'ArrowUp') { ev.preventDefault(); setActive(i => (i - 1 + rows.length) % Math.max(1, rows.length)); }
     else if (ev.key === 'Enter') { ev.preventDefault(); choose(rows[active]); }
+    // / on an empty box: the full search, which also looks inside timelines and bookings
+    else if (ev.key === '/' && !query) { ev.preventDefault(); onClose(); onFullSearch(''); }
   };
 
   let lastGroup: Group | null = null;
 
   return (
-    <Sheet onClose={onClose} label="명령 팔레트" placement="top" zIndex={200} panelClassName="max-w-xl max-h-[55dvh] sm:max-h-[70vh]">
+    <Sheet onClose={onClose} label="한번에 찾기" placement="top" zIndex={200} panelClassName="max-w-xl max-h-[55dvh] sm:max-h-[70vh]">
       <div onKeyDown={onKeyDown} className="flex flex-col min-h-0">
         <div className="flex items-center gap-3 px-4 h-14 border-b border-black/15 dark:border-white/15">
           <Search className="w-4 h-4 shrink-0 text-black/60 dark:text-white/60" />
@@ -159,10 +171,10 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
             spellCheck={false}
             className="flex-1 min-w-0 bg-transparent outline-none text-base placeholder:text-black/50 dark:placeholder:text-white/50"
           />
-          <kbd className="shrink-0 font-mono text-micro px-1.5 py-0.5 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60">ESC</kbd>
+          <kbd className="shrink-0 hidden sm:inline-flex h-6 px-2 items-center rounded-full bg-black/[0.05] dark:bg-white/10 font-mono text-micro font-bold text-black/55 dark:text-white/55">Esc</kbd>
         </div>
 
-        <div ref={listRef} id="command-palette-list" role="listbox" className="min-h-0 overflow-y-auto overscroll-contain py-1 max-h-[calc(55dvh-3.5rem)] sm:max-h-[calc(70vh-3.5rem)]">
+        <div ref={listRef} id="command-palette-list" role="listbox" className="min-h-0 overflow-y-auto overscroll-contain py-1 max-h-[calc(55dvh-3.5rem)] sm:max-h-[calc(70vh-6rem)]">
           {rows.length === 0 && <p className="px-4 py-8 text-sm text-center text-black/60 dark:text-white/60">결과가 없습니다.</p>}
           {rows.map((e, i) => {
             const header = e.id !== 'full-search' && e.group !== lastGroup ? e.group : null;
@@ -179,7 +191,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
                   data-index={i}
                   onMouseMove={() => !on && setActive(i)}
                   onClick={() => choose(e)}
-                  className={`mx-1 px-3 h-11 flex items-center gap-3 cursor-pointer ${on ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : ''} ${e.id === 'full-search' ? 'mt-1 border-t border-black/10 dark:border-white/10' : ''}`}
+                  className={`mx-1.5 px-3 h-11 rounded-full flex items-center gap-3 cursor-pointer ${on ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : ''} ${e.id === 'full-search' ? 'mt-1' : ''}`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${on ? '' : 'text-black/60 dark:text-white/60'}`} />
                   <span className="text-sm font-semibold truncate">{e.label}</span>
@@ -189,6 +201,10 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
               </React.Fragment>
             );
           })}
+        </div>
+        <div className="hidden sm:flex items-center gap-3 px-4 h-10 border-t border-black/[0.06] dark:border-white/[0.08] font-mono text-micro text-black/50 dark:text-white/50 shrink-0">
+          <span>↑↓ 이동</span><span>Enter 열기</span><span>/ 전체 검색</span><span>Esc 닫기</span>
+          <span className="ml-auto">{shortcutMod}K</span>
         </div>
       </div>
     </Sheet>

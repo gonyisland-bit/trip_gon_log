@@ -6,6 +6,8 @@ import { CityWeatherConfig } from '../types';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
 import { cachedCurrentLocation, CURRENT_LOCATION_EN, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
 import { CurrentLocationRow } from './weather/CurrentLocationRow';
+import { useCitiesWeather } from './weather/useCitiesWeather';
+import { WeatherReading } from './weather/WeatherReading';
 
 const DEFAULT_CITIES: CityWeatherConfig[] = [
   { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.9780, country: 'KR', timezone: 'Asia/Seoul' },
@@ -169,6 +171,11 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
     selectWeatherCity(city);
   };
 
+  // Every row's weather, fetched on hover or open so the list shows it straight away
+  const { now: cityNow, prefetch } = useCitiesWeather(cities);
+  const here = cachedCurrentLocation();
+  const warm = () => prefetch(here);
+
   const todayPop = weatherData?.forecast?.[0]?.precipitationProb ?? 0;
   const weatherMeta = weatherData
     ? getWeatherMeta(weatherData.weatherCode, todayPop)
@@ -177,100 +184,78 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
 
   return (
     <div className={`relative inline-block font-mono select-none ${className}`} ref={containerRef}>
-      {/* Mini Toggle Pill Button */}
+      {/* Pill: icon · temperature · place */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+        onClick={() => { if (!isOpen) warm(); setIsOpen(!isOpen); }}
+        onPointerEnter={warm}
+        onFocus={warm}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`h-8 px-2.5 rounded-full transition-colors cursor-pointer flex items-center gap-1.5 ${
           isOpen
-            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
-            : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 border-black/10 dark:border-white/15 text-black dark:text-white'
+            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
+            : 'bg-black/[0.05] dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-black dark:text-white'
         }`}
-        title={`날씨 지역: ${selectedCity.name || selectedCity.nameEn} (클릭하여 변경)`}
+        title={`날씨 위치: ${selectedCity.name || selectedCity.nameEn}`}
       >
         {isLoading ? (
-          <Loader2 className="w-3 h-3 animate-spin opacity-60 shrink-0" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin opacity-60 shrink-0" />
         ) : WeatherIcon ? (
-          <WeatherIcon className={`w-3.5 h-3.5 ${weatherMeta?.colorClass || ''} shrink-0`} />
+          <WeatherIcon className={`w-3.5 h-3.5 ${isOpen ? '' : weatherMeta?.colorClass || ''} shrink-0`} />
         ) : (
-          <MapPin className="w-3 h-3 text-red-600 dark:text-red-500 shrink-0" />
+          <MapPin className="w-3.5 h-3.5 shrink-0" />
         )}
-
-        {weatherData && (
-          <span className="text-meta font-extrabold tracking-tight shrink-0">
-            {weatherData.temp}°
-          </span>
-        )}
-
-        <span className="text-meta sm:text-meta font-bold uppercase tracking-wider hidden xs:inline shrink-0">
-          {selectedCity.name || selectedCity.nameEn}
-        </span>
-
-        <ChevronDown className={`w-2.5 h-2.5 opacity-50 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        {weatherData && <span className="text-meta font-bold tabular-nums shrink-0">{weatherData.temp}°</span>}
+        <span className="text-meta font-bold hidden xs:inline shrink-0 max-w-[6rem] truncate">{selectedCity.name || selectedCity.nameEn}</span>
+        <ChevronDown className={`w-3 h-3 opacity-60 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Swiss Minimal Dropdown Popover */}
+      {/* Places with their weather now, and the background effect switch */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-48 sm:w-56 py-1.5 bg-white dark:bg-zinc-900 border border-black/15 dark:border-white/15 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
-          <div className="px-3 py-1.5 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-            <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60">
-              SELECT CITY
-            </span>
-            <span className="text-micro font-mono text-black/60 dark:text-white/60">
-              {cities.length} CITIES
-            </span>
-          </div>
-
-          <div className="max-h-56 overflow-y-auto hide-scrollbar py-1">
-            <CurrentLocationRow selected={selectedCity.nameEn === CURRENT_LOCATION_EN} onLocated={handleSelectCity} />
+        <div className="absolute right-0 top-full mt-2 w-64 py-1.5 bg-surface dark:bg-surface-dark rounded-card shadow-[0_12px_32px_rgba(0,0,0,0.16)] z-50 font-sans animate-in fade-in slide-in-from-top-1 duration-150">
+          <div role="listbox" aria-label="날씨 위치" className="max-h-72 overflow-y-auto overscroll-contain hide-scrollbar">
+            <CurrentLocationRow
+              selected={selectedCity.nameEn === CURRENT_LOCATION_EN}
+              onLocated={handleSelectCity}
+              trailing={here ? <WeatherReading data={cityNow[here.nameEn]} /> : undefined}
+            />
             {cities.map((city) => {
               const isSelected = city.nameEn.toUpperCase() === selectedCity.nameEn.toUpperCase();
-              const cityName = city.name || city.nameEn;
               return (
                 <button
                   key={city.nameEn}
                   type="button"
+                  role="option"
+                  aria-selected={isSelected}
                   onClick={() => handleSelectCity(city)}
-                  className={`w-full px-3 py-2 text-left flex items-center justify-between transition-colors cursor-pointer text-xs ${
+                  className={`w-full min-h-10 px-3 py-2 text-left flex items-center justify-between gap-3 transition-colors cursor-pointer text-sm ${
                     isSelected
-                      ? 'bg-black/5 dark:bg-white/10 font-extrabold text-black dark:text-white'
-                      : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
+                      ? 'bg-black/[0.05] dark:bg-white/10 font-bold text-black dark:text-white'
+                      : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black/80 dark:text-white/80'
                   }`}
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <span className="truncate">{cityName}</span>
-                    <span className="text-micro font-mono text-black/60 dark:text-white/60 uppercase">
-                      {city.nameEn}
-                    </span>
-                  </div>
-                  {isSelected && (
-                    <Check className="w-3.5 h-3.5 text-black dark:text-white shrink-0 ml-2" />
-                  )}
+                  <span className="truncate">{city.name || city.nameEn}</span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <WeatherReading data={cityNow[city.nameEn]} />
+                    <span className="w-3.5 h-3.5 inline-grid place-items-center">{isSelected && <Check className="w-3.5 h-3.5" />}</span>
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          {/* Swiss Minimal Weather Ambience Toggle */}
-          <div className="px-3 py-2 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-micro font-mono font-bold tracking-wider text-black/80 dark:text-white/80">
-                AMBIENCE EFFECT
-              </span>
-              <span className="text-micro font-mono text-black/60 dark:text-white/60">
-                배경 날씨 애니메이션
-              </span>
-            </div>
+          <div className="mt-1 px-3 pt-2 pb-1 border-t border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between gap-3">
+            <span className="text-sm font-bold">배경 날씨 효과</span>
             <button
               type="button"
+              role="switch"
+              aria-checked={isBgEnabled}
+              aria-label="배경 날씨 효과"
               onClick={handleToggleBg}
-              className={`px-2.5 py-0.5 rounded-full text-micro font-mono font-bold transition-all cursor-pointer ${
-                isBgEnabled
-                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-2xs'
-                  : 'bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60 hover:bg-black/15 dark:hover:bg-white/15'
-              }`}
+              className={`relative w-10 h-6 rounded-full transition-colors duration-fast cursor-pointer shrink-0 ${isBgEnabled ? 'bg-ink dark:bg-ink-dark' : 'bg-black/15 dark:bg-white/20'}`}
             >
-              {isBgEnabled ? 'ON' : 'OFF'}
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface dark:bg-paper-dark shadow-sm transition-transform duration-fast ${isBgEnabled ? 'translate-x-4' : ''}`} />
             </button>
           </div>
         </div>

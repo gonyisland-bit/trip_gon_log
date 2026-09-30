@@ -125,107 +125,67 @@ export function LandingGuestView({
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/50 z-10" />
       </div>
 
-      {/* 2. Top Minimal Editorial Header */}
-      <header className="relative z-20 w-full max-w-[1920px] mx-auto px-6 sm:px-12 md:px-16 pt-8 sm:pt-10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="w-2 h-2 bg-red-600 rounded-none inline-block shrink-0" />
-          <span className="text-meta font-mono font-bold tracking-[0.3em] uppercase text-white/80">
-            TRAVEL LOG & VISUAL JOURNAL
+      {/* 2. Top line: the mark of the journal */}
+      <header className="relative z-20 w-full max-w-[1920px] mx-auto px-5 sm:px-12 md:px-16 pt-[max(1.5rem,env(safe-area-inset-top,0px))] sm:pt-10 flex items-center justify-between gap-4">
+        <span className="font-mono text-micro sm:text-meta font-bold tracking-[0.24em] uppercase text-white/75">Travel journal</span>
+        {effectiveMedia.length > 1 && (
+          <span className="font-mono text-micro sm:text-meta font-bold tracking-[0.2em] uppercase text-white/60 truncate">
+            {effectiveMedia[currentIndex]?.title || `Frame ${String(currentIndex + 1).padStart(2, '0')}`}
           </span>
-        </div>
+        )}
       </header>
 
-      {/* 3. Center/Lower Hero: 과감한 스케일의 Inter Black TRIPGON 타이포그래피 */}
-      <div className="relative z-20 w-full max-w-[1920px] mx-auto px-6 sm:px-12 md:px-16 py-8 flex-1 flex flex-col justify-end">
-        <div className="flex flex-col gap-3 md:gap-5 pb-6">
-          <div className="flex items-center gap-3">
-            <span className="text-meta sm:text-xs font-mono font-bold tracking-[0.25em] text-white/60 uppercase">
-              EDITORIAL ARCHIVE
-            </span>
-            <span className="text-white/60 font-mono">/</span>
-            <span className="text-meta sm:text-xs font-mono font-bold tracking-[0.2em] text-red-500 uppercase">
-              {effectiveMedia[currentIndex]?.title || `FRAME ${String(currentIndex + 1).padStart(2, '0')}`}
-            </span>
-          </div>
-
-          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[130px] xl:text-[150px] font-extrabold tracking-tight leading-none font-['Inter',sans-serif] drop-shadow-2xl text-white">
-            Tripgon log
-          </h1>
-
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end pt-2">
-            <p className="md:col-span-7 lg:col-span-6 text-xs sm:text-sm md:text-base font-sans font-medium text-white/80 leading-relaxed break-keep max-w-xl">
-              발걸음이 머물렀던 도시와 순간의 기록.
-              <span className="hidden sm:inline"> 스마트 포켓과 시네마틱 타임라인으로 남겨 보세요.</span>
-            </p>
-
-            {/* Main Action Buttons: Swiss Minimal Monochrome SIGN IN & JOIN */}
-            <div className="md:col-span-5 lg:col-span-6 flex flex-wrap items-center md:justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={openIntro}
-                onPointerEnter={prefetchIntro}
-                onTouchStart={prefetchIntro}
-                onFocus={prefetchIntro}
-                className="px-5 sm:px-6 py-3.5 sm:py-4 inline-flex items-center gap-2 text-white/90 hover:text-white border border-transparent hover:border-white/40 text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition cursor-pointer rounded-none"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                INTRO
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenAuthModal('login')}
-                className="px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition cursor-pointer shadow-xl rounded-none"
-              >
-                SIGN IN
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenAuthModal('signup')}
-                className="px-7 sm:px-8 py-3.5 sm:py-4 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-extrabold uppercase tracking-widest transition cursor-pointer backdrop-blur-xs rounded-none"
-              >
-                JOIN
-              </button>
-            </div>
-          </div>
+      {/* 3. Hero: the logotype, one line, and the three ways in */}
+      <div className="relative z-20 w-full max-w-[1920px] mx-auto px-5 sm:px-12 md:px-16 pb-8 sm:pb-10 flex-1 flex flex-col justify-end gap-5 sm:gap-7">
+        <h1 className="m-0">
+          <img
+            src="/tripgon-logotype.svg"
+            alt="Tripgon log"
+            data-brand-logo
+            draggable={false}
+            className="w-[min(84vw,680px)] h-auto max-h-[18dvh] object-contain object-left brightness-0 invert drop-shadow-[0_8px_32px_rgba(0,0,0,0.35)] select-none"
+          />
+        </h1>
+        <p className="text-sm sm:text-base md:text-lg font-medium text-white/85 leading-relaxed break-keep max-w-xl">
+          발걸음이 머문 도시와 순간의 기록.
+          <span className="hidden sm:inline"> 포켓에 담고, 타임라인으로 남겨 보세요.</span>
+        </p>
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          <button type="button" onClick={() => onOpenAuthModal('login')} className="btn btn-lg bg-white text-black hover:bg-white/90">
+            로그인
+          </button>
+          <button type="button" onClick={() => onOpenAuthModal('signup')} className="btn btn-lg bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm">
+            가입하기
+          </button>
+          <button
+            type="button"
+            onClick={openIntro}
+            onPointerEnter={prefetchIntro}
+            onTouchStart={prefetchIntro}
+            onFocus={prefetchIntro}
+            className="btn btn-lg bg-transparent text-white/90 hover:text-white hover:bg-white/10"
+          >
+            <Play className="w-4 h-4 fill-current" aria-hidden />
+            애니메이션 보기
+          </button>
         </div>
       </div>
 
-      {/* 4. Bottom Editorial Footer & Slide Controls */}
-      <footer className="relative z-20 w-full max-w-[1920px] mx-auto px-6 sm:px-12 md:px-16 py-6 border-t border-white/15 flex items-center justify-between text-white/60">
-        <div className="flex items-center gap-4 text-meta sm:text-xs font-mono">
-          <span>© TRIPGON ARCHIVE</span>
-          <span className="opacity-40">/</span>
-          <span>ALL RIGHTS RESERVED</span>
-        </div>
-
-        {/* Slide Counter & Controls */}
+      {/* 4. Bottom: copyright and slide controls */}
+      <footer className="relative z-20 w-full max-w-[1920px] mx-auto px-5 sm:px-12 md:px-16 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:pb-6 flex items-center justify-between gap-4 text-white/60">
+        <span className="font-mono text-micro sm:text-meta">© Tripgon log</span>
         {effectiveMedia.length > 1 && (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 font-mono text-xs tracking-wider">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-meta tabular-nums mr-1">
               <span className="text-white font-bold">{String(currentIndex + 1).padStart(2, '0')}</span>
-              <span className="opacity-40">/</span>
-              <span className="opacity-60">{String(effectiveMedia.length).padStart(2, '0')}</span>
-            </div>
-
-            <div className="flex items-center border border-white/20">
-              <button
-                type="button"
-                onClick={handlePrev}
-                className="tap-target p-1.5 hover:bg-white/15 text-white/80 hover:text-white transition-colors cursor-pointer"
-                title="이전 슬라이드"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div className="w-[1px] h-4 bg-white/20" />
-              <button
-                type="button"
-                onClick={handleNext}
-                className="tap-target p-1.5 hover:bg-white/15 text-white/80 hover:text-white transition-colors cursor-pointer"
-                title="다음 슬라이드"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+              <span className="opacity-50"> / {String(effectiveMedia.length).padStart(2, '0')}</span>
+            </span>
+            <button type="button" onClick={handlePrev} className="tap-target w-9 h-9 rounded-full inline-grid place-items-center bg-white/10 hover:bg-white/20 text-white transition-colors" aria-label="이전 사진">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button type="button" onClick={handleNext} className="tap-target w-9 h-9 rounded-full inline-grid place-items-center bg-white/10 hover:bg-white/20 text-white transition-colors" aria-label="다음 사진">
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )}
       </footer>

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Plane, Bed, Train, Clock, Compass } from 'lucide-react';
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem } from '../types';
 import { matchesCountryOrQuery } from '../utils/countryHelper';
+import { Sheet, SheetCloseButton } from './Sheet';
+import { Segment } from './ui/Segment';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -52,16 +54,6 @@ export function SearchModal({
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -223,88 +215,59 @@ export function SearchModal({
   const getBadge = (type: string) => {
     switch (type) {
       case 'trip':
-        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Journey</span>;
+        return <span className="bg-black/[0.05] text-black/65 dark:bg-white/10 dark:text-white/65 font-mono text-micro font-bold h-5 px-2 inline-flex items-center rounded-full tracking-wider uppercase shrink-0">Journey</span>;
       case 'plan':
-        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Plan</span>;
+        return <span className="bg-black/[0.05] text-black/65 dark:bg-white/10 dark:text-white/65 font-mono text-micro font-bold h-5 px-2 inline-flex items-center rounded-full tracking-wider uppercase shrink-0">Plan</span>;
       case 'timeline':
-        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Log</span>;
+        return <span className="bg-black/[0.05] text-black/65 dark:bg-white/10 dark:text-white/65 font-mono text-micro font-bold h-5 px-2 inline-flex items-center rounded-full tracking-wider uppercase shrink-0">Log</span>;
       case 'flight':
-        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Flight</span>;
+        return <span className="bg-black/[0.05] text-black/65 dark:bg-white/10 dark:text-white/65 font-mono text-micro font-bold h-5 px-2 inline-flex items-center rounded-full tracking-wider uppercase shrink-0">Flight</span>;
       case 'stay':
-        return <span className="bg-black/5 text-black/70 dark:bg-white/10 dark:text-white/70 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Hotel</span>;
+        return <span className="bg-black/[0.05] text-black/65 dark:bg-white/10 dark:text-white/65 font-mono text-micro font-bold h-5 px-2 inline-flex items-center rounded-full tracking-wider uppercase shrink-0">Hotel</span>;
       case 'transit':
-        return <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-micro font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Transit</span>;
+        return <span className="bg-amber-500/10 text-amber-700 dark:text-amber-400 font-mono text-micro font-bold h-5 px-2 inline-flex items-center rounded-full tracking-wider uppercase shrink-0">Transit</span>;
       default:
         return null;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 shadow-2xl rounded-none mt-16 md:mt-24 flex flex-col max-h-[75vh] overflow-hidden text-black dark:text-white">
-        
-        {/* Search Input Header */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-black/15 dark:border-white/15">
-          <Search className="w-5 h-5 opacity-40 shrink-0" />
+    <Sheet onClose={onClose} label="통합 검색" placement="top" zIndex={200} panelClassName="max-w-2xl max-h-[70dvh] sm:max-h-[75vh]">
+      <div className="flex flex-col min-h-0 text-black dark:text-white">
+        <div className="flex items-center gap-3 px-4 h-14 border-b border-black/[0.08] dark:border-white/10 shrink-0">
+          <Search className="w-4 h-4 shrink-0 text-black/60 dark:text-white/60" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={
-              searchCategory === 'journeys' 
-                ? "Search journeys, plans, countries, tags..." 
-                : "Search timeline spots, memos, flights, stays, transit routes..."
-            }
-            className="flex-grow bg-transparent border-none outline-none text-sm md:text-base placeholder-black/40 dark:placeholder-white/40 font-medium"
+            placeholder={searchCategory === 'journeys' ? '여정 · 나라 · 태그' : '일정 · 메모 · 항공 · 숙소 · 교통'}
+            className="flex-1 min-w-0 bg-transparent outline-none text-base placeholder:text-black/45 dark:placeholder:text-white/45"
           />
-          <button
-            onClick={onClose}
-            className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer"
-            title="Close Search"
-          >
-            <X className="w-5 h-5 opacity-55" />
-          </button>
+          <SheetCloseButton className="w-9 h-9 rounded-full inline-grid place-items-center shrink-0 text-black/60 dark:text-white/60 hover:bg-black/[0.06] dark:hover:bg-white/10" label="닫기">
+            <X className="w-4 h-4" />
+          </SheetCloseButton>
         </div>
 
-        {/* Category Switcher Tabs: Journeys (default) vs Timeline */}
-        <div className="flex border-b border-black/10 dark:border-white/10 px-4 bg-black/[0.02] dark:bg-white/[0.02]">
-          <button
-            type="button"
-            onClick={() => setSearchCategory('journeys')}
-            className={`py-2 px-3 text-[11px] font-extrabold uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
-              searchCategory === 'journeys'
-                ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-            }`}
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>JOURNEYS (여정/플랜)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setSearchCategory('timeline')}
-            className={`py-2 px-3 text-[11px] font-extrabold uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
-              searchCategory === 'timeline'
-                ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>TIMELINE / SPOTS (타임라인/스팟)</span>
-          </button>
+        <div className="px-4 py-2.5 shrink-0">
+          <Segment
+            size="sm"
+            ariaLabel="검색 범위"
+            value={searchCategory}
+            onChange={setSearchCategory}
+            options={[
+              { value: 'journeys', label: '여정', icon: Compass },
+              { value: 'timeline', label: '일정 · 예약', icon: Clock },
+            ]}
+          />
         </div>
 
         {/* Search Results List */}
-        <div className="flex-grow overflow-y-auto divide-y divide-black/5 dark:divide-white/5 p-2 max-h-[500px]">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 pb-2">
           {query.trim() === '' ? (
-            <div className="text-center py-12 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
-              Type keywords to start search...
-            </div>
+            <p className="text-center py-12 text-sm text-black/55 dark:text-white/55">검색어를 입력하세요.</p>
           ) : results.length === 0 ? (
-            <div className="text-center py-12 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
-              No results found for "{query}"
-            </div>
+            <p className="text-center py-12 text-sm text-black/55 dark:text-white/55">'{query}'에 맞는 결과가 없습니다.</p>
           ) : (
             results.map((res) => (
               <div
@@ -313,9 +276,9 @@ export function SearchModal({
                   onResultClick(res.tripId, res.tab, res.itemId);
                   onClose();
                 }}
-                className="w-full flex items-start gap-3.5 p-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left cursor-pointer group"
+                className="w-full flex items-start gap-3 px-3 py-3 rounded-card hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors text-left cursor-pointer group"
               >
-                <div className="p-2 bg-black/5 dark:bg-white/5 shrink-0 group-hover:scale-110 transition-transform">
+                <div className="w-9 h-9 rounded-full inline-grid place-items-center bg-black/[0.05] dark:bg-white/10 shrink-0">
                   {getIcon(res.type)}
                 </div>
                 <div className="flex-grow min-w-0">
@@ -331,8 +294,8 @@ export function SearchModal({
                     </p>
                   )}
                   {res.type !== 'trip' && res.type !== 'plan' && (
-                    <span className="text-micro font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mt-1 block">
-                      Journey: {res.tripTitle}
+                    <span className="text-meta text-black/55 dark:text-white/55 mt-0.5 block truncate">
+                      {res.tripTitle}
                     </span>
                   )}
                 </div>
@@ -341,6 +304,6 @@ export function SearchModal({
           )}
         </div>
       </div>
-    </div>
+    </Sheet>
   );
 }

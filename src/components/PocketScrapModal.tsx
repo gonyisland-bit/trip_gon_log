@@ -34,34 +34,34 @@ const renderPlatformBadge = (platform: SpotPocketPlatform) => {
   const p = platform.toLowerCase();
   if (p === 'instagram') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-transparent text-black dark:text-white border border-black/20 dark:border-white/20">
+      <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-transparent text-black dark:text-white border border-black/20 dark:border-white/20">
         INSTAGRAM
       </span>
     );
   }
   if (p === 'threads') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
+      <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
         THREADS
       </span>
     );
   }
   if (p === 'x') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
+      <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
         X / TWITTER
       </span>
     );
   }
   if (p === 'youtube') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-red-600/15 text-red-600 dark:text-red-400 border border-red-600/30">
+      <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-red-600/15 text-red-600 dark:text-red-400 border border-red-600/30">
         YOUTUBE
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none font-mono text-meta font-bold tracking-wider bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/15 dark:border-white/15 uppercase">
+    <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/15 dark:border-white/15 uppercase">
       {platform}
     </span>
   );

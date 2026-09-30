@@ -147,7 +147,8 @@ function pocketItem(p: SpotPocketItem, idx: number, date: string) {
   };
 }
 
-export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) {
+/** `accountIds`: this user's id and email name; a restored draft that listed them gets the real name */
+export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string, accountIds: string[] = []) {
   const prefillCities = (prefill.cities?.length ? prefill.cities : prefill.city ? [prefill.city] : [])
     .map(n => findCityByNameOrAlias(n))
     .filter((c): c is DestinationCity => !!c)
@@ -337,7 +338,7 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string) 
     setStay(saved.stay || 'mid');
     // A departure that has passed is dropped; the month picker suggests a new one
     setStartDate(saved.startDate && saved.startDate >= iso(new Date()) ? saved.startDate : '');
-    if (saved.members?.length) setMembers(saved.members);
+    if (saved.members?.length) setMembers(saved.members.map(m => (defaultMember && accountIds.includes(m) ? defaultMember : m)));
     setTheme(saved.theme || 'all');
     setIncludePockets(saved.includePockets !== false);
     setPocketIds(new Set(saved.pocketIds || []));

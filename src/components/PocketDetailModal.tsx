@@ -3,8 +3,7 @@ import { createPortal } from 'react-dom';
 import { 
   X, MapPin, Heart, Plus, ExternalLink, Edit3, Trash2, 
   Navigation, Utensils, Coffee, Camera, ShoppingBag, Lightbulb,
-  MessageSquare, Send, Check, ZoomIn
-} from 'lucide-react';
+  MessageSquare, Send, Check, ZoomIn, ChevronDown } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, PocketComment, UserProfile } from '../types';
 import { confirmDialog } from '../utils/feedback';
 
@@ -221,7 +220,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
 
           {/* Platform Tag Overlay (if exists) */}
           {spot.platform && (
-            <div className="absolute bottom-3 left-3.5 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-micro font-mono tracking-wider uppercase rounded-sm">
+            <div className="absolute bottom-3 left-3.5 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-micro font-mono tracking-wider uppercase rounded-full">
               @{spot.platform}
             </div>
           )}
@@ -303,7 +302,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                 </span>
               </div>
               <span className="text-meta font-mono text-black/60 dark:text-white/60 group-hover:text-black/70 dark:group-hover:text-white/70">
-                {isCommentsExpanded ? '접기 ▲' : '펼치기 ▼'}
+                <span className="inline-flex items-center gap-1">{isCommentsExpanded ? '접기' : '펼치기'}<ChevronDown className={`w-3.5 h-3.5 transition-transform duration-base ${isCommentsExpanded ? 'rotate-180' : ''}`} aria-hidden /></span>
               </span>
             </div>
 

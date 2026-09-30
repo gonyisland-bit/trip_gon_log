@@ -25,7 +25,10 @@ export interface NewTripTicketInfo {
 
 interface NewTripSheetProps {
   prefill: NewTripPrefill;
+  /** The signed-in person's name (성+이름), the first member */
   defaultMember: string;
+  /** Their account id and email name, replaced by the name in an older draft */
+  accountIds?: string[];
   /** Cities of past trips, for quick picks */
   recentCities: string[];
   onClose: () => void;
@@ -36,7 +39,7 @@ interface NewTripSheetProps {
 const STEP_LABELS = ['어디로', '언제', '누구와', '미리보기'];
 
 export function NewTripSheet(props: NewTripSheetProps) {
-  const d = useNewTripDraft(props.prefill, props.defaultMember);
+  const d = useNewTripDraft(props.prefill, props.defaultMember, props.accountIds);
   const [busy, setBusy] = useState(false);
   return (
     <Sheet

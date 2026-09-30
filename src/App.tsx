@@ -43,6 +43,7 @@ import { lazyWithRetry, cleanForFirestore } from './app/appUtils';
 import { useAppState } from './app/useAppState';
 import { OPEN_INTRO_EVENT, isIntroPath } from './intro/openIntro';
 import { IntroTip } from './components/home/IntroTip';
+import { personName } from './utils/personName';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
 const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
@@ -221,7 +222,8 @@ function App() {
             setShowSettings={setShowSettings}
             openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
             openSettingModal={() => setIsManageModalOpen(true)}
-            onSearchClick={() => { setSearchInitialQuery(''); setIsSearchOpen(true); }}
+            // Signed in, the header search is the quick finder (Ctrl+K); its last row and / open the full search
+            onSearchClick={() => { if (isLoggedIn) { setIsPaletteOpen(true); return; } setSearchInitialQuery(''); setIsSearchOpen(true); }}
             onNewTrip={() => handleCreateTripForCountry('', '')}
             isAdmin={isAdmin}
             isHomeGradientActive={isHomeGradientActive}
@@ -776,7 +778,7 @@ function App() {
 
         {/* Command palette: Cmd/Ctrl+K (v1.3 P5) */}
         {isPaletteOpen && isLoggedIn && (
-          <LayerBoundary name="명령 팔레트" onClose={() => setIsPaletteOpen(false)}>
+          <LayerBoundary name="한번에 찾기" onClose={() => setIsPaletteOpen(false)}>
           <Suspense fallback={null}>
             <CommandPalette
               trips={trips}
@@ -814,7 +816,8 @@ function App() {
           <Suspense fallback={null}>
             <NewTripSheet
               prefill={newTripPrefill}
-              defaultMember={currentUserProfile?.firstName || currentUserProfile?.username || auth.currentUser?.email?.split('@')[0] || '나'}
+              defaultMember={personName(currentUserProfile, auth.currentUser?.displayName) || '나'}
+              accountIds={[currentUserProfile?.username, auth.currentUser?.email?.split('@')[0]].filter((v): v is string => !!v)}
               recentCities={[...plans, ...trips].flatMap(j => (j.locations?.length ? j.locations.map(l => l.name) : [j.locationStr])).filter(Boolean).slice(0, 12)}
               onClose={() => {
                 setNewTripPrefill(null);

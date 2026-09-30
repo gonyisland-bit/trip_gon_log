@@ -33,6 +33,7 @@ import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
 import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
 import { applyMapStyle, isMapStyle } from '../utils/mapTiles';
+import { noteRecentJourney } from '../utils/recentJourneys';
 import { orderWithNewFirst } from '../utils/journeyOrderHelper';
 
 export function useAppState() {
@@ -324,6 +325,8 @@ export function useAppState() {
   const [trashedJourneys, setTrashedJourneys] = useState<Trip[]>([]);
   const [trashedSections, setTrashedSections] = useState<TrashedMagazineSection[]>([]);
   const [activeTripId, setActiveTripId] = useState<number | null>(() => initialNavState.tripId);
+  // The quick finder lists the journeys opened lately on this device
+  useEffect(() => { if (activeTripId != null) noteRecentJourney(activeTripId); }, [activeTripId]);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [tripsLoaded, setTripsLoaded] = useState<boolean>(false);
@@ -658,7 +661,7 @@ export function useAppState() {
     return false;
   }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail]);
 
-  // Global shortcuts: Ctrl+K (Search), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
+  // Global shortcuts: Ctrl+K (한번에 찾기), / (통합 검색), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       // 1. Command palette Ctrl+K / Cmd+K (its last row opens the full search)
@@ -699,7 +702,14 @@ export function useAppState() {
       const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
       if (isInput) return;
 
-      // 5. F key: Toggle Fullscreen across whole app
+      // 5. / : the full search (Ctrl+K is the quick finder); not while another layer covers the page
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !document.documentElement.hasAttribute('data-overlay')) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+        return;
+      }
+
+      // 6. F key: Toggle Fullscreen across whole app
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         if (!document.fullscreenElement) {

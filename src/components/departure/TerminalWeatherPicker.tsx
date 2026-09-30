@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 import type { CityWeatherConfig } from '../../types';
-import { fetchCityWeather, getWeatherMeta, type CityWeatherData } from '../../utils/weatherApi';
-import { CURRENT_LOCATION_EN, selectWeatherCity } from '../../utils/userPrefs';
+import { getWeatherMeta } from '../../utils/weatherApi';
+import { CURRENT_LOCATION_EN, cachedCurrentLocation, selectWeatherCity } from '../../utils/userPrefs';
 import { CurrentLocationRow } from '../weather/CurrentLocationRow';
+import { useCitiesWeather } from '../weather/useCitiesWeather';
+import { WeatherReading } from '../weather/WeatherReading';
 
 // Weather location for the terminal window: the same per-user choice as the header weather pill.
 // Each row shows that place's weather now, so the user can pick the sky they want to see.
@@ -28,17 +30,13 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
 }) {
   const [open, setOpen] = useState(false);
   const [cities] = useState(savedCities);
-  const [now, setNow] = useState<Record<string, CityWeatherData>>({});
+  const { now, prefetch } = useCitiesWeather(cities);
+  const here = cachedCurrentLocation();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    cities.forEach(c => {
-      if (now[c.nameEn]) return;
-      fetchCityWeather(c.lat, c.lng, c.timezone, c.nameEn, c.country)
-        .then(d => setNow(prev => ({ ...prev, [c.nameEn]: d })))
-        .catch(() => {});
-    });
+    prefetch(here);
     const onDown = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } };
     document.addEventListener('pointerdown', onDown);
@@ -56,6 +54,7 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
+        onPointerEnter={() => prefetch(here)}
         aria-expanded={open}
         aria-haspopup="listbox"
         title="창밖 날씨 위치"
@@ -68,12 +67,9 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
       </button>
       {open && (
         <div role="listbox" aria-label="창밖 날씨 위치" className="absolute right-0 top-full mt-1.5 z-40 w-60 max-h-80 overflow-y-auto overscroll-contain rounded-card bg-surface dark:bg-surface-dark shadow-[0_12px_32px_rgba(0,0,0,0.16)] py-1 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="px-3 py-2 border-b border-black/10 dark:border-white/10 font-mono text-micro uppercase tracking-[0.16em] text-black/60 dark:text-white/60">Window weather</div>
-          <CurrentLocationRow selected={nameEn === CURRENT_LOCATION_EN} onLocated={pick} />
+          <div className="px-3 py-2 font-mono text-micro uppercase tracking-[0.16em] text-black/50 dark:text-white/50">Window weather</div>
+          <CurrentLocationRow selected={nameEn === CURRENT_LOCATION_EN} onLocated={pick} trailing={here ? <WeatherReading data={now[here.nameEn]} /> : undefined} />
           {cities.map(c => {
-            const d = now[c.nameEn];
-            const m = d ? getWeatherMeta(d.weatherCode, d.forecast?.[0]?.precipitationProb, d.temp) : null;
-            const I = m?.icon;
             const on = (nameEn || '').toUpperCase() === c.nameEn.toUpperCase();
             return (
               <button
@@ -87,10 +83,9 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
                 }`}
               >
                 <span className="truncate">{c.name || c.nameEn}</span>
-                <span className="flex items-center gap-1.5 shrink-0 font-mono text-micro text-black/60 dark:text-white/60">
-                  {I ? <I className="w-3.5 h-3.5" /> : <span className="w-3.5 h-3.5" />}
-                  {m ? <span>{m.labelKo ?? ''} {d!.temp}°</span> : <span>…</span>}
-                  {on && <Check className="w-3.5 h-3.5 text-black dark:text-white" />}
+                <span className="flex items-center gap-2 shrink-0">
+                  <WeatherReading data={now[c.nameEn]} />
+                  <span className="w-3.5 h-3.5 inline-grid place-items-center">{on && <Check className="w-3.5 h-3.5" />}</span>
                 </span>
               </button>
             );

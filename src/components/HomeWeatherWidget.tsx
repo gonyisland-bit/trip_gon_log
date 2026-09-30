@@ -204,7 +204,7 @@ export function HomeWeatherWidget({
 
         <div className="flex items-center gap-2 sm:gap-4 font-mono text-meta text-black/60 dark:text-white/60">
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            
             <span>{lastUpdated} KST</span>
           </div>
 

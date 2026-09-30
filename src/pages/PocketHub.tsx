@@ -1963,7 +1963,7 @@ export function PocketHubPage({
                     if (cityName) setNewCity(cityName);
                   }}
                   placeholder="장소 검색 또는 직접 꿀팁 제목 입력 (예: 시부야 환전 꿀팁)"
-                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                  className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                 />
 
                 {/* OCR Candidates Chips in Modal */}
@@ -2036,7 +2036,7 @@ export function PocketHubPage({
                     value={newCountry}
                     onChange={e => setNewCountry(e.target.value)}
                     placeholder="예: Japan, France"
-                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                    className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
@@ -2048,7 +2048,7 @@ export function PocketHubPage({
                     value={newCity}
                     onChange={e => setNewCity(e.target.value)}
                     placeholder="예: Tokyo, Paris"
-                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                    className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -2108,7 +2108,7 @@ export function PocketHubPage({
                   onChange={e => setNewMemo(e.target.value)}
                   rows={2}
                   placeholder="예: 3시 이후 웨이팅 없음. 바닐라 라떼 & 크루아상 추천. 인스타 예약 필수."
-                  className="w-full px-0 py-1.5 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none resize-none leading-relaxed transition-colors"
+                  className="w-full px-4 py-2.5 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-thumb text-sm focus:border-black dark:focus:border-white focus:outline-none resize-none leading-relaxed transition-colors"
                 />
               </div>
 
@@ -2122,7 +2122,7 @@ export function PocketHubPage({
                   value={newSourceUrl}
                   onChange={e => setNewSourceUrl(e.target.value)}
                   placeholder="https://www.instagram.com/p/..."
-                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                  className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                 />
               </div>
 

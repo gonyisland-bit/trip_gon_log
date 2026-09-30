@@ -88,7 +88,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
         </div>
         
         {/* Tab Headers - Unified Single-line Sleek Design (SUM, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
-        <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap shrink-0 mx-3 sm:mx-4 mt-1 md:mt-3 mb-2 p-1 rounded-full bg-black/[0.06] dark:bg-white/10 h-12 sm:h-11">
+        <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap shrink-0 mx-3 sm:mx-4 mt-1 md:mt-3 mb-2 p-1 rounded-full bg-black/[0.06] dark:bg-white/10 h-12 sm:h-11 md:h-12 xl:h-11">
           {/* Active tab block slides between tabs */}
           {DETAIL_TABS.some(t => t.id === activeTab) && (
             <span
@@ -109,14 +109,16 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
               }}
-              className={`relative z-[1] flex-1 h-full px-0.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 text-micro sm:text-meta md:text-xs font-bold uppercase tracking-wider rounded-full transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
+              // From md the list is half the window: icon over label until xl, so all six tabs fit
+              title={tab.label}
+              className={`relative z-[1] flex-1 min-w-0 h-full px-0.5 sm:px-2 flex flex-col sm:flex-row md:flex-col xl:flex-row items-center justify-center gap-0.5 sm:gap-1.5 md:gap-0.5 xl:gap-1.5 text-micro sm:text-meta md:text-micro xl:text-xs font-bold uppercase tracking-wider rounded-full transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
                 activeTab === tab.id
                   ? 'text-ink dark:text-ink-dark'
                   : 'text-black/60 dark:text-white/60 hover:text-ink dark:hover:text-ink-dark'
               }`}
             >
               <tab.icon className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              <span className="leading-none">{tab.label}</span>
+              <span className="leading-none max-w-full truncate">{tab.label}</span>
             </button>
           ))}
         </div>

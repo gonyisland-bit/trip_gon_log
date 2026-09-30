@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Mail, Lock, User, Calendar, Phone, CheckCircle2, AlertCircle, Copy, ExternalLink, Send } from 'lucide-react';
+import { X, Mail, Lock, User, Calendar, Phone, CheckCircle2, AlertCircle, Copy, ExternalLink, Send, ArrowLeft } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -359,7 +359,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="tap-target absolute top-5 right-5 p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+          className="tap-target absolute top-4 right-4 w-9 h-9 rounded-full inline-grid place-items-center text-black/60 dark:text-white/60 hover:bg-black/[0.06] dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+          aria-label="닫기"
         >
           <X className="w-5 h-5" />
         </button>
@@ -484,7 +485,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                         onBlur={() => markTouched('lastName')}
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="김 / Hong"
-                        className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                        className={`w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border rounded-full text-sm focus:outline-none transition-colors ${
                           lastNameError 
                             ? 'border-red-500 text-red-600 dark:text-red-400' 
                             : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
@@ -507,7 +508,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                         onBlur={() => markTouched('firstName')}
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="길동 / Gildong"
-                        className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                        className={`w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border rounded-full text-sm focus:outline-none transition-colors ${
                           firstNameError 
                             ? 'border-red-500 text-red-600 dark:text-red-400' 
                             : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
@@ -532,7 +533,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                         value={birthdate}
                         onChange={(e) => setBirthdate(e.target.value)}
                         placeholder="YYYY-MM-DD"
-                        className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                        className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                       />
                     </div>
                     <div>
@@ -544,7 +545,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="010-0000-0000"
-                        className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                        className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                       />
                     </div>
                   </div>
@@ -561,7 +562,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       onBlur={() => markTouched('username')}
                       onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
                       placeholder="3~20자 영문/숫자/_ (예: traveler_01)"
-                      className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                      className={`w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border rounded-full text-sm focus:outline-none transition-colors ${
                         usernameError 
                           ? 'border-red-500 text-red-600 dark:text-red-400' 
                           : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
@@ -619,7 +620,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       onBlur={() => markTouched('email')}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
-                      className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                      className={`w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border rounded-full text-sm focus:outline-none transition-colors ${
                         emailError 
                           ? 'border-red-500 text-red-600 dark:text-red-400' 
                           : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
@@ -687,9 +688,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                     <button
                       type="button"
                       onClick={() => { setIsSignUp(false); setError(''); }}
-                      className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                      className="btn btn-ghost btn-sm"
                     >
-                      ← BACK TO SIGN IN
+                      <ArrowLeft className="w-3.5 h-3.5" aria-hidden />
+                      로그인으로 돌아가기
                     </button>
                   </div>
                 </>
@@ -706,7 +708,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
-                      className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                      className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                     />
                   </div>
 
@@ -738,9 +740,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                     <button
                       type="button"
                       onClick={() => { setIsSignUp(true); setError(''); }}
-                      className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white hover:text-red-600 dark:hover:text-red-500 transition-colors cursor-pointer"
+                      className="btn btn-secondary btn-sm"
                     >
-                      [CREATE AN ACCOUNT]
+                      가입하기
                     </button>
                   </div>
                 </>

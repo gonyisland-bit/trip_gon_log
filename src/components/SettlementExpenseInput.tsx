@@ -174,7 +174,7 @@ export function SettlementExpenseInput({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center border border-black/10 dark:border-white/10 bg-white dark:bg-black/20 p-0.5 rounded-sm w-20 md:w-24">
+          <div className="flex items-center border border-black/10 dark:border-white/10 bg-surface dark:bg-surface-dark p-0.5 px-2 rounded-full w-20 md:w-24">
             <input
               type="text"
               value={cost}
@@ -200,7 +200,7 @@ export function SettlementExpenseInput({
           <select
             value={paidBy || displayMembers[0]}
             onChange={handlePaidByChange}
-            className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-micro md:text-micro font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer w-20 md:w-24 outline-none"
+            className="bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 px-2 h-7 text-micro md:text-micro font-bold text-black/60 dark:text-white/60 rounded-full cursor-pointer w-20 md:w-24 outline-none"
           >
             {displayMembers.map((m) => (
               <option key={m} value={m}>
@@ -218,7 +218,7 @@ export function SettlementExpenseInput({
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center border border-black/10 dark:border-white/10 bg-white dark:bg-black/20 p-0.5 rounded-sm">
+        <div className="flex items-center border border-black/10 dark:border-white/10 bg-surface dark:bg-surface-dark p-0.5 px-2 rounded-full">
           <input
             type="text"
             value={cost}
@@ -244,7 +244,7 @@ export function SettlementExpenseInput({
         <select
           value={paidBy || displayMembers[0]}
           onChange={handlePaidByChange}
-          className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-micro md:text-meta font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer"
+          className="bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 px-2 h-7 text-micro md:text-meta font-bold text-black/60 dark:text-white/60 rounded-full cursor-pointer"
         >
           {displayMembers.map((m) => (
             <option key={m} value={m}>

@@ -15,6 +15,8 @@ import { preloadPocketPage } from '../utils/prefetchHelper';
 import { openBookingWallet, openDepartureBoard } from '../app/quickActions';
 import { NewTripButton } from './NewTripButton';
 import { Segment } from './ui/Segment';
+import { personName } from '../utils/personName';
+import { shortcutMod } from '../utils/shortcut';
 
 const HUBS = [
   { view: 'home', label: 'Home' },
@@ -68,6 +70,8 @@ export function Navigation({
 }: NavigationProps) {
   const currentUser = auth.currentUser;
   const displayName = currentUserProfile?.username || currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
+  // Shown to the person: their name (성+이름), not the account id
+  const shownName = personName(currentUserProfile, currentUser?.displayName) || displayName;
   const dropdownRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -182,8 +186,8 @@ export function Navigation({
             />
           </button>
 
-          {/* Desktop Nav Links (HOME / TRIP / MAGAZINE / MAP in Inter Font, Uppercase, Larger) */}
-          <div className="hidden md:flex items-center gap-6 lg:gap-8 border-l border-black/15 dark:border-white/15 pl-6 lg:pl-8 font-['Inter',sans-serif]">
+          {/* Desktop Nav Links: shown where they fit beside the actions (signed in adds New trip, so from xl); narrower widths use the menu */}
+          <div className={`hidden ${isLoggedIn ? 'xl:flex' : 'lg:flex'} items-center gap-6 xl:gap-8 border-l border-black/15 dark:border-white/15 pl-6 xl:pl-8 font-['Inter',sans-serif]`}>
             <button 
               onClick={() => navigateTo('home')} 
               className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 border-b-2 ${
@@ -262,15 +266,30 @@ export function Navigation({
             <NewTripButton onClick={onNewTrip} size="sm" className="hidden md:inline-flex mr-1" />
           )}
 
-          {/* Search Button */}
-          <button 
-            type="button"
-            onClick={onSearchClick}
-            className="tap-target p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center"
-            title="통합 검색 (⌘K / Ctrl+K)"
-          >
-            <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-          </button>
+          {/* Find: signed in it opens the quick finder (Ctrl+K); a pill with the shortcut on desktop, an icon on phones */}
+          {isLoggedIn ? (
+            <button
+              type="button"
+              onClick={onSearchClick}
+              className="tap-target h-9 w-9 xl:w-auto xl:pl-3 xl:pr-1.5 rounded-full xl:bg-black/[0.05] xl:dark:bg-white/10 hover:bg-black/[0.06] dark:hover:bg-white/10 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer inline-flex items-center justify-center gap-2"
+              title={`한번에 찾기 (${shortcutMod}K)`}
+              aria-label="한번에 찾기"
+            >
+              <Search className="w-4 h-4 shrink-0" />
+              <span className="hidden xl:inline text-meta font-bold">찾기</span>
+              <kbd className="hidden xl:inline-flex h-6 px-1.5 items-center rounded-full bg-surface dark:bg-surface-dark font-mono text-micro font-bold text-black/55 dark:text-white/55">{shortcutMod}K</kbd>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSearchClick}
+              className="tap-target w-9 h-9 rounded-full hover:bg-black/[0.06] dark:hover:bg-white/10 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer inline-flex items-center justify-center"
+              title="검색 (/)"
+              aria-label="검색"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Mini Weather Widget Pill (All Hubs Persistent) */}
           <MiniWeatherWidget className="mr-0.5 sm:mr-1 shrink-0" />
@@ -475,7 +494,7 @@ export function Navigation({
               >
                 <UserProfileAvatar profile={currentUserProfile} size="sm" fallbackName={displayName} />
                 <span className="flex flex-col min-w-0">
-                  <span className="text-sm font-bold uppercase tracking-wider truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">{displayName}</span>
+                  <span className="text-sm font-bold truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">{shownName}</span>
                   <span className="text-meta text-black/60 dark:text-white/60">프로필 수정</span>
                 </span>
               </button>
