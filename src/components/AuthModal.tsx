@@ -4,8 +4,7 @@ import { X, ArrowLeft } from 'lucide-react';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  updateProfile
+updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -15,7 +14,7 @@ import { AVATAR_CATEGORIES, PROFILE_PRESET_ICONS } from './UserProfileAvatar';
 import type { AvatarCategory } from './profile/FlatAvatars';
 import { PasswordInput } from './PasswordInput';
 import { VerifyEmailPanel } from './account/VerifyEmailPanel';
-import { friendlyMailError, sendVerificationMail } from '../utils/emailVerification';
+import { friendlyMailError, sendResetMail, sendVerificationMail } from '../utils/emailVerification';
 import { notify } from '../utils/feedback';
 import { LEFTOVER_ACCOUNT, clearOrphanAccount, createAccountReclaiming, isGhostProfile } from '../utils/accountCleanup';
 
@@ -151,10 +150,11 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
     setError('');
     setResetting(true);
     try {
-      await sendPasswordResetEmail(auth, target);
-      notify(`${target}로 비밀번호 재설정 링크를 보냈습니다. 메일함(스팸함 포함)을 확인해 주세요.`, 'success');
+      await sendResetMail(target);
+      notify(`${target}로 비밀번호 재설정 링크를 보냈습니다. 메일함을 확인해 주세요.`, 'success');
     } catch (err: any) {
-      setError(err?.code === 'auth/too-many-requests' ? '요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.' : '재설정 메일을 보내지 못했습니다. 이메일 주소를 확인해 주세요.');
+      setError(err?.code?.startsWith('tgl/mail-') ? friendlyMailError(err)
+        : err?.code === 'auth/too-many-requests' ? '요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.' : '재설정 메일을 보내지 못했습니다. 이메일 주소를 확인해 주세요.');
     } finally {
       setResetting(false);
     }

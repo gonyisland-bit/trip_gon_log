@@ -29,11 +29,23 @@ export async function handleAccountRequest(body: unknown, authHeader: string | u
 
   const req = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
   const uid = typeof req.uid === 'string' ? req.uid : '';
-  if (req.action !== 'delete' || !/^[A-Za-z0-9]{10,128}$/.test(uid)) return { status: 400, body: { error: 'Bad request' } };
+  if ((req.action !== 'delete' && req.action !== 'verify') || !/^[A-Za-z0-9]{10,128}$/.test(uid)) return { status: 400, body: { error: 'Bad request' } };
   if (uid === caller.uid) return { status: 400, body: { error: 'Cannot delete the operator account' } };
   if (!env.FIREBASE_CLIENT_EMAIL || !env.FIREBASE_PRIVATE_KEY) return { status: 501, body: { error: 'Service account is not configured' } };
 
   const token = await googleAccessToken(env, ['https://www.googleapis.com/auth/identitytoolkit', 'https://www.googleapis.com/auth/cloud-platform']);
+
+  // Operator marks a member's address as verified (a member stuck behind the mail limit)
+  if (req.action === 'verify') {
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ localId: uid, emailVerified: true }),
+    });
+    if (res.ok) return { status: 200, body: { verified: true } };
+    console.error('Account verify failed:', res.status, await res.text());
+    return { status: 502, body: { error: 'Account verify failed' } };
+  }
   const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:delete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

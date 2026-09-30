@@ -4,7 +4,6 @@ import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, on
 // Journey content writes carry owner / access fields (v1.3.6)
 import { setDoc, visibleContent } from '../../utils/ownership';
 import { auth, db } from '../../firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import {
   Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig,
   TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions,
@@ -28,7 +27,8 @@ import {
   PresetTripPlan, getSavedPresets, restoreDefaultPresets, saveAllPresets, WORLD_COUNTRIES
 } from '../../data/worldDestinations';
 import { notify, confirmDialog } from '../../utils/feedback';
-import { deleteAuthAccount } from '../../utils/accountCleanup';
+import { deleteAuthAccount, verifyAuthAccount } from '../../utils/accountCleanup';
+import { sendResetMail } from '../../utils/emailVerification';
 
 export interface ManageHubPageProps {
   trips: Trip[];
@@ -716,6 +716,24 @@ export function useManageHubState(props: ManageHubPageProps) {
     }
   };
 
+  // A member stuck behind the verification mail: the operator marks the address verified
+  const handleVerifyUser = async (user: UserProfile) => {
+    const fullName = `${user.lastName} ${user.firstName}`.trim() || user.username || user.email;
+    if (!await confirmDialog(`[${fullName} (${user.email})] 님의 메일 인증을 운영자가 대신 처리할까요? 본인 주소가 맞는지 확인한 뒤 눌러 주세요.`, { title: 'VERIFY', confirmLabel: '인증 처리' })) return;
+    const result = await verifyAuthAccount(user.uid);
+    if (result !== 'verified') {
+      notify(result === 'unavailable' ? '서버에 서비스 계정이 없어 인증 처리를 할 수 없습니다.' : '인증 처리를 하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+      return;
+    }
+    await Promise.allSettled([
+      updateDoc(doc(db, 'users', user.uid), { status: 'approved', approvedAt: Date.now(), emailVerifiedAt: Date.now() }),
+      setDoc(doc(db, 'users', 'public', 'users', user.uid), { status: 'approved', approvedAt: Date.now(), emailVerifiedAt: Date.now() }, { merge: true }),
+    ]);
+    setUsersList(prev => prev.map(u => u.uid === user.uid ? { ...u, status: 'approved' } : u));
+    setUserActionToast(`[${fullName}] 님의 메일 인증을 처리했습니다. 다음 접속부터 바로 이용할 수 있습니다.`);
+    setTimeout(() => setUserActionToast(null), 3000);
+  };
+
   const handleRejectUser = async (user: UserProfile) => {
     if (!await confirmDialog(`[${user.lastName} ${user.firstName}] 님의 이용을 제한할까요? 로그인하면 바로 로그아웃됩니다.`, { title: 'RESTRICT', confirmLabel: '이용 제한' })) return;
     try {
@@ -770,7 +788,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     if (!user?.email) return;
     const fullName = `${user.lastName} ${user.firstName}`.trim() || user.username || user.email;
     try {
-      await sendPasswordResetEmail(auth, user.email);
+      await sendResetMail(user.email);
       setUserActionToast(`[${fullName}] 님에게 비밀번호 재설정 메일을 보냈습니다.`);
       setTimeout(() => setUserActionToast(null), 3000);
     } catch (err: any) {
@@ -4119,7 +4137,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     setCurrentAdminEmail, newAdminEmailInput, setNewAdminEmailInput, adminEmailSaving,
     setAdminEmailSaving, userFilterStatus, setUserFilterStatus, userCurrentPage, setUserCurrentPage,
     USERS_PER_PAGE, isTargetAdminAccount,
-    handleUpdateAdminEmail, handleApproveUser, handleRejectUser, handleDeleteUserByAdmin,
+    handleUpdateAdminEmail, handleApproveUser, handleVerifyUser, handleRejectUser, handleDeleteUserByAdmin,
     passwordResetTarget, setPasswordResetTarget, handleSendPasswordReset,
     handleToggleUserPermission, handleSaveUserEdit, handleToggleTripAllowedEditor, bgmTracks,
     setBgmTracks, bgmAutoplay, setBgmAutoplay, bgmDefaultVolume, setBgmDefaultVolume, bgmShuffle,

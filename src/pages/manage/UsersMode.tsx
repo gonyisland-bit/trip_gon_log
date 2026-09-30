@@ -11,7 +11,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
     setDelegatingUser, setIsDelegatingModalOpen, userActionToast, currentAdminEmail,
     newAdminEmailInput, setNewAdminEmailInput, adminEmailSaving, userFilterStatus,
     setUserFilterStatus, userCurrentPage, setUserCurrentPage, USERS_PER_PAGE, isTargetAdminAccount,
-    handleUpdateAdminEmail, handleApproveUser, handleRejectUser, handleDeleteUserByAdmin,
+    handleUpdateAdminEmail, handleApproveUser, handleVerifyUser, handleRejectUser, handleDeleteUserByAdmin,
     handleToggleUserPermission, title, handleContainerScroll,
     passwordResetTarget, setPasswordResetTarget, handleSendPasswordReset
   } = s;
@@ -334,6 +334,11 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                     {/* Right: Actions */}
                     <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
                       {/* Members join by verifying their own email (v1.3.6); the admin only restricts abuse */}
+                      {user.status === 'pending' && (
+                        <button type="button" onClick={() => handleVerifyUser(user)} className="btn btn-secondary btn-sm" title="메일 인증을 받지 못하는 회원을 대신 인증">
+                          인증 처리
+                        </button>
+                      )}
                       {user.status === 'rejected' ? (
                         <button type="button" onClick={() => handleApproveUser(user)} className="btn btn-secondary btn-sm">
                           제한 해제

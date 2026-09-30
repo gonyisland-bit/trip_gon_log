@@ -95,3 +95,20 @@ export async function deleteAuthAccount(uid: string): Promise<'deleted' | 'unava
     return 'unavailable';
   }
 }
+
+/** Operator: marks a member's address verified on the server (needs the service account) */
+export async function verifyAuthAccount(uid: string): Promise<'verified' | 'unavailable' | 'failed'> {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) return 'failed';
+    const res = await fetch(apiUrl('/api/account'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'verify', uid }),
+    });
+    if (res.ok) return 'verified';
+    return res.status === 501 || res.status === 404 ? 'unavailable' : 'failed';
+  } catch {
+    return 'unavailable';
+  }
+}
