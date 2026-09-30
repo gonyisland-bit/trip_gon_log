@@ -44,6 +44,7 @@ import { useAppState } from './app/useAppState';
 import { OPEN_INTRO_EVENT, isIntroPath } from './intro/openIntro';
 import { IntroTip } from './components/home/IntroTip';
 import { personName } from './utils/personName';
+import { VerifyEmailPanel } from './components/account/VerifyEmailPanel';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
 const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
@@ -69,6 +70,7 @@ function App() {
   const {
     currentView, setCurrentView, nightModeSetting, setNightModeSetting, isDarkMode, setIsDarkMode,
     nightModeHud, showSplash, handleFinishSplash, triggerNightModeHud, isLoggedIn, setIsLoggedIn,
+    isEmailVerified, setIsEmailVerified,
     isAuthReady, superAdminEmail, magazineMoments, magazineSections, homeMagazineSectionId,
     homeMagazineLimit, magazineHubConfig, archiveHubConfig, showSettings, setShowSettings,
     isAuthModalOpen, setIsAuthModalOpen, isShareMode, isManageModalOpen, setIsManageModalOpen,
@@ -232,12 +234,9 @@ function App() {
           />
         )}
 
-        {/* Pending approval notice: members are read-only until an admin approves them */}
-        {isLoggedIn && !isAdmin && currentUserProfile?.status === 'pending' && (
-          <div className="w-full border-b border-black/20 dark:border-white/20 px-4 py-2 flex items-center justify-center gap-3 shrink-0 text-black dark:text-white">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-500">Pending</span>
-            <span className="text-xs text-black/60 dark:text-white/60">관리자 승인 후 여정을 추가하거나 수정할 수 있습니다.</span>
-          </div>
+        {/* Unverified members are read-only until they confirm their email */}
+        {isLoggedIn && !isAdmin && currentUserProfile?.status === 'pending' && !isEmailVerified && (
+          <VerifyEmailPanel variant="bar" profileStatus="pending" onVerified={() => setIsEmailVerified(true)} />
         )}
 
         {/* Marquee Banner - Only on Home View when logged in (Swiss Minimal Journal Ticker) */}
@@ -625,7 +624,15 @@ function App() {
             initialMode={authModalMode}
             adminEmail={superAdminEmail}
             onSignupStart={() => { isSigningUpRef.current = true; }}
-            onSignupEnd={() => { isSigningUpRef.current = false; }}
+            onSignupEnd={() => {
+              isSigningUpRef.current = false;
+              // The sign-in during sign-up was skipped by the auth listener: take it now
+              if (auth.currentUser) {
+                setIsEmailVerified(auth.currentUser.emailVerified);
+                setIsLoggedIn(true);
+                try { localStorage.setItem('isLoggedIn', 'true'); } catch {}
+              }
+            }}
             onSuccess={() => setCurrentView('home')}
           />
 

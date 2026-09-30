@@ -563,7 +563,6 @@ export function useManageHubState(props: ManageHubPageProps) {
   const USERS_PER_PAGE = 20;
 
   // Always-on pending count (shows badge on USERS tab from any active tab)
-  const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
 
   // Helper to determine if account is super admin or admin
   const isTargetAdminAccount = (email?: string, role?: string) => {
@@ -571,28 +570,6 @@ export function useManageHubState(props: ManageHubPageProps) {
     const clean = email.toLowerCase().trim();
     return clean === 'gonyisland@naver.com' || clean === currentAdminEmail.toLowerCase().trim() || role === 'admin';
   };
-
-  // Always listen to pending user count from public/users (reliable without security rule blocks)
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    const unsubPendingPublic = onSnapshot(
-      collection(db, 'users', 'public', 'users'),
-      (snapshot) => {
-        let count = 0;
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const cleanEmail = (data.email || '').toLowerCase().trim();
-          const isAdminAcc = isTargetAdminAccount(cleanEmail, data.role);
-          if (!isAdminAcc && data.status === 'pending') count++;
-        });
-        setPendingUsersCount(count);
-      },
-      (err) => {
-        console.warn('Failed to listen to public pending users count, falling back:', err);
-      }
-    );
-    return () => unsubPendingPublic();
-  }, [isLoggedIn, currentAdminEmail]);
 
   useEffect(() => {
     if (activeMode !== 'USERS' || !isLoggedIn) return;
@@ -731,7 +708,7 @@ export function useManageHubState(props: ManageHubPageProps) {
         deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${user.uid}`))
       ]);
       setUsersList(prev => prev.map(u => u.uid === user.uid ? { ...u, status: 'approved' } : u));
-      setUserActionToast(`[${user.lastName} ${user.firstName}] 님의 가입 신청이 승인되었습니다.`);
+      setUserActionToast(`[${user.lastName} ${user.firstName}] 님의 이용 제한을 풀었습니다.`);
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
       console.error('Failed to approve user:', err);
@@ -740,7 +717,7 @@ export function useManageHubState(props: ManageHubPageProps) {
   };
 
   const handleRejectUser = async (user: UserProfile) => {
-    if (!await confirmDialog(`[${user.lastName} ${user.firstName}] 님의 가입 신청을 거절하시겠습니까?`)) return;
+    if (!await confirmDialog(`[${user.lastName} ${user.firstName}] 님의 이용을 제한할까요? 로그인하면 바로 로그아웃됩니다.`, { title: 'RESTRICT', confirmLabel: '이용 제한' })) return;
     try {
       await Promise.allSettled([
         updateDoc(doc(db, 'users', user.uid), { status: 'rejected', rejectedAt: Date.now() }),
@@ -748,7 +725,7 @@ export function useManageHubState(props: ManageHubPageProps) {
         deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${user.uid}`))
       ]);
       setUsersList(prev => prev.map(u => u.uid === user.uid ? { ...u, status: 'rejected' } : u));
-      setUserActionToast(`[${user.lastName} ${user.firstName}] 님의 가입 신청이 거절되었습니다.`);
+      setUserActionToast(`[${user.lastName} ${user.firstName}] 님의 이용을 제한했습니다.`);
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
       console.error('Failed to reject user:', err);
@@ -4135,7 +4112,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     setIsDelegatingModalOpen, userActionToast, setUserActionToast, currentAdminEmail,
     setCurrentAdminEmail, newAdminEmailInput, setNewAdminEmailInput, adminEmailSaving,
     setAdminEmailSaving, userFilterStatus, setUserFilterStatus, userCurrentPage, setUserCurrentPage,
-    USERS_PER_PAGE, pendingUsersCount, setPendingUsersCount, isTargetAdminAccount,
+    USERS_PER_PAGE, isTargetAdminAccount,
     handleUpdateAdminEmail, handleApproveUser, handleRejectUser, handleDeleteUserByAdmin,
     passwordResetTarget, setPasswordResetTarget, handleSendPasswordReset,
     handleToggleUserPermission, handleSaveUserEdit, handleToggleTripAllowedEditor, bgmTracks,

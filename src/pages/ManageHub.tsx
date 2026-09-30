@@ -22,7 +22,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
     editingPreset, setEditingPreset, isPresetModalOpen, setIsPresetModalOpen, presetToDelete,
     setPresetToDelete, showRestorePresetsConfirm, setShowRestorePresetsConfirm, editingUser,
     setEditingUser, isUserEditModalOpen, setIsUserEditModalOpen, delegatingUser, setDelegatingUser,
-    isDelegatingModalOpen, setIsDelegatingModalOpen, pendingUsersCount, handleSaveUserEdit,
+    isDelegatingModalOpen, setIsDelegatingModalOpen, handleSaveUserEdit,
     handleToggleTripAllowedEditor, handleSavePresetModal, handleConfirmDeletePreset,
     handleConfirmRestorePresets, setMobileArchiveTab, localJourneys, setSelectedJourneyId,
     selectedTripForMoments, setSelectedTripForMoments, momentSearchQuery, setMomentSearchQuery,
@@ -92,11 +92,6 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 {tab.id === 'UTIL' && (trashedJourneys.length + trashedSections.length) > 0 && (
                   <span className="ml-1 text-micro font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block">
                     {trashedJourneys.length + trashedSections.length}
-                  </span>
-                )}
-                {tab.id === 'USERS' && pendingUsersCount > 0 && (
-                  <span className="ml-1 text-micro font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block animate-pulse">
-                    {pendingUsersCount}
                   </span>
                 )}
               </button>

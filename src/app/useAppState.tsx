@@ -28,6 +28,7 @@ import {
   NightModeSetting, isNightTimeNow, runViewTransition
 } from './appUtils';
 import { notify } from '../utils/feedback';
+import { completeVerification } from '../utils/emailVerification';
 import type { RemixPayload } from '../components/RemixSheet';
 import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
@@ -186,6 +187,8 @@ export function useAppState() {
   const initialAuthCheckedRef = useRef<boolean>(false);
   // Prevents onAuthStateChanged from triggering login flow during account creation+signOut cycle
   const isSigningUpRef = useRef<boolean>(false);
+  // Email confirmed through Firebase's verification link (v1.3.6: replaces admin approval)
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean>(() => Boolean(auth.currentUser?.emailVerified));
   
   // ── Global Weather Ambience State (All Hubs Realtime Sync) ──
   const [globalWeatherCity, setGlobalWeatherCity] = useState<CityWeatherConfig | null>(() => {
@@ -557,13 +560,13 @@ export function useAppState() {
     const unsub = onSnapshot(doc(db, 'users', currentUid), (snapshot) => {
       if (snapshot.exists()) {
         const profile = snapshot.data() as UserProfile;
-        // Pending members stay read-only until an admin approves them (enforced by Firestore rules)
+        // Pending members stay read-only until they verify their email (enforced by Firestore rules)
         if (!isSuperAdmin && profile.status === 'rejected') {
           // Explicitly rejected by admin
           auth.signOut();
           setIsLoggedIn(false);
           setCurrentUserProfile(null);
-          notify('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
+          notify('이용이 제한된 계정입니다.');
           return;
         }
         setCurrentUserProfile(profile);
@@ -593,7 +596,7 @@ export function useAppState() {
                 auth.signOut();
                 setIsLoggedIn(false);
                 setCurrentUserProfile(null);
-                notify('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
+                notify('이용이 제한된 계정입니다.');
                 return;
               }
               setCurrentUserProfile(pubProfile);
@@ -641,7 +644,7 @@ export function useAppState() {
   const canEditTrip = useCallback((trip?: Trip) => {
     if (!isLoggedIn || !trip) return false;
     if (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail)) return true;
-    if (currentUserProfile?.status === 'pending') return false;
+    if (currentUserProfile?.status === 'pending' && !isEmailVerified) return false;
     const uid = auth.currentUser?.uid;
     // Trip creator can edit
     if (trip.ownerId && uid && trip.ownerId === uid) return true;
@@ -649,17 +652,17 @@ export function useAppState() {
     if (trip.allowedEditors && (trip.allowedEditors.includes(uid || '') || trip.allowedEditors.includes(currentUserEmail))) return true;
     // If user has global canEdit permission
     return Boolean(currentUserProfile?.permissions?.canEdit);
-  }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail]);
+  }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail, isEmailVerified]);
 
   const canDeleteTrip = useCallback((trip?: Trip) => {
     if (!isLoggedIn || !trip) return false;
     if (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail)) return true;
-    if (currentUserProfile?.status === 'pending') return false;
+    if (currentUserProfile?.status === 'pending' && !isEmailVerified) return false;
     const uid = auth.currentUser?.uid;
     // Trip creator can delete ONLY IF granted canDelete permission
     if (trip.ownerId && uid && trip.ownerId === uid && currentUserProfile?.permissions?.canDelete) return true;
     return false;
-  }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail]);
+  }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail, isEmailVerified]);
 
   // Global shortcuts: Ctrl+K (한번에 찾기), / (통합 검색), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
   useEffect(() => {
@@ -1144,6 +1147,7 @@ export function useAppState() {
       if (user) {
         // If we are in the middle of creating an account, ignore this transient login event
         if (isSigningUpRef.current) return;
+        setIsEmailVerified(user.emailVerified);
         setIsLoggedIn(true);
         localStorage.setItem('isLoggedIn', 'true');
         applyUserPrefs(user.uid);
@@ -1234,62 +1238,26 @@ export function useAppState() {
     };
   }, [isAuthReady, isLoggedIn]);
 
-  // Handle email one-click user approval (?approve_uid=...&token=...)
+  // Email verification (v1.3.6): a pending member who has clicked the link (here or on another
+  // device) is approved on their next load; ?verified=1 is where the link lands.
+  const profileStatus = currentUserProfile?.status;
   useEffect(() => {
+    if (!isLoggedIn || !profileStatus) return;
     const params = new URLSearchParams(window.location.search);
-    const approveUid = params.get('approve_uid');
-    const token = params.get('token');
-
-    if (approveUid && token) {
-      const handleApprove = async () => {
-        try {
-          // Check both public and root users collection
-          let userData: UserProfile | null = null;
-          const pubSnap = await getDoc(doc(db, 'users', 'public', 'users', approveUid));
-          if (pubSnap.exists()) {
-            userData = pubSnap.data() as UserProfile;
-          } else {
-            const rootSnap = await getDoc(doc(db, 'users', approveUid));
-            if (rootSnap.exists()) {
-              userData = rootSnap.data() as UserProfile;
-            }
-          }
-
-          if (!userData) {
-            notify("존재하지 않는 회원 계정입니다.");
-            return;
-          }
-
-          if (userData.status === 'approved') {
-            notify(`[${userData.email || userData.firstName || '회원'}] 이미 승인 완료된 계정입니다.`);
-          } else if (userData.approvalToken && userData.approvalToken !== token) {
-            notify("유효하지 않거나 만료된 승인 토큰입니다.");
-            return;
-          } else {
-            const updatePayload = {
-              status: 'approved',
-              approvedAt: Date.now()
-            };
-            await Promise.allSettled([
-              updateDoc(doc(db, 'users', approveUid), updatePayload),
-              setDoc(doc(db, 'users', 'public', 'users', approveUid), { ...userData, ...updatePayload }, { merge: true }),
-              deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${approveUid}`))
-            ]);
-            notify(`회원 [${userData.email || userData.firstName || approveUid}] 가입 승인이 성공적으로 완료되었습니다.\n이제 해당 회원이 로그인할 수 있습니다.`);
-          }
-        } catch (err: any) {
-          console.error("User approval error:", err);
-          alert(`승인 처리 중 오류가 발생했습니다: ${err?.message || err}`);
-        } finally {
-          // Clean up URL parameters cleanly without refreshing page
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, '', newUrl);
-        }
-      };
-
-      handleApprove();
+    const fromLink = params.get('verified') === '1';
+    if (fromLink) {
+      params.delete('verified');
+      const rest = params.toString();
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`);
     }
-  }, []);
+    if (profileStatus !== 'pending') return;
+    completeVerification('pending')
+      .then(ok => {
+        setIsEmailVerified(ok);
+        if (ok && fromLink) notify('메일 인증이 끝났습니다. 이제 여정을 만들 수 있습니다.', 'success');
+      })
+      .catch(() => {});
+  }, [isLoggedIn, profileStatus]);
 
   // Sync real-time homeConfigChanged events (gradient / limits)
   useEffect(() => {
@@ -2959,7 +2927,7 @@ export function useAppState() {
     initialNavState, currentView, setCurrentView, nightModeSetting, setNightModeSetting, isDarkMode,
     setIsDarkMode, nightModeSettingRef, nightModeHud, setNightModeHud, nightModeHudTimerRef,
     showSplash, setShowSplash, handleFinishSplash, triggerNightModeHud, handleCycleNightMode,
-    isLoggedIn, setIsLoggedIn, isAuthReady, setIsAuthReady, superAdminEmail, setSuperAdminEmail,
+    isLoggedIn, setIsLoggedIn, isEmailVerified, setIsEmailVerified, isAuthReady, setIsAuthReady, superAdminEmail, setSuperAdminEmail,
     adminEmails, setAdminEmails, magazineMoments, setMagazineMoments, magazineSections,
     setMagazineSections, homeMagazineSectionId, setHomeMagazineSectionId, homeMagazineLimit,
     setHomeMagazineLimit, magazineHubConfig, setMagazineHubConfig, archiveHubConfig,

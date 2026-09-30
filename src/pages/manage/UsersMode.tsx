@@ -257,7 +257,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                     ? regularUsers.filter(u => u.status === 'pending').length
                     : regularUsers.filter(u => u.status === 'approved').length;
                   const isActive = userFilterStatus === filterKey;
-                  const label = filterKey === 'ALL' ? 'ALL' : filterKey === 'PENDING' ? 'PENDING' : 'APPROVED';
+                  const label = filterKey === 'ALL' ? '전체' : filterKey === 'PENDING' ? '메일 인증 전' : '이용 중';
 
                   return (
                     <button
@@ -353,8 +353,8 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                               REJECTED
                             </span>
                           ) : isPending ? (
-                            <span className="px-2 py-0.5 text-micro font-mono font-bold uppercase tracking-wider border border-red-600 text-red-600 dark:text-red-400 bg-red-500/10 leading-none animate-pulse">
-                              PENDING
+                            <span className="px-2 py-0.5 rounded-full text-micro font-mono font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-500/15 leading-none" title="본인 메일 인증을 마치면 자동으로 이용 중이 됩니다">
+                              메일 인증 전
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 text-micro font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
@@ -378,24 +378,15 @@ export function UsersMode({ s }: { s: ManageHubState }) {
 
                     {/* Right: Actions */}
                     <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
-                      {/* If Pending: Show Instant Approve / Reject Buttons First */}
-                      {isPending && (
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleApproveUser(user)}
-                            className="px-3 py-1.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:bg-emerald-600 dark:hover:bg-emerald-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                          >
-                            APPROVE
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRejectUser(user)}
-                            className="btn btn-outline-danger btn-sm"
-                          >
-                            Reject
-                          </button>
-                        </div>
+                      {/* Members join by verifying their own email (v1.3.6); the admin only restricts abuse */}
+                      {user.status === 'rejected' ? (
+                        <button type="button" onClick={() => handleApproveUser(user)} className="btn btn-secondary btn-sm">
+                          제한 해제
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => handleRejectUser(user)} className="btn btn-outline-danger btn-sm">
+                          이용 제한
+                        </button>
                       )}
 
                       {/* 3 Permission Toggles: Create / Edit / Delete */}

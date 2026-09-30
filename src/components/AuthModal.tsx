@@ -1,18 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Mail, Lock, User, Calendar, Phone, CheckCircle2, AlertCircle, Copy, ExternalLink, Send, ArrowLeft } from 'lucide-react';
-import { 
-  signInWithEmailAndPassword, 
+import { X, ArrowLeft } from 'lucide-react';
+import {
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
-import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
-import { sendAdminApprovalNotification, generateAdminApprovalMailtoUrl } from '../utils/adminEmailNotifier';
+import { PROFILE_PRESET_ICONS } from './UserProfileAvatar';
 import { PasswordInput } from './PasswordInput';
+import { VerifyEmailPanel } from './account/VerifyEmailPanel';
+import { sendVerificationMail } from '../utils/emailVerification';
+import { notify } from '../utils/feedback';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -24,7 +27,7 @@ interface AuthModalProps {
   onSignupEnd?: () => void;
 }
 
-export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, adminEmail, onSignupStart, onSignupEnd }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, onSignupStart, onSignupEnd }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,15 +36,13 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
   const [profileIcon, setProfileIcon] = useState('user');
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [birthdate, setBirthdate] = useState('');
-  const [phone, setPhone] = useState('');
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [signupSubmitted, setSignupSubmitted] = useState(false);
   const [submittedUser, setSubmittedUser] = useState<UserProfile | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // Field touched states for inline validation
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -61,8 +62,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
       setProfileIcon('user');
       setLastName('');
       setFirstName('');
-      setBirthdate('');
-      setPhone('');
       setError('');
       setLoading(false);
       setIsConfirmOpen(false);
@@ -126,31 +125,45 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
     passwordConfirm === password
   );
 
-  // Auto-close modal and return to landing guest view after notice (generous timeout so applicant can copy link or send mail)
-  React.useEffect(() => {
-    if (signupSubmitted) {
-      const timer = setTimeout(() => {
-        setSignupSubmitted(false);
-        setIsSignUp(false);
-        setSubmittedUser(null);
-        onClose();
-      }, 30000);
-      return () => clearTimeout(timer);
-    }
-  }, [signupSubmitted, onClose]);
-
   React.useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isConfirmOpen && !signupSubmitted) {
+      if (e.key === 'Escape' && !isConfirmOpen) {
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isConfirmOpen, signupSubmitted, onClose]);
+  }, [isOpen, isConfirmOpen, onClose]);
 
   if (!isOpen) return null;
+
+  // Self-service password reset: a link to the address in the email field
+  const handleForgotPassword = async () => {
+    const target = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
+      setError('비밀번호를 재설정할 이메일을 위 칸에 입력해 주세요.');
+      return;
+    }
+    setError('');
+    setResetting(true);
+    try {
+      await sendPasswordResetEmail(auth, target);
+      notify(`${target}로 비밀번호 재설정 링크를 보냈습니다. 메일함(스팸함 포함)을 확인해 주세요.`, 'success');
+    } catch (err: any) {
+      setError(err?.code === 'auth/too-many-requests' ? '요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.' : '재설정 메일을 보내지 못했습니다. 이메일 주소를 확인해 주세요.');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  // After sign-up: leave the verification card (verified now, or later from the bar under the header)
+  const finishSignup = () => {
+    setSignupSubmitted(false);
+    setSubmittedUser(null);
+    onSuccess?.();
+    onClose();
+  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,9 +230,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         });
 
         const isSuper = cleanEmail === 'gonyisland@naver.com';
-        const approvalToken = typeof crypto !== 'undefined' && crypto.randomUUID 
-          ? crypto.randomUUID() 
-          : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36));
 
         // 2. Save UserProfile to both users/{uid} and public users collection
         const newProfile: UserProfile = {
@@ -230,11 +240,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           profileIcon: profileIcon || 'user',
           lastName: lastName.trim(),
           firstName: firstName.trim(),
-          birthdate: birthdate.trim(),
-          phone: phone.trim(),
+          birthdate: '',
+          phone: '',
           role: isSuper ? 'admin' : 'user',
-          status: isSuper ? 'approved' : 'pending', // Members can write after admin approval
-          approvalToken,
+          status: isSuper ? 'approved' : 'pending', // Becomes 'approved' once the member verifies their email
           permissions: {
             canCreate: true,
             canEdit: isSuper,
@@ -248,19 +257,23 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           setDoc(doc(db, 'users', 'public', 'users', user.uid), newProfile)
         ]);
 
+        // The member confirms their own address; no admin step
+        let mailError = '';
+        if (!isSuper) {
+          await sendVerificationMail(user).catch(() => { mailError = '인증 메일을 보내지 못했습니다. 아래 다시 보내기를 눌러 주세요.'; });
+        }
+
         setSubmittedUser(newProfile);
         setIsConfirmOpen(false);
-
-        // Send notification email to administrator in background
-        sendAdminApprovalNotification(newProfile, adminEmail).catch(err => {
-          console.warn('Background admin email notification warning:', err);
-        });
-
-        // Immediately complete signup and log in
         onSignupEnd?.();
         setLoading(false);
-        onSuccess?.();
-        onClose();
+        if (isSuper) {
+          onSuccess?.();
+          onClose();
+          return;
+        }
+        setError(mailError);
+        setSignupSubmitted(true);
         return;
       } else {
         // Log In
@@ -295,8 +308,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
               birthdate: '',
               phone: '',
               role: isSuper ? 'admin' : 'user',
-              status: isSuper ? 'approved' : 'pending', // Recovered profiles also wait for admin approval
-              approvalToken: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36)),
+              status: isSuper ? 'approved' : 'pending', // Recovered profiles also verify their email
               permissions: { canCreate: true, canEdit: isSuper, canDelete: isSuper },
               createdAt: Date.now(),
             };
@@ -312,7 +324,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           // Only block if explicitly rejected by admin
           if (prof.status === 'rejected') {
             await auth.signOut();
-            setError('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
+            setError('이용이 제한된 계정입니다.');
             setLoading(false);
             return;
           }
@@ -333,7 +345,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
       } else if (err.code === 'auth/user-not-found') {
         errorMsg = '등록되지 않은 이메일입니다.';
       } else if (err.code === 'auth/email-already-in-use') {
-        errorMsg = '이미 등록된 이메일 계정입니다.\n이미 가입 신청이 완료된 계정입니다. 관리자 승인 후 로그인하세요.';
+        errorMsg = '이미 가입된 이메일입니다. 로그인하거나 비밀번호 찾기를 이용해 주세요.';
       } else if (err.code === 'auth/invalid-email') {
         errorMsg = '올바른 이메일 형식을 입력해 주세요.';
       } else if (err.code === 'auth/weak-password') {
@@ -365,83 +377,19 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           <X className="w-5 h-5" />
         </button>
 
-        {/* Sign Up Submitted Notice View */}
+        {/* After sign-up: confirm the email */}
         {signupSubmitted ? (
-          <div className="py-4 flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-full border border-black/20 dark:border-white/20 flex items-center justify-center mb-4 text-black dark:text-white">
-              <CheckCircle2 className="w-6 h-6 stroke-[1.8]" />
-            </div>
-            <span className="text-meta font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
-              APPLICATION SUBMITTED
-            </span>
-            <h3 className="text-xl sm:text-2xl font-inter font-extrabold uppercase tracking-tight text-black dark:text-white mb-3">
-              APPROVAL PENDING
-            </h3>
-            <p className="text-xs font-mono text-black/70 dark:text-white/70 leading-relaxed max-w-sm mb-5">
-              가입 신청이 성공적으로 접수되었습니다.<br />
-              관리자의 승인이 완료된 후 서비스 이용이 가능합니다.
-            </p>
-
-            {/* Admin Direct Notification Options (Swiss Minimal) */}
-            {submittedUser && (
-              <div className="w-full flex flex-col gap-2 mb-5 p-3 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] text-left">
-                <div className="flex items-center justify-between">
-                  <span className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                    DIRECT ADMIN NOTIFICATION
-                  </span>
-                  <span className="text-micro font-mono text-red-600 dark:text-red-400 font-bold">
-                    {adminEmail || 'gonyisland@naver.com'}
-                  </span>
-                </div>
-
-                {/* 1. Send via local mail app (mailto:) */}
-                <a
-                  href={generateAdminApprovalMailtoUrl(submittedUser, adminEmail)}
-                  className="w-full py-2 px-3 border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-black dark:text-white text-center"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Request approval</span>
-                </a>
-
-                {/* 2. Copy One-Click Approval URL */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://trip-gon-log.vercel.app';
-                    const link = `${origin}/?approve_uid=${submittedUser.uid}&token=${submittedUser.approvalToken || ''}`;
-                    navigator.clipboard?.writeText(link).then(() => {
-                      setCopiedLink(true);
-                      setTimeout(() => setCopiedLink(false), 2500);
-                    }).catch(() => {});
-                  }}
-                  className="btn btn-secondary w-full flex"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>{copiedLink ? '승인 링크 복사 완료' : '원클릭 승인 링크 복사'}</span>
-                </button>
-              </div>
+          <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
+            {error && (
+              <div className="p-3 rounded-thumb bg-red-500/5 text-red-600 dark:text-red-400 text-xs leading-relaxed">{error}</div>
             )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setSignupSubmitted(false);
-                setIsSignUp(false);
-                setEmail('');
-                setPassword('');
-                setUsername('');
-                setLastName('');
-                setFirstName('');
-                setPhone('');
-                setBirthdate('');
-                setError('');
-                setSubmittedUser(null);
-                onClose();
-              }}
-              className="btn btn-primary btn-lg w-full"
-            >
-              Confirm
-            </button>
+            <VerifyEmailPanel
+              variant="card"
+              email={submittedUser?.email}
+              profileStatus="pending"
+              onVerified={finishSignup}
+              onLater={finishSignup}
+            />
           </div>
         ) : (
           <>
@@ -455,14 +403,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
               </h2>
               <p className="text-xs font-mono text-black/60 dark:text-white/60 mt-1">
                 {isSignUp 
-                  ? '필수 정보를 입력하여 새로운 유저 계정 가입을 신청하세요.' 
+                  ? '가입한 뒤 본인 메일 인증을 마치면 바로 시작할 수 있습니다.' 
                   : '여정 편집 및 관리를 위해 등록된 계정으로 로그인하세요.'}
               </p>
             </div>
 
             {/* Error message */}
             {error && (
-              <div className="mb-4 p-3 border border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400 text-xs font-mono leading-relaxed">
+              <div className="mb-4 p-3 rounded-thumb bg-red-500/[0.07] text-red-600 dark:text-red-400 text-xs leading-relaxed">
                 {error}
               </div>
             )}
@@ -519,34 +467,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                           {firstNameError}
                         </p>
                       )}
-                    </div>
-                  </div>
-
-                  {/* Birthdate & Phone (2 Columns) */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                        Birthday
-                      </label>
-                      <input 
-                        type="text"
-                        value={birthdate}
-                        onChange={(e) => setBirthdate(e.target.value)}
-                        placeholder="YYYY-MM-DD"
-                        className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                        Phone
-                      </label>
-                      <input 
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="010-0000-0000"
-                        className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                      />
                     </div>
                   </div>
 
@@ -721,6 +641,11 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                       onChange={setPassword}
                       placeholder="••••••••"
                     />
+                    <div className="flex justify-end mt-1.5">
+                      <button type="button" onClick={handleForgotPassword} disabled={resetting} className="btn btn-ghost btn-sm">
+                        {resetting ? '보내는 중' : '비밀번호 찾기'}
+                      </button>
+                    </div>
                   </div>
 
                   <button 

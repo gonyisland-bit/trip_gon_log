@@ -42,6 +42,11 @@ service cloud.firestore {
       );
     }
 
+    // True once the member has clicked Firebase's email verification link (v1.3.6)
+    function emailVerified() {
+      return request.auth.token.get('email_verified', false) == true;
+    }
+
     // Approval status from the root profile (falls back to the shared copy).
     // Profiles created before the approval flow have no status and count as approved.
     function profileStatus() {
@@ -52,15 +57,26 @@ service cloud.firestore {
           : 'pending';
     }
 
-    // Writes to shared content require an admin or an approved member
+    // Writes to shared content require an admin, an approved member, or a member who has
+    // verified their email (sign-up needs no admin since v1.3.6). Restricted members never write.
     function canWrite() {
-      return signedIn() && (isAdmin() || profileStatus() == 'approved');
+      return signedIn() && (isAdmin() || (profileStatus() != 'rejected'
+        && (profileStatus() == 'approved' || emailVerified())));
     }
 
     // Members may never change their own role, permissions or approval status
     function protectedUnchanged() {
       return !request.resource.data.diff(resource.data).affectedKeys()
         .hasAny(['role', 'permissions', 'status']);
+    }
+
+    // A pending member with a verified email may approve themselves, and change nothing else with it
+    function selfApproval() {
+      return emailVerified()
+        && resource.data.get('status', '') == 'pending'
+        && request.resource.data.get('status', '') == 'approved'
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['role', 'permissions']);
     }
 
     // New profiles start as a pending member (the super admin initializes itself)
@@ -74,7 +90,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
       allow create: if signedIn() && ((request.auth.uid == userId && validNewProfile()) || isAdmin());
-      allow update: if signedIn() && ((request.auth.uid == userId && protectedUnchanged()) || isAdmin());
+      allow update: if signedIn() && ((request.auth.uid == userId && (protectedUnchanged() || selfApproval())) || isAdmin());
       allow delete: if isAdmin() || (signedIn() && request.auth.uid == userId);
     }
 
@@ -87,7 +103,7 @@ service cloud.firestore {
     match /users/public/users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow create: if signedIn() && ((request.auth.uid == uid && validNewProfile()) || isAdmin());
-      allow update: if signedIn() && ((request.auth.uid == uid && protectedUnchanged()) || isAdmin());
+      allow update: if signedIn() && ((request.auth.uid == uid && (protectedUnchanged() || selfApproval())) || isAdmin());
       allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
     }
 
