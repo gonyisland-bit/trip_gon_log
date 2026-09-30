@@ -555,13 +555,18 @@ export function useAppState() {
     ADMIN_EMAILS.includes(currentUserEmail)
   );
 
+  // The signed-in account as Firebase reports it. isLoggedIn starts true from localStorage before
+  // Firebase restores the session, so it cannot tell the profile listener when the account arrives.
+  const [authUid, setAuthUid] = useState<string | null>(() => auth.currentUser?.uid ?? null);
+  useEffect(() => onAuthStateChanged(auth, user => setAuthUid(user?.uid ?? null)), []);
+
   // Sync current user's profile from Firestore users collection
   useEffect(() => {
-    if (!auth.currentUser) {
+    if (!authUid || auth.currentUser?.uid !== authUid) {
       setCurrentUserProfile(null);
       return;
     }
-    const currentUid = auth.currentUser.uid;
+    const currentUid = authUid;
     let unsubPublic: (() => void) | null = null;
     const unsub = onSnapshot(doc(db, 'users', currentUid), (snapshot) => {
       // A document with no identity in it (left by older builds) is not a profile
@@ -640,7 +645,7 @@ export function useAppState() {
       unsub();
       if (unsubPublic) unsubPublic();
     };
-  }, [isSuperAdmin, isLoggedIn]);
+  }, [isSuperAdmin, isLoggedIn, authUid]);
 
   // Update lastActiveAt heartbeat periodically (every 5 minutes and on mount)
   // Only updates profiles that exist: a merge write here used to recreate a deleted member's
