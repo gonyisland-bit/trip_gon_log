@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { clearContactDetails, migrateToOwnContent } from '../../utils/ownContentMigration';
 import { confirmDialog, notify } from '../../utils/feedback';
+import { connectFamily, personCard } from '../../utils/friends';
+import { auth, db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import type { UserProfile } from '../../types';
 
 // Operator tool (v1.3.6 phase 3): one press moves the shared content to owners before the new
 // Firestore rules are published. Safe to press again.
@@ -45,6 +49,26 @@ export function OwnContentMigrationCard() {
     }
   };
 
+  // 5-a: members who already read the operator's journeys become the operator's friends
+  const linkFamily = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const ok = await confirmDialog('지금 내 여정을 보고 있는 회원을 모두 친구로 연결합니다. 이미 친구인 회원은 건너뜁니다.', { title: 'FAMILY', confirmLabel: '친구로 연결' });
+    if (!ok) return;
+    setRunning(true);
+    try {
+      const prof = await getDoc(doc(db, 'users', user.uid));
+      const n = await connectFamily(personCard(user.uid, prof.exists() ? prof.data() as UserProfile : null, user.displayName));
+      setLines(prev => [...prev, `친구로 연결한 회원: ${n}명`]);
+      notify(n ? `${n}명과 친구가 되었습니다.` : '새로 연결할 회원이 없습니다.', 'success');
+    } catch (err: any) {
+      console.error('Family connect failed:', err);
+      notify('친구로 연결하지 못했습니다. 새 규칙이 게시됐는지 확인해 주세요.', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <section className="rounded-card bg-surface dark:bg-surface-dark p-5 flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -54,6 +78,7 @@ export function OwnContentMigrationCard() {
           <p className="text-meta text-black/60 dark:text-white/60">새 규칙을 게시하기 전에 한 번 눌러 주세요.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={linkFamily} disabled={running} className="btn btn-secondary">가족 친구 연결</button>
           <button type="button" onClick={clearContacts} disabled={running} className="btn btn-outline-danger">생일 · 전화번호 지우기</button>
           <button type="button" onClick={run} disabled={running} className="btn btn-primary">
             {running && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}

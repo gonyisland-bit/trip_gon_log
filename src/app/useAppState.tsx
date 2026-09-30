@@ -28,6 +28,7 @@ import {
 } from './appUtils';
 import { notify } from '../utils/feedback';
 import { completeVerification } from '../utils/emailVerification';
+import { pendingInvite, personCard, promptAcceptInvite, takeInviteFromUrl, type PersonCard } from '../utils/friends';
 import { CONTENT_COLLECTIONS, journeyItems, ownTrash, pickHomeKeys, registerJourneys, sharedContent, visibleContent } from '../utils/ownership';
 import type { RemixPayload } from '../components/RemixSheet';
 import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
@@ -663,6 +664,16 @@ export function useAppState() {
     return trip.ownerId === uid;
   }, [isLoggedIn, isAdmin, currentUserProfile, isEmailVerified]);
 
+  // May write shared content: the same test as the rules' canWrite (v1.3.6)
+  const canWriteContent = isLoggedIn && (isAdmin || (currentUserProfile?.status !== 'rejected'
+    && (currentUserProfile?.status !== 'pending' || isEmailVerified)));
+
+  // This member as friends see them: name and picture (v1.3.6 5-a)
+  const myCard = useMemo<PersonCard | null>(() => {
+    const uid = auth.currentUser?.uid;
+    return isLoggedIn && uid && currentUserProfile ? personCard(uid, currentUserProfile, auth.currentUser?.displayName) : null;
+  }, [isLoggedIn, currentUserProfile]);
+
   // Global shortcuts: Ctrl+K (한번에 찾기), / (통합 검색), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -1221,6 +1232,30 @@ export function useAppState() {
       })
       .catch(() => {});
   }, [isLoggedIn, profileStatus]);
+
+  // Friend invites (v1.3.6 5-a): ?invite=CODE is kept until the member has signed in (and, for a
+  // new member, verified their email), then "OO님과 친구가 될까요?" is asked once.
+  useEffect(() => {
+    if (!isAuthReady) return;
+    const fromUrl = takeInviteFromUrl();
+    if (fromUrl && !isLoggedIn) {
+      notify('로그인하면 친구 초대를 받을 수 있습니다.', 'info');
+      setAuthModalMode('login');
+      setIsAuthModalOpen(true);
+    }
+  }, [isAuthReady]);
+
+  const myUid = myCard?.uid;
+  useEffect(() => {
+    if (!myCard) return;
+    const code = pendingInvite();
+    if (!code) return;
+    if (!canWriteContent) {
+      notify('메일 인증을 마치면 친구 초대를 받을 수 있습니다.', 'info');
+      return;
+    }
+    promptAcceptInvite(code, myCard);
+  }, [myUid, canWriteContent]);
 
   // Sync real-time homeConfigChanged events (gradient / limits)
   useEffect(() => {
@@ -2881,6 +2916,7 @@ export function useAppState() {
     initialNavState, currentView, setCurrentView, nightModeSetting, setNightModeSetting, isDarkMode,
     setIsDarkMode, nightModeSettingRef, nightModeHud, setNightModeHud, nightModeHudTimerRef,
     showSplash, setShowSplash, handleFinishSplash, triggerNightModeHud, handleCycleNightMode,
+    canWriteContent, myCard,
     isLoggedIn, setIsLoggedIn, isEmailVerified, setIsEmailVerified, isAuthReady, setIsAuthReady, superAdminEmail, setSuperAdminEmail,
     adminEmails, setAdminEmails, magazineMoments, setMagazineMoments, magazineSections,
     setMagazineSections, homeMagazineSectionId, setHomeMagazineSectionId, homeMagazineLimit,

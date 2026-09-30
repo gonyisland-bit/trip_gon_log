@@ -99,6 +99,49 @@ service cloud.firestore {
       allow read, write: if userId != 'public' && signedIn() && request.auth.uid == userId;
     }
 
+    // ── Friends (v1.3.6 5-a) ─────────────────────────────────
+    // Invites: anyone signed in may look one up by its code (the code is the secret); only its
+    // maker lists or removes them. Someone else may claim an unused, unexpired invite once.
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow list: if signedIn() && resource.data.get('from', '') == request.auth.uid;
+      allow create: if canWrite() && code.size() == 6
+        && request.resource.data.get('from', '') == request.auth.uid
+        && request.resource.data.get('usedBy', null) == null
+        && request.resource.data.get('expiresAt', 0) is int;
+      allow update: if canWrite()
+        && resource.data.get('usedBy', null) == null
+        && resource.data.get('from', '') != request.auth.uid
+        && resource.data.get('expiresAt', 0) > request.time.toMillis()
+        && request.resource.data.get('usedBy', '') == request.auth.uid
+        && request.resource.data.get('usedAt', null) == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedBy', 'usedAt']);
+      allow delete: if signedIn() && resource.data.get('from', '') == request.auth.uid;
+    }
+
+    // The invite named by 'via' was made by the list's owner and claimed by me in this same write
+    function claimedInvite(via, inviter) {
+      return via is string && via.size() == 6
+        && existsAfter(/databases/$(database)/documents/invites/$(via))
+        && getAfter(/databases/$(database)/documents/invites/$(via)).data.get('from', '') == inviter
+        && getAfter(/databases/$(database)/documents/invites/$(via)).data.get('usedBy', '') == request.auth.uid
+        && getAfter(/databases/$(database)/documents/invites/$(via)).data.get('usedAt', null) == request.time;
+    }
+
+    // Someone else's friend list: I may add myself with a claimed invite (the operator may add
+    // itself to family accounts), and I may take myself off it when we stop being friends.
+    match /users/{userId}/friends/{friendUid} {
+      allow create: if userId != 'public' && friendUid == request.auth.uid && canWrite()
+        && (isAdmin() || claimedInvite(request.resource.data.get('via', ''), userId));
+      allow delete: if userId != 'public' && signedIn() && friendUid == request.auth.uid;
+    }
+
+    // A member's pockets, readable by the friends they chose to show them to (5-d)
+    match /users/{userId}/settings/pockets {
+      allow read: if userId != 'public' && signedIn()
+        && request.auth.uid in resource.data.get('sharedWith', []);
+    }
+
     // ── Shared profiles: owner and admins only ───────────────
     match /users/public/users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
@@ -147,6 +190,16 @@ service cloud.firestore {
         || (me() in resource.data.get('editors', []) && ownershipUnchanged()));
     }
 
+    // A reader may take themselves off someone else's journey, changing nothing else (v1.3.6 5-a)
+    function selfLeave() {
+      return signedIn()
+        && resource.data.get('ownerId', '') != me()
+        && me() in resource.data.get('access', [])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['access', 'editors'])
+        && request.resource.data.get('access', []) == resource.data.get('access', []).removeAll([me()])
+        && request.resource.data.get('editors', []) == resource.data.get('editors', []).removeAll([me()]);
+    }
+
     // The journey an item belongs to, as it will be after this write (a batch may create both)
     function journeyAfter(tripId) {
       return existsAfter(/databases/$(database)/documents/users/public/trips/$(string(tripId)))
@@ -168,7 +221,7 @@ service cloud.firestore {
       allow create: if col in ['trips', 'plans'] && canWrite()
         && request.resource.data.get('ownerId', '') == me()
         && me() in request.resource.data.get('access', []);
-      allow update: if col in ['trips', 'plans'] && canUpdate();
+      allow update: if col in ['trips', 'plans'] && (canUpdate() || selfLeave());
       allow delete: if col in ['trips', 'plans'] && canWrite() && resource.data.get('ownerId', '') == me();
     }
 
@@ -176,7 +229,7 @@ service cloud.firestore {
       // Items are written by the journey's owner or its editors
       allow create: if col in ['timeline', 'flights', 'stays', 'transits'] && canWrite()
         && canEditJourney(request.resource.data.get('tripId', -1));
-      allow update: if col in ['timeline', 'flights', 'stays', 'transits'] && canUpdate();
+      allow update: if col in ['timeline', 'flights', 'stays', 'transits'] && (canUpdate() || selfLeave());
       allow delete: if col in ['timeline', 'flights', 'stays', 'transits'] && canWrite()
         && (resource.data.get('ownerId', '') == me() || me() in resource.data.get('editors', []));
     }

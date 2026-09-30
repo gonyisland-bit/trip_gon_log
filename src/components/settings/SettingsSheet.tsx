@@ -9,8 +9,10 @@ import { getStoredBgmDefaultVolume, getStoredSlideshowInterval, saveStoredBgmDef
 import { getMyStorageUsage } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { confirmDialog } from '../../utils/feedback';
+import { FriendsSection } from '../friends/FriendsSection';
+import type { PersonCard } from '../../utils/friends';
 
-// Settings for every member (v1.3.6 4-d): account, display, storage and trash, nothing else.
+// Settings for every member (v1.3.6 4-d): account, friends (5-a), display, storage and trash.
 // Journeys are managed from their cards; the operator's tools live in the manage hub.
 
 import { OPEN_PROFILE_EDIT } from '../../app/quickActions';
@@ -27,6 +29,8 @@ interface Props {
   trashed: Trip[];
   onRestore: (id: number) => void;
   onPermanentDelete: (id: number) => void;
+  me: PersonCard | null;
+  canWrite: boolean;
 }
 
 const card = 'rounded-card bg-surface dark:bg-surface-dark p-4 flex flex-col gap-3';
@@ -38,7 +42,7 @@ function formatBytes(n: number): string {
   return `${Math.round(n / 1024 ** 2)} MB`;
 }
 
-export function SettingsSheet({ onClose, profile, displayName, email, nightMode, onNightMode, trashed, onRestore, onPermanentDelete }: Props) {
+export function SettingsSheet({ onClose, profile, displayName, email, nightMode, onNightMode, trashed, onRestore, onPermanentDelete, me, canWrite }: Props) {
   const [journeyOpen, setJourneyOpen] = useState<JourneyOpen>(readJourneyOpen);
   const [fit, setFit] = useState<ReelFit>(() => { try { return localStorage.getItem('tgl_reel_fit') === 'fill' ? 'fill' : 'fit'; } catch { return 'fit'; } });
   const [interval, setIntervalMs] = useState(() => getStoredSlideshowInterval());
@@ -74,6 +78,8 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
             <ChevronRight className="w-4 h-4 shrink-0 text-black/40 dark:text-white/40" aria-hidden />
           </button>
         </section>
+
+        {me && <FriendsSection me={me} canWrite={canWrite} cardClass={card} labelClass={label} />}
 
         {/* Display */}
         <section className={card}>

@@ -54,6 +54,7 @@
 - **회원 프로필**(`users/{uid}`, `users/public/users/{uid}`): 본인과 관리자만 읽습니다. 본인은 `role`·`permissions`·`status`를 변경할 수 없습니다.
 - **본인 콘텐츠 (v1.3.6)**: 여정 콘텐츠(trips, plans, timeline, flights, stays, transits)는 `ownerId`(주인) · `access`(열람자 uid) · `editors`(편집자 uid) · `publicShare`(링크 공유)를 가지며, 주인 · 열람자만 읽고 링크 공유가 켜진 여정은 누구나 읽습니다. 쓰기는 주인(전부) · 편집자(소유 필드 제외), 새 여정은 만든 사람이 주인, 일정 등 항목은 소속 여정의 주인 · 편집자만 만듭니다. 운영 계정도 남의 콘텐츠는 읽지 못합니다. 휴지통은 주인만. 앱은 `utils/ownership`의 `setDoc` · `writeBatch` 래퍼로 쓰기 때 필드를 자동으로 붙이고, `access array-contains uid`로만 구독합니다.
 - **계정별 문서 (v1.3.6)**: 포켓 · 지도 위시리스트 · 캘린더 일정 · 매거진 섹션과 홈 히어로는 `users/{uid}/...`(본인만). 공용 `users/public/settings`(랜딩 · 전광판 · BGM · 도시 목록 · 프리셋)는 운영 계정만 씁니다.
+- **친구 (v1.3.6 5-a)**: `invites/{code}`는 로그인한 누구나 코드로 한 건 읽기(목록 · 삭제는 만든 사람만), 사용되지 않고 기간이 남은 초대를 다른 사람이 한 번만 사용 표시(`usedBy` · `usedAt`만 변경). `users/{uid}/friends/{friendUid}`는 주인이 읽고 쓰며, 다른 사람은 같은 쓰기에서 사용 표시한 초대(`via`)가 있을 때만 자기 자신을 추가(운영 계정은 초대 없이 가능), 친구를 끊을 때 자기 자신을 지울 수 있습니다. 여정 · 항목의 열람자는 다른 필드를 바꾸지 않고 자기 자신만 `access` · `editors`에서 뺄 수 있고(`selfLeave`), `users/{uid}/settings/pockets`는 `sharedWith`에 든 친구가 읽을 수 있습니다(5-d).
 - **R2 (v1.3.6)**: 업로드는 `u/{uid}/…` 본인 폴더로만, 삭제도 본인 폴더만(이전 키는 운영 계정만). 1인 용량 한도 `R2_USER_QUOTA_MB`(기본 2048MB, 운영 계정 `R2_OWNER_EMAILS`는 제외). 탈퇴 시 폴더 전체 삭제(`purge`).
 - `pendingApproval_*`와 `settings/admin` 변경은 관리자 전용이며, `mail` 컬렉션과 목록에 없는 경로는 모두 차단합니다. 익명 로그인은 쓰기에서 제외됩니다.
 
@@ -453,11 +454,14 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 ### v1.3.6 (2026.09.30)
 - **진행 현황 (다른 PC에서 이어가기, 2026.09.30 기준)**
   - 완료: 1단계 UI · 티켓 동기화, 2단계 메일 인증 가입, 3단계 본인 콘텐츠(데이터 이전 · 새 규칙 게시 완료), 4단계 사용자 중심 개편(카드 메뉴 · 여정 속 매거진 · 자동 히어로 · 설정 시트)과 후속(WY 지도 · 생일 · 전화 삭제 · 히어로 커버 · 프로필 낙서 50종).
-  - 다음: **5단계 친구와 공유** — 계획서 https://claude.ai/artifact/RwMXdxhqjdyLeoH4KzW8qv (5-a 초대 · 친구, 5-b 여정 공유 버튼, 5-c 인원 ↔ 친구, 5-d 공유 서랍). 착수 전 결정 2가지: 친구 연결 방식(추천 A: 초대 링크 · 코드만), 인원 연결 기본 권한(추천 A: 보기). 규칙(`firestore.rules`)을 5-a와 함께 다시 게시해야 함.
+  - 진행 중: **5단계 친구와 공유** — 계획서 https://claude.ai/artifact/RwMXdxhqjdyLeoH4KzW8qv. 결정: 친구 연결은 초대 링크 · 코드만(이메일 검색 없음), 인원을 친구로 연결할 때 기본 권한은 보기.
+    - [x] 5-a 초대 · 친구(2026.09.30). **새 규칙(`firestore.rules`) 게시 필요** — 게시 후 운영 계정이 관리 → USERS 데이터 카드의 `가족 친구 연결`을 한 번 누르기. 5-b ~ 5-d에 필요한 규칙(스스로 빠지기 · 친구 포켓 읽기)도 이번에 함께 들어 있어 이후 단계는 다시 게시하지 않아도 됨.
+    - [ ] 5-b 여정 공유 버튼 → 5-c 인원 ↔ 친구 → 5-d 공유 서랍 순서로 진행.
   - 그다음: 6단계 알림(FCM) · SNS → 포켓(iOS) · 앱스토어 준비. 전체 로드맵 https://claude.ai/artifact/E7Puu2UGGrbJhLcnHu6xzE
   - 운영 계정이 할 수 있는 남은 일(선택): 관리 → USERS 데이터 카드의 `생일 · 전화번호 지우기`(기존 회원 저장값 일괄 삭제, 되돌릴 수 없음).
   - 구조 요점: 여정 콘텐츠 쓰기는 `utils/ownership`의 `setDoc` · `writeBatch` 래퍼(ownerId · access · editors · publicShare 자동), 구독은 `access array-contains uid`, 개인 문서는 `users/{uid}/…`, R2 업로드는 `u/{uid}/`. 새 기능이 여정 콘텐츠에 쓸 때도 반드시 이 래퍼를 쓸 것.
   - Walkthrough: 1단계 https://claude.ai/artifact/9MnD3BAMiPfrByxrTofUNA · 2단계 https://claude.ai/artifact/8bSYJbgXw6V8AMdz8fLkjL · 3단계 https://claude.ai/artifact/LfrW7amAejc8BAG9phmth4 · 4단계 https://claude.ai/artifact/Lkgpu265KUUyy7Bov3D4ga
+- 5-a 초대 · 친구: 설정 시트에 `Friends` 카드(`components/friends/FriendsSection`, 목록 · 친구 끊기 · 초대 만들기 · 링크 복사 · 보내기 · 받은 코드 입력). 초대는 `invites/{code}`(6자리, 헷갈리는 글자 제외, 7일 · 한 번), 링크 `/?invite=CODE`는 로그인(새 회원은 메일 인증) 뒤 "OO님과 친구가 될까요?"로 이어짐. 수락하면 초대 사용 표시와 양쪽 `users/{uid}/friends/{friendUid}`(이름 · 프로필 그림 사본, since, via)를 한 번에 씀. 친구 끊기는 양쪽 친구 문서를 지우고 내 여정에서 친구를, 친구 여정에서 나를 뺌. 운영 계정의 `가족 친구 연결`은 지금 운영 여정을 보는 회원을 친구로 만듦. 코드는 `utils/friends`.
 - 4 후속: 심플 지도 = Snazzy Maps "WY"(`mapTiles.ts`가 스타일 배열을 구글 타일 `apistyle`로 변환, 다크는 반전). 생일 · 전화번호는 수집 · 표시하지 않음(프로필 저장 시 비움, 운영 데이터 카드에 일괄 삭제). 카드 커버 시트에 `카드 커버 / 홈 히어로` 선택(heroImg · heroVideoUrl, 없으면 카드 커버, 되돌리기). 프로필 기본 아이콘 50종 낙서 스타일(남성 · 여성 · 아이 · 동물 · 사물 각 10, `components/profile/FlatAvatars`, 옛 id 자동 대응).
 - 4-d 설정 정리: 메뉴 서랍 `설정`(모든 회원) → `components/settings/SettingsSheet`: 계정(프로필 · 비밀번호 · 탈퇴, 비밀번호 확인 후 프로필 수정), 표시(화면 모드, 발행한 여정을 열 때 매거진 먼저 · 항상 기록 = `prefs.journeyOpen`), 슬라이드쇼(사진 전체 · 화면 채우기, 넘기는 간격, 음량), 저장 공간(R2 `usage`, 사용량 / 2GB 막대), 휴지통(복구 · 영구 삭제). Ctrl+,도 이 시트(운영 계정은 관리 허브). 운영자용 옛 SettingsModal(히어로 선택 · 전광판 · BGM 목록)은 쓰지 않고 관리 허브가 맡음, 서랍의 운영 항목 이름은 `운영`. 여정 탭은 다시 PHOTO, 매거진은 여정 헤더의 책 버튼(발행하면 빨강).
 - 4-c 홈 히어로 자동: 카드 메뉴로 홈에 고정한 여정(고정 순서) → 없으면 발행한 여정 최신순(최대 8) → 없으면 다녀온 여정 최신순(최대 6). 관리 화면 선택 없이 동작. 여정이 하나도 없으면 `EmptyHero`(점 세계지도 · 서울에서 뻗는 점선 경로 · "첫 여행을 계획해 보세요" · New trip · 애니메이션 보기), 목록 로드 뒤에만 표시. 매거진 슬라이드쇼(Memory Reel)는 기본 사진 전체 보기 + 엠비언트 흐림, F 전환, ↑↓ 음량 · M · 밀어서 넘기기.

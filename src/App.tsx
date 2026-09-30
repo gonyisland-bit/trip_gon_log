@@ -81,6 +81,7 @@ function App() {
     isAuthModalOpen, setIsAuthModalOpen, isShareMode, isManageModalOpen, setIsManageModalOpen,
     authModalMode,
     setAuthModalMode, isSigningUpRef, globalWeatherData, globalWeatherCity, isGlobalWeatherBgEnabled, ambienceOverride,
+    canWriteContent, myCard,
     trips, setTrips, plans, setPlans, trashedJourneys, trashedSections, selectedTagFilter, dbError,
     tripsLoaded, plansLoaded,
     timelineData, setTimelineData, flightsByTrip, staysByTrip,
@@ -635,7 +636,7 @@ function App() {
             onSuccess={() => setCurrentView('home')}
           />
 
-          {/* Settings (v1.3.6 4-d): account, display, slideshow, storage, trash. The operator's
+          {/* Settings (v1.3.6 4-d): account, friends, display, slideshow, storage, trash. The operator's
               tools (hero list, ticker, music list) live in the manage hub. */}
           {isManageModalOpen && isLoggedIn && (
             <SettingsSheet
@@ -652,6 +653,8 @@ function App() {
               trashed={trashedJourneys}
               onRestore={handleRestoreJourney}
               onPermanentDelete={handlePermanentDeleteJourney}
+              me={myCard}
+              canWrite={canWriteContent}
             />
           )}
 
