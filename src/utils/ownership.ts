@@ -306,10 +306,15 @@ export async function deleteOwnContent(): Promise<void> {
     const snap = await getDocs(query(collection(db, 'users', 'public', col), where('ownerId', '==', uid)));
     snap.forEach(d => refs.push(d.ref));
   }
-  for (const name of ['home', 'pockets', 'map_wishlist', 'prefs', 'intro']) refs.push(doc(db, 'users', uid, 'settings', name));
+  for (const name of ['home', 'pockets', 'map_wishlist', 'prefs', 'intro', 'notify']) refs.push(doc(db, 'users', uid, 'settings', name));
   refs.push(doc(db, 'users', uid, 'drafts', 'newTrip'), doc(db, 'users', uid, 'departure', 'tickets'));
-  const events = await getDocs(collection(db, 'users', uid, 'calendar_events'));
-  events.forEach(d => refs.push(d.ref));
+  // Calendar, notifications, push devices and friends (v1.3.6)
+  for (const sub of ['calendar_events', 'notifications', 'devices', 'friends']) {
+    const snap = await getDocs(collection(db, 'users', uid, sub)).catch(() => null);
+    snap?.forEach(d => refs.push(d.ref));
+  }
+  const invites = await getDocs(query(collection(db, 'invites'), where('from', '==', uid))).catch(() => null);
+  invites?.forEach(d => refs.push(d.ref));
   for (let i = 0; i < refs.length; i += 400) {
     const batch = fsWriteBatch(db);
     refs.slice(i, i + 400).forEach(r => batch.delete(r));

@@ -16,6 +16,7 @@ import { PasswordInput } from './PasswordInput';
 import { doc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { notify } from '../utils/feedback';
+import { withdrawAccount } from '../utils/accountCleanup';
 
 interface ProfileEditModalProps {
   isOpen: boolean;
@@ -124,14 +125,8 @@ export function ProfileEditModal({
     if (!auth.currentUser) return;
     setIsDeleting(true);
     try {
-      const uid = auth.currentUser.uid;
-      // My journeys, personal documents and files go with the account (v1.3.6)
-      await Promise.allSettled([deleteOwnContent(), purgeMyFiles()]);
-      await Promise.allSettled([
-        deleteDoc(doc(db, 'users', uid)),
-        deleteDoc(doc(db, 'users', 'public', 'users', uid))
-      ]);
-      await deleteUser(auth.currentUser);
+      // Friends, journeys, personal documents, files, profile, then the sign-in account (v1.3.6)
+      await withdrawAccount({ deleteContent: deleteOwnContent, purgeFiles: () => purgeMyFiles().then(() => {}) });
       alert('회원 탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.');
       window.location.href = '/';
     } catch (err: any) {

@@ -124,3 +124,35 @@ export const VERIFY_PROBLEM: Record<Exclude<VerifyResult, 'verified'>, string> =
   rejected: 'Firebase가 요청을 거절했습니다. 서비스 계정에 Firebase 인증 관리자 권한이 있는지 확인해 주세요.',
   failed: '인증 처리를 하지 못했습니다. 잠시 후 다시 시도해 주세요.',
 };
+
+/**
+ * Leaving the service (v1.3.6): friendships end on both sides first, then content, files and
+ * profile go, and last the sign-in account. When Firebase refuses to delete an older session
+ * on the client, the server removes it, so the address can sign up again with no ghost left.
+ */
+export async function withdrawAccount(steps: { deleteContent: () => Promise<void>; purgeFiles: () => Promise<void> }): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not signed in');
+  const uid = user.uid;
+  const { collection, getDocs } = await import('firebase/firestore');
+  const { removeFriend } = await import('./friends');
+  const friends = await getDocs(collection(db, 'users', uid, 'friends')).catch(() => null);
+  for (const f of friends?.docs || []) await removeFriend(f.id).catch(err => console.warn('Unfriend on leave failed:', err));
+  await import('./push').then(m => m.forgetDevice()).catch(() => {});
+  await Promise.allSettled([steps.deleteContent(), steps.purgeFiles()]);
+  // The server call needs a token, so take it before the profile and account go
+  const token = await user.getIdToken().catch(() => '');
+  await Promise.allSettled(profileRefs(uid).map(r => deleteDoc(r)));
+  try {
+    await deleteUser(user);
+  } catch (err) {
+    console.warn('Client account delete refused, asking the server:', err);
+    const res = token ? await fetch(apiUrl('/api/account'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'delete-self' }),
+    }).catch(() => null) : null;
+    if (!res?.ok) throw Object.assign(new Error('account not deleted'), { code: 'auth/requires-recent-login' });
+  }
+  await auth.signOut().catch(() => {});
+}
