@@ -42,7 +42,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Mail handler error:', message);
     // Which step failed (e.g. "token exchange failed: 400"), never the details
-    const reason = (message.match(/^[^:]{1,60}(?:: \d{3})?/) || [''])[0];
+    const reason = message.startsWith('key import failed') ? message.slice(0, 200) : (message.match(/^[^:]{1,60}(?:: \d{3})?/) || [''])[0];
     res.status(500).json({ error: 'Mail request failed', reason });
   }
 }

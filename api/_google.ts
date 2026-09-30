@@ -41,7 +41,18 @@ export async function googleAccessToken(env: GoogleEnv, scopes: string[]): Promi
   const key = scopes.join(' ');
   const hit = cache.get(key);
   if (hit && hit.until > Date.now() + 60_000) return hit.token;
-  const pk = await importPKCS8(normalizePem(String(env.FIREBASE_PRIVATE_KEY)), 'RS256');
+  const raw = String(env.FIREBASE_PRIVATE_KEY);
+  const pem = normalizePem(raw);
+  const pk = await importPKCS8(pem, 'RS256').catch((err: Error) => {
+    // The shape of the key (never its content) so a bad paste can be told apart
+    const body = pem.replace(/-----[A-Z ]+-----|\n/g, '');
+    const shape = [
+      `len ${raw.length}`, `body ${body.length}`, `mod4 ${body.length % 4}`,
+      `begin ${(raw.match(/BEGIN [A-Z ]*KEY/) || ['none'])[0]}`, `json ${raw.trim().startsWith('{')}`,
+      `nl ${(raw.match(/\n/g) || []).length}`, `bsn ${(raw.match(/\\n/g) || []).length}`, `eq ${(body.match(/=/g) || []).length}`,
+    ].join(', ');
+    throw new Error(`key import failed (${shape}) ${err.message}`);
+  });
   const now = Math.floor(Date.now() / 1000);
   const assertion = await new SignJWT({ scope: key })
     .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
