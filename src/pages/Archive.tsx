@@ -10,6 +10,7 @@ import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { JourneyCard } from '../components/cards/JourneyCard';
+import { openJourneyActions } from '../components/cards/JourneyActionsSheet';
 import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
 import { NewTripButton } from '../components/NewTripButton';
 
@@ -956,6 +957,7 @@ export function ArchiveHubPage({
                           active={activeCardId === trip.id}
                           onOpen={() => onNavigate('detail', trip.id)}
                           onPreload={preloadDetailPage}
+                          onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
                         />
                       );
                     })}
@@ -977,6 +979,7 @@ export function ArchiveHubPage({
                           isWide={cardViewMode === 'wide'}
                           onOpen={() => onNavigate('detail', trip.id)}
                           onPreload={preloadDetailPage}
+                          onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
                           draggable={isLoggedIn && sortBy === 'user'}
                           onDragStart={(e) => handleTripDragStart(e, trip.id)}
                           onDragOver={(e) => handleTripDragOver(e, trip.id)}

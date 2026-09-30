@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, MoreHorizontal } from 'lucide-react';
+import { useLongPress } from './useLongPress';
 import { Trip } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { getUpcomingPlanInfo, getLiveTripStatus } from '../../utils/tripPlanHelper';
@@ -28,6 +29,8 @@ interface JourneyCardProps {
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
   onDragEnd?: () => void;
+  /** Opens the journey's actions (⋯ button, long press, right click) */
+  onMenu?: () => void;
 }
 
 // Plans are shown in grey and regain colour over the last 30 days before departure
@@ -38,9 +41,10 @@ function planGrayscale(daysLeft: number, isUpcoming: boolean): number {
 
 export function JourneyCard({
   trip, display, isActive, isWide, index = 0, draggable,
-  onOpen, onPreload, onDragStart, onDragOver, onDrop, onDragEnd,
+  onOpen, onPreload, onDragStart, onDragOver, onDrop, onDragEnd, onMenu,
 }: JourneyCardProps) {
   const mediaRef = useRef<HTMLDivElement>(null);
+  const longPress = useLongPress(onMenu);
   const planInfo = getUpcomingPlanInfo(trip);
   const isPlan = planInfo.isPlanOrFuture || trip.statusBadge === 'PLAN';
   const live = getLiveTripStatus(trip.date);
@@ -66,10 +70,11 @@ export function JourneyCard({
 
   return (
     <article
-      onClick={onOpen}
+      onClick={() => { if (!longPress.consumeClick()) onOpen(); }}
       onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
       onMouseEnter={onPreload}
-      onTouchStart={onPreload}
+      {...longPress.handlers}
+      onTouchStartCapture={onPreload}
       onPointerMove={handlePointerMove}
       onPointerLeave={resetParallax}
       tabIndex={0}
@@ -97,6 +102,17 @@ export function JourneyCard({
           <CardMedia img={cardCoverUrl(trip)} title={trip.title} videoUrl={trip.videoUrl} isActive={isActive} />
         </div>
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-transparent to-transparent" />
+
+        {onMenu && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onMenu(); }}
+            aria-label={`${trip.title} 메뉴`}
+            className="absolute right-2 top-2 sm:right-3 sm:top-3 w-9 h-9 rounded-full bg-black/35 hover:bg-black/55 text-white grid place-items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            <MoreHorizontal className="w-[18px] h-[18px]" aria-hidden />
+          </button>
+        )}
 
         <div className="absolute left-3 top-2 sm:left-4 sm:top-3 text-white pointer-events-none">
           <div className={`font-sans font-extrabold leading-none tracking-[-0.05em] tabular-nums ${isWide ? 'text-5xl sm:text-6xl' : 'text-4xl sm:text-5xl'}`}>

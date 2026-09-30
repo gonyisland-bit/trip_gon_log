@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, MoreHorizontal } from 'lucide-react';
+import { useLongPress } from './useLongPress';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 
 // A journey in list view (v1.3.5, spec 4.9): one surface card per trip on the paper ground.
@@ -24,6 +25,8 @@ interface JourneyListRowProps {
   onOpen: () => void;
   onPreload?: () => void;
   style?: React.CSSProperties;
+  /** Opens the journey's actions (⋯ button, long press, right click) */
+  onMenu?: () => void;
 }
 
 const BADGE: Record<JourneyRowBadge['kind'], string> = {
@@ -33,15 +36,17 @@ const BADGE: Record<JourneyRowBadge['kind'], string> = {
   editing: 'bg-amber-500 text-black',
 };
 
-export function JourneyListRow({ img, title, year, month, meta, badge, dDay, active, onOpen, onPreload, style }: JourneyListRowProps) {
+export function JourneyListRow({ img, title, year, month, meta, badge, dDay, active, onOpen, onPreload, style, onMenu }: JourneyListRowProps) {
+  const longPress = useLongPress(onMenu);
   return (
+    <div className="relative" style={style}>
     <button
       type="button"
-      onClick={onOpen}
+      onClick={() => { if (!longPress.consumeClick()) onOpen(); }}
       onMouseEnter={onPreload}
-      onTouchStart={onPreload}
-      style={style}
-      className={`tgl-cv-row group w-full flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-card bg-surface dark:bg-surface-dark text-left select-none transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
+      {...longPress.handlers}
+      onTouchStartCapture={onPreload}
+      className={`tgl-cv-row group w-full flex${onMenu ? ' pr-12 sm:pr-14' : ''} items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-card bg-surface dark:bg-surface-dark text-left select-none transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
         active ? 'ring-[1.5px] ring-inset ring-red-600 dark:ring-red-500' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.04]'
       }`}
     >
@@ -72,9 +77,20 @@ export function JourneyListRow({ img, title, year, month, meta, badge, dDay, act
         </span>
         <span className="flex items-center justify-between gap-2 font-mono text-micro sm:text-meta text-black/60 dark:text-white/60">
           <span className="truncate min-w-0">{meta}</span>
-          <ArrowUpRight className="w-4 h-4 shrink-0 text-black dark:text-white transition-transform duration-base group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
+          {!onMenu && <ArrowUpRight className="w-4 h-4 shrink-0 text-black dark:text-white transition-transform duration-base group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />}
         </span>
       </span>
     </button>
+    {onMenu && (
+      <button
+        type="button"
+        onClick={onMenu}
+        aria-label={`${title} 메뉴`}
+        className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full grid place-items-center text-black/60 dark:text-white/60 hover:bg-black/[0.05] dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
+      >
+        <MoreHorizontal className="w-[18px] h-[18px]" aria-hidden />
+      </button>
+    )}
+    </div>
   );
 }

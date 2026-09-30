@@ -65,7 +65,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           <div className="flex items-center min-w-max md:min-w-0 pr-1 md:pr-0">
             {([
               { id: 'HOME', label: 'HOME' },
-              { id: 'ARCHIVE', label: 'TRIP' },
+              // TRIP mode retired (v1.3.6 4-a): journeys are managed from their cards and inside the journey
               { id: 'CALENDAR', label: 'CALENDAR' },
               { id: 'MAGAZINE', label: 'MAGAZINE' },
               { id: 'UTIL', label: 'UTIL' },

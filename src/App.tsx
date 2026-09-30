@@ -47,6 +47,7 @@ import { OPEN_INTRO_EVENT, isIntroPath } from './intro/openIntro';
 import { IntroTip } from './components/home/IntroTip';
 import { personName } from './utils/personName';
 import { VerifyEmailPanel } from './components/account/VerifyEmailPanel';
+import { JourneyActionsSheet, OPEN_JOURNEY_ACTIONS } from './components/cards/JourneyActionsSheet';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
 const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
@@ -81,7 +82,7 @@ function App() {
     trips, setTrips, plans, setPlans, trashedJourneys, trashedSections, selectedTagFilter, dbError,
     tripsLoaded, plansLoaded,
     timelineData, setTimelineData, flightsByTrip, staysByTrip,
-    transitByTrip, homeTitle, homeSubtitle, heroJourneyIds, editingTripId, setEditingTripId,
+    transitByTrip, homeTitle, homeSubtitle, heroJourneyIds, setHeroJourneyIds, editingTripId, setEditingTripId,
     heroMediaType, heroSlideDuration, heroAutoSlide, marqueeShow, marqueeMessage, marqueeSpeed,
     homeGradientEnabled, homeGradientFrom, homeGradientTo, landingHeroImage, landingHeroMedia,
     currentUserProfile, setCurrentUserProfile, isSearchOpen, setIsSearchOpen, searchFocusItemId,
@@ -112,6 +113,13 @@ function App() {
   const [departureTicketId, setDepartureTicketId] = useState<string | undefined>(undefined);
   const issuedTicketRef = useRef<string | null>(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  // One journey's card menu (v1.3.6 4-a), opened from any journey card
+  const [actionsTripId, setActionsTripId] = useState<number | null>(null);
+  useEffect(() => {
+    const open = (e: Event) => setActionsTripId((e as CustomEvent<number>).detail);
+    window.addEventListener(OPEN_JOURNEY_ACTIONS, open);
+    return () => window.removeEventListener(OPEN_JOURNEY_ACTIONS, open);
+  }, []);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
   const [remixSourceId, setRemixSourceId] = useState<number | null>(null);
@@ -654,6 +662,39 @@ function App() {
             marqueeSpeed={marqueeSpeed}
             onSaveBgmSettings={handleSaveBgmSettings}
           />
+
+          {/* Journey card menu: cover, edit, share, pin to home, delete */}
+          {actionsTripId !== null && (() => {
+            const plan = plans.find(p => p.id === actionsTripId);
+            const trip = plan || trips.find(t => t.id === actionsTripId);
+            if (!trip) return null;
+            // Photos of this journey: its gallery and its timeline pictures
+            const photos = Array.from(new Set([
+              ...(trip.gallery || []).map(g => (typeof g === 'string' ? g : g.url)),
+              ...Object.values(timelineData).flat().filter(i => i.tripId === trip.id && i.img).map(i => i.img as string),
+            ].filter(Boolean)));
+            const pinned = heroJourneyIds.includes(trip.id);
+            return (
+              <JourneyActionsSheet
+                trip={trip}
+                isPlan={Boolean(plan)}
+                photos={photos}
+                pinned={pinned}
+                onClose={() => setActionsTripId(null)}
+                onEdit={() => setEditingTripId(trip.id)}
+                onDelete={() => handleDeleteJourney(trip.id)}
+                onTogglePin={() => {
+                  const next = pinned ? heroJourneyIds.filter(id => id !== trip.id) : [...heroJourneyIds, trip.id];
+                  setHeroJourneyIds(next);
+                  try { localStorage.setItem('heroJourneyIds', JSON.stringify(next)); } catch {}
+                  // Saved to this member's own home settings (the writer routes hero keys there)
+                  setDoc(doc(db, 'users', 'public', 'settings', 'home'), { heroJourneyIds: next }, { merge: true })
+                    .then(() => notify(pinned ? '홈 고정을 해제했습니다.' : '홈에 고정했습니다.', 'success'))
+                    .catch(() => notify('저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error'));
+                }}
+              />
+            );
+          })()}
 
           {/* Edit Trip Cover Modal */}
           <EditTripModal

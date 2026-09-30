@@ -17,6 +17,7 @@ import { HomeWeatherWidget } from '../components/HomeWeatherWidget';
 import { getUpcomingPlanInfo, getLiveTripStatus } from '../utils/tripPlanHelper';
 import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
 import { JourneyCard } from '../components/cards/JourneyCard';
+import { openJourneyActions } from '../components/cards/JourneyActionsSheet';
 import { JourneyPhaseStrip } from '../components/home/JourneyPhaseStrip';
 import { DepartureTeaser } from '../components/home/DepartureTeaser';
 
@@ -1566,6 +1567,7 @@ export function HomePage({
                   active={activeCardId === trip.id}
                   onOpen={() => onNavigate('detail', trip.id)}
                   onPreload={preloadDetailPage}
+                  onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
                 />
               );
             })}
@@ -1587,6 +1589,7 @@ export function HomePage({
                   isWide={cardViewMode === 'wide'}
                   onOpen={() => onNavigate('detail', trip.id)}
                   onPreload={preloadDetailPage}
+                  onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
                   draggable={isLoggedIn}
                   onDragStart={(e) => handleTripDragStart(e, trip.id)}
                   onDragOver={(e) => handleTripDragOver(e, trip.id)}
