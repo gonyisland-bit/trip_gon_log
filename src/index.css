@@ -759,6 +759,15 @@
   filter: saturate(88%) contrast(102%) !important;
 }
 
+/* Simple style: the road map in soft greys (labels kept) */
+.map-tile-simple {
+  filter: grayscale(100%) brightness(106%) contrast(92%) !important;
+}
+
+.map-tile-simple-dark {
+  filter: grayscale(100%) invert(100%) brightness(96%) contrast(96%) !important;
+}
+
 /* ── Prevent Pinterest extension hover button across all images ── */
 img {
   -webkit-touch-callout: default;
