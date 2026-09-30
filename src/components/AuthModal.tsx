@@ -15,7 +15,7 @@ import { AVATAR_CATEGORIES, PROFILE_PRESET_ICONS } from './UserProfileAvatar';
 import type { AvatarCategory } from './profile/FlatAvatars';
 import { PasswordInput } from './PasswordInput';
 import { VerifyEmailPanel } from './account/VerifyEmailPanel';
-import { sendVerificationMail } from '../utils/emailVerification';
+import { friendlyMailError, sendVerificationMail } from '../utils/emailVerification';
 import { notify } from '../utils/feedback';
 import { LEFTOVER_ACCOUNT, clearOrphanAccount, createAccountReclaiming, isGhostProfile } from '../utils/accountCleanup';
 
@@ -270,7 +270,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
         // The member confirms their own address; no admin step
         let mailError = '';
         if (!isSuper) {
-          await sendVerificationMail(user).catch(() => { mailError = '인증 메일을 보내지 못했습니다. 아래 다시 보내기를 눌러 주세요.'; });
+          await sendVerificationMail(user).catch((mailErr) => { mailError = `${friendlyMailError(mailErr)} 아래 다시 보내기로 다시 보낼 수 있습니다.`; });
         }
 
         setSubmittedUser(newProfile);

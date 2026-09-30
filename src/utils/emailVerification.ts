@@ -26,11 +26,16 @@ export async function sendVerificationMail(user: User | null = auth.currentUser)
   try {
     await sendEmailVerification(user, { url: `${window.location.origin}/?verified=1` });
   } catch (err: any) {
-    // A domain missing from the Firebase authorized list rejects the return URL: send the plain link
-    if (err?.code === 'auth/unauthorized-continue-uri' || err?.code === 'auth/invalid-continue-uri') {
+    console.warn('Verification mail with return link failed:', err?.code, err);
+    // Sending too often is not fixed by trying again now
+    if (err?.code === 'auth/too-many-requests' || err?.code === 'auth/network-request-failed') throw err;
+    // Anything about the return link (domain not in Firebase's authorized list, and so on):
+    // send the plain link instead
+    try {
       await sendEmailVerification(user);
-    } else {
-      throw err;
+    } catch (plainErr: any) {
+      console.warn('Plain verification mail failed:', plainErr?.code, plainErr);
+      throw plainErr;
     }
   }
   try { localStorage.setItem(RESEND_KEY, String(Date.now())); } catch {}
@@ -57,7 +62,9 @@ export async function completeVerification(profileStatus?: string): Promise<bool
 }
 
 export function friendlyMailError(err: any): string {
-  if (err?.code === 'auth/too-many-requests') return '메일을 너무 자주 보냈습니다. 잠시 후 다시 시도해 주세요.';
+  if (err?.code === 'auth/too-many-requests') return '메일을 짧은 시간에 여러 번 보내 Firebase가 잠시 막았습니다. 30분쯤 뒤에 다시 보내기를 눌러 주세요.';
   if (err?.code === 'auth/network-request-failed') return '네트워크 연결을 확인한 뒤 다시 시도해 주세요.';
-  return '인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  if (err?.code === 'auth/user-token-expired' || err?.code === 'auth/user-not-found') return '로그인이 끝났습니다. 다시 로그인한 뒤 인증 메일을 보내 주세요.';
+  // Unknown causes carry their code so they can be looked up
+  return `인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.${err?.code ? ` (${err.code})` : ''}`;
 }
