@@ -67,7 +67,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               { id: 'HOME', label: 'HOME' },
               // TRIP mode retired (v1.3.6 4-a): journeys are managed from their cards and inside the journey
               { id: 'CALENDAR', label: 'CALENDAR' },
-              { id: 'MAGAZINE', label: 'MAGAZINE' },
+              // MAGAZINE mode retired (v1.3.6 4-b): each journey's magazine is built from the journey itself
               { id: 'UTIL', label: 'UTIL' },
               { id: 'USERS', label: 'USERS' },
             ] as const).map(tab => (

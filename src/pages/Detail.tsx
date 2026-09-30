@@ -1,4 +1,5 @@
-import { ChevronUp, ChevronDown, Map as MapIcon, FileText, Clock, Plane, BedDouble, TrainFront, Image as ImageIcon, type LucideIcon } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ChevronUp, ChevronDown, Map as MapIcon, FileText, Clock, Plane, BedDouble, TrainFront, BookOpen, type LucideIcon } from 'lucide-react';
 import { getDefaultCurrencyForLocation } from '../components/SettlementExpenseInput';
 import { SettlementView } from '../components/SettlementView';
 import { SummaryView } from '../components/SummaryView';
@@ -7,9 +8,13 @@ import { Footer } from '../components/Footer';
 import { FloatingPocketWidget } from '../components/FloatingPocketWidget';
 import { TabType } from '../types';
 import { auth, db } from '../firebase';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 // Journey content writes carry owner / access fields (v1.3.6)
-import { setDoc } from '../utils/ownership';
+import { currentUid, setDoc } from '../utils/ownership';
+import { JourneyMagazine, type MagazinePhoto } from '../components/magazine/JourneyMagazine';
+import { takeDetailIntent } from '../utils/detailIntent';
+import { getLiveTripStatus, getUpcomingPlanInfo } from '../utils/tripPlanHelper';
+import { notify } from '../utils/feedback';
 import { useJourneyDetailState, type JourneyDetailPageProps } from './detail/useJourneyDetailState';
 import { DetailMapPanel } from './detail/DetailMapPanel';
 import { TimelineTab } from './detail/TimelineTab';
@@ -26,7 +31,8 @@ const DETAIL_TABS: { id: TabType; label: string; icon: LucideIcon }[] = [
   { id: 'flights', label: 'FLIGHT', icon: Plane },
   { id: 'stays', label: 'STAY', icon: BedDouble },
   { id: 'transit', label: 'TRANS', icon: TrainFront },
-  { id: 'gallery', label: 'PHOTO', icon: ImageIcon },
+  // v1.3.6 4-b: the photo tab opens the journey's magazine; closing it leaves the photo tools here
+  { id: 'gallery', label: 'MAGAZINE', icon: BookOpen },
 ];
 
 export function JourneyDetailPage(props: JourneyDetailPageProps) {
@@ -39,8 +45,60 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
     draftTrip, setDraftTrip, draftFlights, draftStays, draftTransits, tripToUse, defaultCurrency,
     tabContentRef, mobileSheetSnap, setMobileSheetSnap, handleSheetTouchStart, handleSheetTouchEnd,
     itemRefs, allTripDates, groupedTimelineData, handleDirectAddFromPocket, handleQuickJumpToDate,
-    handleScrollToTop, updateExpenseItem
+    handleScrollToTop, updateExpenseItem, allGalleryImages
   } = s;
+
+  // ── Magazine (v1.3.6 4-b) ──
+  const [magazineOpen, setMagazineOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const uid = currentUid();
+  const canEdit = Boolean(isLoggedIn && trip && (!trip.ownerId || trip.ownerId === uid || trip.editors?.includes(uid || '')));
+  const isPast = Boolean(trip && !getUpcomingPlanInfo(trip).isPlanOrFuture && !getLiveTripStatus(trip.date).isLive);
+  const published = Boolean(trip?.publishedAt);
+  const canPublish = canEdit && isPast;
+
+  // A published journey opens on its magazine, unless the card asked for the record
+  useEffect(() => {
+    if (!trip) return;
+    const intent = takeDetailIntent();
+    if (intent === 'magazine' || (intent !== 'record' && trip.publishedAt)) {
+      setActiveTab('gallery' as TabType);
+      setMagazineOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.id]);
+
+  const magazinePhotos: MagazinePhoto[] = useMemo(() => {
+    const memoById = new Map<number, string>();
+    // Placeholder notes ("메모") say nothing, so they stay out of the captions
+    Object.values(groupedTimelineData).flat().forEach(i => {
+      const memo = (i.memo || '').trim();
+      if (memo && memo !== '메모') memoById.set(i.id, memo);
+    });
+    return (allGalleryImages as any[]).map(p => ({
+      url: p.url,
+      date: p.date,
+      time: p.time,
+      place: p.place,
+      note: p.imgNote || (p.itemId !== undefined ? memoById.get(p.itemId) : undefined) || undefined,
+    }));
+  }, [allGalleryImages, groupedTimelineData]);
+
+  const setPublished = async (on: boolean) => {
+    if (!trip || publishing) return;
+    setPublishing(true);
+    try {
+      const id = String(trip.id);
+      const col = (await getDoc(doc(db, 'users', 'public', 'plans', id)).catch(() => null))?.exists() ? 'plans' : 'trips';
+      await setDoc(doc(db, 'users', 'public', col, id), { publishedAt: on ? Date.now() : null }, { merge: true });
+      notify(on ? '매거진으로 발행했습니다. 이제 카드를 누르면 매거진이 먼저 열립니다.' : '발행을 취소했습니다.', 'success');
+    } catch (err) {
+      console.error('Publish failed:', err);
+      notify('저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   // Early Return (conditional render)
   if (!trip) return <DetailSkeleton />;
@@ -110,6 +168,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
               onClick={() => {
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
+                if (tab.id === 'gallery') setMagazineOpen(true);
               }}
               // From md the list is half the window: icon over label until xl, so all six tabs fit
               title={tab.label}
@@ -130,6 +189,19 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           ref={tabContentRef}
           className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-transparent"
         >
+          {/* A journey that is over: tidy the record, then publish it as a magazine */}
+          {canPublish && !published && activeTab === 'summary' && (
+            <div className="mx-3 sm:mx-4 mb-2 p-3.5 rounded-card bg-amber-500/10 flex flex-wrap items-center justify-between gap-2.5">
+              <p className="text-[13px] leading-snug text-black/75 dark:text-white/80 min-w-0 flex-1 basis-56 break-keep">
+                다녀온 여행이에요. 실제 시간에 맞춰 일정과 사진을 정리했다면 매거진으로 발행하세요.
+              </p>
+              <div className="flex gap-1.5 shrink-0">
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setActiveTab('gallery' as TabType); setMagazineOpen(true); }}>미리보기</button>
+                <button type="button" className="btn btn-accent btn-sm" onClick={() => setPublished(true)} disabled={publishing}>발행</button>
+              </div>
+            </div>
+          )}
+
           {/* SUMMARY TAB */}
           <div className={activeTab === 'summary' ? 'contents' : 'hidden'}>
             <SummaryView 
@@ -158,7 +230,17 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           {/* TRANSIT TAB */}
           <TransitTab s={s} />
 
-          {/* GALLERY TAB */}
+          {/* MAGAZINE TAB: the photos behind the magazine, with a way back into it */}
+          {activeTab === 'gallery' && (
+            <div className="mx-3 sm:mx-4 mb-1 flex items-center justify-between gap-2">
+              <span className="font-mono text-micro font-bold uppercase tracking-wider text-black/55 dark:text-white/55">
+                {published ? 'Published' : 'Photos'} · {magazinePhotos.length}
+              </span>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setMagazineOpen(true)}>
+                <BookOpen className="w-3.5 h-3.5" aria-hidden />매거진 보기
+              </button>
+            </div>
+          )}
           <GalleryTab s={s} />
 
         {/* SETTLEMENT TAB */}
@@ -329,6 +411,20 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
 
       {/* Fullscreen Lightbox component */}
       <DetailOverlays s={s} />
+
+      {magazineOpen && tripToUse && (
+        <JourneyMagazine
+          trip={tripToUse}
+          photos={magazinePhotos}
+          days={allTripDates}
+          canPublish={canPublish}
+          published={published}
+          onPublish={() => setPublished(true)}
+          onUnpublish={() => setPublished(false)}
+          onClose={() => setMagazineOpen(false)}
+          onShowRecord={() => { setMagazineOpen(false); setActiveTab('timeline' as TabType); }}
+        />
+      )}
     </main>
   );
 }

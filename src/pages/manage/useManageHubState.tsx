@@ -255,7 +255,7 @@ export function useManageHubState(props: ManageHubPageProps) {
   // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'CALENDAR' | 'MAGAZINE' | 'UTIL' | 'USERS'
   const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'CALENDAR' | 'MAGAZINE' | 'UTIL' | 'USERS'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
-    if (fromSession && ['HOME', 'CALENDAR', 'MAGAZINE', 'UTIL', 'USERS'].includes(fromSession)) {
+    if (fromSession && ['HOME', 'CALENDAR', 'UTIL', 'USERS'].includes(fromSession)) {
       sessionStorage.removeItem('initialManageTab');
       return fromSession as any;
     }

@@ -131,6 +131,11 @@ export function JourneyCard({
             <span>PLAN</span>
             {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && <span className="tabular-nums">· {planInfo.dDayLabel}</span>}
           </div>
+        ) : trip.publishedAt ? (
+          // Published as a magazine: the card opens on it
+          <div className="absolute left-3 bottom-3 sm:left-4 sm:bottom-4 px-2.5 py-1 rounded-full bg-black/35 font-mono text-micro font-bold tracking-wider text-white pointer-events-none">
+            MAGAZINE
+          </div>
         ) : (trip.statusBadge === 'NEW' || trip.statusBadge === 'EDITING') && (
           <div className="absolute left-3 bottom-3 sm:left-4 sm:bottom-4 px-2.5 py-1 rounded-full bg-black/35 font-mono text-micro font-bold tracking-wider text-white pointer-events-none flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${trip.statusBadge === 'NEW' ? 'bg-red-500' : 'bg-amber-400'}`} />

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Check, ImagePlus, Link2, Loader2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
+import { BookOpen, Check, Clock, ImagePlus, Link2, Loader2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Trip } from '../../types';
@@ -28,6 +28,8 @@ interface Props {
   onEdit: () => void;
   onDelete: () => void;
   onTogglePin: () => void;
+  /** Opens the journey on its record or its magazine */
+  onOpenAs: (view: 'record' | 'magazine') => void;
 }
 
 export function JourneyActionsSheet(props: Props) {
@@ -40,7 +42,7 @@ export function JourneyActionsSheet(props: Props) {
 
 const row = 'w-full min-h-12 px-4 flex items-center gap-3 rounded-card bg-surface dark:bg-surface-dark text-left text-[15px] font-bold transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.06] disabled:opacity-40';
 
-function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin }: Props) {
+function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, onOpenAs }: Props) {
   const close = useSheetClose();
   const isOwner = !trip.ownerId || trip.ownerId === currentUid();
   const canEdit = isOwner || Boolean(trip.editors?.includes(currentUid() || ''));
@@ -105,6 +107,16 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin }
       )}
 
       <div className="flex flex-col gap-1.5">
+        {/* A published journey opens on its magazine; the other view is one tap away */}
+        {!isPlan && (trip.publishedAt ? (
+          <button type="button" className={row} onClick={() => { close(); onOpenAs('record'); }}>
+            <Clock className="w-[18px] h-[18px] shrink-0" aria-hidden />기록으로 열기
+          </button>
+        ) : (
+          <button type="button" className={row} onClick={() => { close(); onOpenAs('magazine'); }}>
+            <BookOpen className="w-[18px] h-[18px] shrink-0" aria-hidden />매거진으로 보기
+          </button>
+        ))}
         {canEdit && (
           <button type="button" className={row} onClick={() => setCoverOpen(v => !v)} aria-expanded={coverOpen}>
             <ImagePlus className="w-[18px] h-[18px] shrink-0" aria-hidden />커버 바꾸기

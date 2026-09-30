@@ -4,7 +4,8 @@ import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
-import { MagazineHubPage } from './pages/MagazineHub';
+// v1.3.6 4-b: the magazine tab gathers published journeys; the hand-curated magazine hub is retired
+import { MagazineLibrary } from './pages/MagazineLibrary';
 import { ScrollToTop } from './components/ScrollToTop';
 import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './app/quickActions';
 import { TabBar } from './components/TabBar';
@@ -48,6 +49,7 @@ import { IntroTip } from './components/home/IntroTip';
 import { personName } from './utils/personName';
 import { VerifyEmailPanel } from './components/account/VerifyEmailPanel';
 import { JourneyActionsSheet, OPEN_JOURNEY_ACTIONS } from './components/cards/JourneyActionsSheet';
+import { setDetailIntent } from './utils/detailIntent';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
 const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
@@ -498,17 +500,7 @@ function App() {
               )}
               {currentView === 'magazine' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
-                  <MagazineHubPage
-                    sections={magazineSections}
-                    hubConfig={magazineHubConfig}
-                    trips={trips}
-                    plans={plans}
-                    timelineData={timelineData}
-                    onNavigate={navigateTo}
-                    isLoggedIn={isLoggedIn}
-                    isAdmin={isAdmin}
-                    isDarkMode={isDarkMode}
-                  />
+                  <MagazineLibrary trips={trips} onNavigate={navigateTo} />
                 </div>
               )}
               {currentView === 'calendar' && (
@@ -680,6 +672,7 @@ function App() {
                 isPlan={Boolean(plan)}
                 photos={photos}
                 pinned={pinned}
+                onOpenAs={(view) => { setDetailIntent(view); navigateTo('detail', trip.id); }}
                 onClose={() => setActionsTripId(null)}
                 onEdit={() => setEditingTripId(trip.id)}
                 onDelete={() => handleDeleteJourney(trip.id)}

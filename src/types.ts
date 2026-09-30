@@ -64,6 +64,8 @@ export interface Trip {
   access?: string[];
   editors?: string[];
   publicShare?: boolean;
+  /** Set when the member publishes the journey as a magazine (v1.3.6 4-b); null after unpublishing */
+  publishedAt?: number | null;
   ownerEmail?: string;
   allowedEditors?: string[];
 }
