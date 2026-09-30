@@ -285,7 +285,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
                       onMouseEnter={() => setSearchSelectedIndex(idx)}
                       className={`p-2 sm:p-2.5 cursor-pointer flex items-center justify-between gap-2.5 transition-colors ${
                         isSelected 
-                          ? 'bg-black/10 dark:bg-white/10' 
+                          ? 'bg-black/10 dark:bg-white/[0.18]' 
                           : 'hover:bg-black/5 dark:hover:bg-white/5'
                       }`}
                     >

@@ -26,7 +26,7 @@ export function ViewModeSegment({ value, onChange, className = '' }: { value: Ca
             title={label}
             onClick={() => onChange(v)}
             className={`w-9 h-8 grid place-items-center rounded-full transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
-              on ? 'bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark shadow-sm' : 'text-black/60 dark:text-white/60 hover:text-ink dark:hover:text-ink-dark'
+              on ? 'bg-raised dark:bg-raised-dark text-ink dark:text-ink-dark shadow-sm' : 'text-black/60 dark:text-white/60 hover:text-ink dark:hover:text-ink-dark'
             }`}
           >
             <Icon className="w-3.5 h-3.5" aria-hidden />

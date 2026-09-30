@@ -231,7 +231,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
                   onClick={() => handleSelectCity(city)}
                   className={`w-full min-h-10 px-3 py-2 text-left flex items-center justify-between gap-3 transition-colors cursor-pointer text-sm ${
                     isSelected
-                      ? 'bg-black/[0.05] dark:bg-white/10 font-bold text-black dark:text-white'
+                      ? 'bg-black/[0.05] dark:bg-white/[0.18] font-bold text-black dark:text-white'
                       : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black/80 dark:text-white/80'
                   }`}
                 >

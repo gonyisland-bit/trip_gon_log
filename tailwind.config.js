@@ -23,6 +23,8 @@ export default {
         paper: { DEFAULT: '#F6F4EF', dark: '#11110F' },
         surface: { DEFAULT: '#FFFDF9', dark: '#1A1A17' },
         ink: { DEFAULT: '#141412', dark: '#EFECE6' },
+        // Selected pill on a track and the active card: in dark mode a step lighter than the ground
+        raised: { DEFAULT: '#FFFDF9', dark: '#46453F' },
       },
       // Corner steps (spec 4.4): sheet > card > thumb; controls use rounded-full
       borderRadius: {

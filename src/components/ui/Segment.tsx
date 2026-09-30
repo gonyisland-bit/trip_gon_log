@@ -42,7 +42,7 @@ export function Segment<T extends string>({
             onClick={() => onChange(v)}
             className={`${block ? 'flex-1' : ''} ${h} inline-flex items-center justify-center gap-1.5 rounded-full whitespace-nowrap transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
               on
-                ? 'bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark font-bold shadow-sm'
+                ? 'bg-raised dark:bg-raised-dark text-ink dark:text-ink-dark font-bold shadow-sm'
                 : 'text-black/60 dark:text-white/60 font-medium hover:text-ink dark:hover:text-ink-dark'
             }`}
           >

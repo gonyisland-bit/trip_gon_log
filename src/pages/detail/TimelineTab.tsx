@@ -488,10 +488,10 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                     <div 
                       id={`timeline-item-${item.id}`}
                       ref={el => { itemRefs.current[item.id] = el; }} 
-                      className={`tgl-cv-row tgl-card-edge flex flex-col transition-colors mx-3 sm:mx-4 my-1.5 w-auto rounded-card overflow-hidden bg-surface dark:bg-surface-dark ${
+                      className={`tgl-cv-row tgl-card-edge flex flex-col transition-colors mx-3 sm:mx-4 my-1.5 w-auto rounded-card overflow-hidden bg-surface ${
                         isActive
-                          ? 'ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm'
-                          : 'hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'
+                          ? 'dark:bg-raised-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/70 shadow-sm'
+                          : 'dark:bg-surface-dark hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'
                       } ${dayFolded ? 'hidden' : ''} ${live && todayMode.pastIds.has(item.id) && !isActive ? 'opacity-60' : ''}`}
                       draggable={isEditing}
                       onDragStart={(e) => {

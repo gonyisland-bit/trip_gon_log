@@ -1322,7 +1322,7 @@ export function MagazineHubPage({
                         key={sec.id}
                         type="button"
                         onClick={() => { handleSelectSection(sec.id); setIsSectionPickerOpen(false); }}
-                        className={`w-full px-4 py-3 flex items-center gap-3 text-left cursor-pointer transition-colors ${on ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                        className={`w-full px-4 py-3 flex items-center gap-3 text-left cursor-pointer transition-colors ${on ? 'bg-black/5 dark:bg-white/[0.18]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                         aria-current={on}
                       >
                         <span className="font-mono text-micro text-black/60 dark:text-white/60 tabular-nums shrink-0">{String(idx + 1).padStart(2, '0')}</span>

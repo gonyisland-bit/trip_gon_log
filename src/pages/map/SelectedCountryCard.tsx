@@ -423,7 +423,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                               key={`country-f-${item.date}`}
                               className={`p-1 sm:p-1.5 rounded-lg flex flex-col items-center justify-between text-center gap-0.5 sm:gap-1 ${
                                 isToday 
-                                  ? 'bg-black/5 dark:bg-white/10 font-bold border border-black/10 dark:border-white/20' 
+                                  ? 'bg-black/5 dark:bg-white/[0.18] font-bold border border-black/10 dark:border-white/20' 
                                   : 'bg-white/40 dark:bg-black/20'
                               }`}
                             >

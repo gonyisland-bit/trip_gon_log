@@ -194,7 +194,7 @@ export function TransitCard({
         !isEditMode ? 'cursor-pointer' : ''
       } ${
         isActive 
-          ? 'bg-surface dark:bg-surface-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm' 
+          ? 'bg-surface dark:bg-raised-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/70 shadow-sm' 
           : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'
       }`}
     >

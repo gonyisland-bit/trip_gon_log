@@ -161,7 +161,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           {DETAIL_TABS.some(t => t.id === activeTab) && (
             <span
               aria-hidden="true"
-              className="absolute top-1 bottom-1 left-1 rounded-full bg-surface dark:bg-surface-dark shadow-sm pointer-events-none transition-transform duration-base ease-standard motion-reduce:transition-none"
+              className="absolute top-1 bottom-1 left-1 rounded-full bg-raised dark:bg-raised-dark shadow-sm pointer-events-none transition-transform duration-base ease-standard motion-reduce:transition-none"
               style={{
                 width: `calc((100% - 8px) / ${DETAIL_TABS.length})`,
                 transform: `translateX(${DETAIL_TABS.findIndex(t => t.id === activeTab) * 100}%)`,
