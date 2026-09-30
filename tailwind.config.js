@@ -25,6 +25,8 @@ export default {
         ink: { DEFAULT: '#141412', dark: '#EFECE6' },
         // Selected pill on a track and the active card: in dark mode a step lighter than the ground
         raised: { DEFAULT: '#FFFDF9', dark: '#46453F' },
+        // Selected card or list row: a light grey in light mode, the raised step in dark mode
+        selected: { DEFAULT: '#ECEAE3', dark: '#46453F' },
       },
       // Corner steps (spec 4.4): sheet > card > thumb; controls use rounded-full
       borderRadius: {

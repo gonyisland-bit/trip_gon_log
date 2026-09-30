@@ -79,7 +79,7 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
                 aria-selected={on}
                 onClick={() => pick(c)}
                 className={`w-full min-h-10 px-3 py-2 flex items-center justify-between gap-2 text-left text-xs transition-colors cursor-pointer ${
-                  on ? 'bg-black/5 dark:bg-white/[0.18] font-extrabold' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80'
+                  on ? 'bg-selected dark:bg-white/[0.18] font-extrabold' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80'
                 }`}
               >
                 <span className="truncate">{c.name || c.nameEn}</span>

@@ -29,7 +29,7 @@ export function CurrentLocationRow({ selected, onLocated, className = '', traili
       type="button"
       onClick={locate}
       className={`w-full px-3 py-2 min-h-10 text-left flex items-center justify-between transition-colors cursor-pointer text-sm ${
-        selected ? 'bg-black/[0.05] dark:bg-white/[0.18] font-bold text-black dark:text-white' : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black/80 dark:text-white/80'
+        selected ? 'bg-selected dark:bg-white/[0.18] font-bold text-black dark:text-white' : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black/80 dark:text-white/80'
       } ${className}`}
     >
       <span className="flex items-center gap-2">

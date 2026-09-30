@@ -51,8 +51,8 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                 key={`${imgItem.type}-${imgItem.url}-${idx}`}
                 onClick={() => setExpandedItemId(prev => prev === imgItem.id ? null : imgItem.id)}
                 onDoubleClick={() => openViewer(imgItem.url, imgItem.id)}
-                className={`tgl-cv-tile tgl-card-edge h-full flex flex-col group/gallery relative cursor-pointer select-none rounded-card overflow-hidden bg-surface dark:bg-surface-dark transition-colors ${
-                  isPhotoActive ? 'ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40' : ''
+                className={`tgl-cv-tile tgl-card-edge h-full flex flex-col group/gallery relative cursor-pointer select-none rounded-card overflow-hidden transition-colors ${
+                  isPhotoActive ? 'bg-selected dark:bg-selected-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/70 shadow-sm' : 'bg-surface dark:bg-surface-dark'
                 }`}
               >
                 <div className="relative overflow-hidden aspect-[4/3] shrink-0 bg-black/[0.04] dark:bg-white/[0.06]">

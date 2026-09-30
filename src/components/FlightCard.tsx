@@ -299,7 +299,7 @@ export function FlightCard({
       onClick={onClick}
       className={`tgl-cv-row tgl-card-edge mx-3 sm:mx-4 my-2 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-colors duration-base cursor-pointer w-auto min-w-0 ${
         isActive 
-          ? 'bg-surface dark:bg-raised-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/70 shadow-sm' 
+          ? 'bg-selected dark:bg-selected-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/70 shadow-sm' 
           : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'
       }`}
     >
