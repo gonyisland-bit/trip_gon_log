@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowUpRight, MoreHorizontal } from 'lucide-react';
 import { useLongPress } from './useLongPress';
+import { SharedMark, type SharedOwner } from './SharedMark';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 
 // A journey in list view (v1.3.5, spec 4.9): one surface card per trip on the paper ground.
@@ -27,6 +28,8 @@ interface JourneyListRowProps {
   style?: React.CSSProperties;
   /** Opens the journey's actions (⋯ button, long press, right click) */
   onMenu?: () => void;
+  /** Owner of a journey a friend shared with me (v1.3.6 5-b) */
+  sharedBy?: SharedOwner | null;
 }
 
 const BADGE: Record<JourneyRowBadge['kind'], string> = {
@@ -36,7 +39,7 @@ const BADGE: Record<JourneyRowBadge['kind'], string> = {
   editing: 'bg-amber-500 text-black',
 };
 
-export function JourneyListRow({ img, title, year, month, meta, badge, dDay, active, onOpen, onPreload, style, onMenu }: JourneyListRowProps) {
+export function JourneyListRow({ img, title, year, month, meta, badge, dDay, active, onOpen, onPreload, style, onMenu, sharedBy }: JourneyListRowProps) {
   const longPress = useLongPress(onMenu);
   return (
     <div className="relative" style={style}>
@@ -65,10 +68,15 @@ export function JourneyListRow({ img, title, year, month, meta, badge, dDay, act
             <span className="font-extrabold tracking-tight">{year}</span>
             {month && <span className="font-bold uppercase text-black/60 dark:text-white/60">{month}</span>}
           </span>
-          {badge && (
-            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-micro font-bold uppercase tracking-wider leading-tight ${BADGE[badge.kind]}`}>
-              {badge.kind === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />}
-              {badge.text}
+          {(badge || sharedBy) && (
+            <span className="flex items-center gap-1.5 shrink-0">
+              {sharedBy && <SharedMark owner={sharedBy} tone="row" />}
+              {badge && (
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-micro font-bold uppercase tracking-wider leading-tight ${BADGE[badge.kind]}`}>
+                  {badge.kind === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />}
+                  {badge.text}
+                </span>
+              )}
             </span>
           )}
         </span>

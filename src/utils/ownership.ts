@@ -1,5 +1,5 @@
 import {
-  collection, doc, getDoc, getDocs, query, where,
+  arrayRemove, collection, doc, getDoc, getDocs, query, where,
   setDoc as fsSetDoc, updateDoc as fsUpdateDoc, deleteDoc as fsDeleteDoc, writeBatch as fsWriteBatch,
   type DocumentReference, type Firestore, type Query, type SetOptions, type WriteBatch,
 } from 'firebase/firestore';
@@ -205,6 +205,63 @@ export async function setLinkShare(journeyId: number | string, on: boolean): Pro
   }
   await batch.commit();
   if (owner) registry.set(id, { ...owner, publicShare: on });
+}
+
+/** The journey document (trip or plan) and every item that belongs to it and that I can read */
+async function journeyRefs(journeyId: number | string): Promise<DocumentReference[]> {
+  const id = String(journeyId);
+  const tripRef = doc(db, 'users', 'public', 'trips', id);
+  const isTrip = (await getDoc(tripRef).catch(() => null))?.exists();
+  const refs: DocumentReference[] = [isTrip ? tripRef : doc(db, 'users', 'public', 'plans', id)];
+  for (const c of ['timeline', 'flights', 'stays', 'transits'] as const) {
+    const snap = await getDocs(journeyItems(c, journeyId));
+    snap.forEach(d => refs.push(d.ref));
+  }
+  return refs;
+}
+
+async function updateAll(refs: DocumentReference[], data: Record<string, any>, first?: Record<string, any>) {
+  for (let i = 0; i < refs.length; i += 400) {
+    const batch = fsWriteBatch(db);
+    refs.slice(i, i + 400).forEach((r, k) => batch.update(r, i + k === 0 && first ? { ...data, ...first } : data));
+    await batch.commit();
+  }
+}
+
+/** The owner's name and picture, kept on a shared journey so friends' cards can show whose it is */
+export interface OwnerCard {
+  name: string;
+  profileType?: string;
+  profileIcon?: string;
+  profileImage?: string;
+}
+
+/**
+ * Sharing with friends (v1.3.6 5-b): sets who may read and who may edit one journey. The journey
+ * and all its items get the same lists in one go; the owner always stays in access.
+ */
+export async function setJourneyPeople(
+  journeyId: number | string, readers: string[], editors: string[], ownerCard: OwnerCard,
+): Promise<void> {
+  const uid = currentUid();
+  if (!uid) throw new Error('not signed in');
+  const id = String(journeyId);
+  const owner = ownershipOf(id);
+  if (owner && owner.ownerId !== uid) throw new Error('only the owner can change sharing');
+  const edit = Array.from(new Set(editors.filter(u => u && u !== uid)));
+  const access = Array.from(new Set([uid, ...readers, ...edit].filter(Boolean)));
+  const card: Record<string, string> = { name: ownerCard.name };
+  (['profileType', 'profileIcon', 'profileImage'] as const).forEach(k => { if (ownerCard[k]) card[k] = ownerCard[k] as string; });
+  await updateAll(await journeyRefs(id), { access, editors: edit }, { ownerCard: card });
+  registry.set(id, { ownerId: uid, access, editors: edit, publicShare: owner?.publicShare ?? false });
+}
+
+/** A friend takes themselves off a journey someone shared with them */
+export async function leaveJourney(journeyId: number | string): Promise<void> {
+  const uid = currentUid();
+  if (!uid) throw new Error('not signed in');
+  await updateAll(await journeyRefs(journeyId), { access: arrayRemove(uid), editors: arrayRemove(uid) });
+  registry.delete(String(journeyId));
 }
 
 /**

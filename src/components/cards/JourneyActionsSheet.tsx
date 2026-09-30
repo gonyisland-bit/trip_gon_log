@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { BookOpen, Check, Clock, ImagePlus, Link2, Loader2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
+import { BookOpen, Check, Clock, ImagePlus, Loader2, Share2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Trip } from '../../types';
@@ -8,10 +8,11 @@ import { Segment } from '../ui/Segment';
 import { compressImage } from '../../utils/imageHelper';
 import { getEffectiveImageUrl, uploadFileToR2 } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
-import { currentUid, setDoc, setLinkShare } from '../../utils/ownership';
+import { currentUid, setDoc } from '../../utils/ownership';
+import { openJourneyShare } from '../share/ShareJourneySheet';
 import { notify } from '../../utils/feedback';
 
-// One journey's actions from its card (v1.3.6 4-a): cover, edit, share, pin to home, delete.
+// One journey's actions from its card (v1.3.6 4-a): cover, edit, share (5-b sheet), pin to home, delete.
 // Opened from the ⋯ button or a long press on any journey card, so members never need a
 // separate management screen for their own journeys.
 
@@ -86,17 +87,6 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
       notify('올리지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
       setBusy(null);
     }
-  };
-
-  const copyLink = () => {
-    const url = `${window.location.origin}?id=${trip.id}&share=true`;
-    navigator.clipboard.writeText(url)
-      .then(async () => {
-        if (isOwner && trip.ownerId && !trip.publicShare) await setLinkShare(trip.id, true);
-        notify('공유 링크를 복사했습니다. 링크가 있는 사람은 이 여정을 볼 수 있습니다.', 'success');
-        close();
-      })
-      .catch(() => notify('링크를 복사하지 못했습니다.', 'error'));
   };
 
   const cover = getEffectiveImageUrl(target === 'hero' ? trip.heroImg : trip.img);
@@ -198,11 +188,9 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
             <PencilLine className="w-[18px] h-[18px] shrink-0" aria-hidden />편집
           </button>
         )}
-        {isOwner && (
-          <button type="button" className={row} onClick={copyLink}>
-            <Link2 className="w-[18px] h-[18px] shrink-0" aria-hidden />공유 링크 복사
-          </button>
-        )}
+        <button type="button" className={row} onClick={() => { close(); openJourneyShare(trip.id); }}>
+          <Share2 className="w-[18px] h-[18px] shrink-0" aria-hidden />공유
+        </button>
         <button type="button" className={row} onClick={() => { onTogglePin(); close(); }}>
           {pinned ? <PinOff className="w-[18px] h-[18px] shrink-0" aria-hidden /> : <Pin className="w-[18px] h-[18px] shrink-0" aria-hidden />}
           {pinned ? '홈 고정 해제' : '홈에 고정'}

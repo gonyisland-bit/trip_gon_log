@@ -30,6 +30,7 @@ const PocketHubPage = lazyWithRetry(() => import('./pages/PocketHub').then(m => 
 const NewTripSheet = lazyWithRetry(() => import('./components/newtrip/NewTripSheet').then(m => ({ default: m.NewTripSheet })));
 
 const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+const ShareJourneySheet = lazyWithRetry(() => import('./components/share/ShareJourneySheet').then(m => ({ default: m.ShareJourneySheet })));
 const SettingsSheet = lazyWithRetry(() => import('./components/settings/SettingsSheet').then(m => ({ default: m.SettingsSheet })));
 const SearchModal = lazyWithRetry(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
 const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
@@ -49,6 +50,7 @@ import { IntroTip } from './components/home/IntroTip';
 import { personName } from './utils/personName';
 import { VerifyEmailPanel } from './components/account/VerifyEmailPanel';
 import { JourneyActionsSheet, OPEN_JOURNEY_ACTIONS } from './components/cards/JourneyActionsSheet';
+import { OPEN_JOURNEY_SHARE } from './components/share/ShareJourneySheet';
 import { setDetailIntent } from './utils/detailIntent';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
@@ -122,6 +124,13 @@ function App() {
     const open = (e: Event) => setActionsTripId((e as CustomEvent<number>).detail);
     window.addEventListener(OPEN_JOURNEY_ACTIONS, open);
     return () => window.removeEventListener(OPEN_JOURNEY_ACTIONS, open);
+  }, []);
+  // Sharing one journey with friends (v1.3.6 5-b), from the card menu or the journey header
+  const [shareTripId, setShareTripId] = useState<number | null>(null);
+  useEffect(() => {
+    const open = (e: Event) => setShareTripId((e as CustomEvent<number>).detail);
+    window.addEventListener(OPEN_JOURNEY_SHARE, open);
+    return () => window.removeEventListener(OPEN_JOURNEY_SHARE, open);
   }, []);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
@@ -688,6 +697,19 @@ function App() {
                     .then(() => notify(pinned ? '홈 고정을 해제했습니다.' : '홈에 고정했습니다.', 'success'))
                     .catch(() => notify('저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error'));
                 }}
+              />
+            );
+          })()}
+
+          {shareTripId !== null && isLoggedIn && (() => {
+            const trip = plans.find(p => p.id === shareTripId) || trips.find(t => t.id === shareTripId);
+            if (!trip) return null;
+            return (
+              <ShareJourneySheet
+                trip={trip}
+                me={myCard}
+                onClose={() => setShareTripId(null)}
+                onLeft={() => { if (currentView === 'detail' && activeTrip?.id === trip.id) navigateTo('home', null, true, null, true); }}
               />
             );
           })()}

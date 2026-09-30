@@ -24,6 +24,7 @@ import { compressImage } from '../../utils/imageHelper';
 import { doc } from 'firebase/firestore';
 // Journey content writes carry owner / access fields (v1.3.6)
 import { setDoc, setLinkShare, currentUid } from '../../utils/ownership';
+import { openJourneyShare } from '../../components/share/ShareJourneySheet';
 import { JourneyTitleInput } from './JourneyTitleInput';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import {
@@ -279,7 +280,8 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
   const [mapConfirm, setMapConfirm] = useState<{ placeName: string; url: string } | null>(null);
 
-  // Link sharing (v1.3.6): copying the link opens this journey (and only this one) to whoever has it
+  // Link sharing (v1.3.6): copying the link opens this journey (and only this one) to whoever has it.
+  // Signed-in members share from the share sheet (5-b), which also turns the link off.
   const isTripOwner = Boolean(trip && (!trip.ownerId || trip.ownerId === currentUid()));
   const handleCopyShareLink = () => {
     if (!trip) return;
@@ -3340,23 +3342,13 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               </button>
 
               <button
-                onClick={handleCopyShareLink}
+                onClick={() => (currentUid() ? openJourneyShare(trip!.id) : handleCopyShareLink())}
                 className="btn btn-secondary btn-sm flex"
-                title="공유 링크 복사"
+                title="친구와 공유 · 공유 링크"
               >
                 <Share2 className="w-3 h-3" />
                 <span>Share</span>
               </button>
-
-              {trip?.publicShare && isTripOwner && (
-                <button
-                  onClick={handleStopLinkShare}
-                  className="btn btn-ghost btn-sm flex"
-                  title="링크로 볼 수 없게 합니다"
-                >
-                  <span>링크 끄기</span>
-                </button>
-              )}
 
               <button
                 onClick={handleOpenInCalendar}

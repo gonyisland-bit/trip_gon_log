@@ -6,6 +6,7 @@ import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetCo
 import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { JourneyListRow, type JourneyRowBadge } from '../components/cards/JourneyListRow';
+import { sharedOwner } from '../components/cards/SharedMark';
 import { cardCoverUrl } from '../utils/journeyThumbs';
 import { ViewModeSegment } from '../components/ui/ViewModeSegment';
 import { Chip } from '../components/ui/Chip';
@@ -1609,6 +1610,7 @@ export function HomePage({
                   onOpen={() => onNavigate('detail', trip.id)}
                   onPreload={preloadDetailPage}
                   onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
+                  sharedBy={sharedOwner(trip)}
                 />
               );
             })}

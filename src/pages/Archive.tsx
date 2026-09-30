@@ -4,6 +4,7 @@ import { Trip, Plan, ArchiveHubConfig } from '../types';
 import { JourneyCardMenu, getEnglishCityName } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { JourneyListRow, type JourneyRowBadge } from '../components/cards/JourneyListRow';
+import { sharedOwner } from '../components/cards/SharedMark';
 import { cardCoverUrl } from '../utils/journeyThumbs';
 import { ViewModeSegment } from '../components/ui/ViewModeSegment';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -958,6 +959,7 @@ export function ArchiveHubPage({
                           onOpen={() => onNavigate('detail', trip.id)}
                           onPreload={preloadDetailPage}
                           onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
+                          sharedBy={sharedOwner(trip)}
                         />
                       );
                     })}

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { ArrowUpRight, MoreHorizontal } from 'lucide-react';
 import { useLongPress } from './useLongPress';
+import { SharedMark, sharedOwner } from './SharedMark';
 import { Trip } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { getUpcomingPlanInfo, getLiveTripStatus } from '../../utils/tripPlanHelper';
@@ -113,6 +114,15 @@ export function JourneyCard({
             <MoreHorizontal className="w-[18px] h-[18px]" aria-hidden />
           </button>
         )}
+
+        {(() => {
+          const owner = sharedOwner(trip);
+          return owner ? (
+            <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 pointer-events-none">
+              <SharedMark owner={owner} tone="photo" />
+            </div>
+          ) : null;
+        })()}
 
         <div className="absolute left-3 top-2 sm:left-4 sm:top-3 text-white pointer-events-none">
           <div className={`font-sans font-extrabold leading-none tracking-[-0.05em] tabular-nums ${isWide ? 'text-5xl sm:text-6xl' : 'text-4xl sm:text-5xl'}`}>

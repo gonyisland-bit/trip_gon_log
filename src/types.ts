@@ -64,6 +64,8 @@ export interface Trip {
   access?: string[];
   editors?: string[];
   publicShare?: boolean;
+  /** The owner's name and picture on a journey shared with friends (v1.3.6 5-b) */
+  ownerCard?: { name: string; profileType?: 'icon' | 'image'; profileIcon?: string; profileImage?: string };
   /** Set when the member publishes the journey as a magazine (v1.3.6 4-b); null after unpublishing */
   publishedAt?: number | null;
   ownerEmail?: string;
