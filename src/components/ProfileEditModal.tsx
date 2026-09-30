@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { ConfirmModal } from './ConfirmModal';
-import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
+import { AVATAR_CATEGORIES, PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
+import type { AvatarCategory } from './profile/FlatAvatars';
 import { purgeMyFiles, uploadFileToR2 } from '../utils/storageHelper';
 import { deleteOwnContent } from '../utils/ownership';
 import { compressImage } from '../utils/imageHelper';
@@ -46,7 +47,7 @@ export function ProfileEditModal({
 
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'icon' | 'image'>(user.profileType || 'icon');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'face' | 'baby' | 'animal'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | AvatarCategory>('all');
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -681,13 +682,8 @@ export function ProfileEditModal({
             {activeTab === 'icon' && (
               <div className="flex flex-col gap-2.5">
                 {/* Category Filters */}
-                <div className="flex items-center gap-1">
-                  {[
-                    { id: 'all', label: '전체' },
-                    { id: 'face', label: '사람' },
-                    { id: 'baby', label: '아기' },
-                    { id: 'animal', label: '동물' },
-                  ].map(cat => (
+                <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar">
+                  {[{ id: 'all', label: '전체' }, ...AVATAR_CATEGORIES].map(cat => (
                     <button
                       key={cat.id}
                       type="button"

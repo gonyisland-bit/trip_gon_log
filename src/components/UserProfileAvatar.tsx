@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserProfile } from '../types';
-import { FLAT_AVATARS, flatAvatarById, flatAvatarFor } from './profile/FlatAvatars';
+import { FLAT_AVATARS, flatAvatarById, flatAvatarFor, type AvatarCategory } from './profile/FlatAvatars';
+export { AVATAR_CATEGORIES } from './profile/FlatAvatars';
 
 // Profile picture: the person's own 1:1 image, a flat illustration they picked, or, when
 // they have neither, a stable illustration chosen from their id or name (v1.3.6).
@@ -8,7 +9,7 @@ import { FLAT_AVATARS, flatAvatarById, flatAvatarFor } from './profile/FlatAvata
 export interface PresetIconItem {
   id: string;
   label: string;
-  category: 'face' | 'baby' | 'animal';
+  category: AvatarCategory;
   icon: React.ComponentType<{ className?: string }>;
 }
 

@@ -11,7 +11,8 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
-import { PROFILE_PRESET_ICONS } from './UserProfileAvatar';
+import { AVATAR_CATEGORIES, PROFILE_PRESET_ICONS } from './UserProfileAvatar';
+import type { AvatarCategory } from './profile/FlatAvatars';
 import { PasswordInput } from './PasswordInput';
 import { VerifyEmailPanel } from './account/VerifyEmailPanel';
 import { sendVerificationMail } from '../utils/emailVerification';
@@ -33,7 +34,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [username, setUsername] = useState('');
-  const [profileIcon, setProfileIcon] = useState('user');
+  const [profileIcon, setProfileIcon] = useState('m-crew');
+  const [avatarCategory, setAvatarCategory] = useState<AvatarCategory>('man');
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   
@@ -59,7 +61,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
       setPassword('');
       setPasswordConfirm('');
       setUsername('');
-      setProfileIcon('user');
+      setProfileIcon('m-crew');
       setLastName('');
       setFirstName('');
       setError('');
@@ -504,8 +506,22 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
                     <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1.5">
                       1:1 프로필 아이콘 선택
                     </label>
-                    <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
-                      {PROFILE_PRESET_ICONS.map((item) => {
+                    <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar mb-2">
+                      {AVATAR_CATEGORIES.map(cat => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setAvatarCategory(cat.id)}
+                          className={`h-7 px-3 rounded-full text-meta font-bold shrink-0 transition-colors ${
+                            avatarCategory === cat.id ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'bg-black/[0.05] dark:bg-white/10 text-black/60 dark:text-white/60'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      {PROFILE_PRESET_ICONS.filter(i => i.category === avatarCategory).map((item) => {
                         const IconComp = item.icon;
                         const isSelected = profileIcon === item.id;
                         return (
