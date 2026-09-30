@@ -39,7 +39,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     const result = await handleMailRequest(body, first(req.headers.authorization), process.env, origin, ip);
     res.status(result.status).json(result.body);
   } catch (error) {
-    console.error('Mail handler error:', error);
+    console.error('Mail handler error:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: 'Mail request failed' });
   }
 }

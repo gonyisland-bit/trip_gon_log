@@ -25,7 +25,9 @@ export async function googleAccessToken(env: GoogleEnv, scopes: string[]): Promi
   const key = scopes.join(' ');
   const hit = cache.get(key);
   if (hit && hit.until > Date.now() + 60_000) return hit.token;
-  const pk = await importPKCS8(String(env.FIREBASE_PRIVATE_KEY).replace(/\n/g, '\n'), 'RS256');
+  // Keys pasted into Vercel often keep "\n" as two characters, sometimes inside quotes
+  const pem = String(env.FIREBASE_PRIVATE_KEY).trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+  const pk = await importPKCS8(pem, 'RS256');
   const now = Math.floor(Date.now() / 1000);
   const assertion = await new SignJWT({ scope: key })
     .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })

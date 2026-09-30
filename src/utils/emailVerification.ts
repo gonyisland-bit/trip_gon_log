@@ -44,6 +44,11 @@ async function serverMail(body: Record<string, unknown>, user?: User | null): Pr
     throw Object.assign(new Error('mail limit'), { code: info.error === 'daily' ? 'tgl/mail-daily' : 'tgl/mail-wait', wait: info.wait || 60 });
   }
   if (res.status === 404 && body.action !== 'reset') return false;
+  // Our server is broken (bad service account, mail provider down): Firebase's own mail still works
+  if (res.status >= 500) {
+    console.warn('Server mail failed, using Firebase mail:', res.status, info);
+    return false;
+  }
   throw Object.assign(new Error('mail failed'), { code: 'tgl/mail-failed' });
 }
 
