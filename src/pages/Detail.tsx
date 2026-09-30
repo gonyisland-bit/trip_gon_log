@@ -15,6 +15,7 @@ import { JourneyMagazine, type MagazinePhoto } from '../components/magazine/Jour
 import { takeDetailIntent } from '../utils/detailIntent';
 import { getLiveTripStatus, getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { notify } from '../utils/feedback';
+import { resolveTimelinePlaceName } from '../utils/magazineHelper';
 import { useJourneyDetailState, type JourneyDetailPageProps } from './detail/useJourneyDetailState';
 import { DetailMapPanel } from './detail/DetailMapPanel';
 import { TimelineTab } from './detail/TimelineTab';
@@ -68,21 +69,22 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id]);
 
+  // Captions follow the old magazine: the timeline entry's title, and its place name or the
+  // nearest earlier entry's place name (resolveTimelinePlaceName)
   const magazinePhotos: MagazinePhoto[] = useMemo(() => {
-    const memoById = new Map<number, string>();
-    // Placeholder notes ("메모") say nothing, so they stay out of the captions
-    Object.values(groupedTimelineData).flat().forEach(i => {
-      const memo = (i.memo || '').trim();
-      if (memo && memo !== '메모') memoById.set(i.id, memo);
+    const items = Object.values(groupedTimelineData).flat();
+    const byId = new Map(items.map(i => [i.id, i]));
+    return (allGalleryImages as any[]).map(p => {
+      const item = p.itemId !== undefined ? byId.get(p.itemId) : undefined;
+      return {
+        url: p.url,
+        date: p.date,
+        time: p.time,
+        title: (item?.place || p.place || '').trim() || undefined,
+        place: item ? resolveTimelinePlaceName(item, items, trip || undefined) || undefined : undefined,
+      };
     });
-    return (allGalleryImages as any[]).map(p => ({
-      url: p.url,
-      date: p.date,
-      time: p.time,
-      place: p.place,
-      note: p.imgNote || (p.itemId !== undefined ? memoById.get(p.itemId) : undefined) || undefined,
-    }));
-  }, [allGalleryImages, groupedTimelineData]);
+  }, [allGalleryImages, groupedTimelineData, trip]);
 
   const setPublished = async (on: boolean) => {
     if (!trip || publishing) return;

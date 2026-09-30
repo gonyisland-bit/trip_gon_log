@@ -17,8 +17,10 @@ export interface MagazinePhoto {
   url: string;
   date?: string;
   time?: string;
+  /** The timeline entry's title, set large */
+  title?: string;
+  /** Where it was: the entry's place name, or the nearest earlier one (same rule as the old magazine) */
   place?: string;
-  note?: string;
 }
 
 interface Props {
@@ -168,7 +170,7 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
             subtitle={trip.description || trip.subtitle}
             location={trip.locationStr}
             dateLabel={trip.date}
-            shots={photos.map(p => ({ src: getEffectiveImageUrl(p.url), place: p.place, date: p.date, line: p.note }))}
+            shots={photos.map(p => ({ src: getEffectiveImageUrl(p.url), place: p.title, location: p.place, date: p.date }))}
             onClose={() => setReel(false)}
           />
         </Suspense>
@@ -189,14 +191,16 @@ function Spread({ photos }: { photos: MagazinePhoto[] }) {
             <div className={`w-full overflow-hidden rounded-card bg-black/5 dark:bg-white/5 ${lead ? 'aspect-[3/2]' : 'aspect-[4/5]'}`}>
               <img src={getEffectiveImageUrl(p.url)} alt={p.place || ''} loading="lazy" className="w-full h-full object-cover" />
             </div>
-            {(p.place || p.time || p.note) && (
+            {(p.title || p.place || p.time) && (
               <figcaption className="flex flex-col gap-1 min-w-0">
-                {(p.time || p.place) && (
+                {p.title && (
+                  <span className={`${lead ? 'text-lg sm:text-2xl' : 'text-[15px] sm:text-lg'} font-extrabold tracking-tight leading-snug break-keep`}>{p.title}</span>
+                )}
+                {(p.place || p.time) && (
                   <span className="font-mono text-micro sm:text-meta uppercase tracking-wider text-black/55 dark:text-white/55 truncate">
-                    {[p.time, p.place].filter(Boolean).join(' · ')}
+                    {[p.place, p.time].filter(Boolean).join(' · ')}
                   </span>
                 )}
-                {p.note && <p className={`${lead ? 'text-[15px] sm:text-lg' : 'text-[13px] sm:text-[15px]'} leading-relaxed break-keep text-black/80 dark:text-white/80`}>{p.note}</p>}
               </figcaption>
             )}
           </figure>
