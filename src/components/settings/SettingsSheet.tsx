@@ -11,6 +11,7 @@ import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { confirmDialog } from '../../utils/feedback';
 import { FriendsSection } from '../friends/FriendsSection';
 import { NotificationSettings } from '../notifications/NotificationSettings';
+import { IosShortcutGuide } from '../pocket/IosShortcutGuide';
 import type { PersonCard } from '../../utils/friends';
 
 // Settings for every member (v1.3.6 4-d): account, friends (5-a), notifications (6-b), display, storage and trash.
@@ -96,6 +97,8 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
         )}
 
         {me && <NotificationSettings cardClass={card} labelClass={label} />}
+
+        {me && <IosShortcutGuide cardClass={card} labelClass={label} />}
 
         {/* Display */}
         <section className={card}>
