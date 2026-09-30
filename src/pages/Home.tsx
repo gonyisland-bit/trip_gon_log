@@ -20,6 +20,7 @@ import { JourneyCard } from '../components/cards/JourneyCard';
 import { openJourneyActions } from '../components/cards/JourneyActionsSheet';
 import { JourneyPhaseStrip } from '../components/home/JourneyPhaseStrip';
 import { DepartureTeaser } from '../components/home/DepartureTeaser';
+import { openIntro } from '../intro/openIntro';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -54,6 +55,52 @@ interface HomePageProps {
   canDeleteTrip?: (trip?: Trip) => boolean;
   onOpenAuthModal?: (mode?: 'login' | 'signup') => void;
   isAdmin?: boolean;
+  /** Starts the New trip flow (the empty hero's button) */
+  onNewTrip?: () => void;
+  /** True once the journey lists have loaded, so the empty hero never flashes while loading */
+  dataReady?: boolean;
+}
+
+// Home hero before the first journey (v1.3.6 4-c): a dotted world, a dashed route leaving
+// Seoul, one line and the two ways to begin. The first journey's cover replaces it.
+export function EmptyHero({ onNewTrip }: { onNewTrip?: () => void }) {
+  return (
+    <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6">
+      <div className="relative overflow-hidden rounded-card bg-[#141412] text-[#F2F2EE] min-h-[52vh] sm:min-h-[58vh] flex flex-col justify-end p-6 sm:p-10 md:p-14">
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            backgroundImage: 'radial-gradient(rgba(242,242,238,0.2) 1.2px, transparent 1.4px)',
+            backgroundSize: '16px 16px',
+            maskImage: 'radial-gradient(ellipse at 62% 38%, #000 25%, transparent 72%)',
+            WebkitMaskImage: 'radial-gradient(ellipse at 62% 38%, #000 25%, transparent 72%)',
+          }}
+        />
+        <svg aria-hidden viewBox="0 0 100 40" preserveAspectRatio="none" className="absolute left-[30%] top-[9%] w-[58%] h-[22%] overflow-visible">
+          <path d="M2 36 C 28 2, 70 2, 98 26" fill="none" stroke="#D93025" strokeWidth="0.5" strokeDasharray="1.6 1.6" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 2 }} />
+          <circle cx="2" cy="36" r="1.2" fill="#D93025" />
+        </svg>
+        <div className="relative flex flex-col gap-4 max-w-2xl">
+          <span className="font-mono text-micro sm:text-meta font-bold uppercase tracking-[0.2em] text-white/60">No journeys yet · Seoul ICN</span>
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-[-0.03em] leading-[1.05] break-keep">첫 여행을 계획해 보세요</h1>
+          <p className="text-[14px] sm:text-base text-white/70 leading-relaxed break-keep">도시와 날짜를 고르면 일정이 채워지고, 다녀온 뒤에는 사진과 함께 매거진이 됩니다.</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {onNewTrip && (
+              <button type="button" onClick={onNewTrip} className="btn btn-accent btn-lg">New trip</button>
+            )}
+            <button type="button" onClick={openIntro} className="btn btn-lg bg-white/10 text-white hover:bg-white/20">애니메이션 보기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// The year and month a journey starts, as one sortable number (202608)
+function startScore(t: Trip | Plan): number {
+  const m = (t.date || '').match(/(\d{4})[.-](\d{1,2})[.-]?(\d{1,2})?/);
+  return m ? Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3] || 0) : 0;
 }
 
 function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
@@ -780,6 +827,8 @@ export function HomePage({
   homeTitle,
   homeSubtitle,
   heroJourneyIds = [],
+  onNewTrip,
+  dataReady = true,
   heroAutoSlide = true,
   heroMediaType = 'image',
   heroSlideDuration = 6,
@@ -1052,30 +1101,20 @@ export function HomePage({
 
   const filteredTrips = activeFilter === 'All' ? combinedArchiveList : combinedArchiveList.filter(t => t.tags?.includes(activeFilter));
 
-  // Resolve hero journeys from heroJourneyIds. Fallback to trips[0] if nothing selected.
+  // Hero journeys (v1.3.6 4-c), with nothing to set up:
+  //  1. journeys the member pinned to home (card menu), in the order they were pinned
+  //  2. otherwise published journeys, newest first
+  //  3. otherwise journeys that are over, newest first; then anything at all
   const heroJourneys = useMemo(() => {
     const all = [...localTrips, ...localPlans];
-    let targetIds = heroJourneyIds;
-    if (!targetIds || targetIds.length === 0) {
-      try {
-        const saved = localStorage.getItem('heroJourneyIds');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            targetIds = parsed;
-          }
-        }
-      } catch (_) {}
-    }
-
-    if (targetIds && targetIds.length > 0) {
-      const filtered = targetIds.map(id => all.find(j => j.id === id)).filter(Boolean) as (Trip | Plan)[];
-      if (filtered.length > 0) return filtered;
-      // If hero journeys are configured but items are still loading from Firestore/cache,
-      // prevent flashing localTrips[0] prematurely.
-      if (all.length === 0) return [];
-    }
-    return localTrips[0] ? [localTrips[0]] : [];
+    const pinned = (heroJourneyIds || []).map(id => all.find(j => j.id === id)).filter(Boolean) as (Trip | Plan)[];
+    if (pinned.length > 0) return pinned;
+    const newest = (a: Trip | Plan, b: Trip | Plan) => startScore(b) - startScore(a);
+    const past = localTrips.filter(t => !getUpcomingPlanInfo(t).isPlanOrFuture).sort(newest);
+    const published = past.filter(t => t.publishedAt);
+    if (published.length > 0) return published.slice(0, 8);
+    if (past.length > 0) return past.slice(0, 6);
+    return all.slice(0, 1);
   }, [localTrips, localPlans, heroJourneyIds]);
 
   const [isHeroMediaReady, setIsHeroMediaReady] = useState(false);
@@ -1431,6 +1470,8 @@ export function HomePage({
               </div>
             );
           })()
+        ) : dataReady ? (
+          <EmptyHero onNewTrip={onNewTrip} />
         ) : null}
       </section>
       )}

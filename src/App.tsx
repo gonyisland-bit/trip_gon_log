@@ -341,6 +341,8 @@ function App() {
                     homeTitle={homeTitle}
                     homeSubtitle={homeSubtitle}
                     heroJourneyIds={heroJourneyIds}
+                    onNewTrip={() => handleCreateTripForCountry('', '')}
+                    dataReady={tripsLoaded && plansLoaded}
                     heroAutoSlide={heroAutoSlide}
                     heroMediaType={heroMediaType}
                     heroSlideDuration={heroSlideDuration}
