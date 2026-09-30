@@ -61,6 +61,10 @@ export function getInitialNavigationState(): { view: string; tripId: number | nu
     if (isShare && idParam) {
       return { view: 'detail', tripId: Number(idParam), isShare: true };
     }
+    // A push notification opens the journey it is about (v1.3.6 6-b): /?id=…&open=1
+    if (idParam && params.get('open') === '1' && /^\d+$/.test(idParam)) {
+      return { view: 'detail', tripId: Number(idParam), isShare: false };
+    }
 
     if (path === '/archive' || window.location.hash === '#archive' || path === '/plan' || window.location.hash === '#plan') {
       return { view: 'archive', tripId: null, isShare: false };

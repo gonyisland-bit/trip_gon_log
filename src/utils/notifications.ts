@@ -53,6 +53,8 @@ async function send(to: string, id: string, data: Record<string, unknown>): Prom
   if (!me || !to || to === me.uid || to === 'public') return;
   try {
     await setDoc(doc(db, 'users', to, 'notifications', id), { ...senderFields(me), ...data, createdAt: Date.now(), read: false });
+    // Then the friend's devices (6-b); loaded on demand so messaging stays out of the first bundle
+    import('./push').then(m => m.pushNotification(to, id)).catch(() => {});
   } catch (err) {
     console.warn('Notification not sent:', err);
   }

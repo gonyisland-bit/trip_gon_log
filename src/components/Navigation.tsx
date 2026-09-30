@@ -120,6 +120,8 @@ export function Navigation({
   const handleLogout = async () => {
     setShowSettings(false);
     if (await confirmDialog("로그아웃 하시겠습니까?")) {
+      // This device stops getting the account's pushes (6-b)
+      await import('../utils/push').then(m => m.forgetDevice()).catch(() => {});
       await signOut(auth);
       navigateTo('home');
     }

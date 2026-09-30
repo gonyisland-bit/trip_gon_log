@@ -10,9 +10,10 @@ import { getMyStorageUsage } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { confirmDialog } from '../../utils/feedback';
 import { FriendsSection } from '../friends/FriendsSection';
+import { NotificationSettings } from '../notifications/NotificationSettings';
 import type { PersonCard } from '../../utils/friends';
 
-// Settings for every member (v1.3.6 4-d): account, friends (5-a), display, storage and trash.
+// Settings for every member (v1.3.6 4-d): account, friends (5-a), notifications (6-b), display, storage and trash.
 // Journeys are managed from their cards; the operator's tools live in the manage hub.
 
 import { OPEN_PROFILE_EDIT } from '../../app/quickActions';
@@ -93,6 +94,8 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
             onOpenPocket={() => { onClose(); onOpenPocket(); }}
           />
         )}
+
+        {me && <NotificationSettings cardClass={card} labelClass={label} />}
 
         {/* Display */}
         <section className={card}>

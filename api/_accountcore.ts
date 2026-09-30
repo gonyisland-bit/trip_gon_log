@@ -1,4 +1,4 @@
-import { SignJWT, importPKCS8 } from 'jose';
+import { googleAccessToken } from './_google.js';
 import { verifyFirebaseToken } from './_r2core.js';
 
 /**
@@ -20,25 +20,6 @@ export interface AccountResult {
   body: Record<string, unknown>;
 }
 
-async function googleAccessToken(env: AccountEnv): Promise<string> {
-  const key = await importPKCS8(String(env.FIREBASE_PRIVATE_KEY).replace(/\n/g, '\n'), 'RS256');
-  const now = Math.floor(Date.now() / 1000);
-  const assertion = await new SignJWT({ scope: 'https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/cloud-platform' })
-    .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
-    .setIssuer(String(env.FIREBASE_CLIENT_EMAIL))
-    .setAudience('https://oauth2.googleapis.com/token')
-    .setIssuedAt(now)
-    .setExpirationTime(now + 600)
-    .sign(key);
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion }),
-  });
-  if (!res.ok) throw new Error(`token exchange failed: ${res.status}`);
-  return String((await res.json() as { access_token?: string }).access_token || '');
-}
-
 export async function handleAccountRequest(body: unknown, authHeader: string | undefined, env: AccountEnv): Promise<AccountResult> {
   const projectId = env.FIREBASE_PROJECT_ID || 'trip-gon-log';
   const caller = await verifyFirebaseToken(authHeader, projectId);
@@ -52,7 +33,7 @@ export async function handleAccountRequest(body: unknown, authHeader: string | u
   if (uid === caller.uid) return { status: 400, body: { error: 'Cannot delete the operator account' } };
   if (!env.FIREBASE_CLIENT_EMAIL || !env.FIREBASE_PRIVATE_KEY) return { status: 501, body: { error: 'Service account is not configured' } };
 
-  const token = await googleAccessToken(env);
+  const token = await googleAccessToken(env, ['https://www.googleapis.com/auth/identitytoolkit', 'https://www.googleapis.com/auth/cloud-platform']);
   const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:delete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
