@@ -459,10 +459,14 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
     - [x] 5-b 여정 공유 버튼(2026.09.30). 규칙 게시 완료.
     - [x] 5-c 인원 ↔ 친구(2026.09.30).
     - [x] 5-d 공유 서랍(2026.09.30). **5단계 완료.**
-  - 그다음: 6단계 알림(FCM) · SNS → 포켓(iOS) · 앱스토어 준비. 전체 로드맵 https://claude.ai/artifact/E7Puu2UGGrbJhLcnHu6xzE
+  - 진행 중: **6단계 알림과 앱 배포 준비** — 계획서 https://claude.ai/artifact/TsUDdorzbA8u4VyBZy7QG8. 결정: 푸시는 Vercel 함수 + 서비스 계정, iOS SNS → 포켓은 단축어 먼저, 알림 종류는 친구 수락 · 여정 공유받음 · 함께 편집 변경 · 포켓 공개 전부, 스토어는 Capacitor 프로젝트 준비까지(빌드 · 제출은 직접).
+    - [x] 6-a 앱 안 알림함(2026.09.30). **새 규칙(`firestore.rules`) 게시 필요.**
+    - [ ] 6-b 웹 푸시 → 6-c iOS 단축어 → 6-d 스토어 준비.
+  - 전체 로드맵 https://claude.ai/artifact/E7Puu2UGGrbJhLcnHu6xzE
   - 운영 계정이 할 수 있는 남은 일(선택): 관리 → USERS 데이터 카드의 `생일 · 전화번호 지우기`(기존 회원 저장값 일괄 삭제, 되돌릴 수 없음).
   - 구조 요점: 여정 콘텐츠 쓰기는 `utils/ownership`의 `setDoc` · `writeBatch` 래퍼(ownerId · access · editors · publicShare 자동), 구독은 `access array-contains uid`, 개인 문서는 `users/{uid}/…`, R2 업로드는 `u/{uid}/`. 새 기능이 여정 콘텐츠에 쓸 때도 반드시 이 래퍼를 쓸 것.
   - Walkthrough: 1단계 https://claude.ai/artifact/9MnD3BAMiPfrByxrTofUNA · 2단계 https://claude.ai/artifact/8bSYJbgXw6V8AMdz8fLkjL · 3단계 https://claude.ai/artifact/LfrW7amAejc8BAG9phmth4 · 4단계 https://claude.ai/artifact/Lkgpu265KUUyy7Bov3D4ga · 5-a https://claude.ai/artifact/YUk1ZvNTpkAj4wjfkzzbHT · 5-b https://claude.ai/artifact/APzdf8MtPDGSorL4FbFENu · 5-c https://claude.ai/artifact/AwEZBhZs6QnefabQro4kHe · 5-d https://claude.ai/artifact/M69k2vTd3ppzSRaGq4Usms
+- 6-a 앱 안 알림함: 헤더 종 아이콘(안 읽은 개수, `components/notifications/NotificationBell`)과 알림 시트(모두 읽음, 누르면 여정 · 포켓 · 설정으로 이동하고 읽음, 90일 지난 알림 정리). 저장 `users/{uid}/notifications/{id}`(`utils/notifications`), 규칙은 친구만 자기 이름으로 안 읽은 알림을 만들고 받는 사람이 읽고 지움. 종류: 친구 수락(초대 수락 때), 여정 공유받음(`setJourneyPeople`에서 새로 보거나 함께 편집이 된 친구), 함께 편집 여정 변경(편집자가 있는 여정에 쓰면 주인 · 다른 편집자에게, 여정마다 1시간에 한 번, 같은 문서를 덮어써 한 줄로 묶음), 포켓 공개(내 포켓 보여주기를 켤 때).
 - 5-d 공유 서랍: 설정 → Friends에서 친구를 누르면 `components/friends/FriendDrawer`. 내 여정마다 `공유 안 함 · 보기 · 함께 편집`(공유 시트와 같은 `setJourneyPeople`), `내 포켓 보여주기`(`users/{uid}/settings/pockets`의 `sharedWith`), 그 친구가 나에게 공유한 여정 · 포켓, 친구 끊기(목록 줄의 끊기 버튼은 서랍으로 옮김). 친구 목록 줄에는 `내 여정 n · 받은 여정 n`. 포켓 화면 머리 아래 `Friends` 줄(`FriendPockets`)에 포켓을 보여주는 친구가 칩으로 나오고, 누르면 그 친구 장소 카드와 `내 포켓에 담기`(좋아요 · 댓글 · 순서 · 여정 연결은 빼고 메모에 출처를 붙여 새 장소로 저장). 친구를 끊으면 내 포켓 공유도 해제. 가입 직후 인증 메일 오류 문구가 두 번 겹치던 것도 수정.
 - 재가입 반쯤 로그인 수정: 지운 이메일로 다시 가입할 때 예전 계정으로 잠깐 로그인한 뒤 단계가 실패하면 로그인이 풀리지 않아, 프로필 없는 채로 들어가 인증 메일이 가지 않고 프로필 수정 화면에 예전 로그인 이름이 보이던 문제. 이제 가입이 어느 단계에서 실패해도 로그인하지 않은 상태로 돌아가고, 프로필 저장이 모두 실패하면 새 계정도 지움. 이름 · 아이디 · 메일이 없는 문서(예전 접속 기록이 만든 고스트)는 프로필로 보지 않고 정리함(`isGhostProfile`). 입력한 비밀번호로 예전 계정이 열리지 않으면 예전 비밀번호로 다시 가입하거나 비밀번호 찾기로 한 번 로그인하라고 안내.
 - 5-c 인원 ↔ 친구: 여정 편집의 인원 칸에서 친구 칩으로 친구를 인원에 넣거나, 이름 옆 연결 버튼으로 기존 이름을 친구 계정에 연결(이름이 친구 이름으로 바뀜). 연결은 여정의 `memberLinks`(`{ name, uid }`)에 저장되고, 저장하면 연결한 친구에게 보기 권한으로 자동 공유(`utils/memberLinks`, 공유 시트에서 함께 편집으로 올릴 수 있음). 이름이 바뀌면 일정 · 항공 · 숙소 · 교통의 `paidBy`와 기타 지출도 새 이름으로 바뀜. New trip 시트 인원 단계에 친구 칩이 나오고, 여정을 만들 때 친구 이름과 정확히 같은(겹치지 않는) 인원이 연결 · 공유됨. 연결은 주인만. 인원에서 빼도 공유는 그대로 두며, 공유를 멈추려면 공유 시트를 씀.

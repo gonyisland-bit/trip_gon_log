@@ -136,6 +136,20 @@ service cloud.firestore {
       allow delete: if userId != 'public' && signedIn() && friendUid == request.auth.uid;
     }
 
+    // Notifications (v1.3.6 6-a): only a friend may leave one, signed as themselves and unread.
+    // The member reads, marks and removes their own through the private-subcollection rule above.
+    match /users/{userId}/notifications/{nid} {
+      allow create: if userId != 'public' && signedIn() && request.auth.uid != userId
+        && exists(/databases/$(database)/documents/users/$(userId)/friends/$(request.auth.uid))
+        && request.resource.data.get('from', '') == request.auth.uid
+        && request.resource.data.get('read', true) == false;
+      allow update: if userId != 'public' && signedIn() && request.auth.uid != userId
+        && exists(/databases/$(database)/documents/users/$(userId)/friends/$(request.auth.uid))
+        && resource.data.get('from', '') == request.auth.uid
+        && request.resource.data.get('from', '') == request.auth.uid
+        && request.resource.data.get('read', true) == false;
+    }
+
     // A member's pockets, readable by the friends they chose to show them to (5-d)
     match /users/{userId}/settings/pockets {
       allow read: if userId != 'public' && signedIn()

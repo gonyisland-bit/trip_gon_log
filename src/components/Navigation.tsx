@@ -10,6 +10,7 @@ import { UserProfileAvatar } from './UserProfileAvatar';
 import { PasswordVerifyModal } from './PasswordVerifyModal';
 import { ProfileEditModal } from './ProfileEditModal';
 import { MiniWeatherWidget } from './MiniWeatherWidget';
+import { NotificationBell } from './notifications/NotificationBell';
 import { confirmDialog } from '../utils/feedback';
 import { openIntro, prefetchIntro } from '../intro/openIntro';
 import { preloadPocketPage } from '../utils/prefetchHelper';
@@ -296,6 +297,16 @@ export function Navigation({
             >
               <Search className="w-4 h-4" />
             </button>
+          )}
+
+          {/* Friends' news (v1.3.6 6-a) */}
+          {isLoggedIn && currentUser && (
+            <NotificationBell
+              uid={currentUser.uid}
+              onOpenJourney={(id) => navigateTo('detail', id)}
+              onOpenPocket={() => navigateTo('pocket')}
+              onOpenFriends={() => openSettingModal?.()}
+            />
           )}
 
           {/* Mini Weather Widget Pill (All Hubs Persistent) */}

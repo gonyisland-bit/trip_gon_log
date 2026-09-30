@@ -30,6 +30,7 @@ import { notify } from '../utils/feedback';
 import { completeVerification } from '../utils/emailVerification';
 import { clearOrphanAccount, hasNoProfile, isGhostProfile, isSettledAccount } from '../utils/accountCleanup';
 import { linkFriendMembersByName, renameMembersInItems, shareWithMembers } from '../utils/memberLinks';
+import { setNotificationSender } from '../utils/notifications';
 import { pendingInvite, personCard, promptAcceptInvite, takeInviteFromUrl, type PersonCard } from '../utils/friends';
 import { CONTENT_COLLECTIONS, journeyItems, ownTrash, pickHomeKeys, registerJourneys, sharedContent, visibleContent } from '../utils/ownership';
 import type { RemixPayload } from '../components/RemixSheet';
@@ -691,6 +692,7 @@ export function useAppState() {
     const uid = auth.currentUser?.uid;
     return isLoggedIn && uid && currentUserProfile ? personCard(uid, currentUserProfile, auth.currentUser?.displayName) : null;
   }, [isLoggedIn, currentUserProfile]);
+  useEffect(() => { setNotificationSender(myCard); }, [myCard]);
 
   // Global shortcuts: Ctrl+K (한번에 찾기), / (통합 검색), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
   useEffect(() => {

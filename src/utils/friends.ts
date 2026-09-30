@@ -7,6 +7,7 @@ import type { SpotPocketItem, UserProfile } from '../types';
 import { CONTENT_COLLECTIONS, currentUid } from './ownership';
 import { personName } from './personName';
 import { confirmDialog, notify } from './feedback';
+import { notifyFriendJoined, notifyPocketShared } from './notifications';
 
 // Friends (v1.3.6 5-a). Two members become friends through an invite the other one made:
 //   invites/{code}                     from · name · picture, expiresAt, usedBy · usedAt
@@ -263,6 +264,7 @@ export async function promptAcceptInvite(code: string, me: PersonCard): Promise<
   if (!ok) return false;
   try {
     await acceptInvite(check.invite, me);
+    notifyFriendJoined(check.invite.uid);
     notify(`${check.invite.name}님과 친구가 되었습니다.`, 'success');
     return true;
   } catch (err) {
@@ -292,6 +294,7 @@ export async function setPocketShared(friendUid: string, on: boolean): Promise<v
   const ref = myPocketRef();
   if (!ref) throw new Error('not signed in');
   await fsSetDoc(ref, { sharedWith: on ? arrayUnion(friendUid) : arrayRemove(friendUid) }, { merge: true });
+  if (on) notifyPocketShared(friendUid);
 }
 
 /** A friend's pockets, or null when they do not show them to me */

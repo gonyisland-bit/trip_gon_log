@@ -4,6 +4,7 @@ import {
   type DocumentReference, type Firestore, type Query, type SetOptions, type WriteBatch,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { notifyJourneyEdited, notifyJourneyShared } from './notifications';
 
 // Own content (v1.3.6 phase 3). Journey content stays in the shared users/public/{col} collections,
 // but every document carries who owns it and who may see or edit it:
@@ -29,6 +30,7 @@ export interface Ownership {
 
 // Journey id → ownership, filled from the journeys this member can see
 const registry = new Map<string, Ownership>();
+const titles = new Map<string, string>();
 
 export function currentUid(): string | null {
   return auth.currentUser?.uid ?? null;
@@ -49,6 +51,7 @@ export function registerJourneys(list: Array<Record<string, any>>) {
   list.forEach(j => {
     const o = pick(j);
     if (o && j.id !== undefined) registry.set(String(j.id), o);
+    if (j.id !== undefined && typeof j.title === 'string') titles.set(String(j.id), j.title);
   });
 }
 
@@ -81,7 +84,20 @@ function stampFor(ref: DocumentReference, data: Record<string, any>): Ownership 
 
 function stamped<T extends Record<string, any>>(ref: DocumentReference, data: T): T {
   const o = stampFor(ref, data);
+  if (o) noteEdit(ref, data, o);
   return o ? { ...data, ...o } : data;
+}
+
+/** A write to a journey edited together tells the owner and the other editors (6-a, hourly) */
+function noteEdit(ref: DocumentReference, data: Record<string, any>, o: Ownership) {
+  const uid = currentUid();
+  if (!uid || !o.editors.length) return;
+  const people = [o.ownerId, ...o.editors];
+  if (!people.includes(uid)) return;
+  const parts = ref.path.split('/');
+  const journeyId = JOURNEY_COLLECTIONS.has(parts[2]) ? parts[3] : data?.tripId;
+  if (journeyId === undefined || journeyId === null) return;
+  notifyJourneyEdited(people, journeyId, titles.get(String(journeyId)) || data?.title || '');
 }
 
 export function setDoc(ref: DocumentReference<any>, data: any, options?: SetOptions): Promise<void> {
@@ -211,7 +227,13 @@ export async function setLinkShare(journeyId: number | string, on: boolean): Pro
 async function journeyRefs(journeyId: number | string): Promise<DocumentReference[]> {
   const id = String(journeyId);
   const tripRef = doc(db, 'users', 'public', 'trips', id);
-  const isTrip = (await getDoc(tripRef).catch(() => null))?.exists();
+  const tripSnap = await getDoc(tripRef).catch(() => null);
+  const isTrip = tripSnap?.exists();
+  if (isTrip && typeof tripSnap?.data()?.title === 'string') titles.set(id, tripSnap!.data()!.title);
+  if (!isTrip && !titles.has(id)) {
+    const planSnap = await getDoc(doc(db, 'users', 'public', 'plans', id)).catch(() => null);
+    if (typeof planSnap?.data()?.title === 'string') titles.set(id, planSnap!.data()!.title);
+  }
   const refs: DocumentReference[] = [isTrip ? tripRef : doc(db, 'users', 'public', 'plans', id)];
   for (const c of ['timeline', 'flights', 'stays', 'transits'] as const) {
     const snap = await getDocs(journeyItems(c, journeyId));
@@ -254,6 +276,14 @@ export async function setJourneyPeople(
   (['profileType', 'profileIcon', 'profileImage'] as const).forEach(k => { if (ownerCard[k]) card[k] = ownerCard[k] as string; });
   await updateAll(await journeyRefs(id), { access, editors: edit }, { ownerCard: card });
   registry.set(id, { ownerId: uid, access, editors: edit, publicShare: owner?.publicShare ?? false });
+  // Friends who now see it, or may now edit it, hear about it (6-a)
+  const before = owner || { access: [uid], editors: [] as string[] };
+  access.filter(u => u !== uid).forEach(u => {
+    const nowEdit = edit.includes(u);
+    const wasIn = before.access.includes(u);
+    const wasEdit = before.editors.includes(u);
+    if (!wasIn || (nowEdit && !wasEdit)) notifyJourneyShared(u, id, titles.get(id) || '', nowEdit ? 'edit' : 'view');
+  });
 }
 
 /** A friend takes themselves off a journey someone shared with them */
