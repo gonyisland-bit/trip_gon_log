@@ -1,9 +1,10 @@
 import {
   Plane, Ship, Train, Car, Lock, Trash2, Image as ImageIcon, MapPin, Plus, ExternalLink, MapPinOff,
   ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Sun, Cloud, Cloudy, CloudRain, Snowflake,
-  CloudLightning, GripVertical, Check, Coins, Copy
+  CloudLightning, GripVertical, Check, Coins, Copy, ChevronDown, ChevronsDownUp, ChevronsUpDown, MoreHorizontal
 } from 'lucide-react';
 import { ImageEditOverlay } from '../../components/ImageEditOverlay';
+import { IconButton } from '../../components/ui/IconButton';
 import { SettlementExpenseInput } from '../../components/SettlementExpenseInput';
 import { fetchCoordinates } from '../../utils/googleMapsHelper';
 import { fetchAddressFromCoords } from '../../utils/googleMapsHelper';
@@ -11,10 +12,11 @@ import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { TimelineItemPlaceInput } from './TimelineItemPlaceInput';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import {
-  dayColors, getDayOfWeek, minutesToTimeStr, parseTimeToMinutes, timeStrTo24h, time24hTo12h
+  getDayOfWeek, minutesToTimeStr, parseTimeToMinutes, timeStrTo24h, time24hTo12h
 } from './detailUtils';
 import type { JourneyDetailState } from './useJourneyDetailState';
 import { formatCountdown } from './useTodayMode';
+import { useState } from 'react';
 
 // The red hairline that marks the current time between today's items
 function NowLine({ label }: { label: string }) {
@@ -28,6 +30,7 @@ function NowLine({ label }: { label: string }) {
 }
 
 export function TimelineTab({ s }: { s: JourneyDetailState }) {
+  const [toolsOpen, setToolsOpen] = useState(false);
   const {
     isLoggedIn, activeTab, setActiveTab, visitedTabs, selectedDate, setSelectedDate, collapsedDays,
     setCollapsedDays, expandedItemId, setExpandedItemId, highlightedDateSection, setCostModalItem,
@@ -39,13 +42,209 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
     handleDropTimelineItem, handleGenerateDefaultTemplate, allTripDates, dynamicDates,
     currentTimeline, handleAddTimelineItemRelativeTo, updateTimelineItem, updateTimelineItemFields,
     toggleFrequentPlace, isFrequent, handleSelectFrequent, handleToggleExcludeFromMap,
-    handleAddTimelineItem, handleDeleteTimelineItem, handleWeatherChange, todayMode
+    handleAddTimelineItem, handleDeleteTimelineItem, handleWeatherChange, todayMode, handleStartEditing
   } = s;
 
   // Today mode shows on today's page and on ALL, never while editing
   const live = !!todayMode.todayKey && !isEditing && (selectedDate === todayMode.todayKey || selectedDate === 'ALL');
   const nowAfterId = live ? todayMode.lastPassedId : null;
   const nowBeforeId = live && nowAfterId === null ? todayMode.next?.id ?? null : null;
+
+  // Items per day, and the trip days with nothing planned yet
+  const dayCounts: Record<string, number> = {};
+  currentTimeline.forEach(it => { if (it.date) dayCounts[it.date] = (dayCounts[it.date] || 0) + 1; });
+  const emptyDays = selectedDate === 'ALL' ? allTripDates.filter(d => !dayCounts[d]) : [];
+  const emptyDaysBetween = (after: string, before: string) => emptyDays.filter(d => d > after && (!before || d < before));
+  const foldableDays = allTripDates.filter(d => dayCounts[d]);
+  const allFolded = foldableDays.length > 0 && foldableDays.every(d => collapsedDays.includes(d));
+  const toggleDay = (date: string) => setCollapsedDays(prev => prev.includes(date) ? prev.filter(d => d !== date) : [...prev, date]);
+  // An empty day takes its first item: from the view, editing starts on the spot
+  const addToDay = (date: string) => {
+    if (!isEditing) handleStartEditing();
+    handleAddTimelineItem(date);
+  };
+
+  const renderDayHeader = (date: string, count: number) => {
+    const dayIndex = allTripDates.indexOf(date) + 1;
+    const weatherInfo = tripToUse?.weatherData?.[date];
+    const foldable = selectedDate === 'ALL' && count > 0;
+    const folded = foldable && collapsedDays.includes(date);
+    return (
+          <div 
+            id={`date-section-${date}`}
+            data-date-section={date}
+            onClick={foldable ? () => toggleDay(date) : undefined}
+            onKeyDown={foldable ? (e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleDay(date); } } : undefined}
+            role={foldable ? 'button' : undefined}
+            tabIndex={foldable ? 0 : undefined}
+            aria-expanded={foldable ? !folded : undefined}
+            className={`bg-paper/95 dark:bg-paper-dark/95 py-3 px-4 md:px-6 mt-2 flex items-center justify-between gap-3 transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-600 ${foldable ? 'cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04]' : ''} ${
+              highlightedDateSection === date ? 'day-section-highlight' : 'tgl-reveal'
+            }`}
+          >
+            <div className="flex items-baseline gap-2.5 sm:gap-3.5">
+              <span className="text-3xl sm:text-4xl font-extrabold font-satoshi tracking-tighter text-black dark:text-white leading-none">
+                {dayIndex < 10 ? `0${dayIndex}` : dayIndex}
+              </span>
+              <div className="flex flex-col text-left font-satoshi leading-tight">
+                <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-black dark:text-white font-satoshi">
+                  DAY {dayIndex}
+                </span>
+                <span className="text-[11px] sm:text-xs font-mono font-bold text-black/65 dark:text-white/65 mt-0.5 tracking-wider">
+                  {date} {getDayOfWeek(date) ? `· ${getDayOfWeek(date)}` : ''}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
+                  {/* Sunny */}
+                  <button
+                    type="button"
+                    onClick={() => handleWeatherChange(date, 'sunny', weatherInfo?.temp || '')}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    title="Sunny (해)"
+                  >
+                    <Sun className="w-4 h-4" />
+                  </button>
+                  {/* Overcast */}
+                  <button
+                    type="button"
+                    onClick={() => handleWeatherChange(date, 'overcast', weatherInfo?.temp || '')}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    title="Overcast (흐림)"
+                  >
+                    <Cloudy className="w-4 h-4" />
+                  </button>
+                  {/* Cloudy */}
+                  <button
+                    type="button"
+                    onClick={() => handleWeatherChange(date, 'cloudy', weatherInfo?.temp || '')}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-neutral-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    title="Cloudy (구름)"
+                  >
+                    <Cloud className="w-4 h-4" />
+                  </button>
+                  {/* Rainy */}
+                  <button
+                    type="button"
+                    onClick={() => handleWeatherChange(date, 'rainy', weatherInfo?.temp || '')}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-blue-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    title="Rainy (비)"
+                  >
+                    <CloudRain className="w-4 h-4" />
+                  </button>
+                  {/* Snowy */}
+                  <button
+                    type="button"
+                    onClick={() => handleWeatherChange(date, 'snowy', weatherInfo?.temp || '')}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-blue-300 text-black' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    title="Snowy (눈)"
+                  >
+                    <Snowflake className="w-4 h-4" />
+                  </button>
+                  {/* Stormy */}
+                  <button
+                    type="button"
+                    onClick={() => handleWeatherChange(date, 'stormy', weatherInfo?.temp || '')}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    title="Stormy (태풍)"
+                  >
+                    <CloudLightning className="w-4 h-4" />
+                  </button>
+                  {weatherInfo?.type && (
+                    <button
+                      type="button"
+                      onClick={() => handleWeatherChange(date, '', '')}
+                      className="text-meta font-bold text-red-500 dark:text-red-400 hover:underline px-1 font-mono"
+                    >
+                      CLEAR
+                    </button>
+                  )}
+                  {(() => {
+                    const parseMinMaxTemp = (tempStr: string) => {
+                      if (!tempStr) return { min: '', max: '' };
+                      const parts = tempStr.split('/');
+                      if (parts.length === 2) {
+                        const minVal = parts[0].replace(/[^0-9-]/g, '');
+                        const maxVal = parts[1].replace(/[^0-9-]/g, '');
+                        return { min: minVal, max: maxVal };
+                      }
+                      const cleanVal = tempStr.replace(/[^0-9-]/g, '');
+                      if (tempStr.startsWith('/')) {
+                        return { min: '', max: cleanVal };
+                      }
+                      return { min: cleanVal, max: '' };
+                    };
+                    const { min, max } = parseMinMaxTemp(weatherInfo?.temp || '');
+                    return (
+                      <div className="flex items-center gap-1 ml-1.5 font-mono">
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={min}
+                          onChange={(e) => {
+                            const minNum = e.target.value;
+                            const newTemp = (minNum || max) ? `${minNum ? minNum + '°' : ''}/${max ? max + '°' : ''}` : '';
+                            handleWeatherChange(date, weatherInfo?.type || '', newTemp);
+                          }}
+                          className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-meta text-center font-bold outline-none text-black dark:text-white rounded-full [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-meta text-black/60 dark:text-white/60 font-bold">/</span>
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={max}
+                          onChange={(e) => {
+                            const maxNum = e.target.value;
+                            const newTemp = (min || maxNum) ? `${min ? min + '°' : ''}/${maxNum ? maxNum + '°' : ''}` : '';
+                            handleWeatherChange(date, weatherInfo?.type || '', newTemp);
+                          }}
+                          className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-meta text-center font-bold outline-none text-black dark:text-white rounded-full [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                weatherInfo && (weatherInfo.type || weatherInfo.temp) && (
+                  <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-black/85 dark:text-white/85 normal-case ml-2">
+                    {weatherInfo.type === 'sunny' && <Sun className="w-4 h-4 text-amber-500 shrink-0" />}
+                    {weatherInfo.type === 'overcast' && <Cloudy className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />}
+                    {weatherInfo.type === 'cloudy' && <Cloud className="w-4 h-4 text-neutral-500 dark:text-neutral-400 shrink-0" />}
+                    {weatherInfo.type === 'rainy' && <CloudRain className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />}
+                    {weatherInfo.type === 'snowy' && <Snowflake className="w-4 h-4 text-blue-300 shrink-0" />}
+                    {weatherInfo.type === 'stormy' && <CloudLightning className="w-4 h-4 text-red-500 shrink-0" />}
+                    {weatherInfo.temp && <span className="text-black/80 dark:text-white/80">{weatherInfo.temp}</span>}
+                  </div>
+                )
+              )}
+            </div>
+            {foldable && (
+              <span className="flex items-center gap-1.5 shrink-0 text-black/55 dark:text-white/55">
+                {folded && <span className="font-mono text-micro font-bold tracking-wider tabular-nums">일정 {count}</span>}
+                <ChevronDown className={`w-4 h-4 transition-transform duration-base ${folded ? '-rotate-90' : ''}`} aria-hidden />
+              </span>
+            )}
+          </div>
+    );
+  };
+
+  const renderEmptyDay = (date: string) => (
+    <div key={`empty-${date}`} className="w-full flex flex-col">
+      {renderDayHeader(date, 0)}
+      <div className="flex items-center justify-between gap-3 px-4 md:px-6 pb-2">
+        <span className="text-sm text-black/50 dark:text-white/50">일정 없음</span>
+        {isLoggedIn && (
+          <button type="button" onClick={() => addToDay(date)} className="btn btn-secondary btn-sm">
+            <Plus className="w-3.5 h-3.5" aria-hidden />일정 추가
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -167,53 +366,62 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
 
           {/* Timeline Items List */}
           <div className="flex flex-col pb-20 w-full relative">
-            {selectedDate === 'ALL' && currentTimeline.length > 0 && (
-              <div className="flex justify-end px-4 md:px-6 py-2 bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 shrink-0 select-none">
-                <button
-                  onClick={() => {
-                    if (collapsedDays.length === allTripDates.length) {
-                      setCollapsedDays([]);
-                    } else {
-                      setCollapsedDays([...allTripDates]);
-                    }
-                  }}
-                  className="text-micro md:text-meta font-extrabold uppercase tracking-widest text-black/60 dark:text-white/60 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                >
-                  {collapsedDays.length === allTripDates.length ? '▼ EXPAND ALL DAYS' : '▲ COLLAPSE ALL DAYS'}
-                </button>
+            {((selectedDate === 'ALL' && foldableDays.length > 0) || isEditing) && (
+              <div className="flex items-center justify-between gap-2 px-4 md:px-6 py-2 shrink-0 select-none">
+                <div className="flex items-center gap-2">
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedItemIds(selectedItemIds.length === currentTimeline.length ? [] : currentTimeline.map(item => item.id))}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      {selectedItemIds.length === currentTimeline.length && currentTimeline.length > 0 ? '선택 해제' : '전체 선택'}
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {selectedDate === 'ALL' && foldableDays.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setCollapsedDays(allFolded ? [] : [...foldableDays])}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      {allFolded ? <ChevronsUpDown className="w-3.5 h-3.5" aria-hidden /> : <ChevronsDownUp className="w-3.5 h-3.5" aria-hidden />}
+                      {allFolded ? '모두 펼치기' : '모두 접기'}
+                    </button>
+                  )}
+                  {isEditing && (
+                    <div className="relative">
+                      <IconButton icon={MoreHorizontal} label="편집 도구 더보기" size="sm" onClick={() => setToolsOpen(o => !o)} aria-expanded={toolsOpen} />
+                      {toolsOpen && (
+                        <>
+                          <button type="button" aria-label="닫기" tabIndex={-1} className="fixed inset-0 z-40 cursor-default" onClick={() => setToolsOpen(false)} />
+                          <div role="menu" className="absolute right-0 top-full mt-1.5 z-50 min-w-[200px] p-1.5 rounded-card bg-surface dark:bg-surface-dark shadow-lg">
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => { setToolsOpen(false); handleGenerateDefaultTemplate(); }}
+                              className="w-full text-left px-3 h-10 rounded-full text-sm font-bold hover:bg-black/[0.05] dark:hover:bg-white/10 transition-colors"
+                            >
+                              기본 템플릿으로 채우기
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-            {isEditing && (
-              <div className="flex flex-col shrink-0 bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 relative">
-                <div className="flex justify-between items-center py-3 px-4 md:px-6 flex-wrap gap-2">
-                  <button
-                    onClick={handleGenerateDefaultTemplate}
-                    className="text-meta font-extrabold uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 transition-colors flex items-center gap-1.5"
-                  >
-                    Generate Default Template
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (selectedItemIds.length === currentTimeline.length) {
-                        setSelectedItemIds([]);
-                      } else {
-                        setSelectedItemIds(currentTimeline.map(item => item.id));
-                      }
-                    }}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    {selectedItemIds.length === currentTimeline.length ? 'Deselect All' : 'Select All'}
-                  </button>
-                </div>
-
-                {selectedItemIds.length > 0 && (
-                  <div className="sticky top-0 z-20 flex justify-between items-center py-3 px-4 md:px-6 bg-red-600 text-white shadow-md transition animate-in slide-in-from-top duration-300">
+            {isEditing && selectedItemIds.length > 0 && (
+              <div className="flex flex-col shrink-0 relative">
+                {(
+                  <div className="sticky top-0 z-20 mx-3 sm:mx-4 mb-1 flex justify-between items-center gap-2 py-2 pl-4 pr-2 rounded-full bg-red-600 text-white shadow-md animate-in slide-in-from-top duration-300">
                     <div className="text-xs font-bold uppercase tracking-widest">
-                      {selectedItemIds.length} items selected
+                      {selectedItemIds.length}개 선택
                     </div>
                     <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-meta font-bold uppercase tracking-widest opacity-80">Move to:</span>
+                      <span className="text-meta font-bold opacity-80">날짜 이동</span>
                       <select
                         onChange={(e) => {
                           const targetDate = e.target.value;
@@ -231,19 +439,19 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                           setSelectedItemIds([]);
                           setSelectedDate(targetDate);
                         }}
-                        className="bg-white text-black text-meta font-bold p-1 outline-none border border-white/20 rounded-none w-28"
+                        className="bg-white text-black text-meta font-bold h-8 px-2.5 outline-none rounded-full w-32 cursor-pointer"
                         defaultValue=""
                       >
-                        <option value="" disabled>Select Day</option>
+                        <option value="" disabled>날짜 선택</option>
                         {allTripDates.map((d, index) => (
                           <option key={d} value={d}>Day {index + 1} ({d.slice(5).replace('.', '/')})</option>
                         ))}
                       </select>
                       <button
                         onClick={() => setSelectedItemIds([])}
-                        className="text-meta font-bold uppercase tracking-widest hover:underline"
+                        className="h-8 px-3 rounded-full text-meta font-bold hover:bg-white/15"
                       >
-                        Cancel
+                        취소
                       </button>
                     </div>
                   </div>
@@ -251,189 +459,40 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
               </div>
             )}
             {currentTimeline.length === 0 ? (
-              <div className="text-center py-16 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
-                해당 날짜에 등록된 일정이 없습니다.
-              </div>
+              selectedDate === 'ALL' && emptyDays.length > 0 ? (
+                emptyDays.map(renderEmptyDay)
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-16 text-sm text-black/55 dark:text-white/55">
+                  해당 날짜에 등록된 일정이 없습니다.
+                  {isLoggedIn && selectedDate !== 'ALL' && !isEditing && (
+                    <button type="button" onClick={() => addToDay(selectedDate)} className="btn btn-secondary btn-sm">
+                      <Plus className="w-3.5 h-3.5" aria-hidden />일정 추가
+                    </button>
+                  )}
+                </div>
+              )
             ) : (
               currentTimeline.map((item, idx) => {
                 const isActive = expandedItemId === item.id;
                 const showDivider = (selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date)) || (selectedDate !== 'ALL' && idx === 0);
-                const dayIndex = item.date ? allTripDates.indexOf(item.date) + 1 : 0;
                 const isExcluded = !!item.excludeFromMap;
-                const dayColor = dayIndex > 0 ? dayColors[(dayIndex - 1) % dayColors.length] : undefined;
-                const weatherInfo = tripToUse?.weatherData?.[item.date || ''];
+                const hasCoords = item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null;
+                const hasLocation = !!item.location && item.location.trim() !== '';
+                const dayFolded = selectedDate === 'ALL' && collapsedDays.includes(item.date || '');
+                const prevDate = idx > 0 ? currentTimeline[idx - 1].date || '' : '';
                 return (
                   <div key={item.id} className="w-full flex flex-col">
-                    {showDivider && (
-                      <div 
-                        id={`date-section-${item.date}`}
-                        data-date-section={item.date}
-                        onClick={() => {
-                          const dVal = item.date || '';
-                          if (collapsedDays.includes(dVal)) {
-                            setCollapsedDays(prev => prev.filter(d => d !== dVal));
-                          } else {
-                            setCollapsedDays(prev => [...prev, dVal]);
-                          }
-                        }}
-                        className={`bg-paper/95 dark:bg-paper-dark/95 py-3 px-4 md:px-6 mt-2 flex items-center justify-between cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors select-none ${
-                          highlightedDateSection === item.date ? 'day-section-highlight' : 'tgl-reveal'
-                        }`}
-                      >
-                        <div className="flex items-baseline gap-2.5 sm:gap-3.5">
-                          <span className="text-3xl sm:text-4xl font-extrabold font-satoshi tracking-tighter text-black dark:text-white leading-none">
-                            {dayIndex < 10 ? `0${dayIndex}` : dayIndex}
-                          </span>
-                          <div className="flex flex-col text-left font-satoshi leading-tight">
-                            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-black dark:text-white font-satoshi">
-                              DAY {dayIndex}
-                            </span>
-                            <span className="text-[11px] sm:text-xs font-mono font-bold text-black/65 dark:text-white/65 mt-0.5 tracking-wider">
-                              {item.date} {getDayOfWeek(item.date || '') ? `· ${getDayOfWeek(item.date || '')}` : ''}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isEditing ? (
-                            <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
-                              {/* Sunny */}
-                              <button
-                                type="button"
-                                onClick={() => handleWeatherChange(item.date || '', 'sunny', weatherInfo?.temp || '')}
-                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                title="Sunny (해)"
-                              >
-                                <Sun className="w-4 h-4" />
-                              </button>
-                              {/* Overcast */}
-                              <button
-                                type="button"
-                                onClick={() => handleWeatherChange(item.date || '', 'overcast', weatherInfo?.temp || '')}
-                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                title="Overcast (흐림)"
-                              >
-                                <Cloudy className="w-4 h-4" />
-                              </button>
-                              {/* Cloudy */}
-                              <button
-                                type="button"
-                                onClick={() => handleWeatherChange(item.date || '', 'cloudy', weatherInfo?.temp || '')}
-                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-neutral-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                title="Cloudy (구름)"
-                              >
-                                <Cloud className="w-4 h-4" />
-                              </button>
-                              {/* Rainy */}
-                              <button
-                                type="button"
-                                onClick={() => handleWeatherChange(item.date || '', 'rainy', weatherInfo?.temp || '')}
-                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-blue-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                title="Rainy (비)"
-                              >
-                                <CloudRain className="w-4 h-4" />
-                              </button>
-                              {/* Snowy */}
-                              <button
-                                type="button"
-                                onClick={() => handleWeatherChange(item.date || '', 'snowy', weatherInfo?.temp || '')}
-                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-blue-300 text-black' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                title="Snowy (눈)"
-                              >
-                                <Snowflake className="w-4 h-4" />
-                              </button>
-                              {/* Stormy */}
-                              <button
-                                type="button"
-                                onClick={() => handleWeatherChange(item.date || '', 'stormy', weatherInfo?.temp || '')}
-                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                title="Stormy (태풍)"
-                              >
-                                <CloudLightning className="w-4 h-4" />
-                              </button>
-                              {weatherInfo?.type && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleWeatherChange(item.date || '', '', '')}
-                                  className="text-meta font-bold text-red-500 dark:text-red-400 hover:underline px-1 font-mono"
-                                >
-                                  CLEAR
-                                </button>
-                              )}
-                              {(() => {
-                                const parseMinMaxTemp = (tempStr: string) => {
-                                  if (!tempStr) return { min: '', max: '' };
-                                  const parts = tempStr.split('/');
-                                  if (parts.length === 2) {
-                                    const minVal = parts[0].replace(/[^0-9-]/g, '');
-                                    const maxVal = parts[1].replace(/[^0-9-]/g, '');
-                                    return { min: minVal, max: maxVal };
-                                  }
-                                  const cleanVal = tempStr.replace(/[^0-9-]/g, '');
-                                  if (tempStr.startsWith('/')) {
-                                    return { min: '', max: cleanVal };
-                                  }
-                                  return { min: cleanVal, max: '' };
-                                };
-                                const { min, max } = parseMinMaxTemp(weatherInfo?.temp || '');
-                                return (
-                                  <div className="flex items-center gap-1 ml-1.5 font-mono">
-                                    <input
-                                      type="number"
-                                      placeholder="Min"
-                                      value={min}
-                                      onChange={(e) => {
-                                        const minNum = e.target.value;
-                                        const newTemp = (minNum || max) ? `${minNum ? minNum + '°' : ''}/${max ? max + '°' : ''}` : '';
-                                        handleWeatherChange(item.date || '', weatherInfo?.type || '', newTemp);
-                                      }}
-                                      className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-meta text-center font-bold outline-none text-black dark:text-white rounded-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                    <span className="text-meta text-black/60 dark:text-white/60 font-bold">/</span>
-                                    <input
-                                      type="number"
-                                      placeholder="Max"
-                                      value={max}
-                                      onChange={(e) => {
-                                        const maxNum = e.target.value;
-                                        const newTemp = (min || maxNum) ? `${min ? min + '°' : ''}/${maxNum ? maxNum + '°' : ''}` : '';
-                                        handleWeatherChange(item.date || '', weatherInfo?.type || '', newTemp);
-                                      }}
-                                      className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-meta text-center font-bold outline-none text-black dark:text-white rounded-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          ) : (
-                            weatherInfo && (weatherInfo.type || weatherInfo.temp) && (
-                              <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-black/85 dark:text-white/85 normal-case ml-2">
-                                {weatherInfo.type === 'sunny' && <Sun className="w-4 h-4 text-amber-500 shrink-0" />}
-                                {weatherInfo.type === 'overcast' && <Cloudy className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />}
-                                {weatherInfo.type === 'cloudy' && <Cloud className="w-4 h-4 text-neutral-500 dark:text-neutral-400 shrink-0" />}
-                                {weatherInfo.type === 'rainy' && <CloudRain className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />}
-                                {weatherInfo.type === 'snowy' && <Snowflake className="w-4 h-4 text-blue-300 shrink-0" />}
-                                {weatherInfo.type === 'stormy' && <CloudLightning className="w-4 h-4 text-red-500 shrink-0" />}
-                                {weatherInfo.temp && <span className="text-black/80 dark:text-white/80">{weatherInfo.temp}</span>}
-                              </div>
-                            )
-                          )}
-                        </div>
-                        <span className="text-meta font-extrabold font-mono text-black/60 dark:text-white/60 flex items-center gap-1 shrink-0">
-                          {collapsedDays.includes(item.date || '') ? '▼ EXPAND' : '▲ COLLAPSE'}
-                        </span>
-                      </div>
-                    )}
-                    {nowBeforeId === item.id && <NowLine label={todayMode.nowLabel} />}
+                    {showDivider && selectedDate === 'ALL' && emptyDaysBetween(prevDate, item.date || '').map(renderEmptyDay)}
+                    {showDivider && renderDayHeader(item.date || '', dayCounts[item.date || ''] || 0)}
+                    {!dayFolded && nowBeforeId === item.id && <NowLine label={todayMode.nowLabel} />}
                     <div 
                       id={`timeline-item-${item.id}`}
                       ref={el => { itemRefs.current[item.id] = el; }} 
-                      className={`tgl-cv-row flex flex-col transition-colors mx-3 sm:mx-4 my-1 w-auto rounded-card overflow-hidden bg-surface dark:bg-surface-dark ${
+                      className={`tgl-cv-row tgl-card-edge flex flex-col transition-colors mx-3 sm:mx-4 my-1.5 w-auto rounded-card overflow-hidden bg-surface dark:bg-surface-dark ${
                         isActive
                           ? 'ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm'
                           : 'hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'
-                      }${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''} ${live && todayMode.pastIds.has(item.id) && !isActive ? 'opacity-60' : ''}`}
+                      } ${dayFolded ? 'hidden' : ''} ${live && todayMode.pastIds.has(item.id) && !isActive ? 'opacity-60' : ''}`}
                       draggable={isEditing}
                       onDragStart={(e) => {
                         const target = e.target as HTMLElement;
@@ -473,7 +532,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         {isEditing ? (
                           <div className="w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col gap-1.5 text-meta md:text-xs font-bold">
                             {/* Compact action row: Grip, Checkbox, Trash (Swiss Minimal) */}
-                            <div className="flex items-center justify-between w-full py-1 px-1.5 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15">
+                            <div className="flex items-center justify-between w-full py-1 px-2 rounded-full bg-black/5 dark:bg-white/10">
                               <div className="drag-handle cursor-grab active:cursor-grabbing text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5" title="순서 이동">
                                 <GripVertical className="w-3.5 h-3.5" />
                               </div>
@@ -487,7 +546,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                     setSelectedItemIds(prev => prev.filter(id => id !== item.id));
                                   }
                                 }}
-                                className="w-3.5 h-3.5 border-black/20 text-red-600 cursor-pointer accent-red-600 rounded-none"
+                                className="w-3.5 h-3.5 cursor-pointer accent-red-600"
                               />
                               <button
                                 type="button"
@@ -508,7 +567,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 scrollTargetItemIdRef.current = item.id;
                                 updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
                               }}
-                              className="bg-black/5 dark:bg-white/10 px-1 py-1 outline-none font-mono font-bold text-meta md:text-xs text-black dark:text-white border border-black/15 dark:border-white/15 w-full text-center rounded-none"
+                              className="bg-surface dark:bg-surface-dark h-8 px-2 outline-none font-mono font-bold text-meta md:text-xs text-black dark:text-white border border-black/15 dark:border-white/15 w-full text-center rounded-full"
                             />
 
                             <select
@@ -519,7 +578,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 updateTimelineItem(item.id, 'date', newDate);
                                 setSelectedDate(newDate);
                               }}
-                              className="bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 text-micro md:text-meta font-mono font-bold p-1 outline-none text-black dark:text-white w-full text-center rounded-none cursor-pointer"
+                              className="bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 text-micro md:text-meta font-mono font-bold h-8 px-2 outline-none text-black dark:text-white w-full text-center rounded-full cursor-pointer"
                             >
                               {allTripDates.map(d => (
                                 <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
@@ -531,9 +590,9 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'car' ? null : 'car')}
-                                className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                className={`tap-target h-7 flex items-center justify-center border transition-colors cursor-pointer rounded-full ${
                                   item.vehicleType === 'car'
-                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
+                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'car' ? "차량 선택 해제 (기본 도보)" : "차량으로 이동"}
@@ -543,9 +602,9 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'train' ? null : 'train')}
-                                className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                className={`tap-target h-7 flex items-center justify-center border transition-colors cursor-pointer rounded-full ${
                                   item.vehicleType === 'train'
-                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
+                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'train' ? "열차 선택 해제 (기본 도보)" : "열차로 이동"}
@@ -555,9 +614,9 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'ship' ? null : 'ship')}
-                                className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                className={`tap-target h-7 flex items-center justify-center border transition-colors cursor-pointer rounded-full ${
                                   item.vehicleType === 'ship'
-                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
+                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'ship' ? "선박 선택 해제 (기본 도보)" : "선박으로 이동"}
@@ -567,9 +626,9 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'flight' ? null : 'flight')}
-                                className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                className={`tap-target h-7 flex items-center justify-center border transition-colors cursor-pointer rounded-full ${
                                   item.vehicleType === 'flight'
-                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
+                                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                 }`}
                                 title={item.vehicleType === 'flight' ? "항공 선택 해제 (기본 도보)" : "항공으로 이동"}
@@ -578,21 +637,6 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               </button>
                             </div>
 
-                            {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
-                              <button
-                                onClick={() => handleToggleExcludeFromMap(item)}
-                                className={`flex items-center justify-center py-1 border border-black/15 dark:border-white/15 text-meta font-mono font-bold w-full transition-colors rounded-none cursor-pointer ${
-                                  isExcluded
-                                    ? 'text-black/60 dark:text-white/60'
-                                    : 'hover:opacity-80'
-                                }`}
-                                style={!isExcluded && dayColor ? { color: dayColor, borderColor: dayColor } : undefined}
-                                title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
-                              >
-                                {isExcluded ? <MapPinOff className="w-3 h-3 mr-0.5" /> : <MapPin className="w-3 h-3 mr-0.5" style={dayColor ? { color: dayColor } : undefined} />}
-                                <span>{isExcluded ? "OFF" : "ON"}</span>
-                              </button>
-                            )}
                           </div>
                         ) : (
                           <div className="w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors text-black dark:text-white">
@@ -620,7 +664,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 );
                               })()}
                             </div>
-                            <div className="flex items-center gap-1.5 mt-1.5 h-6">
+                            {item.vehicleType && <div className="flex items-center gap-1.5 mt-1.5 h-6">
                               {/* Vehicle indicator in view mode */}
                               {item.vehicleType === 'car' && (
                                 <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-micro font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 차량 이동">
@@ -643,25 +687,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 </span>
                               )}
 
-                              {/* 장소 좌표가 있는 경우: 지도 표시 토글 핀 아이콘 */}
-                              {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleExcludeFromMap(item);
-                                  }}
-                                  className="p-1 hover:text-red-600 dark:hover:text-red-400 transition-colors select-none cursor-pointer shrink-0"
-                                  title={isExcluded ? "지도에 표시하기 (현재 OFF)" : "지도에서 제외하기 (현재 ON)"}
-                                >
-                                  {isExcluded ? (
-                                    <MapPinOff className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-                                  ) : (
-                                    <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                                  )}
-                                </button>
-                              )}
-                            </div>
+                            </div>}
                           </div>
                         )}
 
@@ -707,7 +733,20 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                           {isEditing ? (
                             <div className="w-full flex flex-col gap-1.5 mt-0.5">
                               <div className="flex items-center gap-2">
-                                <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                {hasCoords ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); handleToggleExcludeFromMap(item); }}
+                                    className="tap-target p-1 -m-1 rounded-full shrink-0 hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                                    aria-pressed={!isExcluded}
+                                    aria-label={isExcluded ? '지도에 표시' : '지도에서 숨기기'}
+                                    title={isExcluded ? '지도에 표시 (지금 숨김)' : '지도에서 숨기기 (지금 표시)'}
+                                  >
+                                    {isExcluded ? <MapPinOff className="w-3.5 h-3.5 text-black/45 dark:text-white/45" /> : <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
+                                  </button>
+                                ) : (
+                                  <MapPin className="w-3.5 h-3.5 text-black/35 dark:text-white/35 shrink-0" aria-hidden />
+                                )}
                                 <PlaceAutocompleteInput
                                   value={item.location || ''}
                                   onChange={(val) => updateTimelineItemFields(item.id, { location: val, lat: undefined, lng: undefined })}
@@ -738,7 +777,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                       lng: coords?.lng ?? item.lng,
                                     });
                                   }}
-                                  className="bg-black/5 dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                  className="bg-surface dark:bg-surface-dark h-8 px-3 outline-none text-xs text-black dark:text-white rounded-full border border-black/15 dark:border-white/15 w-full"
                                   placeholder="장소 입력"
                                 />
                               </div>
@@ -763,12 +802,26 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             </div>
                           ) : (
                             /* View Mode: Location text, One-Touch Copy & Google Maps link */
-                            item.location && item.location.trim() !== '' && (
+                            (hasLocation || hasCoords) && (
                               <div className="mt-0.5 flex items-center gap-1.5 text-xs font-sans text-black/65 dark:text-white/65">
-                                <MapPin className="w-3.5 h-3.5 text-red-500/70 dark:text-red-400/70 shrink-0" />
-                                <span className="truncate max-w-[170px] sm:max-w-md font-medium text-black/75 dark:text-white/75">
-                                  {item.location}
+                                {hasCoords ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); handleToggleExcludeFromMap(item); }}
+                                    className="tap-target p-1 -m-1 rounded-full shrink-0 hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                                    aria-pressed={!isExcluded}
+                                    aria-label={isExcluded ? '지도에 표시' : '지도에서 숨기기'}
+                                    title={isExcluded ? '지도에 표시 (지금 숨김)' : '지도에서 숨기기 (지금 표시)'}
+                                  >
+                                    {isExcluded ? <MapPinOff className="w-3.5 h-3.5 text-black/45 dark:text-white/45" /> : <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
+                                  </button>
+                                ) : (
+                                  <MapPin className="w-3.5 h-3.5 text-black/35 dark:text-white/35 shrink-0" aria-hidden />
+                                )}
+                                <span className={`truncate max-w-[170px] sm:max-w-md font-medium ${hasLocation ? 'text-black/75 dark:text-white/75' : 'text-black/45 dark:text-white/45'}`}>
+                                  {hasLocation ? item.location : '지도 위치'}
                                 </span>
+                                {hasLocation && (<>
                                 {/* One-Touch Copy Button */}
                                 <button
                                   type="button"
@@ -804,6 +857,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 >
                                   <ExternalLink className="w-3 h-3" />
                                 </button>
+                                </>)}
                               </div>
                             )
                           )}
@@ -817,8 +871,8 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 title="위로 일정 추가"
                                 onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
                               >
-                                <ArrowUp className="w-3 h-3"/>
-                                <span>ADD</span>
+                                <ArrowUp className="w-3 h-3" aria-hidden />
+                                <span>위에 추가</span>
                               </button>
                               <button 
                                 type="button"
@@ -826,8 +880,8 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 title="아래로 일정 추가"
                                 onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
                               >
-                                <ArrowDown className="w-3 h-3"/>
-                                <span>ADD</span>
+                                <ArrowDown className="w-3 h-3" aria-hidden />
+                                <span>아래에 추가</span>
                               </button>
                             </div>
                           )}
@@ -881,7 +935,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             />
                           </div>
                         ) : isEditing ? (
-                          <div className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 border-l bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-center transition-colors relative rounded-none ${isActive ? 'border-red-600 dark:border-red-400 text-red-600' : 'border-black/15 dark:border-white/15'}`}>
+                          <div className={`w-24 sm:w-28 md:w-32 aspect-square self-center shrink-0 m-2 rounded-thumb bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center transition-colors relative ${isActive ? 'text-red-600' : ''}`}>
                             <ImageIcon className="w-5 h-5 text-black/60 dark:text-white/60" />
                             <ImageEditOverlay 
                               isEditMode={isEditing} 
@@ -910,13 +964,13 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         ) : null}
                       </div>
                     </div>
-                    {nowAfterId === item.id && <NowLine label={todayMode.nowLabel} />}
+                    {!dayFolded && nowAfterId === item.id && <NowLine label={todayMode.nowLabel} />}
 
                     {/* Swiss Minimal GAP FILL Bar (Between items of the same date) */}
                     {(() => {
                       const nextItem = currentTimeline[idx + 1];
                       if (!nextItem || nextItem.date !== item.date) return null;
-                      if (collapsedDays.includes(item.date || '') && selectedDate === 'ALL') return null;
+                      if (dayFolded) return null;
 
                       const curMin = parseTimeToMinutes(item.time);
                       const nextMin = parseTimeToMinutes(nextItem.time);
@@ -947,6 +1001,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                 );
               })
             )}
+            {currentTimeline.length > 0 && selectedDate === 'ALL' && emptyDaysBetween(currentTimeline[currentTimeline.length - 1].date || '', '').map(renderEmptyDay)}
 
             {/* Add Timeline item button */}
             {isEditing && (
@@ -955,7 +1010,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                   onClick={() => handleAddTimelineItem(selectedDate === 'ALL' ? allTripDates[0] || '2025.04.12' : selectedDate)}
                   className="btn btn-secondary flex"
                 >
-                  <Plus className="w-4 h-4" /> Add Timeline Event
+                  <Plus className="w-4 h-4" aria-hidden />일정 추가
                 </button>
               </div>
             )}

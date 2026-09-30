@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   Train, Bus, Car, Trash2, Image as ImageIcon, ChevronDown, MapPin, Loader2, ArrowLeft, ArrowUp,
-  ArrowDown, ArrowRight, FileText, Share2, Play, Pause, Check, Edit3, DollarSign, ArrowRightLeft,
+  ArrowDown, ArrowRight, FileText, Share2, Play, Pause, Check, Edit3, DollarSign,
   X, Undo2, Redo2, Calendar, Sparkles, Users
 } from 'lucide-react';
 import { getUpcomingPlanInfo } from '../../utils/tripPlanHelper';
@@ -1840,6 +1840,30 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const todayMode = useTodayMode(allTripDates, currentTimeline, tripTimeZone);
   useOpenOnToday(tripToUse?.id, todayMode.todayKey, selectedDate, setSelectedDate, !!searchFocusTab || isEditing);
 
+  // Folded days are remembered per journey on this device (a view convenience, not journey data).
+  // Nothing remembered yet: a journey under way folds the days already behind it.
+  const foldTripId = trip?.id;
+  const foldLoadedFor = useRef<number | null>(null);
+  useEffect(() => {
+    if (!foldTripId || !allTripDates.length || foldLoadedFor.current === foldTripId) return;
+    foldLoadedFor.current = foldTripId;
+    let saved: string[] | null = null;
+    try {
+      const raw = localStorage.getItem(`tgl_folded_days_${foldTripId}`);
+      if (raw) saved = JSON.parse(raw);
+    } catch {}
+    if (Array.isArray(saved)) {
+      setCollapsedDays(saved.filter(d => allTripDates.includes(d)));
+    } else {
+      const todayIdx = todayMode.todayKey ? allTripDates.indexOf(todayMode.todayKey) : -1;
+      setCollapsedDays(todayIdx > 0 ? allTripDates.slice(0, todayIdx) : []);
+    }
+  }, [foldTripId, allTripDates, todayMode.todayKey]);
+  useEffect(() => {
+    if (!foldTripId || foldLoadedFor.current !== foldTripId) return;
+    try { localStorage.setItem(`tgl_folded_days_${foldTripId}`, JSON.stringify(collapsedDays)); } catch {}
+  }, [foldTripId, collapsedDays]);
+
   // Handle pending detail jump (e.g. from Magazine moment click on Home page)
   useEffect(() => {
     try {
@@ -3181,191 +3205,115 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   };
 
   // Render Info Header ("여정배너"): Single-line compact top banner with collapsible accordion menu
-  const renderInfoHeader = () => (
-    <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-white/85 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-colors shrink-0 select-none">
-      {/* 1. Compact Banner with Flexible Height (min-h-[52px] sm:min-h-[58px] py-1.5 sm:py-2) */}
-      <div className="flex items-center justify-between px-3 md:px-5 min-h-[52px] sm:min-h-[58px] py-1.5 sm:py-2 gap-2">
-        {/* Left: Back button + Divider + Issue badge + Title & Date */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+  // Round 36px header control; `on` fills it (the open summary, the open menu)
+  const hdrBtn = (on = false) => `tap-target w-9 h-9 rounded-full inline-grid place-items-center shrink-0 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+    on ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'text-black/70 dark:text-white/70 hover:bg-black/[0.06] dark:hover:bg-white/10 hover:text-black dark:hover:text-white'
+  }`;
+
+  const renderInfoHeader = () => {
+    const issueNo = String((trip!.displayOrder ?? (trip!.id % 99)) + 1).padStart(2, '0');
+    const { start: dStart, end: dEnd } = parseDateRange(trip!.date || '');
+    const md = (d: string) => d.slice(5).replace('-', '.');
+    const range = dStart && dEnd ? `${md(dStart)}–${md(dEnd)}` : (trip!.date || '');
+    return (
+    <div className="w-full z-20 bg-paper/90 dark:bg-paper-dark/90 backdrop-blur-md transition-colors shrink-0 select-none">
+      {/* Number · dates, the title, and the journey line under it */}
+      <div className="flex items-center justify-between px-2 md:px-4 py-2 gap-2">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <button
-            onClick={() => {
-              onNavigate('archive');
-            }}
-            className="flex items-center gap-1 text-micro sm:text-meta font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
-            title="Go back"
+            type="button"
+            onClick={() => onNavigate('archive')}
+            className={hdrBtn()}
+            aria-label="뒤로"
+            title="뒤로"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Back</span>
+            <ArrowLeft className="w-[18px] h-[18px]" />
           </button>
 
-          <span className="text-black/60 dark:text-white/60 shrink-0">|</span>
-
-          {/* Issue # badge (minimalist) */}
-          <span className="hidden md:inline-block bg-black/10 dark:bg-white/15 px-1.5 py-0.5 rounded-[2px] font-mono text-micro font-extrabold text-black dark:text-white shrink-0">
-            #{String((trip!.displayOrder ?? (trip!.id % 99)) + 1).padStart(2, '0')}
-          </span>
-
-          {/* Title & Date: 2-tier stacked on both mobile and web for maximal legibility without clipping */}
-          <div className="flex flex-col min-w-0 flex-1 justify-center">
-            <h1 
+          <div className="flex flex-col min-w-0 flex-1 justify-center gap-0.5 py-0.5">
+            <span className="flex items-center gap-1.5 font-mono text-micro font-bold tracking-wider text-black/50 dark:text-white/50 min-w-0">
+              <span className="text-red-600 dark:text-red-400 shrink-0">NO. {issueNo}</span>
+              <span className="truncate tabular-nums">{range}{generatedDates.length > 0 ? ` · ${generatedDates.length}D` : ''}</span>
+              {destLocalTime && (
+                <span className="hidden min-[400px]:inline shrink-0 tabular-nums" title="현지 시각">· 현지 {destLocalTime}</span>
+              )}
+            </span>
+            <h1
               onClick={() => {
                 setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
                 setExpandedItemId(null);
               }}
-              className="text-xs sm:text-sm md:text-[15px] font-extrabold uppercase tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
-              title="클릭하여 여정 요약(Summary) 보기"
+              className="text-[15px] sm:text-[17px] font-extrabold tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
+              title="여정 요약 보기"
             >
               {(trip!.title || '').replace(' (Plan)', '')}
             </h1>
-
-            {/* Date & Destination summary - placed beneath title with clean typography & full visibility */}
-            <div className="flex items-center gap-1.5 text-meta sm:text-xs font-mono font-medium text-black/75 dark:text-white/75 min-w-0 leading-tight mt-0.5">
-              <span className="hidden sm:inline truncate break-keep font-medium">{generateJourneyMessage(trip!.locationStr, trip!.date, generatedDates.length)}</span>
-              <span className="sm:hidden truncate font-medium tabular-nums">{(() => {
-                const { start, end } = parseDateRange(trip!.date || '');
-                const md = (d: string) => d.slice(5).replace('-', '.');
-                const range = start && end ? `${md(start)}–${md(end)}` : (trip!.date || '');
-                return generatedDates.length > 0 ? `${range} · ${generatedDates.length}D` : range;
-              })()}</span>
-              <button
-                type="button"
-                onClick={handleOpenInCalendar}
-                className="tap-target p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white shrink-0 cursor-pointer"
-                title="스위스 달력에서 이 여정 확인하기"
-              >
-                <Calendar className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <span className="text-meta text-black/60 dark:text-white/60 truncate break-keep leading-snug">
+              {generateJourneyMessage(trip!.locationStr, trip!.date, generatedDates.length)}
+            </span>
           </div>
         </div>
 
-        {/* Right: Quick Action Buttons & Accordion Toggle */}
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Destination Current Local Time Badge (Clean, no 'LOCAL' text) */}
-          {destLocalTime && (
-            <div className="hidden min-[480px]:flex items-center gap-1 px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-micro font-bold text-black/70 dark:text-white/70 border border-black/5 dark:border-white/5" title="현지 시각">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span>{destLocalTime}</span>
-            </div>
+        {/* Summary, edit, and the journey menu */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {isEditing && (
+            <>
+              <button type="button" onClick={handleUndo} disabled={!canUndo} className={hdrBtn()} aria-label="실행 취소" title="실행 취소 (Ctrl+Z)">
+                <Undo2 className="w-4 h-4" />
+              </button>
+              <button type="button" onClick={handleRedo} disabled={!canRedo} className={hdrBtn()} aria-label="다시 실행" title="다시 실행 (Ctrl+Y)">
+                <Redo2 className="w-4 h-4" />
+              </button>
+            </>
           )}
 
-          {/* Quick Journey Switcher Button */}
           <button
-            onClick={() => {
-              setIsSwitcherOpen(true);
-              setSwitcherSearch('');
-            }}
-            className="tap-target p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60"
-            title="다른 여정으로 바로 이동 (Quick Switcher)"
-            aria-label="Switch journey"
-          >
-            <ArrowRightLeft className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Quick Summary Icon Button (Unified Icon on Web & Mobile) */}
-          <button
+            type="button"
             onClick={() => {
               setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
               setExpandedItemId(null);
             }}
-            className={`tap-target p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center ${
-              activeTab === 'summary'
-                ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
-                : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
-            }`}
-            title="Summary View (요약 보기)"
+            className={hdrBtn(activeTab === 'summary')}
+            aria-pressed={activeTab === 'summary'}
+            aria-label="여정 요약"
+            title="여정 요약"
           >
-            <FileText className="w-3.5 h-3.5" />
+            <FileText className="w-4 h-4" />
           </button>
 
-          {/* Undo / Redo buttons in Edit mode */}
-          {isEditing && (
-            <div className="flex items-center gap-0.5 mr-0.5">
-              <button
-                type="button"
-                onClick={handleUndo}
-                disabled={!canUndo}
-                className={`tap-target p-1.5 rounded transition-colors flex items-center justify-center ${
-                  canUndo
-                    ? 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 cursor-pointer'
-                    : 'text-black/60 dark:text-white/60 cursor-not-allowed'
-                }`}
-                title="실행 취소 (Undo: Ctrl+Z)"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={handleRedo}
-                disabled={!canRedo}
-                className={`tap-target p-1.5 rounded transition-colors flex items-center justify-center ${
-                  canRedo
-                    ? 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 cursor-pointer'
-                    : 'text-black/60 dark:text-white/60 cursor-not-allowed'
-                }`}
-                title="다시 실행 (Redo: Ctrl+Y)"
-              >
-                <Redo2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {/* Quick Edit / Done Icon Button (Unified Icon on Web & Mobile) */}
-          {isLoggedIn && (
-            <button
-              onClick={() => {
-                if (isEditing) {
-                  handleSave();
-                } else {
-                  handleStartEditing();
-                }
-              }}
-              disabled={saving}
-              className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center ${
-                isEditing
-                  ? 'bg-red-600 text-white shadow-xs'
-                  : 'border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80'
-              }`}
-              title={isEditing ? "저장 완료 (Done)" : "여정 편집 (Edit)"}
-            >
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (isEditing ? <Check className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />)}
-            </button>
-          )}
-
-          {/* Quick Cover Change Button (Logged in) */}
           {isLoggedIn && (
             <button
               type="button"
-              onClick={() => {
-                setCoverInputUrl(tripToUse?.img || '');
-                setIsCoverModalOpen(true);
-              }}
-              className="tap-target p-1.5 rounded border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 transition-colors cursor-pointer flex items-center justify-center"
-              title="카드 커버 이미지 변경"
+              onClick={() => { if (isEditing) handleSave(); else handleStartEditing(); }}
+              disabled={saving}
+              className={`tap-target w-9 h-9 rounded-full inline-grid place-items-center shrink-0 transition-colors cursor-pointer ${
+                isEditing
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'text-black/70 dark:text-white/70 hover:bg-black/[0.06] dark:hover:bg-white/10 hover:text-black dark:hover:text-white'
+              }`}
+              aria-label={isEditing ? '저장' : '여정 편집'}
+              title={isEditing ? '저장' : '여정 편집'}
             >
-              <ImageIcon className="w-3.5 h-3.5" />
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : (isEditing ? <Check className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />)}
             </button>
           )}
 
-          {/* Accordion Menu Toggle Button */}
           <button
+            type="button"
             onClick={() => setIsBannerMenuOpen(p => !p)}
-            className={`tap-target p-1.5 rounded transition-all cursor-pointer ${
-              isBannerMenuOpen
-                ? 'bg-black/10 dark:bg-white/15 text-red-600 dark:text-red-400'
-                : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
-            }`}
-            title="여정 상세 메뉴 토글"
-            aria-label="Toggle banner menu"
+            className={hdrBtn(isBannerMenuOpen)}
+            aria-expanded={isBannerMenuOpen}
+            aria-label="여정 메뉴"
+            title="여정 메뉴"
           >
-            <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 ${isBannerMenuOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isBannerMenuOpen ? 'rotate-180' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* 2. Accordion Dropdown Panel (Shown ONLY when isBannerMenuOpen) */}
       {isBannerMenuOpen && (
-        <div className="border-t border-black/10 dark:border-white/10 bg-[#F4F2EC] dark:bg-[#161616] p-3 sm:p-4 animate-in slide-in-from-top-2 duration-200 flex flex-col gap-3 shadow-inner">
+        <div className="border-t border-black/[0.06] dark:border-white/[0.08] px-3 sm:px-4 py-3 animate-in slide-in-from-top-2 duration-200 flex flex-col gap-3">
           {/* Row 1: Title Input (in Edit mode) or Detailed Title Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             {isEditing && draftTrip ? (
@@ -3393,7 +3341,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 }}
                 className={`btn btn-sm flex ${
                   activeTab === 'settlement'
-                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
                     : 'btn-secondary'
                 }`}
                 title="비용/정산 관리"
@@ -3446,7 +3394,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               {isEditing && (
                 <button
                   onClick={() => setShowTripDeleteConfirm(true)}
-                  className="px-2.5 py-1 border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white rounded text-micro font-bold uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer"
+                  className="btn btn-outline-danger btn-sm"
                   title="여정 삭제"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -3652,7 +3600,8 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   return {
     todayMode,

@@ -1,5 +1,6 @@
 import { Train, Bus, Car, Plus } from 'lucide-react';
 import { TransitCard } from '../../components/TransitCard';
+import { Segment } from '../../components/ui/Segment';
 import { TransitItem } from '../../types';
 import { parseTimeToMinutes } from './detailUtils';
 import type { JourneyDetailState } from './useJourneyDetailState';
@@ -17,30 +18,27 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
       <div className={`w-full flex flex-col ${activeTab === 'transit' ? 'block' : 'hidden'}`}>
         {visitedTabs.has('transit') && (
           <>
-            {/* Sort Type Control */}
-            <div className="w-full flex justify-end items-center gap-2 py-2 px-4 md:px-6 mt-2 text-micro md:text-meta font-bold uppercase tracking-widest select-none">
-            <button 
-              onClick={() => setTransitSortType('time')} 
-              className={`h-8 px-3 rounded-full border transition-colors cursor-pointer ${transitSortType === 'time' ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
-              title="탑승 시간순"
-            >
-              By time
-            </button>
-            <button 
-              onClick={() => setTransitSortType('type')} 
-              className={`h-8 px-3 rounded-full border transition-colors cursor-pointer ${transitSortType === 'type' ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
-              title="탑승 종류순"
-            >
-              By type
-            </button>
-          </div>
+            {/* Order: by time, or grouped by kind */}
+            <div className="w-full flex justify-end items-center py-2.5 px-4 md:px-6 select-none">
+              <Segment
+                size="sm"
+                ariaLabel="교통편 정렬"
+                value={transitSortType}
+                onChange={setTransitSortType}
+                options={[
+                  { value: 'time', label: '시간순' },
+                  { value: 'type', label: '종류순' },
+                ]}
+              />
+            </div>
 
           {(() => {
             const rawTransitList = isEditing ? draftTransits : transits;
             if (rawTransitList.length === 0) {
               return (
-                <div className="text-center py-16 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
-                  등록된 교통편이 없습니다.
+                <div className="tgl-card-edge mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-12 rounded-card bg-surface dark:bg-surface-dark text-center">
+                  <Train className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
+                  <span className="text-sm text-black/60 dark:text-white/60">등록된 교통편이 없습니다.</span>
                 </div>
               );
             }
@@ -71,14 +69,10 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
                 <div className="w-full flex flex-col">
                   <div className="flex items-center justify-between py-2.5 px-4 md:px-6 mt-2">
                     <div className="flex items-center gap-2">
-                      <IconComponent className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                      <span className="text-meta md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
-                        {label}
-                      </span>
+                      <IconComponent className="w-4 h-4 text-black/55 dark:text-white/55" aria-hidden />
+                      <span className="text-sm font-extrabold">{label}</span>
                     </div>
-                    <span className="text-micro md:text-meta font-mono font-bold text-black/60 dark:text-white/60 tracking-wider">
-                      {items.length} ITEM{items.length > 1 ? 'S' : ''}
-                    </span>
+                    <span className="text-micro font-mono font-bold text-black/50 dark:text-white/50 tabular-nums">{items.length}</span>
                   </div>
                   <div className="flex flex-col w-full">
                     {items.map(transit => (
@@ -114,7 +108,7 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
               // 탑승시간순 정렬: Train/Bus/Taxi 묶지 않고 시간순으로 정렬된 전체 리스트를 하나의 그룹으로 렌더링
               return (
                 <div className="flex flex-col text-left w-full">
-                  {renderGroup(transitList, 'Transit Schedule', Train)}
+                  {renderGroup(transitList, '교통편', Train)}
                 </div>
               );
             } else {
@@ -137,10 +131,10 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
               const cars = transitList.filter(t => getEffectiveTransitType(t) === 'car');
               return (
                 <div className="flex flex-col text-left w-full">
-                  {renderGroup(trains, 'Train Tickets', Train)}
-                  {renderGroup(buses, 'Bus Tickets', Bus)}
-                  {renderGroup(taxis, 'Taxi Tickets', Car)}
-                  {renderGroup(cars, 'Rentals', Car)}
+                  {renderGroup(trains, '열차', Train)}
+                  {renderGroup(buses, '버스', Bus)}
+                  {renderGroup(taxis, '택시', Car)}
+                  {renderGroup(cars, '렌터카', Car)}
                 </div>
               );
             }
@@ -149,31 +143,31 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
           {/* Add Transit control */}
           {isEditing && (
             <div className="flex flex-col items-center py-6 gap-2">
-              <span className="text-meta text-black/60 dark:text-white/60 uppercase font-extrabold tracking-widest font-sans break-keep">Add Transit Ticket (교통 티켓 추가)</span>
+              <span className="text-meta text-black/60 dark:text-white/60 font-bold">교통편 추가</span>
               <div className="flex flex-wrap justify-center gap-2">
                 <button 
                   onClick={() => handleAddTransit('train')} 
                   className="btn btn-secondary btn-sm flex"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Train
+                  <Plus className="w-3.5 h-3.5" aria-hidden />열차
                 </button>
                 <button 
                   onClick={() => handleAddTransit('bus')} 
                   className="btn btn-secondary btn-sm flex"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Bus
+                  <Plus className="w-3.5 h-3.5" aria-hidden />버스
                 </button>
                 <button 
                   onClick={() => handleAddTransit('taxi')} 
                   className="btn btn-secondary btn-sm flex"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Taxi
+                  <Plus className="w-3.5 h-3.5" aria-hidden />택시
                 </button>
                 <button 
                   onClick={() => handleAddTransit('car')} 
                   className="btn btn-secondary btn-sm flex"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Rental
+                  <Plus className="w-3.5 h-3.5" aria-hidden />렌터카
                 </button>
               </div>
             </div>

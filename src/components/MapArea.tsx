@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock, Bookmark, Locate, User } from 'lucide-react';
+import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock, Bookmark, Locate, User, Layers } from 'lucide-react';
+import { MAP_STYLES, MAP_STYLE_EVENT, MAP_STYLE_LABEL, MapStyle, applyMapStyle, isMapStyle, mapTileFor, readMapStyle } from '../utils/mapTiles';
 import { Trip, TimelineItem, TransitItem, SpotPocketItem } from '../types';
 import { getSavedPockets, calculateDistanceInMeters } from '../utils/pocketStorage';
 
@@ -61,7 +62,7 @@ const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null
   const flipStyle = isWest ? 'scaleX(-1)' : 'scaleX(1)';
   // 자동차 SVG는 기본 상태에서 차 앞머리(보닛)가 왼쪽(x=5)을 향하므로 플립 반전 적용
   const carFlipStyle = isWest ? 'scaleX(1)' : 'scaleX(-1)';
-  
+
   if (vehicleType === 'car') {
     return `
       <div style="width: 48px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none; contain: layout paint; isolation: isolate;">
@@ -87,7 +88,7 @@ const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null
       </div>
     `;
   }
-  
+
   if (vehicleType === 'train') {
     return `
       <div style="width: 52px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none; contain: layout paint; isolation: isolate;">
@@ -184,10 +185,10 @@ const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null
         }
       </style>
       <div style="${isMoving ? 'animation: walkerBobbing 0.44s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: bottom center; will-change: transform;">
-        <img 
-          src="/walker.png" 
-          alt="Walker" 
-          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(1.5px 0 0 #FFFFFF) drop-shadow(-1.5px 0 0 #FFFFFF) drop-shadow(0 1.5px 0 #FFFFFF) drop-shadow(0 -1.5px 0 #FFFFFF) drop-shadow(0 2px 4px rgba(0,0,0,0.65));" 
+        <img
+          src="/walker.png"
+          alt="Walker"
+          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(1.5px 0 0 #FFFFFF) drop-shadow(-1.5px 0 0 #FFFFFF) drop-shadow(0 1.5px 0 #FFFFFF) drop-shadow(0 -1.5px 0 #FFFFFF) drop-shadow(0 2px 4px rgba(0,0,0,0.65));"
         />
       </div>
       <div style="width: 24px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; ${isMoving ? 'animation: walkerShadowPulse 0.44s ease-in-out infinite;' : ''} margin-top: -2px;"></div>
@@ -200,7 +201,7 @@ const getTransitVehicleType = (transit?: any): 'bus' | 'car' | 'train' => {
   const tt = (transit.transitType || '').toLowerCase();
   const ticket = (transit.ticketType || '').toLowerCase();
   const title = (transit.title || '').toLowerCase();
-  
+
   if (tt === 'bus' || ticket.includes('bus') || ticket.includes('버스') || title.includes('버스') || title.includes('bus')) {
     return 'bus';
   }
@@ -246,6 +247,16 @@ export function MapArea({
   const [mapReady, setMapReady] = useState(false);
   const [isInteractive, setIsInteractive] = useState(true);
   const [isMapMenuOpen, setIsMapMenuOpen] = useState(false);
+  // Map style: this account's choice, shared by every open map through an event
+  const [mapStyle, setMapStyle] = useState<MapStyle>(() => readMapStyle());
+  const [isStyleOpen, setIsStyleOpen] = useState(false);
+  const mapStyleRef = useRef(mapStyle);
+  mapStyleRef.current = mapStyle;
+  useEffect(() => {
+    const onStyle = (e: Event) => { const v = (e as CustomEvent).detail; if (isMapStyle(v)) setMapStyle(v); };
+    window.addEventListener(MAP_STYLE_EVENT, onStyle);
+    return () => window.removeEventListener(MAP_STYLE_EVENT, onStyle);
+  }, []);
   const [showPocketPins, setShowPocketPins] = useState<boolean>(true);
   const pocketMarkersRef = useRef<{ [id: string]: any }>({});
   const radarRoutePolylineRef = useRef<any>(null);
@@ -725,17 +736,8 @@ export function MapArea({
 
     mapRef.current = map;
 
-    const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
-    const tileUrl = cartoKey
-      ? `https://{s}.basemaps.cartocdn.com/rastertiles/${isDarkMode ? 'dark_all' : 'light_all'}/{z}/{x}/{y}.png?key=${cartoKey}`
-      : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko';
-
-    tileLayerRef.current = L.tileLayer(tileUrl, {
-      maxNativeZoom: 20,
-      maxZoom: 21,
-      zIndex: 1,
-      className: !cartoKey && isDarkMode ? 'map-tile-dark' : (!cartoKey ? 'map-tile-light' : ''),
-    }).addTo(map);
+    const tile = mapTileFor(mapStyleRef.current, isDarkMode);
+    tileLayerRef.current = L.tileLayer(tile.url, tile.options).addTo(map);
 
     map.on('dragstart zoomstart', () => {
       userMovedMapRef.current = true;
@@ -802,8 +804,7 @@ export function MapArea({
     }
   }, [isInteractive, mapReady]);
 
-  // ─── Effect 2: Leaflet redraw helper on dark-mode toggle ───────────────────
-  // ─── Effect 2: Leaflet redraw helper on dark-mode toggle ───────────────────
+  // ─── Effect 2: swap the tiles on a dark-mode or map-style change ───────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
@@ -812,22 +813,13 @@ export function MapArea({
 
     if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
 
-    const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
-    const tileUrl = cartoKey
-      ? `https://{s}.basemaps.cartocdn.com/rastertiles/${isDarkMode ? 'dark_all' : 'light_all'}/{z}/{x}/{y}.png?key=${cartoKey}`
-      : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko';
-
-    tileLayerRef.current = L.tileLayer(tileUrl, {
-      maxNativeZoom: 20,
-      maxZoom: 21,
-      zIndex: 1,
-      className: !cartoKey && isDarkMode ? 'map-tile-dark' : (!cartoKey ? 'map-tile-light' : ''),
-    }).addTo(map);
+    const tile = mapTileFor(mapStyle, isDarkMode);
+    tileLayerRef.current = L.tileLayer(tile.url, tile.options).addTo(map);
 
     // Redraw polyline to bring to front and align layers
     if (polylineRef.current?.bringToFront) polylineRef.current.bringToFront();
     Object.values(markersRef.current).forEach((m: any) => { if (m?.bringToFront) m.bringToFront(); });
-  }, [isDarkMode, mapReady]);
+  }, [isDarkMode, mapReady, mapStyle]);
 
   // ─── Effect 3: Render markers & polyline ───────────────────────────────────
   useEffect(() => {
@@ -928,7 +920,7 @@ export function MapArea({
         Object.entries(transitGroups).forEach(([tIdStr, group]) => {
           const tId = Number(tIdStr);
           const isActiveTrans = expandedItemId !== null && tId === expandedItemId;
-          
+
           // Find the transit type for this group
           const transit = transits.find(t => t.id === tId);
           const vehicle = getTransitVehicleType(transit);
@@ -1018,7 +1010,7 @@ export function MapArea({
         const marker = L.marker([lat, lng], { icon, zIndexOffset: 800 }).addTo(map);
         markersRef.current[`city-${key}`] = marker;
       });
-      
+
       // Jitter prevention check for tab change metadata
       const tabChanged = lastTabRef.current !== activeTab;
       if (tabChanged) {
@@ -1032,7 +1024,7 @@ export function MapArea({
 
       // Ensure view is fitted
       const coords: [number, number][] = valid.map(p => [Number(p.lat), Number(p.lng)]);
-      
+
       if (coords.length > 0) {
         const bounds = L.latLngBounds(coords);
         if (coords.length === 1 || bounds.getNorthEast().equals(bounds.getSouthWest())) {
@@ -1053,13 +1045,13 @@ export function MapArea({
       const item = p as any;
       const lat = Number(item.lat);
       const lng = Number(item.lng);
-      
+
       const isTransitActive = activeTab === 'transit' ? (item.transitId === expandedItemId) : (expandedItemId === item.id);
       const isActive = !!isTransitActive;
       const isTransitHovered = activeTab === 'transit' ? (item.transitId === hoveredItemId) : (hoveredItemId === item.id);
       const isHovered = !!isTransitHovered;
       const isTransitFaded = activeTab === 'transit' && expandedItemId !== null && !isTransitActive;
-      
+
       let pinColor = '#dc2626';
 
       if (isSummaryMode) {
@@ -1170,9 +1162,9 @@ export function MapArea({
       });
 
       const marker = L.marker([lat, lng], { icon, zIndexOffset: (isActive || isHovered) ? 100000 : 1000 }).addTo(map);
-      marker.on('click', (e: any) => { 
-        L.DomEvent.stopPropagation(e); 
-        handleItemToggle(activeTab === 'transit' ? item.transitId : item.id); 
+      marker.on('click', (e: any) => {
+        L.DomEvent.stopPropagation(e);
+        handleItemToggle(activeTab === 'transit' ? item.transitId : item.id);
       });
       marker.on('mouseover', () => {
         onItemHover?.(activeTab === 'transit' ? item.transitId : item.id);
@@ -1190,10 +1182,10 @@ export function MapArea({
     }
     const itemIdChanged = lastExpandedItemIdRef.current !== expandedItemId;
     const focusTypeChanged = lastTransitFocusTypeRef.current !== transitFocusType;
-    
+
     let currentCoordsStr = '';
     const activePointsList: { lat: number; lng: number }[] = [];
-    
+
     if (expandedItemId !== null) {
       if (activeTab === 'transit') {
         if (transitFocusType === 'depart') {
@@ -1219,7 +1211,7 @@ export function MapArea({
         if (p && p.lat && p.lng) activePointsList.push({ lat: Number(p.lat), lng: Number(p.lng) });
       }
     }
-    
+
     currentCoordsStr = activePointsList.map(c => `${c.lat},${c.lng}`).join('|');
     const coordsChanged = lastActiveCoordsRef.current !== currentCoordsStr;
     const dateChanged = lastSelectedDateRef.current !== selectedDate;
@@ -1245,7 +1237,7 @@ export function MapArea({
           const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
           map.setView([lat, lng], 12, { animate: true });
         }
-        
+
         if (summaryCircleRef.current) {
           map.removeLayer(summaryCircleRef.current);
           summaryCircleRef.current = null;
@@ -1290,7 +1282,7 @@ export function MapArea({
           const latLng = activeMarker.getLatLng();
           const targetZoom = (activeTab === 'timeline' || activeTab === 'stays') ? 15 : 14;
 
-          if (isCinematicMode && lastActiveSpotCoordsRef.current && 
+          if (isCinematicMode && lastActiveSpotCoordsRef.current &&
               (lastActiveSpotCoordsRef.current.lat !== latLng.lat || lastActiveSpotCoordsRef.current.lng !== latLng.lng)) {
             const prevCoords = { ...lastActiveSpotCoordsRef.current };
             const nextCoords = { lat: latLng.lat, lng: latLng.lng };
@@ -1329,8 +1321,8 @@ export function MapArea({
                 const elapsed = now - startTime;
                 const progress = Math.min(1, elapsed / animDuration);
                 // Smooth Swiss EaseInOutCubic (비단결 같은 가감속 곡선)
-                const ease = progress < 0.5 
-                  ? 4 * progress * progress * progress 
+                const ease = progress < 0.5
+                  ? 4 * progress * progress * progress
                   : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
                 const curLat = prevCoords.lat + (nextCoords.lat - prevCoords.lat) * ease;
@@ -1401,21 +1393,21 @@ export function MapArea({
           const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
           const hasFrom = fromPoint && fromPoint.lat !== undefined && fromPoint.lng !== undefined && !isNaN(Number(fromPoint.lat)) && !isNaN(Number(fromPoint.lng));
           const hasTo = toPoint && toPoint.lat !== undefined && toPoint.lng !== undefined && !isNaN(Number(toPoint.lat)) && !isNaN(Number(toPoint.lng));
-          
+
           if (hasFrom && hasTo) {
             const startLat = Number(fromPoint.lat);
             const startLng = Number(fromPoint.lng);
             const endLat = Number(toPoint.lat);
             const endLng = Number(toPoint.lng);
             const bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
-            
+
             const padTopLeft: [number, number] = isMobile ? [15, 15] : [60, 60];
             const padBotRight: [number, number] = isMobile ? [15, 30] : [60, 130];
-            map.fitBounds(bounds, { 
-              paddingTopLeft: padTopLeft, 
-              paddingBottomRight: padBotRight, 
-              maxZoom: isMobile ? 15 : 15, 
-              animate: true 
+            map.fitBounds(bounds, {
+              paddingTopLeft: padTopLeft,
+              paddingBottomRight: padBotRight,
+              maxZoom: isMobile ? 15 : 15,
+              animate: true
             });
           } else if (hasFrom) {
             map.setView([Number(fromPoint.lat), Number(fromPoint.lng)], 15, { animate: true });
@@ -1505,7 +1497,7 @@ export function MapArea({
       try {
         const dummyDiv = document.createElement('div');
         const service = new google.maps.places.PlacesService(dummyDiv);
-        
+
         const searchType = (googleType: string, poiType: string): Promise<any[]> => {
           return new Promise((resolve) => {
             service.nearbySearch(
@@ -1592,7 +1584,7 @@ export function MapArea({
     if (activeTab !== 'stays') return;
 
     poiItems.forEach(poi => {
-      const isVisible = 
+      const isVisible =
         (poi.type === 'convenience' && showConvenience) ||
         (poi.type === 'supermarket' && showSupermarket) ||
         (poi.type === 'station' && showStation);
@@ -1648,9 +1640,9 @@ export function MapArea({
         const el = marker.getElement();
         if (el) el.classList.remove('poi-marker-hovered');
       });
-      
+
       const googleSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}`;
-      
+
       const popupContainer = document.createElement('div');
       popupContainer.style.fontFamily = 'sans-serif';
       popupContainer.style.fontSize = '11px';
@@ -1688,7 +1680,7 @@ export function MapArea({
 
       button.onmouseover = () => { button.style.background = '#be123c'; };
       button.onmouseout = () => { button.style.background = '#e11d48'; };
-      
+
       button.addEventListener('click', (e) => {
         e.stopPropagation();
         window.open(googleSearchUrl, '_blank');
@@ -1851,8 +1843,8 @@ export function MapArea({
         };
 
         const initialIcon = updateVehicleIcon(angle, isFlight ? 0.9 : 1);
-        const animMarker = L.marker([startLat, startLng], { 
-          icon: initialIcon, 
+        const animMarker = L.marker([startLat, startLng], {
+          icon: initialIcon,
           zIndexOffset: 500000 // 활성 스팟 마커(100,000) 위로 확실하게 올라오도록 최상위 z-index 부여
         }).addTo(map);
         if (animMarker.bringToFront) animMarker.bringToFront();
@@ -1957,7 +1949,7 @@ export function MapArea({
       } else {
         activeItem = mapPoints.find(item => item.id === expandedItemId);
       }
-      
+
       if (activeItem) {
         const nameSource = activeItem.place || activeItem.location || '';
         const parts = nameSource.split(',').map((s: string) => s.trim()).filter(Boolean);
@@ -2076,7 +2068,7 @@ export function MapArea({
             type="button"
             onClick={handleLocateUser}
             disabled={isLocating}
-            className="w-7 h-7 rounded shadow-sm border transition cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-red-600 dark:hover:text-red-400 active:scale-95"
+            className="tap-target w-8 h-8 rounded-full shadow-sm transition-colors cursor-pointer flex items-center justify-center bg-surface/95 dark:bg-surface-dark/95 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white active:scale-95"
             title="현재 위치 찾기 (GPS)"
             aria-label="Find my current location"
           >
@@ -2090,11 +2082,10 @@ export function MapArea({
           <button
             type="button"
             onClick={() => setShowPocketPins(prev => !prev)}
-            className={`tap-target w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 active:scale-95 ${
-              showPocketPins
-                ? 'border-red-500/40 text-red-500'
-                : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+            className={`tap-target w-8 h-8 rounded-full shadow-sm transition-colors cursor-pointer flex items-center justify-center bg-surface/95 dark:bg-surface-dark/95 active:scale-95 ${
+              showPocketPins ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
             }`}
+            aria-pressed={showPocketPins}
             title="포켓 스팟 지도 표시 토글 (POCKET)"
             aria-label="Toggle pocket spots on map"
           >
@@ -2103,11 +2094,20 @@ export function MapArea({
 
           <button
             type="button"
-            onClick={() => setIsMapMenuOpen(prev => !prev)}
-            className={`tap-target w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center ${
-              isMapMenuOpen 
-                ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
-                : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white hover:bg-[#F9F8F6] dark:hover:bg-[#111111]'
+            onClick={() => { setIsStyleOpen(prev => !prev); setIsMapMenuOpen(false); }}
+            className={`tap-target w-8 h-8 rounded-full shadow-sm transition-colors cursor-pointer flex items-center justify-center ${isStyleOpen ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'bg-surface/95 dark:bg-surface-dark/95 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'}`}
+            aria-expanded={isStyleOpen}
+            aria-label="지도 스타일"
+            title={`지도 스타일 · ${MAP_STYLE_LABEL[mapStyle]}`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setIsMapMenuOpen(prev => !prev); setIsStyleOpen(false); }}
+            className={`tap-target w-8 h-8 rounded-full shadow-sm transition-colors cursor-pointer flex items-center justify-center ${
+              isMapMenuOpen ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'bg-surface/95 dark:bg-surface-dark/95 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
             }`}
             title="지도 도구 메뉴"
             aria-label="Toggle map tools menu"
@@ -2116,12 +2116,31 @@ export function MapArea({
           </button>
         </div>
 
+        {isStyleOpen && (
+          <div role="radiogroup" aria-label="지도 스타일" className="flex items-center gap-0.5 p-1 rounded-full bg-surface/95 dark:bg-surface-dark/95 shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
+            {MAP_STYLES.map(st => (
+              <button
+                key={st}
+                type="button"
+                role="radio"
+                aria-checked={mapStyle === st}
+                onClick={() => { setMapStyle(st); applyMapStyle(st); }}
+                className={`h-8 px-3.5 rounded-full text-meta whitespace-nowrap transition-colors ${
+                  mapStyle === st ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-bold' : 'text-black/65 dark:text-white/65 font-medium hover:text-black dark:hover:text-white'
+                }`}
+              >
+                {MAP_STYLE_LABEL[st]}
+              </button>
+            ))}
+          </div>
+        )}
+
         {isMapMenuOpen && (
-          <div className="flex flex-col gap-1 p-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 border border-black/15 dark:border-white/15 rounded shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="flex flex-col gap-1 p-1 rounded-full bg-surface/95 dark:bg-surface-dark/95 shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
             <button
               type="button"
               onClick={() => { if (mapRef.current) mapRef.current.zoomIn(); }}
-              className="tap-target w-7 h-7 flex items-center justify-center rounded text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              className="tap-target w-8 h-8 flex items-center justify-center rounded-full text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
               title="지도 확대"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -2129,16 +2148,16 @@ export function MapArea({
             <button
               type="button"
               onClick={() => { if (mapRef.current) mapRef.current.zoomOut(); }}
-              className="tap-target w-7 h-7 flex items-center justify-center rounded text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              className="tap-target w-8 h-8 flex items-center justify-center rounded-full text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
               title="지도 축소"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <div className="w-full h-px bg-black/10 dark:bg-white/10 my-0.5" />
+            <div className="mx-1.5 h-px bg-black/10 dark:bg-white/10 my-0.5" />
             <button
               type="button"
               onClick={() => setIsInteractive(prev => !prev)}
-              className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+              className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors cursor-pointer ${
                 isInteractive
                   ? 'bg-red-600 text-white shadow-xs'
                   : 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10'

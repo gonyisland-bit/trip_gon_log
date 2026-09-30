@@ -1,7 +1,11 @@
-import { Trash2, MapPin, Plus, Maximize2, ArrowRight, Columns2, LayoutGrid } from 'lucide-react';
+import { Trash2, MapPin, MapPinOff, Plus, Maximize2, ArrowRight, Columns2, LayoutGrid, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { galleryThumbMap } from '../../utils/journeyThumbs';
 import { Footer } from '../../components/Footer';
+import { Segment } from '../../components/ui/Segment';
 import type { JourneyDetailState } from './useJourneyDetailState';
+
+// Round glass button over a photo
+const overBtn = 'tap-target w-8 h-8 rounded-full inline-grid place-items-center text-white transition-colors z-10';
 
 export function GalleryTab({ s }: { s: JourneyDetailState }) {
   const {
@@ -15,211 +19,185 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
   } = s;
   // Grid tiles load the 480px copies when they exist (the viewer keeps the originals)
   const thumbs = galleryThumbMap(trip);
+  // Columns follow the panel, not the window: from md the list is half the screen wide
+  const gridCls = `grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'} gap-2 sm:gap-3 px-3 sm:px-4`;
+  const openViewer = (url: string, id?: number) => {
+    setLightboxIndex(galleryUrlIndexMap.get(url) ?? 0);
+    if (id !== undefined) setExpandedItemId(id);
+    setIsLightboxOpen(true);
+  };
+  const toggleDay = (key: string) => setCollapsedGalleryDays(prev => prev.includes(key) ? prev.filter(d => d !== key) : [...prev, key]);
 
   return (
     <>
         <div className={`h-auto flex flex-col w-full relative pb-16 ${activeTab === 'gallery' ? 'block' : 'hidden'}`}>
           {visitedTabs.has('gallery') && (() => {
-            // Helper function to render a single gallery item
           const renderGalleryItem = (imgItem: typeof allGalleryImages[0], idx: number) => {
             const isPhotoActive = expandedItemId === imgItem.id;
+            const hasCoords = imgItem.type === 'gallery' && imgItem.lat !== undefined && imgItem.lng !== undefined && imgItem.lat !== null && imgItem.lng !== null;
+            const showTools = isPhotoActive ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover/gallery:opacity-100 focus-within:opacity-100';
+
+            // The journey item this photo belongs to (a gallery photo: that day's first item)
+            let targetItemId = imgItem.type === 'timeline' ? (imgItem as any).itemId : undefined;
+            const targetDate = imgItem.date || '';
+            if (imgItem.type === 'gallery' && targetDate) {
+              const itemsForDate = timelineData[targetDate] || [];
+              if (itemsForDate.length > 0) targetItemId = itemsForDate[0].id;
+            }
 
             return (
-              <div 
+              <div
                 ref={el => { itemRefs.current[imgItem.id] = el; }}
-                key={`${imgItem.type}-${imgItem.url}-${idx}`} 
-                onClick={() => {
-                  setExpandedItemId(prev => prev === imgItem.id ? null : imgItem.id);
-                }}
-                onDoubleClick={() => {
-                  const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
-                  setLightboxIndex(globalIdx);
-                  setExpandedItemId(imgItem.id);
-                  setIsLightboxOpen(true);
-                }}
-                className={`tgl-cv-tile h-full flex flex-col group/gallery transition-all duration-200 relative cursor-pointer select-none opacity-100 ${
-                  isPhotoActive 
-                    ? 'bg-black/[0.04] dark:bg-white/[0.06] ring-1 ring-inset ring-black/40 dark:ring-white/40 z-10' 
-                    : 'bg-white dark:bg-[#0E0E0E] hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                key={`${imgItem.type}-${imgItem.url}-${idx}`}
+                onClick={() => setExpandedItemId(prev => prev === imgItem.id ? null : imgItem.id)}
+                onDoubleClick={() => openViewer(imgItem.url, imgItem.id)}
+                className={`tgl-cv-tile tgl-card-edge h-full flex flex-col group/gallery relative cursor-pointer select-none rounded-card overflow-hidden bg-surface dark:bg-surface-dark transition-colors ${
+                  isPhotoActive ? 'ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40' : ''
                 }`}
               >
-                {/* Film-photo styled image container */}
-                <div className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition duration-300 aspect-[4/3] group shrink-0">
+                <div className="relative overflow-hidden aspect-[4/3] shrink-0 bg-black/[0.04] dark:bg-white/[0.06]">
                   <img
                     src={thumbs.get(imgItem.url) || imgItem.url}
-                    alt={imgItem.place || 'Gallery Photo'}
+                    alt={imgItem.place || '여행 사진'}
                     loading="lazy"
                     decoding="async"
                     data-pin-nopin="true"
                     data-pin-no-hover="true"
                     draggable="false"
                     onDragStart={(e) => e.preventDefault()}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-500 md:group-hover/gallery:scale-[1.03]"
                   />
 
-                  {/* Delete image button (only for gallery type) */}
-                  {isLoggedIn && imgItem.type === 'gallery' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveGalleryImage(imgItem.url, e);
-                      }}
-                      className={`tap-target absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100'}`}
-                      title="Remove Image"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  {/* Top right: map pin (on stays visible), delete */}
+                  <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                    {hasCoords && (
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const newExclude = !imgItem.excludeFromMap;
+                          await handleToggleGalleryImagePin(imgItem.url, newExclude);
+                          if (!newExclude) setExpandedItemId(imgItem.id);
+                        }}
+                        className={`${overBtn} ${!imgItem.excludeFromMap ? 'bg-red-600 hover:bg-red-700 opacity-100' : `bg-black/55 hover:bg-black/75 ${showTools}`}`}
+                        aria-pressed={!imgItem.excludeFromMap}
+                        aria-label={imgItem.excludeFromMap ? '지도에 표시' : '지도에서 숨기기'}
+                        title={imgItem.excludeFromMap ? '지도에 표시' : '지도에서 숨기기'}
+                      >
+                        {imgItem.excludeFromMap ? <MapPinOff className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                      </button>
+                    )}
+                    {isLoggedIn && imgItem.type === 'gallery' && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleRemoveGalleryImage(imgItem.url, e); }}
+                        className={`${overBtn} bg-black/55 hover:bg-red-600 ${showTools}`}
+                        aria-label="사진 삭제"
+                        title="사진 삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
 
-                  {/* Map Pin Toggle Button (only for gallery type if coords exist) */}
-                  {imgItem.type === 'gallery' && imgItem.lat !== undefined && imgItem.lng !== undefined && imgItem.lat !== null && imgItem.lng !== null && (
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        const newExclude = !imgItem.excludeFromMap;
-                        await handleToggleGalleryImagePin(imgItem.url, newExclude);
-                        if (!newExclude) {
-                          setExpandedItemId(imgItem.id);
-                        }
-                      }}
-                      className={`tap-target absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-none ${!imgItem.excludeFromMap ? 'bg-red-500 hover:bg-red-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/60 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/60 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
-                      title={imgItem.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  {/* Maximize / Expand button to trigger lightbox (bottom-right) */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
-                      setLightboxIndex(globalIdx);
-                      setIsLightboxOpen(true);
-                    }}
-                    className={`tap-target absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
-                    title="전체화면"
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); openViewer(imgItem.url); }}
+                    className={`${overBtn} absolute bottom-2 right-2 bg-black/55 hover:bg-black/75 ${showTools}`}
+                    aria-label="크게 보기"
+                    title="크게 보기"
                   >
                     <Maximize2 className="w-3.5 h-3.5" />
                   </button>
-
-                  <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                 </div>
 
-                {/* Note / description area below image (Takes full remaining card height with flex-1) */}
-                <div className="px-3 py-2.5 flex-1 flex flex-col justify-between gap-1 transition-colors duration-200 bg-transparent text-black dark:text-white">
-                  {/* Top Meta: Date and Time */}
-                  {imgItem.date && (
-                    <div 
-                      className="flex items-center gap-1 text-meta sm:text-meta font-mono font-medium text-black/60 dark:text-white/60 whitespace-nowrap truncate min-w-0"
-                      title={`${imgItem.date}${imgItem.time ? ' · ' + imgItem.time : ''}`}
-                    >
-                      <span className="truncate">{imgItem.date}</span>
-                      {imgItem.time && (
-                        <>
-                          <span className="text-black/60 dark:text-white/60 shrink-0">·</span>
-                          <span className="shrink-0">{imgItem.time}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Title / Description */}
-                  <div className="flex items-start justify-between gap-2 w-full mt-0.5">
-                    <div className="flex-1 min-w-0">
-                      {/* 1. Main Title: 일정 제목 (place) */}
-                      {imgItem.place ? (
-                        <h4 className="text-xs sm:text-[13px] font-sans font-bold leading-snug break-keep line-clamp-2 not-italic text-black dark:text-white">
-                          {imgItem.place}
-                        </h4>
-                      ) : imgItem.type === 'gallery' && isEditing ? (
-                        <input
-                          type="text"
-                          value={imgItem.imgNote || ''}
-                          onChange={(e) => handleUpdateGalleryImageNote(imgItem.url, e.target.value)}
-                          placeholder="사진 설명 추가..."
-                          className="w-full bg-transparent outline-none text-xs sm:text-[13px] font-sans font-bold not-italic border-b pb-0.5 text-black dark:text-white placeholder-black/30 dark:placeholder-white/30 border-black/20 dark:border-white/20"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : imgItem.imgNote ? (
-                        <h4 className="text-xs sm:text-[13px] font-sans font-bold leading-snug break-keep line-clamp-2 not-italic text-black dark:text-white">
-                          {imgItem.imgNote}
-                        </h4>
-                      ) : (
-                        <p className="text-meta font-sans font-medium not-italic text-black/60 dark:text-white/60">기록된 제목 없음</p>
-                      )}
-
-                      {/* 2. Specified Location Name: 구글 자동완성 위치명 (location) */}
-                      {((imgItem as any).location || (imgItem.type === 'gallery' && imgItem.place && imgItem.imgNote)) && (
-                        <div className="text-meta sm:text-xs font-sans font-semibold tracking-tight flex items-center gap-1 mt-1 not-italic truncate text-black/70 dark:text-white/70">
-                          <MapPin className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" />
-                          <span className="truncate">{(imgItem as any).location || imgItem.place}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right action icons */}
-                    <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-                      {(() => {
-                        let targetItemId = imgItem.type === 'timeline' ? (imgItem as any).itemId : undefined;
-                        const targetDate = imgItem.date || '';
-
-                        if (imgItem.type === 'gallery' && targetDate) {
-                          const itemsForDate = timelineData[targetDate] || [];
-                          if (itemsForDate.length > 0) {
-                            targetItemId = itemsForDate[0].id;
-                          }
-                        }
-
-                        if (targetItemId !== undefined) {
-                          return (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleJumpToTimelineItem(targetItemId, targetDate);
-                              }}
-                              className="tap-target p-1 transition-colors cursor-pointer bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-black dark:hover:text-white text-black/60 dark:text-white/60"
-                              title="일정으로 이동"
-                            >
-                              <ArrowRight className="w-3 h-3" />
-                            </button>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
+                {/* Caption: date · time, title, place, and the way back to the journey item */}
+                <div className="px-3 py-2.5 flex-1 flex items-start justify-between gap-2 min-w-0">
+                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    {imgItem.date && (
+                      <span className="font-mono text-micro font-bold tracking-wider text-black/50 dark:text-white/50 truncate tabular-nums">
+                        {imgItem.date}{imgItem.time ? ` · ${imgItem.time}` : ''}
+                      </span>
+                    )}
+                    {imgItem.place ? (
+                      <h4 className="text-[13px] font-bold leading-snug break-keep line-clamp-2">{imgItem.place}</h4>
+                    ) : imgItem.type === 'gallery' && isEditing ? (
+                      <input
+                        type="text"
+                        value={imgItem.imgNote || ''}
+                        onChange={(e) => handleUpdateGalleryImageNote(imgItem.url, e.target.value)}
+                        placeholder="사진 설명"
+                        className="w-full h-8 px-3 mt-0.5 rounded-full bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 outline-none text-[13px] font-bold placeholder-black/35 dark:placeholder-white/35 focus:border-black/40 dark:focus:border-white/40"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : imgItem.imgNote ? (
+                      <h4 className="text-[13px] font-bold leading-snug break-keep line-clamp-2">{imgItem.imgNote}</h4>
+                    ) : (
+                      <span className="text-meta text-black/45 dark:text-white/45">제목 없음</span>
+                    )}
+                    {((imgItem as any).location || (imgItem.type === 'gallery' && imgItem.place && imgItem.imgNote)) && (
+                      <span className="text-meta text-black/60 dark:text-white/60 truncate">{(imgItem as any).location || imgItem.place}</span>
+                    )}
                   </div>
+                  {targetItemId !== undefined && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleJumpToTimelineItem(targetItemId, targetDate); }}
+                      className="tap-target w-8 h-8 -mr-1 rounded-full inline-grid place-items-center shrink-0 text-black/55 dark:text-white/55 hover:bg-black/[0.05] dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
+                      aria-label="일정으로 이동"
+                      title="일정으로 이동"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             );
           };
 
+          // A day of photos: a quiet header that folds its grid
+          const renderDay = (key: string, title: string, meta: string | null, items: typeof allGalleryImages) => {
+            const isCollapsed = collapsedGalleryDays.includes(key);
+            return (
+              <section key={key} className="w-full flex flex-col pb-2">
+                <button
+                  type="button"
+                  onClick={() => toggleDay(key)}
+                  aria-expanded={!isCollapsed}
+                  className="w-full flex items-center justify-between gap-3 py-3 px-4 md:px-6 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-600"
+                >
+                  <span className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-sm font-extrabold">{title}</span>
+                    {meta && <span className="font-mono text-micro font-bold tracking-wider text-black/50 dark:text-white/50 truncate">{meta}</span>}
+                  </span>
+                  <span className="flex items-center gap-1.5 shrink-0 text-black/55 dark:text-white/55">
+                    <span className="font-mono text-micro font-bold tabular-nums">{items.length}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-base ${isCollapsed ? '-rotate-90' : ''}`} aria-hidden />
+                  </span>
+                </button>
+                {!isCollapsed && <div className={gridCls}>{items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}</div>}
+              </section>
+            );
+          };
+
           return (
-            <div 
+            <div
               className="w-full flex flex-col relative min-h-[400px] animate-in fade-in duration-300"
               onDragOver={handleGalleryDragOver}
               onDragLeave={handleGalleryDragLeave}
               onDrop={handleGalleryDrop}
             >
-              {/* Drag & Drop Visual Overlay */}
+              {/* Drop to add */}
               {isGalleryDragActive && isLoggedIn && (
-                <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center border-4 border-dashed border-red-600 m-2 transition">
-                  <div className="text-white flex flex-col items-center gap-3">
-                    <Plus className="w-12 h-12 animate-bounce text-red-500" />
-                    <p className="text-sm md:text-base font-extrabold tracking-widest uppercase text-center">
-                      Drop images here to add to gallery
-                    </p>
-                    <p className="text-xs text-white/60">
-                      이미지를 여기에 놓으면 갤러리에 즉시 추가됩니다
-                    </p>
-                  </div>
+                <div className="absolute inset-2 z-30 rounded-card bg-black/60 dark:bg-black/75 flex flex-col items-center justify-center gap-3 text-white pointer-events-none">
+                  <Plus className="w-10 h-10" aria-hidden />
+                  <p className="text-sm font-bold">여기에 놓으면 사진이 추가됩니다</p>
                 </div>
               )}
 
-              {/* Add Gallery Image Area */}
               {isLoggedIn && (
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   accept="image/*"
                   ref={fileInputRef}
                   onChange={handleGalleryUpload}
@@ -227,147 +205,66 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                 />
               )}
 
-              {/* Gallery View Mode & Column Toggle */}
+              {/* Count, add, layout and order */}
               {allGalleryImages.length > 0 && (
-                <div className="w-full flex items-center justify-between gap-2 py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15 flex-wrap">
-                  <span className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                    {allGalleryImages.length} Photos
+                <div className="w-full flex items-center justify-between gap-2 py-2.5 px-4 md:px-6 flex-wrap">
+                  <span className="font-mono text-micro font-bold tracking-wider text-black/55 dark:text-white/55 tabular-nums">
+                    사진 {allGalleryImages.length}
                   </span>
-                  <div className="flex items-center gap-2">
-                    {/* GRID / WIDE Toggle */}
-                    <div className="flex border border-black/15 dark:border-white/15 p-0.5 bg-black/5 dark:bg-white/5 rounded-none">
-                      <button
-                        onClick={() => setGalleryColumns(4)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 text-micro md:text-meta font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
-                          galleryColumns === 4
-                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
-                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                        }`}
-                        title="Grid view (4 columns)"
-                      >
-                        <LayoutGrid className="w-3.5 h-3.5" />
-                        <span>GRID</span>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {isLoggedIn && (
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-secondary btn-sm">
+                        <Plus className="w-3.5 h-3.5" aria-hidden />사진
                       </button>
-                      <button
-                        onClick={() => setGalleryColumns(2)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 text-micro md:text-meta font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
-                          galleryColumns === 2
-                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-xs'
-                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                        }`}
-                        title="Wide view (2 columns)"
-                      >
-                        <Columns2 className="w-3.5 h-3.5" />
-                        <span>WIDE</span>
-                      </button>
-                    </div>
-
-                    {/* DATE / TIME Toggle */}
-                    <div className="flex border border-black/10 dark:border-white/10 p-0.5 bg-black/5 dark:bg-white/5">
-                      <button
-                        onClick={() => setGalleryViewMode('accordion')}
-                        className={`px-2.5 py-1 text-micro md:text-meta font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                          galleryViewMode === 'accordion'
-                            ? 'bg-surface dark:bg-surface-dark text-black dark:text-white shadow-sm'
-                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                        }`}
-                      >
-                        DATE
-                      </button>
-                      <button
-                        onClick={() => setGalleryViewMode('grid')}
-                        className={`px-2.5 py-1 text-micro md:text-meta font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                          galleryViewMode === 'grid'
-                            ? 'bg-surface dark:bg-surface-dark text-black dark:text-white shadow-sm'
-                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                        }`}
-                      >
-                        TIME
-                      </button>
-                    </div>
+                    )}
+                    <Segment
+                      size="sm"
+                      ariaLabel="사진 크기"
+                      value={galleryColumns === 2 ? 'wide' : 'grid'}
+                      onChange={(v) => setGalleryColumns(v === 'wide' ? 2 : 4)}
+                      options={[
+                        { value: 'grid', label: <span className="sr-only">격자</span>, icon: LayoutGrid },
+                        { value: 'wide', label: <span className="sr-only">크게</span>, icon: Columns2 },
+                      ]}
+                    />
+                    <Segment
+                      size="sm"
+                      ariaLabel="사진 정렬"
+                      value={galleryViewMode === 'accordion' ? 'date' : 'time'}
+                      onChange={(v) => setGalleryViewMode(v === 'date' ? 'accordion' : 'grid')}
+                      options={[
+                        { value: 'date', label: '날짜별' },
+                        { value: 'time', label: '시간순' },
+                      ]}
+                    />
                   </div>
                 </div>
               )}
 
               {allGalleryImages.length === 0 ? (
-                <div className="text-center py-16 text-black/60 dark:text-white/60 text-xs md:text-sm font-bold tracking-widest uppercase">
-                  등록된 갤러리 사진이 없습니다.
+                <div className="tgl-card-edge mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-12 rounded-card bg-surface dark:bg-surface-dark text-center">
+                  <ImageIcon className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
+                  <span className="text-sm text-black/60 dark:text-white/60">등록된 사진이 없습니다.</span>
+                  {isLoggedIn && (
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-primary btn-sm">
+                      <Plus className="w-3.5 h-3.5" aria-hidden />사진 추가
+                    </button>
+                  )}
                 </div>
               ) : galleryViewMode === 'accordion' ? (
                 <div className="flex flex-col w-full">
-                  {/* Date Accordions */}
                   {allTripDates.map((date, idx) => {
                     const items = galleryGroups[date] || [];
-                    const isCollapsed = collapsedGalleryDays.includes(date);
                     if (items.length === 0) return null;
-
-                    return (
-                      <div key={date} className="w-full border-b border-black/10 dark:border-white/10">
-                        <button
-                          onClick={() => {
-                            if (isCollapsed) {
-                              setCollapsedGalleryDays(prev => prev.filter(d => d !== date));
-                            } else {
-                              setCollapsedGalleryDays(prev => [...prev, date]);
-                            }
-                          }}
-                          className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-meta sm:text-xs font-extrabold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold">DAY {idx + 1}</span>
-                            <span className="text-black/60 dark:text-white/60">·</span>
-                            <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
-                          </div>
-                          <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 tracking-wider">
-                            {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
-                          </span>
-                        </button>
-                        {!isCollapsed && (
-                          <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-px' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px'} bg-black/10 dark:bg-white/10 border-b border-black/10 dark:border-white/10`}>
-                            {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
-                          </div>
-                        )}
-                      </div>
-                    );
+                    return renderDay(date, `DAY ${idx + 1}`, date, items);
                   })}
-
-                  {/* No Date Accordion */}
-                  {galleryGroups['NO_DATE'] && galleryGroups['NO_DATE'].length > 0 && (() => {
-                    const items = galleryGroups['NO_DATE'];
-                    const isCollapsed = collapsedGalleryDays.includes('NO_DATE');
-                    return (
-                      <div className="w-full border-b border-black/10 dark:border-white/10">
-                        <button
-                          onClick={() => {
-                            if (isCollapsed) {
-                              setCollapsedGalleryDays(prev => prev.filter(d => d !== 'NO_DATE'));
-                            } else {
-                              setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
-                            }
-                          }}
-                          className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-meta sm:text-xs font-extrabold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
-                        >
-                          <span className="font-extrabold">NO DATE</span>
-                          <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 tracking-wider">
-                            {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
-                          </span>
-                        </button>
-                        {!isCollapsed && (
-                          <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-px' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px'} bg-black/10 dark:bg-white/10 border-b border-black/10 dark:border-white/10`}>
-                            {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  {galleryGroups['NO_DATE'] && galleryGroups['NO_DATE'].length > 0 && renderDay('NO_DATE', '날짜 없음', null, galleryGroups['NO_DATE'])}
                 </div>
               ) : (
-                /* Timeline Grid View */
-                <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-px' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px'} bg-black/10 dark:bg-white/10 border-b border-black/10 dark:border-white/10`}>
+                <div className={`${gridCls} pt-1`}>
                   {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                 </div>
               )}
-              {/* Gallery footer */}
               <div className="w-full shrink-0 mt-12">
                 <Footer className="mt-0" />
               </div>

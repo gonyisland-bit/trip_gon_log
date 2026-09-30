@@ -234,14 +234,14 @@ export function StayCard({
       onClick={onClick}
       onPaste={handlePaste}
       tabIndex={isEditMode ? 0 : undefined}
-      className={`tgl-cv-row mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-auto min-w-0 outline-none ${
+      className={`tgl-cv-row tgl-card-edge mx-3 sm:mx-4 my-2 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-colors duration-base cursor-pointer w-auto min-w-0 outline-none ${
         isActive 
           ? 'bg-surface dark:bg-surface-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/40 shadow-sm' 
           : 'bg-surface dark:bg-surface-dark'
       }`}
     >
       {/* Image & Booking Status Pill Tag */}
-      <div className="relative aspect-[21/9] w-full overflow-hidden border-b border-black/10 dark:border-white/10 bg-black/5 group">
+      <div className="relative aspect-[21/9] w-full overflow-hidden bg-black/5 group">
         <img 
           src={getEffectiveImageUrl(stay.img) || "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop"} 
           alt={stay.title} 
@@ -254,7 +254,7 @@ export function StayCard({
         />
 
         {/* Booking tag overlay */}
-        <div className="absolute top-4 left-4 bg-white/95 dark:bg-black/95 text-black dark:text-white text-micro md:text-meta font-extrabold uppercase tracking-widest px-3 py-1.5 flex items-center gap-1.5 shadow-md border border-black/10 z-10">
+        <div className="absolute top-3 left-3 bg-surface/95 dark:bg-surface-dark/95 text-black dark:text-white text-micro md:text-meta font-extrabold uppercase tracking-widest h-8 px-3 rounded-full flex items-center gap-1.5 shadow-sm z-10">
           <Bed className="w-3.5 h-3.5 text-black dark:text-white" />
           {isEditMode ? (
             <input
@@ -267,7 +267,7 @@ export function StayCard({
                 onUpdate(stay.id, 'status', e.target.value);
               }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-micro md:text-meta text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 uppercase text-center"
+              className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-micro md:text-meta text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-36 uppercase text-center"
               placeholder="STATUS"
             />
           ) : (
@@ -291,7 +291,7 @@ export function StayCard({
                   onUpdate(stay.id, 'title', e.target.value);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-extrabold text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-extrabold text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full uppercase"
                 placeholder="STAY TITLE"
               />
             ) : (
@@ -310,7 +310,7 @@ export function StayCard({
                     min={minDate}
                     max={maxDate}
                     onChange={(e) => handleCheckInChange(e.target.value)}
-                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full md:w-32"
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full md:w-32"
                   />
                 </div>
                 <div className="flex items-center gap-1 w-full md:w-auto">
@@ -321,7 +321,7 @@ export function StayCard({
                     min={minDate}
                     max={maxDate}
                     onChange={(e) => handleCheckOutChange(e.target.value)}
-                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full md:w-32"
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full md:w-32"
                   />
                 </div>
                 <span className="text-micro font-bold text-black/60 dark:text-white/60 ml-0.5">
@@ -347,7 +347,7 @@ export function StayCard({
                   onUpdate(stay.id, 'confNo', e.target.value);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 text-right uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-28 text-right uppercase"
                 placeholder="HTL-0000"
               />
             ) : (
@@ -372,7 +372,7 @@ export function StayCard({
                     onUpdate(stay.id, 'address', address);
                   }
                 }}
-                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
+                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full"
                 placeholder="숙소 주소를 입력하세요 (Google 검색)"
               />
             </div>
@@ -480,7 +480,7 @@ export function StayCard({
                     onUpdate(stay.id, 'memo', e.target.value);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-black/5 dark:bg-white/10 p-1.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full resize-none h-16"
+                  className="bg-black/5 dark:bg-white/10 p-1.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full resize-none h-16"
                   placeholder="메모를 입력하세요 (방 정보, 체크인 안내 등)"
                 />
               ) : (

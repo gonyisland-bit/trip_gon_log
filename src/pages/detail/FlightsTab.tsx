@@ -1,4 +1,4 @@
-import { Plane, Plus, Search, Sparkles } from 'lucide-react';
+import { Plane, Plus, Sparkles } from 'lucide-react';
 import { FlightCard } from '../../components/FlightCard';
 import { FlightItem } from '../../types';
 import { calculateLayoverTime } from './detailUtils';
@@ -16,21 +16,12 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
       <div className={`w-full flex flex-col ${activeTab === 'flights' ? 'block' : 'hidden'}`}>
         {visitedTabs.has('flights') && (
           <>
-            {/* 1-Click Flight Search Banner */}
-            <div className="flex items-center justify-between px-4 py-2.5  text-xs">
-              <div className="flex items-center gap-2 font-mono">
-                <Plane className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-                <span className="font-bold tracking-wider text-micro uppercase text-black/70 dark:text-white/70" title="실시간 최저가 항공권 비교">
-                  Compare fares
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsQuickBookingOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-meta font-bold tracking-widest uppercase transition active:scale-[0.98] shadow-xs cursor-pointer"
-              >
-                <Sparkles className="w-3 h-3 text-emerald-400" />
-                <span>SMART BOOKING</span>
+            {/* Smart booking: compare fares for this journey */}
+            <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-2.5">
+              <span className="text-meta font-bold text-black/55 dark:text-white/55">항공권 비교</span>
+              <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-secondary btn-sm">
+                <Sparkles className="w-3.5 h-3.5" aria-hidden />
+                스마트 부킹
               </button>
             </div>
 
@@ -38,9 +29,15 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
               const flightsToUse = isEditing ? draftFlights : flights;
               if (flightsToUse.length === 0) {
                 return (
-                  <div className="flex flex-col items-center gap-2 py-16 text-black/60 dark:text-white/60 text-xs font-mono font-bold tracking-widest uppercase">
-                    <Plane className="w-5 h-5" />
-                    No flights
+                  <div className="mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-12 rounded-card bg-surface dark:bg-surface-dark tgl-card-edge text-center">
+                    <Plane className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
+                    <span className="text-sm text-black/60 dark:text-white/60">등록된 항공편이 없습니다.</span>
+                    {!isEditing && (
+                      <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-primary btn-sm">
+                        <Sparkles className="w-3.5 h-3.5" aria-hidden />
+                        항공권 찾기
+                      </button>
+                    )}
                   </div>
                 );
               }
@@ -77,12 +74,8 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
                 return (
                   <div className="w-full flex flex-col">
                     <div className="flex items-center justify-between py-2.5 px-4 md:px-6 mt-2">
-                      <span className="text-meta md:text-xs uppercase font-extrabold tracking-widest text-red-600 dark:text-red-400 font-mono">
-                        {groupLabel}
-                      </span>
-                      <span className="text-micro md:text-meta font-mono font-bold text-black/60 dark:text-white/60 tracking-wider">
-                        {groupFlights.length} FLIGHT{groupFlights.length > 1 ? 'S' : ''}
-                      </span>
+                      <span className="text-sm font-extrabold">{groupLabel}</span>
+                      <span className="text-micro font-mono font-bold text-black/50 dark:text-white/50 tabular-nums">{groupFlights.length}</span>
                     </div>
                     {groupFlights.map((flight, idx) => {
                       const prevFlight = idx > 0 ? groupFlights[idx - 1] : null;
@@ -97,10 +90,10 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
                           className="w-full flex flex-col"
                         >
                           {prevFlight && layoverTimeStr && (
-                            <div className="py-2 px-4 md:px-6 flex items-center justify-center bg-red-50/60 dark:bg-red-950/20 border-b border-red-500/20 w-full" onClick={(e) => e.stopPropagation()}>
-                              <span className="flex items-center gap-1.5 text-micro sm:text-meta font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-400">
-                                <Plane className="w-3 h-3" />
-                                <span>LAYOVER AT {prevFlight.toCode} · {layoverTimeStr}</span>
+                            <div className="py-1 flex items-center justify-center w-full" onClick={(e) => e.stopPropagation()}>
+                              <span className="h-7 px-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 text-micro sm:text-meta font-mono font-bold tracking-wider text-amber-700 dark:text-amber-400">
+                                <Plane className="w-3 h-3" aria-hidden />
+                                <span>{prevFlight.toCode} 경유 · {layoverTimeStr}</span>
                               </span>
                             </div>
                           )}
@@ -128,32 +121,32 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
 
               return (
                 <div className="flex flex-col w-full">
-                  {renderGroup(outbound, 'Outbound Flights')}
-                  {renderGroup(inbound, 'Inbound Flights')}
+                  {renderGroup(outbound, '가는 편')}
+                  {renderGroup(inbound, '오는 편')}
                 </div>
               );
             })()}
 
             {/* Add Flight controls */}
             {isEditing && (
-              <div className="flex gap-4 justify-center py-6">
+              <div className="flex flex-wrap gap-2 justify-center py-6 px-4">
                 <button 
                   onClick={() => handleAddFlight('OUTBOUND FLIGHT')} 
                   className="btn btn-secondary flex"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Outbound Flight
+                  <Plus className="w-3.5 h-3.5" aria-hidden />가는 편
                 </button>
                 <button 
                   onClick={() => handleAddFlight('LAYOVER FLIGHT')} 
                   className="btn btn-secondary flex"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Layover Flight
+                  <Plus className="w-3.5 h-3.5" aria-hidden />경유 편
                 </button>
                 <button 
                   onClick={() => handleAddFlight('INBOUND FLIGHT')} 
                   className="btn btn-secondary flex"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Inbound Flight
+                  <Plus className="w-3.5 h-3.5" aria-hidden />오는 편
                 </button>
               </div>
             )}

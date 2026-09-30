@@ -421,6 +421,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
         memberCount={tripToUse?.members?.length || 1}
         initialFromCode={flights[0]?.fromCode || 'ICN'}
         initialToCode={flights[0]?.toCode || ''}
+        initialKind={s.activeTab === 'stays' ? 'stay' : 'flight'}
       />
     </>
   );

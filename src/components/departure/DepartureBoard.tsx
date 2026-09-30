@@ -154,8 +154,10 @@ interface DepartureBoardProps {
   onBoard: (ticket: DepartureTicket) => Promise<void>;
   /** Opens the New trip sheet; with a ticket, to re-plan it */
   onPlan: (ticket?: DepartureTicket) => void;
-  /** Ticket to show first (just issued) */
+  /** Ticket to show first (just issued); a new id later rolls the board over to it */
   initialTicketId?: string;
+  /** The New trip sheet is open over the terminal: Escape belongs to it */
+  covered?: boolean;
   isDarkMode?: boolean;
   // Same weather the app ambience shows; undefined draws a clear sky
   weatherCode?: number;
@@ -167,7 +169,7 @@ interface DepartureBoardProps {
 }
 
 export function DepartureBoard({
-  onClose, onBoard, onPlan, initialTicketId, isDarkMode = true,
+  onClose, onBoard, onPlan, initialTicketId, covered = false, isDarkMode = true,
   weatherCode, precipitationProb = 0, weatherCityName, weatherCityEn, weatherTemp,
 }: DepartureBoardProps) {
   const weatherType = resolveWeatherEffectType(weatherCode, precipitationProb);
@@ -223,13 +225,23 @@ export function DepartureBoard({
   }, []);
 
   useEffect(() => { loadTickets().then(setStore).catch(() => {}); }, []);
+  // A ticket issued (or re-planned) from the sheet over the terminal: read it back and roll the board to it
+  const shownTicketId = useRef(initialTicketId);
+  useEffect(() => {
+    if (!initialTicketId || initialTicketId === shownTicketId.current) return;
+    shownTicketId.current = initialTicketId;
+    setStore(readCachedTickets());
+    loadTickets().then(setStore).catch(() => {});
+    setSelectedId(initialTicketId);
+    setRollKey(k => k + 1);
+  }, [initialTicketId]);
   useEffect(() => { const t = setInterval(() => setClock(new Date()), 15000); return () => clearInterval(t); }, []);
   useEffect(() => { try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch {} }, [muted]);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') requestClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !covered) requestClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [requestClose]);
+  }, [requestClose, covered]);
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';

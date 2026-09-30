@@ -31,6 +31,9 @@
    Primary = ink pill, Accent = red pill (new trip, the one main action), Danger = red pill (irreversible),
    Secondary = soft fill, Ghost = text only. Sizes: btn-sm h-8, btn h-10, btn-lg h-12 */
 @layer components {
+  /* Surface cards on paper (journey detail lists): the fill alone sits too close to the page, so a hairline edge and a soft contact shadow */
+  .tgl-card-edge { box-shadow: 0 0 0 1px rgb(27 26 23 / 0.07), 0 1px 3px rgb(27 26 23 / 0.06); }
+  .dark .tgl-card-edge { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08); }
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full border border-transparent
       text-sm font-bold tracking-tight whitespace-nowrap select-none cursor-pointer
@@ -789,67 +792,21 @@ div[data-pin-hover],
 /* ───────────────────────────────────────────────────────────── */
 
 /* Semi-circular Punch Hole Notches on the tear line */
-.ticket-notch-top {
-  position: absolute;
-  top: -7px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
-  z-index: 10;
-  pointer-events: none;
-}
-
-.dark .ticket-notch-top {
-  background: #18181B;
-  border-bottom-color: rgba(255, 255, 255, 0.15);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
+/* Ticket notches: punched through to the page behind the card */
+.ticket-notch-top,
 .ticket-notch-bottom {
   position: absolute;
-  bottom: -7px;
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #FFFFFF;
-  border-top: 1px solid rgba(0, 0, 0, 0.15);
-  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.12);
+  background: #F6F4EF;
   z-index: 10;
   pointer-events: none;
 }
-
-.dark .ticket-notch-bottom {
-  background: #18181B;
-  border-top-color: rgba(255, 255, 255, 0.15);
-  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.5);
-}
-
-/* Ticket Stub Tear-off Tilt on Card Hover */
-.ticket-stub-interactive {
-  transform-origin: left center;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
-}
-
-.group\/ticket:hover .ticket-stub-interactive {
-  transform: rotate(0.8deg) translateY(-2px);
-  box-shadow: -4px 6px 14px rgba(0, 0, 0, 0.08);
-}
-
-.dark .group\/ticket:hover .ticket-stub-interactive {
-  box-shadow: -4px 6px 14px rgba(0, 0, 0, 0.35);
-}
-
-/* Subtle red perforation glow on card hover */
-.ticket-tear-line {
-  transition: border-color 0.25s ease, opacity 0.25s ease;
-}
-
-.group\/ticket:hover .ticket-tear-line {
-  border-color: rgba(220, 38, 38, 0.5) !important;
-}
+.ticket-notch-top { top: -7px; }
+.ticket-notch-bottom { bottom: -7px; }
+.dark .ticket-notch-top,
+.dark .ticket-notch-bottom { background: #11110F; }
 
 /* ───────────────────────────────────────────────────────────── */
 /* Luggage Baggage Tag Styles (Airport Baggage Label)           */

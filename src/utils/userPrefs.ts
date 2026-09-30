@@ -12,6 +12,8 @@ export interface UserPrefs {
   weatherCity?: string;           // nameEn, or CURRENT_LOCATION_EN
   weatherBg?: boolean;
   nightMode?: 'auto' | 'light' | 'dark';
+  /** Journey map tiles (see mapTiles.ts) */
+  mapStyle?: 'normal' | 'terrain' | 'simple';
 }
 
 // Writes wait until this account's prefs have been read, so the cache never overwrites the cloud

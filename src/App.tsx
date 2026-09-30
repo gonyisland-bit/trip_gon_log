@@ -106,8 +106,6 @@ function App() {
   // The ticket the terminal opens on (just issued from the New trip sheet)
   const [departureTicketId, setDepartureTicketId] = useState<string | undefined>(undefined);
   const issuedTicketRef = useRef<string | null>(null);
-  // The sheet was opened from the terminal: closing it walks back there
-  const backToTerminalRef = useRef<{ ticketId?: string } | null>(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
@@ -820,12 +818,12 @@ function App() {
               recentCities={[...plans, ...trips].flatMap(j => (j.locations?.length ? j.locations.map(l => l.name) : [j.locationStr])).filter(Boolean).slice(0, 12)}
               onClose={() => {
                 setNewTripPrefill(null);
-                // A ticket was just issued: walk into the terminal with it
-                const back = backToTerminalRef.current;
-                backToTerminalRef.current = null;
-                if (issuedTicketRef.current || back) {
-                  setDepartureTicketId(issuedTicketRef.current ?? back?.ticketId);
-                  issuedTicketRef.current = null;
+                // A ticket was just issued: the terminal rolls over to it (opened from the terminal,
+                // it stayed open under the sheet; from anywhere else, walk into it)
+                const issued = issuedTicketRef.current;
+                issuedTicketRef.current = null;
+                if (issued) {
+                  setDepartureTicketId(issued);
                   setIsDepartureOpen(true);
                 }
               }}
@@ -860,9 +858,9 @@ function App() {
                 const p = t.plan!;
                 await handleCreateJourney(p.title, p.dateRange, p.location, p.tags, p.lat, p.lng, p.members, p.locations, 'NEW', p.country, p.coverImg, p.timeline, 'plan');
               }}
+              covered={!!newTripPrefill}
               onPlan={(t) => {
-                setIsDepartureOpen(false);
-                backToTerminalRef.current = { ticketId: t?.id };
+                // The sheet opens over the terminal, which stays where it is
                 if (!t) { handleCreateTripForCountry(''); return; }
                 if (!isLoggedIn) return;
                 setNewTripPrefill({

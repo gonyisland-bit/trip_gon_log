@@ -32,6 +32,7 @@ import type { RemixPayload } from '../components/RemixSheet';
 import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
 import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
+import { applyMapStyle, isMapStyle } from '../utils/mapTiles';
 import { orderWithNewFirst } from '../utils/journeyOrderHelper';
 
 export function useAppState() {
@@ -254,6 +255,7 @@ export function useAppState() {
         return;
       }
       if (prefs.nightMode) setNightModeSetting(prefs.nightMode);
+      if (isMapStyle(prefs.mapStyle)) applyMapStyle(prefs.mapStyle, false);
       if (prefs.weatherBg !== undefined) {
         setIsGlobalWeatherBgEnabled(prefs.weatherBg);
         try { localStorage.setItem('calendar_weather_bg_enabled', String(prefs.weatherBg)); } catch (_) {}

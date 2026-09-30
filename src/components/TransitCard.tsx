@@ -190,7 +190,7 @@ export function TransitCard({
   return (
     <div 
       onClick={onClick}
-      className={`tgl-cv-row mx-3 sm:mx-4 my-1.5 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-all duration-300 w-auto min-w-0 group/ticket ${
+      className={`tgl-cv-row tgl-card-edge mx-3 sm:mx-4 my-2 rounded-card overflow-hidden font-sans text-black dark:text-white relative transition-colors duration-base w-auto min-w-0 ${
         !isEditMode ? 'cursor-pointer' : ''
       } ${
         isActive 
@@ -199,7 +199,7 @@ export function TransitCard({
       }`}
     >
       {/* Header bar */}
-      <div className="bg-black/[0.03] dark:bg-white/5 px-4 py-2.5 border-b border-black/15 dark:border-white/15 flex justify-between items-center text-meta md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
+      <div className="px-4 sm:px-5 pt-3.5 flex justify-between items-center text-micro md:text-meta font-mono font-bold tracking-widest text-black/50 dark:text-white/50 gap-4">
         <div className="flex items-center gap-2">
           {(() => {
             const isCar = transit.transitType === 'car' || (transit.ticketType || '').toUpperCase().includes('CAR');
@@ -227,7 +227,7 @@ export function TransitCard({
                 }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 cursor-pointer"
+              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full uppercase w-32 cursor-pointer"
             >
               <option value="TRAIN TICKET">TRAIN TICKET</option>
               <option value="BUS TICKET">BUS TICKET</option>
@@ -249,7 +249,7 @@ export function TransitCard({
                   min={minDate}
                   max={maxDate}
                   onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-32 text-center"
                 />
                 <span className="text-black/60 dark:text-white/60">—</span>
                 <span className="text-micro uppercase font-extrabold opacity-40">RETURN</span>
@@ -259,7 +259,7 @@ export function TransitCard({
                   min={transit.date ? transit.date.replace(/\./g, '-') : minDate}
                   max={maxDate}
                   onChange={(e) => onUpdate(transit.id, 'rentalDropoffDate', e.target.value.replace(/-/g, '.'))}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-32 text-center"
                 />
               </div>
             ) : (
@@ -273,7 +273,7 @@ export function TransitCard({
               max={maxDate}
               onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
               onClick={(e) => e.stopPropagation()}
-              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
+              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-36 text-right"
             />
           ) : (
             <span>{transit.date}</span>
@@ -323,9 +323,9 @@ export function TransitCard({
       )}
 
       {/* Card Body */}
-      <div className="p-4 md:p-6">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between relative">
-          <div className="flex-grow min-w-0 pr-0 md:pr-4">
+      <div className="p-4 lg:p-6">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between relative">
+          <div className="flex-grow min-w-0 pr-0 lg:pr-4">
             {isEditMode ? (
               <input
                 type="text"
@@ -337,11 +337,11 @@ export function TransitCard({
                   onUpdate(transit.id, 'title', e.target.value);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-extrabold text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-extrabold text-lg lg:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full uppercase"
                 placeholder={transit.transitType === 'car' ? "RENTAL COMPANY / TITLE" : "TRANSIT TITLE"}
               />
             ) : (
-              <h3 className="text-lg md:text-xl font-extrabold tracking-tight leading-snug uppercase truncate">
+              <h3 className="text-lg lg:text-xl font-extrabold tracking-tight leading-snug uppercase truncate">
                 {transit.title}
               </h3>
             )}
@@ -370,7 +370,7 @@ export function TransitCard({
                           ...(coords ? { departLat: coords.lat, departLng: coords.lng, arriveLat: coords.lat, arriveLng: coords.lng } : {})
                         });
                       }}
-                      className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                      className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full"
                       placeholder="Pickup location / airport / branch..."
                     />
                   </div>
@@ -395,7 +395,7 @@ export function TransitCard({
                             ...(coords ? { departLat: coords.lat, departLng: coords.lng } : {})
                           });
                         }}
-                        className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                        className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full"
                         placeholder="Departure terminal/station..."
                       />
                     </div>
@@ -419,7 +419,7 @@ export function TransitCard({
                             ...(coords ? { arriveLat: coords.lat, arriveLng: coords.lng } : {})
                           });
                         }}
-                        className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                        className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full"
                         placeholder="Arrival terminal/station..."
                       />
                     </div>
@@ -427,7 +427,7 @@ export function TransitCard({
                 )}
               </div>
             ) : (
-              <p className="text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 block flex flex-wrap items-center gap-1">
+              <p className="text-xs lg:text-sm text-black/60 dark:text-white/60 mt-1 block flex flex-wrap items-center gap-1">
                 {transit.transitType === 'car' ? (
                   transit.departPlace ? (
                     <span 
@@ -483,7 +483,7 @@ export function TransitCard({
                       type="time"
                       value={timeStrTo24h(transit.time)}
                       onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
-                      className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-24 text-center cursor-pointer"
+                      className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-24 text-center cursor-pointer"
                     />
                   )}
                 </div>
@@ -502,7 +502,7 @@ export function TransitCard({
                       type="time"
                       value={timeStrTo24h(transit.rentalDropoffTime || '06:00 PM')}
                       onChange={(e) => onUpdate(transit.id, 'rentalDropoffTime', time24hTo12h(e.target.value))}
-                      className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-24 text-center cursor-pointer"
+                      className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-24 text-center cursor-pointer"
                     />
                   )}
                 </div>
@@ -514,7 +514,7 @@ export function TransitCard({
                   type="time"
                   value={timeStrTo24h(transit.time)}
                   onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
-                  className="bg-black/5 dark:bg-white/10 px-2 py-0.5 outline-none font-extrabold text-xl md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 md:w-40 text-center [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-2 py-0.5 outline-none font-extrabold text-xl lg:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-36 lg:w-40 text-center [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -525,39 +525,39 @@ export function TransitCard({
                       console.warn(err);
                     }
                   }}
-                  className="tap-target p-1.5 md:p-2 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  className="tap-target p-1.5 lg:p-2 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-full bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
                   title="시간 선택"
                 >
-                  <Clock className="w-4 h-4 md:w-5 md:h-5 text-black/60 dark:text-white/60" />
+                  <Clock className="w-4 h-4 lg:w-5 lg:h-5 text-black/60 dark:text-white/60" />
                 </button>
               </div>
             ) : (
-              <div className="text-2xl md:text-4xl font-extrabold mt-4 tracking-tighter leading-none">
+              <div className="text-2xl lg:text-4xl font-extrabold mt-4 tracking-tighter leading-none">
                 {transit.time}
               </div>
             )}
           </div>
           
           {/* Desktop Ticket Tear-off Perforation with Top & Bottom Notches */}
-          <div className="hidden md:flex relative self-stretch items-center mx-3 my-1">
+          <div className="hidden lg:flex relative self-stretch items-center mx-3 my-1">
             <div className="ticket-notch-top -left-[7px]" />
-            <div className="border-l border-dashed border-black/20 dark:border-white/20 h-20 ticket-tear-line" />
+            <div className="border-l border-dashed border-black/20 dark:border-white/20 h-20" />
             <div className="ticket-notch-bottom -left-[7px]" />
           </div>
 
           {/* Mobile Horizontal Perforation with Left & Right Notches */}
-          <div className="flex md:hidden relative w-full items-center my-3">
+          <div className="flex lg:hidden relative w-full items-center my-3">
             <div className="ticket-notch-top -top-[7px] left-0 -translate-x-1/2" />
-            <div className="border-t border-dashed border-black/15 dark:border-white/15 w-full ticket-tear-line" />
+            <div className="border-t border-dashed border-black/15 dark:border-white/15 w-full" />
             <div className="ticket-notch-bottom -bottom-[7px] right-0 translate-x-1/2" />
           </div>
 
           {/* Right Side: Seat (or Car Model/Plate) & Booking Ref Box (Ticket Stub) */}
-          <div className="border border-black/10 dark:border-white/10 p-3 md:p-4 text-left w-full md:w-40 shrink-0 bg-white/30 dark:bg-black/10 ticket-stub-interactive">
+          <div className="rounded-thumb p-3 lg:p-4 text-left w-full lg:w-40 shrink-0 bg-black/[0.03] dark:bg-white/[0.05]">
             {transit.transitType === 'car' ? (
               <>
                 <div className="mb-2.5">
-                  <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">CAR MODEL</span>
+                  <span className="text-micro lg:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">CAR MODEL</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -569,17 +569,17 @@ export function TransitCard({
                         onUpdate(transit.id, 'carModel', e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full uppercase"
                       placeholder="e.g. PRIUS / TESLA"
                     />
                   ) : (
-                    <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block uppercase truncate">
+                    <span className="text-xs lg:text-sm font-bold text-black/80 dark:text-white/80 block uppercase truncate">
                       {transit.carModel || '-'}
                     </span>
                   )}
                 </div>
                 <div>
-                  <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">PLATE NO.</span>
+                  <span className="text-micro lg:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">PLATE NO.</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -591,11 +591,11 @@ export function TransitCard({
                         onUpdate(transit.id, 'carNumber', e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full uppercase"
                       placeholder="e.g. 12가 3456"
                     />
                   ) : (
-                    <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block font-mono truncate">
+                    <span className="text-xs lg:text-sm font-bold text-black/80 dark:text-white/80 block font-mono truncate">
                       {transit.carNumber || '-'}
                     </span>
                   )}
@@ -604,7 +604,7 @@ export function TransitCard({
             ) : (
               <>
                 <div className="mb-3">
-                  <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
+                  <span className="text-micro lg:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -616,17 +616,17 @@ export function TransitCard({
                         onUpdate(transit.id, 'seat', e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
+                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs lg:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full"
                       placeholder="Car 0, 00A"
                     />
                   ) : (
-                    <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block">
+                    <span className="text-xs lg:text-sm font-bold text-black/80 dark:text-white/80 block">
                       {transit.seat}
                     </span>
                   )}
                 </div>
                 <div>
-                  <span className="text-micro md:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5">BOOKING REF</span>
+                  <span className="text-micro lg:text-micro text-black/60 dark:text-white/60 uppercase font-bold tracking-widest block mb-0.5">BOOKING REF</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -638,11 +638,11 @@ export function TransitCard({
                         onUpdate(transit.id, 'bookingRef', e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs lg:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full uppercase"
                       placeholder="REF-000"
                     />
                   ) : (
-                    <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wider block truncate">
+                    <span className="text-xs lg:text-sm font-bold text-black/80 dark:text-white/80 tracking-wider block truncate">
                       {transit.bookingRef}
                     </span>
                   )}
@@ -651,8 +651,8 @@ export function TransitCard({
             )}
 
             {/* Swiss Minimal Barcode Strip */}
-            <div className="w-full mt-2.5 pt-2 border-t border-dotted border-black/15 dark:border-white/15 flex flex-col items-center md:items-start select-none opacity-60 group-hover/ticket:opacity-90 transition-opacity">
-              <div className="flex items-center gap-[1.5px] h-3 w-full justify-center md:justify-start">
+            <div className="w-full mt-2.5 pt-2 border-t border-dotted border-black/15 dark:border-white/15 flex flex-col items-center lg:items-start select-none opacity-50">
+              <div className="flex items-center gap-[1.5px] h-3 w-full justify-center lg:justify-start">
                 <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
                 <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
                 <span className="w-[2.5px] h-full bg-black dark:bg-white shrink-0" />
@@ -842,7 +842,7 @@ export function TransitCard({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAttachment}
-                  className="text-micro md:text-meta bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-sm flex items-center gap-1 cursor-pointer text-black dark:text-white"
+                  className="text-micro md:text-meta bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-full flex items-center gap-1 cursor-pointer text-black dark:text-white"
                 >
                   {uploadingAttachment ? (
                     <>
@@ -880,7 +880,7 @@ export function TransitCard({
                       <button
                         type="button"
                         onClick={() => window.open(getEffectiveImageUrl(url), '_blank')}
-                        className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-sm cursor-pointer"
+                        className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-thumb cursor-pointer"
                       >
                         <ExternalLink className="w-4 h-4 mb-1" />
                         <span className="text-micro font-bold">PDF</span>
@@ -892,7 +892,7 @@ export function TransitCard({
                           setAttachmentLightboxIndex(idx);
                           setAttachmentLightboxOpen(true);
                         }}
-                        className="w-12 h-12 md:w-16 md:h-16 rounded-sm overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-80 transition-opacity cursor-pointer"
+                        className="w-12 h-12 md:w-16 md:h-16 rounded-thumb overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-80 transition-opacity cursor-pointer"
                       >
                         <img src={getEffectiveImageUrl(url)} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
                       </button>
