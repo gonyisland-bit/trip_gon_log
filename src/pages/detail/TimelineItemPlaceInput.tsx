@@ -151,7 +151,7 @@ export function TimelineItemPlaceInput({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full select-text"
+          className="bg-surface dark:bg-surface-dark h-9 px-3.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-full border border-black/15 dark:border-white/15 focus:border-black/40 dark:focus:border-white/40 w-full select-text"
           placeholder="일정 이름"
         />
         <button 
@@ -166,7 +166,7 @@ export function TimelineItemPlaceInput({
 
       {/* Frequent Places Auto-complete Dropdown */}
       {showDropdown && filteredFrequent.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto rounded-none" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute left-0 right-0 top-full mt-1 bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto rounded-thumb py-1" onClick={(e) => e.stopPropagation()}>
           <div className="px-2 py-1 text-micro font-bold text-black/60 dark:text-white/60 border-b border-black/5 dark:border-white/5 uppercase tracking-widest">
             자주 사용하는 장소
           </div>

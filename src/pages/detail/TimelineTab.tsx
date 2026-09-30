@@ -567,7 +567,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                 scrollTargetItemIdRef.current = item.id;
                                 updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
                               }}
-                              className="bg-surface dark:bg-surface-dark h-8 px-2 outline-none font-mono font-bold text-meta md:text-xs text-black dark:text-white border border-black/15 dark:border-white/15 w-full text-center rounded-full"
+                              className="bg-surface dark:bg-surface-dark h-8 px-1 outline-none font-mono font-bold text-micro sm:text-meta tracking-tight text-black dark:text-white border border-black/15 dark:border-white/15 w-full text-center rounded-full [&::-webkit-calendar-picker-indicator]:hidden"
                             />
 
                             <select

@@ -871,6 +871,8 @@ function App() {
                   city: t.cityEn,
                   cities: t.cities?.map(c => c.en),
                   date: t.startDate ?? departureDate(t.year, t.month),
+                  members: t.members,
+                  nights: t.nights,
                   replaceTicketId: t.id,
                 });
               }}

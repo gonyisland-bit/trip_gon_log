@@ -815,49 +815,37 @@ div[data-pin-hover],
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 7px 3px 6px;
-  background: #FAFAFA;
-  border: 1px solid #111111;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  background: #FFFDF9;
+  border: 1px solid rgba(27, 26, 23, 0.18);
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #111111;
-  border-radius: 1px;
-  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.85);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  color: #1B1A17;
+  border-radius: 999px;
   user-select: none;
 }
 
 .dark .luggage-tag {
-  background: #202023;
-  border-color: #E4E4E7;
-  color: #F4F4F5;
-  box-shadow: 1px 1px 0px rgba(255, 255, 255, 0.7);
-}
-
-.luggage-tag:hover {
-  transform: translateY(-1px) rotate(-0.5deg);
-  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.95);
-}
-
-.dark .luggage-tag:hover {
-  box-shadow: 2px 2px 0px rgba(255, 255, 255, 0.85);
+  background: #1A1A17;
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #EDEBE5;
 }
 
 .luggage-tag-hole {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #FFFFFF;
-  border: 1.5px solid #111111;
+  background: #F6F4EF;
+  border: 1.5px solid currentColor;
   flex-shrink: 0;
 }
 
 .dark .luggage-tag-hole {
-  background: #18181B;
-  border-color: #E4E4E7;
+  background: #11110F;
 }
 
 .luggage-barcode-strip {

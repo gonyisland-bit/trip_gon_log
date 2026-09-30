@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DestinationCity, DestinationCountry, WORLD_CITIES, findCityByNameOrAlias, findCountryByNameOrAlias,
 } from '../../data/worldDestinations';
@@ -23,6 +23,9 @@ export interface NewTripPrefill {
   date?: string;
   /** Pocket spots picked in Pocket, placed on day 1 */
   pocketIds?: string[];
+  /** Re-planning a ticket: its party and nights come back as they were */
+  members?: string[];
+  nights?: number;
 }
 
 export type StayLength = 'short' | 'mid' | 'long';
@@ -164,9 +167,12 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string, 
   // Further stops of a multi-city trip, after `city`; picking more than one city needs `multi` on
   const [extraCities, setExtraCities] = useState<DestinationCity[]>(prefillCities.slice(1));
   const [multi, setMultiState] = useState(prefillCities.length > 1);
-  const [stay, setStay] = useState<StayLength>('mid');
+  const [stay, setStay] = useState<StayLength>(() => {
+    const n = prefill.nights;
+    return !n ? 'mid' : n <= 3 ? 'short' : n <= 5 ? 'mid' : 'long';
+  });
   const [startDate, setStartDate] = useState<string>(prefill.date || '');
-  const [members, setMembers] = useState<string[]>([defaultMember || '나']);
+  const [members, setMembers] = useState<string[]>(() => (prefill.members?.length ? prefill.members : [defaultMember || '나']));
   const [theme, setTheme] = useState<string>('all');
   const [seed, setSeed] = useState(0);
   const [proposalId, setProposalId] = useState<string | null>(null);
@@ -318,7 +324,13 @@ export function useNewTripDraft(prefill: NewTripPrefill, defaultMember: string, 
   // Keep the draft in the cloud while it has a destination (see newTripDraftStore)
   const pocketKey = [...pocketIds].join(',');
   const memberKey = members.join('|');
+  // Only what the person changed is kept: opening a sheet already filled in (a map pick, a ticket)
+  // must not replace the draft they left earlier. A ticket being re-planned keeps its own copy.
+  const draftBaseline = useRef<string | null>(null);
   useEffect(() => {
+    const snapshot = [step, city?.nameEn, allCities.map(c => c.nameEn).join(','), country?.nameEn, stay, startDate, memberKey, theme, includePockets, pocketKey].join('|');
+    if (draftBaseline.current === null) { draftBaseline.current = snapshot; return; }
+    if (snapshot === draftBaseline.current || prefill.replaceTicketId) return;
     if (!city && !country) return;
     saveNewTripDraft({
       step, city: city?.nameEn, cities: allCities.map(c => c.nameEn), country: country?.nameEn, stay, startDate, members, theme, includePockets,

@@ -116,7 +116,10 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
       return [...firstThree, ...entries.filter(e => e.group === '명령' && !e.id.startsWith('remix-'))];
     }
     const order: Group[] = ['명령', '여정', '포켓'];
+    // Remix rows only when asked for by name, so a journey name + Enter opens the journey
+    const wantsRemix = /remix|리믹스/i.test(query);
     return entries
+      .filter(e => wantsRemix || !e.id.startsWith('remix-'))
       .map(e => ({ e, s: score(query, e.keywords) }))
       .filter(x => x.s > 0)
       .sort((a, b) => b.s - a.s)

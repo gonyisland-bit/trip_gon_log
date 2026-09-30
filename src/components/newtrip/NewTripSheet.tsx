@@ -47,7 +47,7 @@ export function NewTripSheet(props: NewTripSheetProps) {
       label="새 여행"
       tone="paper"
       locked={busy}
-      confirmClose={() => (d.dirty ? confirmDialog('작성 중인 내용은 저장해 두었다가 다음에 이어서 만들 수 있습니다. 닫을까요?', { title: 'CLOSE', confirmLabel: '닫기' }) : true)}
+      confirmClose={() => (d.dirty ? confirmDialog(props.prefill.replaceTicketId ? '바꾼 내용은 저장되지 않고 티켓은 그대로 남습니다. 닫을까요?' : '작성 중인 내용은 저장해 두었다가 다음에 이어서 만들 수 있습니다. 닫을까요?', { title: 'CLOSE', confirmLabel: '닫기' }) : true)}
       panelClassName="sm:max-w-xl h-[94dvh] sm:h-[min(780px,90dvh)]"
     >
       <SheetBody d={d} busy={busy} setBusy={setBusy} {...props} />

@@ -103,7 +103,7 @@ export function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleI
       onCompositionEnd={handleCompositionEnd}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
-      className="text-base sm:text-lg md:text-xl font-extrabold uppercase bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
+      className="text-base sm:text-lg font-extrabold bg-surface dark:bg-surface-dark border border-black/15 dark:border-white/15 focus:border-black/40 dark:focus:border-white/40 h-11 px-4 rounded-full outline-none w-full text-black dark:text-white rounded font-satoshi"
       placeholder="JOURNEY TITLE"
     />
   );
