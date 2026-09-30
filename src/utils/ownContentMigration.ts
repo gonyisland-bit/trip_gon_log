@@ -12,6 +12,21 @@ import { CONTENT_COLLECTIONS, pickHomeKeys } from './ownership';
 //  - The shared pockets, map wishlist, calendar and the operator's magazine / hero settings are
 //    copied into the operator's own documents.
 
+/** Birthday and phone are no longer collected (v1.3.6): clears them from every profile (operator only) */
+export async function clearContactDetails(): Promise<number> {
+  const snap = await getDocs(collection(db, 'users', 'public', 'users'));
+  const writes: Array<{ ref: DocumentReference; data: Record<string, unknown> }> = [];
+  snap.forEach(d => {
+    const data = d.data();
+    if (!data.birthdate && !data.phone) return;
+    writes.push({ ref: d.ref, data: { birthdate: '', phone: '' } });
+    const uid = data.uid || d.id;
+    writes.push({ ref: doc(db, 'users', uid), data: { birthdate: '', phone: '' } });
+  });
+  await commitInChunks(writes);
+  return writes.length / 2;
+}
+
 export interface MigrationReport {
   journeys: number;
   items: number;

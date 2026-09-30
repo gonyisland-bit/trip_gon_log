@@ -282,8 +282,9 @@ export function ProfileEditModal({
         username: username.trim(),
         lastName: lastName.trim(),
         firstName: firstName.trim(),
-        birthdate: birthdate.trim(),
-        phone: phone.trim(),
+        // Birthday and phone are no longer collected (v1.3.6): saving the profile clears old values
+        birthdate: '',
+        phone: '',
         profileType,
         profileIcon: profileType === 'icon' ? (profileIcon || 'user') : '',
         profileImage: profileType === 'image' ? (profileImage || '') : '',
@@ -463,33 +464,6 @@ export function ProfileEditModal({
                 />
               </div>
 
-              {/* Birthday & Phone */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                    Birthday
-                  </label>
-                  <input 
-                    type="text" 
-                    value={birthdate}
-                    onChange={e => setBirthdate(e.target.value)}
-                    placeholder="YYYY-MM-DD"
-                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono focus:border-black dark:focus:border-white text-black dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-micro font-bold uppercase tracking-wider opacity-60 mb-1">
-                    Phone
-                  </label>
-                  <input 
-                    type="tel" 
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="010-0000-0000"
-                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono focus:border-black dark:focus:border-white text-black dark:text-white"
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Bottom Actions */}

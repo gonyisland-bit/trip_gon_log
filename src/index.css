@@ -759,13 +759,13 @@
   filter: saturate(88%) contrast(102%) !important;
 }
 
-/* Simple style: the road map in soft greys (labels kept) */
+/* Simple style: Snazzy "WY" tiles already carry the look (see mapTiles.ts); dark mode inverts them */
 .map-tile-simple {
-  filter: grayscale(100%) brightness(106%) contrast(92%) !important;
+  filter: none !important;
 }
 
 .map-tile-simple-dark {
-  filter: grayscale(100%) invert(100%) brightness(96%) contrast(96%) !important;
+  filter: invert(100%) hue-rotate(180deg) brightness(90%) contrast(95%) !important;
 }
 
 /* ── Prevent Pinterest extension hover button across all images ── */

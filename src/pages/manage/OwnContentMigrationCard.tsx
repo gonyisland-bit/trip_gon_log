@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { migrateToOwnContent } from '../../utils/ownContentMigration';
+import { clearContactDetails, migrateToOwnContent } from '../../utils/ownContentMigration';
 import { confirmDialog, notify } from '../../utils/feedback';
 
 // Operator tool (v1.3.6 phase 3): one press moves the shared content to owners before the new
@@ -29,6 +29,22 @@ export function OwnContentMigrationCard() {
     }
   };
 
+  const clearContacts = async () => {
+    const ok = await confirmDialog('모든 회원 프로필에 남아 있는 생일 · 전화번호를 지웁니다. 되돌릴 수 없습니다.', { title: 'CLEAR CONTACTS', confirmLabel: '지우기', danger: true });
+    if (!ok) return;
+    setRunning(true);
+    try {
+      const n = await clearContactDetails();
+      setLines(prev => [...prev, `생일 · 전화번호를 지운 회원: ${n}명`]);
+      notify('생일 · 전화번호를 지웠습니다.', 'success');
+    } catch (err: any) {
+      console.error('Contact cleanup failed:', err);
+      notify('지우지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <section className="rounded-card bg-surface dark:bg-surface-dark p-5 flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -37,10 +53,13 @@ export function OwnContentMigrationCard() {
           <h3 className="text-base font-extrabold">데이터 이전</h3>
           <p className="text-meta text-black/60 dark:text-white/60">새 규칙을 게시하기 전에 한 번 눌러 주세요.</p>
         </div>
-        <button type="button" onClick={run} disabled={running} className="btn btn-primary">
-          {running && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
-          {running ? '이전 중' : '이전 시작'}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={clearContacts} disabled={running} className="btn btn-outline-danger">생일 · 전화번호 지우기</button>
+          <button type="button" onClick={run} disabled={running} className="btn btn-primary">
+            {running && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
+            {running ? '진행 중' : '이전 시작'}
+          </button>
+        </div>
       </div>
       {lines.length > 0 && (
         <ul className="font-mono text-meta text-black/70 dark:text-white/70 flex flex-col gap-1" aria-live="polite">

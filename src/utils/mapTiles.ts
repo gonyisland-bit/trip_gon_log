@@ -28,15 +28,68 @@ export function applyMapStyle(style: MapStyle, save = true) {
   if (save) saveUserPref({ mapStyle: style });
 }
 
-/** Tile URL and Leaflet options for a style; dark mode inverts the tiles, simple turns them grey */
+// Simple style: "WY" by Snazzy Maps (snazzymaps.com/style/8097/wy) — white land, grey roads, no
+// points of interest or transit, soft teal water, labels kept. Google's raster tiles take a
+// Maps style through the `apistyle` query; if Google ever ignores it the plain road map shows.
+const WY_STYLE: { featureType?: string; elementType?: string; stylers: Record<string, string | number>[] }[] = [
+  { featureType: 'all', elementType: 'geometry.stroke', stylers: [{ color: '#9c9c9c' }] },
+  { featureType: 'landscape', elementType: 'all', stylers: [{ color: '#f2f2f2' }] },
+  { featureType: 'landscape', elementType: 'geometry.fill', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'landscape.man_made', elementType: 'geometry.fill', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'all', stylers: [{ saturation: -100 }, { lightness: 45 }] },
+  { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: '#eeeeee' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#7b7b7b' }] },
+  { featureType: 'road', elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road.highway', elementType: 'all', stylers: [{ visibility: 'simplified' }] },
+  { featureType: 'road.arterial', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'all', stylers: [{ color: '#46bcec' }, { visibility: 'on' }] },
+  { featureType: 'water', elementType: 'geometry.fill', stylers: [{ color: '#c8d7d4' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#070707' }] },
+  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
+];
+
+const FEATURE: Record<string, number> = {
+  administrative: 1, poi: 2, road: 3, transit: 4, landscape: 5, water: 6,
+  'road.highway': 49, 'road.arterial': 50, 'road.local': 51, 'landscape.man_made': 81, 'landscape.natural': 82,
+};
+const ELEMENT: Record<string, string> = {
+  geometry: 'g', 'geometry.fill': 'g.f', 'geometry.stroke': 'g.s', labels: 'l',
+  'labels.text': 'l.t', 'labels.text.fill': 'l.t.f', 'labels.text.stroke': 'l.t.s', 'labels.icon': 'l.i',
+};
+
+/** A Google Maps style array written as the tile server's `apistyle` value */
+function toApiStyle(style: typeof WY_STYLE): string {
+  const rules: string[] = [];
+  style.forEach(({ featureType, elementType, stylers }) => {
+    const scope: string[] = [];
+    if (featureType && featureType !== 'all' && FEATURE[featureType] !== undefined) scope.push(`s.t:${FEATURE[featureType]}`);
+    if (elementType && elementType !== 'all' && ELEMENT[elementType]) scope.push(`s.e:${ELEMENT[elementType]}`);
+    stylers.forEach(s => {
+      const [key, value] = Object.entries(s)[0];
+      const rule = key === 'color' ? `p.c:#ff${String(value).slice(1)}`
+        : key === 'visibility' ? `p.v:${value}`
+        : key === 'saturation' ? `p.s:${value}`
+        : key === 'lightness' ? `p.l:${value}`
+        : key === 'weight' ? `p.w:${value}` : '';
+      if (rule) rules.push([...scope, rule].join('|'));
+    });
+  });
+  return encodeURIComponent(rules.join(','));
+}
+
+const WY_APISTYLE = toApiStyle(WY_STYLE);
+
+/** Tile URL and Leaflet options for a style; dark mode inverts the tiles */
 export function mapTileFor(style: MapStyle, isDark: boolean): { url: string; options: Record<string, unknown> } {
-  // The Esri grey canvas used before had no place names and ran out of data when zoomed in
   const className = style === 'simple'
     ? (isDark ? 'map-tile-simple-dark' : 'map-tile-simple')
     : (isDark ? 'map-tile-dark' : 'map-tile-light');
   const layer = style === 'terrain' ? 'p' : 'm';
+  const extra = style === 'simple' ? `&apistyle=${WY_APISTYLE}` : '';
   return {
-    url: `https://mt1.google.com/vt/lyrs=${layer}&x={x}&y={y}&z={z}&hl=ko`,
+    url: `https://mt1.google.com/vt/lyrs=${layer}&x={x}&y={y}&z={z}&hl=ko${extra}`,
     options: {
       maxNativeZoom: 20,
       maxZoom: 21,

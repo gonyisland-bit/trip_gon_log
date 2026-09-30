@@ -155,7 +155,6 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-meta font-mono text-black/60 dark:text-white/60 flex-wrap">
-                          {adminUser.phone && <span>전화: {adminUser.phone}</span>}
                           <span>가입: {adminUser.createdAt ? new Date(adminUser.createdAt).toLocaleDateString() : '-'}</span>
                         </div>
                       </div>
@@ -195,7 +194,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
           if (!userSearchQuery.trim()) return true;
           const q = userSearchQuery.toLowerCase();
           const name = `${u.lastName} ${u.firstName}`.toLowerCase();
-          return name.includes(q) || u.email.toLowerCase().includes(q) || (u.phone && u.phone.includes(q));
+          return name.includes(q) || u.email.toLowerCase().includes(q);
         });
 
         const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE) || 1;
@@ -327,8 +326,6 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                         </div>
 
                         <div className="flex items-center gap-3 text-[11px] font-mono text-black/60 dark:text-white/60 flex-wrap">
-                          {user.phone && <span>전화: {user.phone}</span>}
-                          {user.birthdate && <span>생일: {user.birthdate}</span>}
                           <span>가입일: {joinDate}</span>
                         </div>
                       </div>
