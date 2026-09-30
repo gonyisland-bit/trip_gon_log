@@ -97,9 +97,11 @@ export async function deleteAuthAccount(uid: string): Promise<'deleted' | 'unava
 }
 
 /** Operator: marks a member's address verified on the server (needs the service account) */
-export async function verifyAuthAccount(uid: string): Promise<'verified' | 'unavailable' | 'failed'> {
+export type VerifyResult = 'verified' | 'unavailable' | 'forbidden' | 'rejected' | 'failed';
+
+export async function verifyAuthAccount(uid: string): Promise<VerifyResult> {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await auth.currentUser?.getIdToken(true);
     if (!token) return 'failed';
     const res = await fetch(apiUrl('/api/account'), {
       method: 'POST',
@@ -107,8 +109,18 @@ export async function verifyAuthAccount(uid: string): Promise<'verified' | 'unav
       body: JSON.stringify({ action: 'verify', uid }),
     });
     if (res.ok) return 'verified';
-    return res.status === 501 || res.status === 404 ? 'unavailable' : 'failed';
+    if (res.status === 501 || res.status === 404) return 'unavailable';
+    if (res.status === 401 || res.status === 403) return 'forbidden';
+    if (res.status === 502) return 'rejected';
+    return 'failed';
   } catch {
     return 'unavailable';
   }
 }
+
+export const VERIFY_PROBLEM: Record<Exclude<VerifyResult, 'verified'>, string> = {
+  unavailable: '서버에 서비스 계정이 없어 인증 처리를 할 수 없습니다. Vercel 환경 변수를 확인해 주세요.',
+  forbidden: '운영 계정으로 확인되지 않았습니다. 다시 로그인한 뒤 시도해 주세요.',
+  rejected: 'Firebase가 요청을 거절했습니다. 서비스 계정에 Firebase 인증 관리자 권한이 있는지 확인해 주세요.',
+  failed: '인증 처리를 하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+};

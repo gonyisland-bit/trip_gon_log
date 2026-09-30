@@ -45,3 +45,27 @@ export async function googleAccessToken(env: GoogleEnv, scopes: string[]): Promi
   cache.set(key, { token, until: Date.now() + (Number(body.expires_in) || 3600) * 1000 });
   return token;
 }
+
+/**
+ * The same operator test as the app and the Firestore rules: an owner email (R2_OWNER_EMAILS),
+ * the super admin or an allowed admin in users/public/settings/admin, or role 'admin' on the
+ * member's own profile.
+ */
+export async function isOperator(env: GoogleEnv & { R2_OWNER_EMAILS?: string }, caller: { uid: string; email: string }): Promise<boolean> {
+  const email = (caller.email || '').toLowerCase();
+  const owners = (env.R2_OWNER_EMAILS || 'gonyisland@naver.com').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  if (email && owners.includes(email)) return true;
+  if (!hasServiceAccount(env)) return false;
+  const token = await googleAccessToken(env, ['https://www.googleapis.com/auth/datastore']);
+  const base = `https://firestore.googleapis.com/v1/projects/${projectIdOf(env)}/databases/(default)/documents`;
+  const read = async (path: string) => {
+    const res = await fetch(`${base}/${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    return res.ok ? ((await res.json()) as { fields?: Record<string, any> }).fields || {} : {};
+  };
+  const cfg = await read('users/public/settings/admin');
+  const superAdmin = String(cfg.superAdminEmail?.stringValue || '').toLowerCase();
+  const allowed = (cfg.allowedAdmins?.arrayValue?.values || []).map((v: any) => String(v.stringValue || '').toLowerCase());
+  if (email && (email === superAdmin || allowed.includes(email))) return true;
+  const me = await read(`users/${caller.uid}`);
+  return me.role?.stringValue === 'admin';
+}

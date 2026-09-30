@@ -1,4 +1,4 @@
-import { googleAccessToken } from './_google.js';
+import { googleAccessToken, isOperator } from './_google.js';
 import { verifyFirebaseToken } from './_r2core.js';
 
 /**
@@ -24,8 +24,7 @@ export async function handleAccountRequest(body: unknown, authHeader: string | u
   const projectId = env.FIREBASE_PROJECT_ID || 'trip-gon-log';
   const caller = await verifyFirebaseToken(authHeader, projectId);
   if (!caller) return { status: 401, body: { error: 'Unauthorized' } };
-  const ownerEmails = (env.R2_OWNER_EMAILS || 'gonyisland@naver.com').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-  if (!caller.email || !ownerEmails.includes(caller.email)) return { status: 403, body: { error: 'Operator only' } };
+  if (!(await isOperator(env, caller))) return { status: 403, body: { error: 'Operator only' } };
 
   const req = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
   const uid = typeof req.uid === 'string' ? req.uid : '';
