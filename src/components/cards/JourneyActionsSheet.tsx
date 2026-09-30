@@ -4,6 +4,7 @@ import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Trip } from '../../types';
 import { Sheet, useSheetClose } from '../Sheet';
+import { Segment } from '../ui/Segment';
 import { compressImage } from '../../utils/imageHelper';
 import { getEffectiveImageUrl, uploadFileToR2 } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
@@ -47,6 +48,9 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
   const isOwner = !trip.ownerId || trip.ownerId === currentUid();
   const canEdit = isOwner || Boolean(trip.editors?.includes(currentUid() || ''));
   const [coverOpen, setCoverOpen] = useState(false);
+  // Which cover: the card's (img / videoUrl) or the home hero's own (heroImg / heroVideoUrl).
+  // A journey without hero media shows its card cover in the hero.
+  const [target, setTarget] = useState<'card' | 'hero'>('card');
   const [busy, setBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const ref = doc(db, 'users', 'public', isPlan ? 'plans' : 'trips', String(trip.id));
@@ -65,14 +69,18 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
     }
   };
 
+  const patchFor = (url: string, isVideo: boolean): Partial<Trip> => target === 'hero'
+    ? (isVideo ? { heroVideoUrl: url } : { heroImg: url, heroVideoUrl: '' })
+    : (isVideo ? { videoUrl: url } : { img: url, videoUrl: '' });
+
   const upload = async (file: File) => {
     setBusy('upload');
     try {
       const isVideo = file.type.startsWith('video/');
       const ext = (file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg')).toLowerCase();
       const body = isVideo ? file : await compressImage(file, 2560, 2560, 0.82);
-      const url = await uploadFileToR2(body, `covers/${trip.id}_${Date.now()}.${isVideo ? ext : 'jpg'}`);
-      await setCover(isVideo ? { videoUrl: url } : { img: url, videoUrl: '' }, 'upload');
+      const url = await uploadFileToR2(body, `covers/${trip.id}_${target}_${Date.now()}.${isVideo ? ext : 'jpg'}`);
+      await setCover(patchFor(url, isVideo), 'upload');
     } catch (err) {
       console.error('Cover upload failed:', err);
       notify('올리지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
@@ -91,7 +99,8 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
       .catch(() => notify('링크를 복사하지 못했습니다.', 'error'));
   };
 
-  const cover = getEffectiveImageUrl(trip.img);
+  const cover = getEffectiveImageUrl(target === 'hero' ? trip.heroImg : trip.img);
+  const hasHeroMedia = Boolean(trip.heroImg || trip.heroVideoUrl);
   return (
     <div className="flex flex-col gap-3 p-4 pt-2 min-h-0 overflow-y-auto overscroll-contain">
       <div className="flex items-center gap-3">
@@ -131,10 +140,30 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f); }}
             />
+            <Segment<'card' | 'hero'>
+              block
+              size="sm"
+              ariaLabel="바꿀 커버"
+              value={target}
+              onChange={setTarget}
+              options={[{ value: 'card', label: '카드 커버' }, { value: 'hero', label: '홈 히어로' }]}
+            />
+            {target === 'hero' && (
+              <p className="text-meta text-black/55 dark:text-white/55 break-keep">
+                {hasHeroMedia
+                  ? '홈 히어로에는 이 여정만의 사진 · 영상이 쓰입니다.'
+                  : '따로 정하지 않으면 홈 히어로에도 카드 커버가 쓰입니다.'}
+              </p>
+            )}
             <button type="button" className="btn btn-secondary w-full" onClick={() => fileRef.current?.click()} disabled={!!busy}>
               {busy === 'upload' ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <ImagePlus className="w-4 h-4" aria-hidden />}
-              사진 · 영상 올리기
+              {target === 'hero' ? '히어로 사진 · 영상 올리기' : '사진 · 영상 올리기'}
             </button>
+            {target === 'hero' && hasHeroMedia && (
+              <button type="button" className="btn btn-ghost btn-sm self-start" onClick={() => setCover({ heroImg: '', heroVideoUrl: '' }, 'reset')} disabled={!!busy}>
+                카드 커버로 되돌리기
+              </button>
+            )}
             {photos.length > 0 ? (
               <>
                 <span className="font-mono text-micro font-bold uppercase tracking-wider text-black/55 dark:text-white/55">이 여정의 사진</span>
@@ -145,7 +174,7 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
                       <li key={url}>
                         <button
                           type="button"
-                          onClick={() => setCover({ img: url, videoUrl: '' }, url)}
+                          onClick={() => setCover(patchFor(url, false), url)}
                           disabled={!!busy || on}
                           aria-pressed={on}
                           className={`relative w-full aspect-square rounded-thumb overflow-hidden ${on ? 'ring-2 ring-red-600 ring-offset-2 ring-offset-surface dark:ring-offset-surface-dark' : ''}`}
