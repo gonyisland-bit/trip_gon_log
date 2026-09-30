@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackToClose } from '../../utils/overlayHistory';
-import { Volume2, VolumeX } from 'lucide-react';
-import { PlayerDock, PlayerTopBar, DockButton } from '../player/PlayerDock';
-import { getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval } from '../../utils/audioHelper';
+import { Maximize2, Minimize2, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from '../player/PlayerDock';
+import { getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval, saveStoredBgmDefaultVolume } from '../../utils/audioHelper';
 import { prefersReducedMotion } from '../../motion';
 
 // Memory Reel (v1.3): a full-screen photo film with music.
@@ -30,6 +30,14 @@ interface MemoryReelProps {
 }
 
 const FADE_MS = 1100;
+const FIT_KEY = 'tgl_reel_fit';
+
+// fit: the whole photo over a blurred copy of itself (portrait photos are not cut on a wide
+// screen, like the lightbox slideshow); fill: the photo covers the screen
+type ShotFit = 'fit' | 'fill';
+function readFit(): ShotFit {
+  try { return localStorage.getItem(FIT_KEY) === 'fill' ? 'fill' : 'fit'; } catch { return 'fit'; }
+}
 
 function pickTrack(): string | null {
   const tracks = getStoredBgmTracks().filter(t => t.enabled && t.url);
@@ -52,6 +60,37 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   const [muted, setMuted] = useState(false);
   const [ended, setEnded] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [fit, setFit] = useState<ShotFit>(readFit);
+  const [volume, setVolume] = useState(() => getStoredBgmDefaultVolume());
+  const [volumePanel, setVolumePanel] = useState(false);
+  const [hud, setHud] = useState<string | null>(null);
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  const hudTimer = useRef<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const flash = useCallback((text: string) => {
+    setHud(text);
+    if (hudTimer.current) window.clearTimeout(hudTimer.current);
+    hudTimer.current = window.setTimeout(() => setHud(null), 1200);
+  }, []);
+
+  const changeVolume = useCallback((next: number) => {
+    const v = Math.max(0, Math.min(100, Math.round(next)));
+    setVolume(v);
+    setMuted(false);
+    saveStoredBgmDefaultVolume(v);
+    flash(`음량 ${v}%`);
+  }, [flash]);
+
+  const toggleFit = useCallback(() => {
+    setFit(f => {
+      const next: ShotFit = f === 'fit' ? 'fill' : 'fit';
+      try { localStorage.setItem(FIT_KEY, next); } catch { /* per device */ }
+      flash(next === 'fit' ? '사진 전체 보기' : '화면 채우기');
+      return next;
+    });
+  }, [flash]);
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const interval = useMemo(() => Math.max(3200, getStoredSlideshowInterval()), []);
   const minShot = Math.max(2600, interval * 0.7);
@@ -120,6 +159,10 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   }, [reduced]);
 
   useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume / 100;
+  }, [volume]);
+
+  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.muted = muted;
@@ -161,10 +204,15 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   // Keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      setChromeVisible(true);
       if (e.key === 'Escape') onClose();
       else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
       else if (e.key === 'ArrowRight') advance();
       else if (e.key === 'ArrowLeft') goBack();
+      else if (e.key === 'ArrowUp') { e.preventDefault(); changeVolume(volumeRef.current + 10); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); changeVolume(volumeRef.current - 10); }
+      else if (e.key === 'm' || e.key === 'M') setMuted(m => { flash(m ? '소리 켬' : '소리 끔'); return !m; });
+      else if (e.key === 'f' || e.key === 'F') toggleFit();
     };
     window.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
@@ -173,7 +221,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [advance, goBack, onClose]);
+  }, [advance, goBack, onClose, changeVolume, flash, toggleFit]);
 
   // Controls fade out while watching
   useEffect(() => {
@@ -202,6 +250,16 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       className="fixed inset-0 z-[200] bg-black text-white select-none overflow-hidden"
       onPointerMove={() => setChromeVisible(true)}
       onClick={() => setChromeVisible(true)}
+      // Swipe left / right on a phone moves between shots
+      onTouchStart={(e) => { const t = e.touches[0]; touchStart.current = { x: t.clientX, y: t.clientY }; }}
+      onTouchEnd={(e) => {
+        const s = touchStart.current;
+        touchStart.current = null;
+        if (!s) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - s.x;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(t.clientY - s.y) * 1.5) (dx < 0 ? advance : goBack)();
+      }}
     >
       {/* Shots: the current one on top, the previous one fading underneath */}
       {shots.map((s, i) => {
@@ -215,14 +273,18 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
             className="absolute inset-0"
             style={{ opacity: active ? 1 : 0, transition: `opacity ${FADE_MS}ms cubic-bezier(.2,0,0,1)`, zIndex: active ? 2 : 1 }}
           >
+            {/* Ambient: the same photo blurred behind, so its colour fills the frame */}
+            {fit === 'fit' && (
+              <img src={s.src} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover scale-110 blur-3xl opacity-90 saturate-150" />
+            )}
             <img
               src={s.src}
               alt={s.place || title}
-              className="absolute inset-0 w-full h-full object-cover"
+              className={`absolute inset-0 w-full h-full ${fit === 'fit' ? 'object-contain' : 'object-cover'}`}
               style={reduced ? undefined : {
                 transformOrigin: origin,
                 animation: `tglKenBurns ${shotDuration + FADE_MS}ms linear both`,
-                ['--kb-shift' as any]: shift,
+                ['--kb-shift' as any]: fit === 'fit' ? '0% 0%' : shift,
               }}
             />
           </div>
@@ -292,9 +354,40 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
           onNext={advance}
           prevLabel="이전 (←)"
           nextLabel="다음 (→)"
+          hud={hud ? (
+            <span className="px-3 h-8 inline-flex items-center rounded-full bg-black/70 font-mono text-meta tracking-wider text-white tabular-nums">{hud}</span>
+          ) : undefined}
+          panel={volumePanel ? (
+            <DockPanel>
+              <DockPanelRow label="Volume">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={muted ? 0 : volume}
+                  onChange={(e) => changeVolume(Number(e.target.value))}
+                  aria-label="음량"
+                  className="w-40 accent-red-500"
+                />
+                <span className="w-10 text-right font-mono text-meta tabular-nums">{muted ? 0 : volume}%</span>
+              </DockPanelRow>
+              <span className="font-mono text-micro text-white/55">↑ ↓ 음량 · M 소리 · F 보기 방식 · ← → 넘기기 · Space 재생</span>
+            </DockPanel>
+          ) : undefined}
           leading={
-            <DockButton label={muted ? '소리 켜기' : '소리 끄기'} onClick={() => setMuted(m => !m)}>
-              {muted ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
+            <>
+              <DockButton label={muted ? '소리 켜기 (M)' : '소리 끄기 (M)'} onClick={() => setMuted(m => !m)}>
+                {muted ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
+              </DockButton>
+              <DockButton label="음량 (↑ ↓)" onClick={() => setVolumePanel(v => !v)}>
+                <Volume1 className={`w-5 h-5 ${volumePanel ? 'text-red-400' : ''}`} />
+              </DockButton>
+            </>
+          }
+          trailing={
+            <DockButton label={fit === 'fit' ? '화면 채우기 (F)' : '사진 전체 보기 (F)'} onClick={toggleFit}>
+              {fit === 'fit' ? <Maximize2 className="w-5 h-5" /> : <Minimize2 className="w-5 h-5" />}
             </DockButton>
           }
         />
