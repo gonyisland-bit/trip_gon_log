@@ -9,7 +9,9 @@ import {
   Tag, Link2, ScanText, Clipboard
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
-import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike, getCardThumbUrl, needsCardThumb, buildCardThumb } from '../utils/pocketStorage';
+import { FriendPockets, spotKey } from '../components/friends/FriendPockets';
+import { keepFriendSpot } from '../utils/friends';
+import { getSavedPockets, savePockets,detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike, getCardThumbUrl, needsCardThumb, buildCardThumb } from '../utils/pocketStorage';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
@@ -428,6 +430,17 @@ export function PocketHubPage({
       setActionSuccessToast('화면에서 키보드 Ctrl+V (Cmd+V)를 눌러 붙여넣어 주세요.');
       setTimeout(() => setActionSuccessToast(null), 3500);
     }
+  };
+
+  // A spot from a friend's pocket (5-d) becomes a spot of mine
+  const keptKeys = useMemo(() => new Set(spots.map(spotKey)), [spots]);
+  const handleKeepFriendSpot = async (spot: SpotPocketItem, from: { name: string }) => {
+    const item = keepFriendSpot(spot, from.name);
+    const updated = [item, ...spots];
+    setSpots(updated);
+    await savePockets(updated);
+    setActionSuccessToast(`'${item.title}' 내 포켓에 담았습니다`);
+    setTimeout(() => setActionSuccessToast(null), 3000);
   };
 
   const handleSaveScrapedSpot = async (newItem: SpotPocketItem) => {
@@ -1231,6 +1244,9 @@ export function PocketHubPage({
         </div>
       </section>
 
+
+      {/* Friends' pockets they show me (v1.3.6 5-d) */}
+      {isLoggedIn && <FriendPockets keptKeys={keptKeys} onKeep={handleKeepFriendSpot} />}
 
       {/* 2. Controls & Toolbar Bar (Trip Standard Height py-4 & border-b) */}
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">

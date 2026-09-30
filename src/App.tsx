@@ -664,6 +664,9 @@ function App() {
               onPermanentDelete={handlePermanentDeleteJourney}
               me={myCard}
               canWrite={canWriteContent}
+              journeys={[...plans, ...trips]}
+              onOpenJourney={(id) => navigateTo('detail', id)}
+              onOpenPocket={() => navigateTo('pocket')}
             />
           )}
 

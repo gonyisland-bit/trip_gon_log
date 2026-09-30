@@ -1,35 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { Copy, Loader2, Share2, UserMinus, UserPlus } from 'lucide-react';
+import { ChevronRight, Copy, Loader2, Share2, UserPlus } from 'lucide-react';
+import type { Trip } from '../../types';
+import { FriendDrawer } from './FriendDrawer';
 import { UserProfileAvatar } from '../UserProfileAvatar';
 import { IconButton } from '../ui/IconButton';
-import { confirmDialog, notify } from '../../utils/feedback';
+import { notify } from '../../utils/feedback';
 import {
-  activeInvite, createInvite, inviteLink, normalizeCode, promptAcceptInvite, removeFriend,
+  activeInvite, createInvite, inviteLink, normalizeCode, promptAcceptInvite,
   type Invite, type PersonCard,
 } from '../../utils/friends';
 import { useFriends } from './useFriends';
 
 // Settings → Friends (v1.3.6 5-a): the friend list, an invite to hand out (link or 6-letter
-// code) and a field to enter a code someone gave you. No search by email.
+// code) and a field to enter a code someone gave you. No search by email. A friend opens their
+// drawer (5-d): journeys and pockets shared both ways, and ending the friendship.
 
 interface Props {
   me: PersonCard;
   canWrite: boolean;
   cardClass: string;
   labelClass: string;
+  /** Journeys I can see (mine and shared with me), for the friend drawer */
+  journeys: Trip[];
+  onOpenJourney: (id: number) => void;
+  onOpenPocket: () => void;
 }
 
 function daysLeft(expiresAt: number): number {
   return Math.max(1, Math.ceil((expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
 }
 
-export function FriendsSection({ me, canWrite, cardClass, labelClass }: Props) {
+export function FriendsSection({ me, canWrite, cardClass, labelClass, journeys, onOpenJourney, onOpenPocket }: Props) {
   const { friends, loaded } = useFriends(me.uid);
   const [invite, setInvite] = useState<Invite | null>(null);
   const [making, setMaking] = useState(false);
   const [code, setCode] = useState('');
   const [joining, setJoining] = useState(false);
-  const [removing, setRemoving] = useState<string | null>(null);
+  const [openUid, setOpenUid] = useState<string | null>(null);
+  const openFriend = friends.find(f => f.uid === openUid) || null;
 
   useEffect(() => {
     activeInvite().then(setInvite).catch(() => {});
@@ -73,25 +81,20 @@ export function FriendsSection({ me, canWrite, cardClass, labelClass }: Props) {
     setJoining(false);
   };
 
-  const unfriend = async (uid: string, name: string) => {
-    const ok = await confirmDialog(`${name}님과 친구를 끊을까요? 서로 공유한 여정도 더 이상 보이지 않습니다.`, { title: 'UNFRIEND', confirmLabel: '친구 끊기', danger: true });
-    if (!ok) return;
-    setRemoving(uid);
-    try {
-      await removeFriend(uid);
-      notify(`${name}님과 친구를 끊었습니다.`, 'success');
-    } catch (err) {
-      console.warn('Unfriend failed:', err);
-      notify('친구를 끊지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
-    } finally {
-      setRemoving(null);
-    }
-  };
-
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   return (
     <section className={cardClass}>
+      {openFriend && (
+        <FriendDrawer
+          friend={openFriend}
+          me={me}
+          journeys={journeys}
+          onClose={() => setOpenUid(null)}
+          onOpenJourney={onOpenJourney}
+          onOpenPocket={onOpenPocket}
+        />
+      )}
       <div className="flex items-baseline justify-between">
         <span className={labelClass}>Friends</span>
         <span className="font-mono text-meta text-black/50 dark:text-white/50 tabular-nums">{friends.length}</span>
@@ -104,17 +107,27 @@ export function FriendsSection({ me, canWrite, cardClass, labelClass }: Props) {
       ) : (
         <ul className="flex flex-col gap-2">
           {friends.map(f => (
-            <li key={f.uid} className="flex items-center gap-3">
-              <UserProfileAvatar profile={f} size="md" fallbackName={f.name} />
-              <span className="flex-1 min-w-0 text-[14px] font-bold truncate">{f.name}</span>
-              <IconButton
-                icon={removing === f.uid ? Loader2 : UserMinus}
-                label={`${f.name}님과 친구 끊기`}
-                size="sm"
-                disabled={removing !== null}
-                onClick={() => unfriend(f.uid, f.name)}
-                className={removing === f.uid ? '[&>svg]:animate-spin' : ''}
-              />
+            <li key={f.uid}>
+              <button
+                type="button"
+                onClick={() => setOpenUid(f.uid)}
+                className="w-full min-h-11 flex items-center gap-3 text-left -mx-1 px-1 rounded-thumb hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+              >
+                <UserProfileAvatar profile={f} size="md" fallbackName={f.name} />
+                <span className="flex-1 min-w-0 flex flex-col">
+                  <span className="text-[14px] font-bold truncate">{f.name}</span>
+                  {(() => {
+                    const mine = journeys.filter(j => j.ownerId === me.uid && j.access?.includes(f.uid)).length;
+                    const theirs = journeys.filter(j => j.ownerId === f.uid).length;
+                    return (mine || theirs) ? (
+                      <span className="font-mono text-micro text-black/50 dark:text-white/50 tabular-nums">
+                        {[mine ? `내 여정 ${mine}` : '', theirs ? `받은 여정 ${theirs}` : ''].filter(Boolean).join(' · ')}
+                      </span>
+                    ) : null;
+                  })()}
+                </span>
+                <ChevronRight className="w-4 h-4 shrink-0 text-black/40 dark:text-white/40" aria-hidden />
+              </button>
             </li>
           ))}
         </ul>

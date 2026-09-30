@@ -31,6 +31,9 @@ interface Props {
   onPermanentDelete: (id: number) => void;
   me: PersonCard | null;
   canWrite: boolean;
+  journeys: Trip[];
+  onOpenJourney: (id: number) => void;
+  onOpenPocket: () => void;
 }
 
 const card = 'rounded-card bg-surface dark:bg-surface-dark p-4 flex flex-col gap-3';
@@ -42,7 +45,7 @@ function formatBytes(n: number): string {
   return `${Math.round(n / 1024 ** 2)} MB`;
 }
 
-export function SettingsSheet({ onClose, profile, displayName, email, nightMode, onNightMode, trashed, onRestore, onPermanentDelete, me, canWrite }: Props) {
+export function SettingsSheet({ onClose, profile, displayName, email, nightMode, onNightMode, trashed, onRestore, onPermanentDelete, me, canWrite, journeys, onOpenJourney, onOpenPocket }: Props){
   const [journeyOpen, setJourneyOpen] = useState<JourneyOpen>(readJourneyOpen);
   const [fit, setFit] = useState<ReelFit>(() => { try { return localStorage.getItem('tgl_reel_fit') === 'fill' ? 'fill' : 'fit'; } catch { return 'fit'; } });
   const [interval, setIntervalMs] = useState(() => getStoredSlideshowInterval());
@@ -79,7 +82,17 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
           </button>
         </section>
 
-        {me && <FriendsSection me={me} canWrite={canWrite} cardClass={card} labelClass={label} />}
+        {me && (
+          <FriendsSection
+            me={me}
+            canWrite={canWrite}
+            cardClass={card}
+            labelClass={label}
+            journeys={journeys}
+            onOpenJourney={(id) => { onClose(); onOpenJourney(id); }}
+            onOpenPocket={() => { onClose(); onOpenPocket(); }}
+          />
+        )}
 
         {/* Display */}
         <section className={card}>

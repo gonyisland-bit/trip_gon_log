@@ -270,7 +270,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
         // The member confirms their own address; no admin step
         let mailError = '';
         if (!isSuper) {
-          await sendVerificationMail(user).catch((mailErr) => { mailError = `${friendlyMailError(mailErr)} 아래 다시 보내기로 다시 보낼 수 있습니다.`; });
+          await sendVerificationMail(user).catch((mailErr) => { mailError = friendlyMailError(mailErr); });
         }
 
         setSubmittedUser(newProfile);

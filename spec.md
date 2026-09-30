@@ -454,15 +454,16 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 ### v1.3.6 (2026.09.30)
 - **진행 현황 (다른 PC에서 이어가기, 2026.09.30 기준)**
   - 완료: 1단계 UI · 티켓 동기화, 2단계 메일 인증 가입, 3단계 본인 콘텐츠(데이터 이전 · 새 규칙 게시 완료), 4단계 사용자 중심 개편(카드 메뉴 · 여정 속 매거진 · 자동 히어로 · 설정 시트)과 후속(WY 지도 · 생일 · 전화 삭제 · 히어로 커버 · 프로필 낙서 50종).
-  - 진행 중: **5단계 친구와 공유** — 계획서 https://claude.ai/artifact/RwMXdxhqjdyLeoH4KzW8qv. 결정: 친구 연결은 초대 링크 · 코드만(이메일 검색 없음), 인원을 친구로 연결할 때 기본 권한은 보기.
+  - 완료: **5단계 친구와 공유** — 계획서 https://claude.ai/artifact/RwMXdxhqjdyLeoH4KzW8qv. 결정: 친구 연결은 초대 링크 · 코드만(이메일 검색 없음), 인원을 친구로 연결할 때 기본 권한은 보기.
     - [x] 5-a 초대 · 친구(2026.09.30). **새 규칙(`firestore.rules`) 게시 필요** — 게시 후 운영 계정이 관리 → USERS 데이터 카드의 `가족 친구 연결`을 한 번 누르기. 5-b ~ 5-d에 필요한 규칙(스스로 빠지기 · 친구 포켓 읽기)도 이번에 함께 들어 있어 이후 단계는 다시 게시하지 않아도 됨.
     - [x] 5-b 여정 공유 버튼(2026.09.30). 규칙 게시 완료.
     - [x] 5-c 인원 ↔ 친구(2026.09.30).
-    - [ ] 5-d 공유 서랍.
+    - [x] 5-d 공유 서랍(2026.09.30). **5단계 완료.**
   - 그다음: 6단계 알림(FCM) · SNS → 포켓(iOS) · 앱스토어 준비. 전체 로드맵 https://claude.ai/artifact/E7Puu2UGGrbJhLcnHu6xzE
   - 운영 계정이 할 수 있는 남은 일(선택): 관리 → USERS 데이터 카드의 `생일 · 전화번호 지우기`(기존 회원 저장값 일괄 삭제, 되돌릴 수 없음).
   - 구조 요점: 여정 콘텐츠 쓰기는 `utils/ownership`의 `setDoc` · `writeBatch` 래퍼(ownerId · access · editors · publicShare 자동), 구독은 `access array-contains uid`, 개인 문서는 `users/{uid}/…`, R2 업로드는 `u/{uid}/`. 새 기능이 여정 콘텐츠에 쓸 때도 반드시 이 래퍼를 쓸 것.
   - Walkthrough: 1단계 https://claude.ai/artifact/9MnD3BAMiPfrByxrTofUNA · 2단계 https://claude.ai/artifact/8bSYJbgXw6V8AMdz8fLkjL · 3단계 https://claude.ai/artifact/LfrW7amAejc8BAG9phmth4 · 4단계 https://claude.ai/artifact/Lkgpu265KUUyy7Bov3D4ga · 5-a https://claude.ai/artifact/YUk1ZvNTpkAj4wjfkzzbHT · 5-b https://claude.ai/artifact/APzdf8MtPDGSorL4FbFENu · 5-c https://claude.ai/artifact/AwEZBhZs6QnefabQro4kHe
+- 5-d 공유 서랍: 설정 → Friends에서 친구를 누르면 `components/friends/FriendDrawer`. 내 여정마다 `공유 안 함 · 보기 · 함께 편집`(공유 시트와 같은 `setJourneyPeople`), `내 포켓 보여주기`(`users/{uid}/settings/pockets`의 `sharedWith`), 그 친구가 나에게 공유한 여정 · 포켓, 친구 끊기(목록 줄의 끊기 버튼은 서랍으로 옮김). 친구 목록 줄에는 `내 여정 n · 받은 여정 n`. 포켓 화면 머리 아래 `Friends` 줄(`FriendPockets`)에 포켓을 보여주는 친구가 칩으로 나오고, 누르면 그 친구 장소 카드와 `내 포켓에 담기`(좋아요 · 댓글 · 순서 · 여정 연결은 빼고 메모에 출처를 붙여 새 장소로 저장). 친구를 끊으면 내 포켓 공유도 해제. 가입 직후 인증 메일 오류 문구가 두 번 겹치던 것도 수정.
 - 재가입 반쯤 로그인 수정: 지운 이메일로 다시 가입할 때 예전 계정으로 잠깐 로그인한 뒤 단계가 실패하면 로그인이 풀리지 않아, 프로필 없는 채로 들어가 인증 메일이 가지 않고 프로필 수정 화면에 예전 로그인 이름이 보이던 문제. 이제 가입이 어느 단계에서 실패해도 로그인하지 않은 상태로 돌아가고, 프로필 저장이 모두 실패하면 새 계정도 지움. 이름 · 아이디 · 메일이 없는 문서(예전 접속 기록이 만든 고스트)는 프로필로 보지 않고 정리함(`isGhostProfile`). 입력한 비밀번호로 예전 계정이 열리지 않으면 예전 비밀번호로 다시 가입하거나 비밀번호 찾기로 한 번 로그인하라고 안내.
 - 5-c 인원 ↔ 친구: 여정 편집의 인원 칸에서 친구 칩으로 친구를 인원에 넣거나, 이름 옆 연결 버튼으로 기존 이름을 친구 계정에 연결(이름이 친구 이름으로 바뀜). 연결은 여정의 `memberLinks`(`{ name, uid }`)에 저장되고, 저장하면 연결한 친구에게 보기 권한으로 자동 공유(`utils/memberLinks`, 공유 시트에서 함께 편집으로 올릴 수 있음). 이름이 바뀌면 일정 · 항공 · 숙소 · 교통의 `paidBy`와 기타 지출도 새 이름으로 바뀜. New trip 시트 인원 단계에 친구 칩이 나오고, 여정을 만들 때 친구 이름과 정확히 같은(겹치지 않는) 인원이 연결 · 공유됨. 연결은 주인만. 인원에서 빼도 공유는 그대로 두며, 공유를 멈추려면 공유 시트를 씀.
 - 삭제한 회원 고스트 수정: 관리 → USERS에서 지운 회원이 다시 로그인하면 빈 프로필로 되살아나고(로그인 화면의 자동 복구, 5분마다 쓰는 접속 기록의 merge 쓰기), 이름 · 아이디 · 메일이 빈 줄이 관리 목록에 생기던 문제. 이제 프로필이 없는 계정은 로그인할 때 스스로 로그인 계정을 지우고 "삭제된 계정입니다. 같은 이메일로 다시 가입할 수 있습니다"를 알림(`utils/accountCleanup`, 운영 계정 제외). 로그인해 있던 세션도 같은 방식으로 정리(가입 10분 이내 계정은 제외). 접속 기록은 있는 프로필만 갱신. 같은 이메일로 다시 가입하면 입력한 비밀번호로 예전 계정이 열리고 프로필이 없을 때 예전 계정을 지우고 새로 만듦. 서버 `api/account`(운영 계정만)가 관리자 삭제 때 Firebase 로그인 계정까지 지우며, Vercel 환경 변수 `FIREBASE_CLIENT_EMAIL` · `FIREBASE_PRIVATE_KEY`(Firebase 서비스 계정)가 있어야 동작하고 없으면 위의 로그인 시 정리로 대신함.
