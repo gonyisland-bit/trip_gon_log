@@ -2,6 +2,9 @@
 // the card menu can ask for the record instead, or for a magazine preview before publishing.
 export type DetailIntent = 'record' | 'magazine';
 
+/** The journey header's magazine button asks the open journey to show its magazine */
+export const OPEN_JOURNEY_MAGAZINE = 'tgl:open-journey-magazine';
+
 let next: DetailIntent | null = null;
 
 export function setDetailIntent(intent: DetailIntent) {

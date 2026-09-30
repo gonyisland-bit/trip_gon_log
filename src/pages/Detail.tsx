@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronUp, ChevronDown, Map as MapIcon, FileText, Clock, Plane, BedDouble, TrainFront, BookOpen, type LucideIcon } from 'lucide-react';
+import { ChevronUp, ChevronDown, Map as MapIcon, FileText, Clock, Plane, BedDouble, TrainFront, Image as ImageIcon, type LucideIcon } from 'lucide-react';
 import { getDefaultCurrencyForLocation } from '../components/SettlementExpenseInput';
 import { SettlementView } from '../components/SettlementView';
 import { SummaryView } from '../components/SummaryView';
@@ -12,7 +12,7 @@ import { doc, getDoc } from 'firebase/firestore';
 // Journey content writes carry owner / access fields (v1.3.6)
 import { currentUid, setDoc } from '../utils/ownership';
 import { JourneyMagazine, type MagazinePhoto } from '../components/magazine/JourneyMagazine';
-import { takeDetailIntent } from '../utils/detailIntent';
+import { OPEN_JOURNEY_MAGAZINE, takeDetailIntent } from '../utils/detailIntent';
 import { getLiveTripStatus, getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { notify } from '../utils/feedback';
 import { resolveTimelinePlaceName } from '../utils/magazineHelper';
@@ -32,8 +32,8 @@ const DETAIL_TABS: { id: TabType; label: string; icon: LucideIcon }[] = [
   { id: 'flights', label: 'FLIGHT', icon: Plane },
   { id: 'stays', label: 'STAY', icon: BedDouble },
   { id: 'transit', label: 'TRANS', icon: TrainFront },
-  // v1.3.6 4-b: the photo tab opens the journey's magazine; closing it leaves the photo tools here
-  { id: 'gallery', label: 'MAGAZINE', icon: BookOpen },
+  // The tabs are the record; the magazine has its own button in the journey header
+  { id: 'gallery', label: 'PHOTO', icon: ImageIcon },
 ];
 
 export function JourneyDetailPage(props: JourneyDetailPageProps) {
@@ -62,12 +62,16 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
   useEffect(() => {
     if (!trip) return;
     const intent = takeDetailIntent();
-    if (intent === 'magazine' || (intent !== 'record' && trip.publishedAt)) {
-      setActiveTab('gallery' as TabType);
-      setMagazineOpen(true);
-    }
+    if (intent === 'magazine' || (intent !== 'record' && trip.publishedAt)) setMagazineOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id]);
+
+  // The magazine button in the journey header
+  useEffect(() => {
+    const open = () => setMagazineOpen(true);
+    window.addEventListener(OPEN_JOURNEY_MAGAZINE, open);
+    return () => window.removeEventListener(OPEN_JOURNEY_MAGAZINE, open);
+  }, []);
 
   // Captions follow the old magazine: the timeline entry's title, and its place name or the
   // nearest earlier entry's place name (resolveTimelinePlaceName)
@@ -170,7 +174,6 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
               onClick={() => {
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
-                if (tab.id === 'gallery') setMagazineOpen(true);
               }}
               // From md the list is half the window: icon over label until xl, so all six tabs fit
               title={tab.label}
@@ -198,7 +201,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                 다녀온 여행이에요. 실제 시간에 맞춰 일정과 사진을 정리했다면 매거진으로 발행하세요.
               </p>
               <div className="flex gap-1.5 shrink-0">
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setActiveTab('gallery' as TabType); setMagazineOpen(true); }}>미리보기</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setMagazineOpen(true)}>미리보기</button>
                 <button type="button" className="btn btn-accent btn-sm" onClick={() => setPublished(true)} disabled={publishing}>발행</button>
               </div>
             </div>
@@ -232,17 +235,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           {/* TRANSIT TAB */}
           <TransitTab s={s} />
 
-          {/* MAGAZINE TAB: the photos behind the magazine, with a way back into it */}
-          {activeTab === 'gallery' && (
-            <div className="mx-3 sm:mx-4 mb-1 flex items-center justify-between gap-2">
-              <span className="font-mono text-micro font-bold uppercase tracking-wider text-black/55 dark:text-white/55">
-                {published ? 'Published' : 'Photos'} · {magazinePhotos.length}
-              </span>
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => setMagazineOpen(true)}>
-                <BookOpen className="w-3.5 h-3.5" aria-hidden />매거진 보기
-              </button>
-            </div>
-          )}
+          {/* GALLERY TAB */}
           <GalleryTab s={s} />
 
         {/* SETTLEMENT TAB */}

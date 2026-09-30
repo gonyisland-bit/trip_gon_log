@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import {
   Train, Bus, Car, Trash2, Image as ImageIcon, ChevronDown, MapPin, Loader2, ArrowLeft, ArrowUp,
   ArrowDown, ArrowRight, FileText, Share2, Play, Pause, Check, Edit3, DollarSign,
-  X, Undo2, Redo2, Calendar, Sparkles, Users
+  X, Undo2, Redo2, Calendar, Sparkles, Users, BookOpen
 } from 'lucide-react';
+import { OPEN_JOURNEY_MAGAZINE } from '../../utils/detailIntent';
 import { getUpcomingPlanInfo } from '../../utils/tripPlanHelper';
 import { getDefaultCurrencyForLocation } from '../../components/SettlementExpenseInput';
 import { generateJourneyMessage } from '../../components/SummaryView';
@@ -3238,6 +3239,21 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 <Redo2 className="w-4 h-4" />
               </button>
             </>
+          )}
+
+          {/* Magazine (v1.3.6 4-b): the journey read as an issue; red once published */}
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent(OPEN_JOURNEY_MAGAZINE))}
+              className={trip?.publishedAt
+                ? 'tap-target w-9 h-9 rounded-full inline-grid place-items-center shrink-0 transition-colors cursor-pointer bg-red-600 text-white hover:bg-red-700'
+                : hdrBtn(false)}
+              aria-label={trip?.publishedAt ? '매거진 보기' : '매거진 미리보기'}
+              title={trip?.publishedAt ? '매거진 보기' : '매거진 미리보기'}
+            >
+              <BookOpen className="w-4 h-4" />
+            </button>
           )}
 
           <button
