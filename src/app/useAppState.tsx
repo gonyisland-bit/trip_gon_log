@@ -28,7 +28,7 @@ import {
 } from './appUtils';
 import { notify } from '../utils/feedback';
 import { completeVerification } from '../utils/emailVerification';
-import { clearOrphanAccount, hasNoProfile, isSettledAccount } from '../utils/accountCleanup';
+import { clearOrphanAccount, hasNoProfile, isGhostProfile, isSettledAccount } from '../utils/accountCleanup';
 import { linkFriendMembersByName, renameMembersInItems, shareWithMembers } from '../utils/memberLinks';
 import { pendingInvite, personCard, promptAcceptInvite, takeInviteFromUrl, type PersonCard } from '../utils/friends';
 import { CONTENT_COLLECTIONS, journeyItems, ownTrash, pickHomeKeys, registerJourneys, sharedContent, visibleContent } from '../utils/ownership';
@@ -563,7 +563,8 @@ export function useAppState() {
     const currentUid = auth.currentUser.uid;
     let unsubPublic: (() => void) | null = null;
     const unsub = onSnapshot(doc(db, 'users', currentUid), (snapshot) => {
-      if (snapshot.exists()) {
+      // A document with no identity in it (left by older builds) is not a profile
+      if (snapshot.exists() && !isGhostProfile(snapshot.data())) {
         const profile = snapshot.data() as UserProfile;
         // Pending members stay read-only until they verify their email (enforced by Firestore rules)
         if (!isSuperAdmin && profile.status === 'rejected') {
@@ -595,7 +596,7 @@ export function useAppState() {
         // Fallback to public users collection
         if (!unsubPublic) {
           unsubPublic = onSnapshot(doc(db, 'users', 'public', 'users', currentUid), (pubSnap) => {
-            if (pubSnap.exists()) {
+            if (pubSnap.exists() && !isGhostProfile(pubSnap.data())) {
               const pubProfile = pubSnap.data() as UserProfile;
               if (!isSuperAdmin && pubProfile.status === 'rejected') {
                 auth.signOut();

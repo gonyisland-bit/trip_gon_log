@@ -17,7 +17,7 @@ import { PasswordInput } from './PasswordInput';
 import { VerifyEmailPanel } from './account/VerifyEmailPanel';
 import { sendVerificationMail } from '../utils/emailVerification';
 import { notify } from '../utils/feedback';
-import { clearOrphanAccount, createAccountReclaiming } from '../utils/accountCleanup';
+import { LEFTOVER_ACCOUNT, clearOrphanAccount, createAccountReclaiming, isGhostProfile } from '../utils/accountCleanup';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -256,10 +256,16 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
           createdAt: Date.now(),
         };
 
-        await Promise.allSettled([
+        const saved = await Promise.allSettled([
           setDoc(doc(db, 'users', user.uid), newProfile),
           setDoc(doc(db, 'users', 'public', 'users', user.uid), newProfile)
         ]);
+        // Without a profile the account would be an empty member: undo it and say so
+        if (saved.every(r => r.status === 'rejected')) {
+          console.error('Profile save failed:', saved);
+          await clearOrphanAccount(user);
+          throw Object.assign(new Error('profile not saved'), { code: 'tgl/profile-not-saved' });
+        }
 
         // The member confirms their own address; no admin step
         let mailError = '';
@@ -288,11 +294,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
         try {
           let prof: UserProfile | null = null;
           const publicSnap = await getDoc(doc(db, 'users', 'public', 'users', user.uid));
-          if (publicSnap.exists()) {
+          // A document with no identity in it (left by older builds) is not a profile
+          if (publicSnap.exists() && !isGhostProfile(publicSnap.data())) {
             prof = publicSnap.data() as UserProfile;
           } else {
             const userSnap = await getDoc(doc(db, 'users', user.uid));
-            if (userSnap.exists()) {
+            if (userSnap.exists() && !isGhostProfile(userSnap.data())) {
               prof = userSnap.data() as UserProfile;
             }
           }
@@ -350,6 +357,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
       onClose();
     } catch (err: any) {
       console.error(err);
+      // A failed sign-up never leaves anyone signed in (the old account it tried to clear, or a
+      // new account without a profile)
+      if (isCreatingAccount && auth.currentUser) await auth.signOut().catch(() => {});
       // Always clear signup flag on error so auth state works normally again
       onSignupEnd?.();
       let errorMsg = '인증에 실패했습니다. 다시 시도해 주세요.';
@@ -359,6 +369,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
         errorMsg = '등록되지 않은 이메일입니다.';
       } else if (err.code === 'auth/email-already-in-use') {
         errorMsg = '이미 가입된 이메일입니다. 로그인하거나 비밀번호 찾기를 이용해 주세요.';
+      } else if (err.code === LEFTOVER_ACCOUNT) {
+        errorMsg = '이 이메일로 쓰던 계정이 남아 있습니다. 예전 비밀번호를 넣고 다시 가입하거나, 로그인 화면의 비밀번호 찾기로 새 비밀번호를 정해 한 번 로그인하면 정리되어 다시 가입할 수 있습니다.';
+      } else if (err.code === 'tgl/profile-not-saved') {
+        errorMsg = '프로필을 저장하지 못해 가입을 취소했습니다. 잠시 후 다시 시도해 주세요.';
       } else if (err.code === 'auth/invalid-email') {
         errorMsg = '올바른 이메일 형식을 입력해 주세요.';
       } else if (err.code === 'auth/weak-password') {

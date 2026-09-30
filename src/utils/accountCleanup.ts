@@ -1,5 +1,5 @@
 import { createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword, type User, type UserCredential } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 // Deleted members (v1.3.6). Removing a member in the manage hub deletes their profile; the sign-in
@@ -7,24 +7,36 @@ import { auth, db } from '../firebase';
 // the member. So an account without a profile is never brought back as an empty "ghost" member:
 // the next time it signs in, it removes itself and the address is free to sign up again.
 
-/** True when neither profile copy exists (a read error is not taken as missing) */
-export async function hasNoProfile(uid: string): Promise<boolean> {
-  const [root, pub] = await Promise.all([
-    getDoc(doc(db, 'users', uid)),
-    getDoc(doc(db, 'users', 'public', 'users', uid)),
-  ]);
-  return !root.exists() && !pub.exists();
+/**
+ * A profile document left behind with no identity in it (older builds wrote only lastActiveAt
+ * into a deleted member's shared profile). It counts as no profile at all.
+ */
+export function isGhostProfile(data: Record<string, any> | undefined | null): boolean {
+  if (!data) return true;
+  return !data.email && !data.username && !data.lastName && !data.firstName;
 }
 
-/** Removes the signed-in account that has no profile any more (falls back to signing out) */
+function profileRefs(uid: string) {
+  return [doc(db, 'users', uid), doc(db, 'users', 'public', 'users', uid)];
+}
+
+/** True when neither profile copy exists or both are ghosts (a read error is not taken as missing) */
+export async function hasNoProfile(uid: string): Promise<boolean> {
+  const snaps = await Promise.all(profileRefs(uid).map(r => getDoc(r)));
+  return snaps.every(s => !s.exists() || isGhostProfile(s.data()));
+}
+
+/** Removes the signed-in account that has no profile any more, and its ghost documents */
 export async function clearOrphanAccount(user: User | null = auth.currentUser): Promise<void> {
   if (!user) return;
+  await Promise.allSettled(profileRefs(user.uid).map(r => deleteDoc(r)));
   try {
     await deleteUser(user);
   } catch (err) {
     console.warn('Orphan account removal failed, signing out:', err);
-    await auth.signOut().catch(() => {});
   }
+  // Never stay signed in as an account without a profile
+  if (auth.currentUser) await auth.signOut().catch(() => {});
 }
 
 /** Accounts made in the last few minutes may still be writing their profile */
@@ -33,25 +45,34 @@ export function isSettledAccount(user: User, minutes = 10): boolean {
   return Number.isFinite(created) && Date.now() - created > minutes * 60 * 1000;
 }
 
+/** Thrown when the address still has a sign-in account this sign-up cannot clear */
+export const LEFTOVER_ACCOUNT = 'tgl/leftover-account';
+
 /**
  * Sign-up with an address whose old account was deleted: when the entered password still opens
- * that account and it has no profile, the old account is removed and a new one made.
- * Throws the original "already in use" error otherwise.
+ * that account and it has no profile, the old account is removed and a new one made. Whatever
+ * fails on the way, the old account is signed out again, so sign-up never ends half signed in.
  */
 export async function createAccountReclaiming(email: string, password: string): Promise<UserCredential> {
   try {
     return await createUserWithEmailAndPassword(auth, email, password);
   } catch (err: any) {
     if (err?.code !== 'auth/email-already-in-use') throw err;
-    const old = await signInWithEmailAndPassword(auth, email, password).catch(() => null);
-    if (!old) throw err;
-    if (!(await hasNoProfile(old.user.uid).catch(() => false))) {
-      await auth.signOut().catch(() => {});
-      throw err;
-    }
-    await deleteUser(old.user);
-    return createUserWithEmailAndPassword(auth, email, password);
   }
+  const old = await signInWithEmailAndPassword(auth, email, password).catch(() => null);
+  // The password does not open it: either a live account or a deleted one with another password
+  if (!old) throw Object.assign(new Error('address in use'), { code: LEFTOVER_ACCOUNT });
+  try {
+    if (!(await hasNoProfile(old.user.uid))) {
+      throw Object.assign(new Error('address in use'), { code: 'auth/email-already-in-use' });
+    }
+    await Promise.allSettled(profileRefs(old.user.uid).map(r => deleteDoc(r)));
+    await deleteUser(old.user);
+  } catch (err) {
+    if (auth.currentUser) await auth.signOut().catch(() => {});
+    throw err;
+  }
+  return createUserWithEmailAndPassword(auth, email, password);
 }
 
 /**
