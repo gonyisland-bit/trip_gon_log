@@ -19,15 +19,29 @@ export function projectIdOf(env: GoogleEnv): string {
   return env.FIREBASE_PROJECT_ID || 'trip-gon-log';
 }
 
+/**
+ * The service account key however it was pasted into Vercel: the whole JSON file, quoted,
+ * with "\n" as two characters, with stray spaces or CRs. jose wants a clean PKCS#8 PEM.
+ */
+export function normalizePem(raw: string): string {
+  let v = raw.trim().replace(/^﻿/, '');
+  if (v.startsWith('{')) {
+    try { v = String(JSON.parse(v).private_key || v); } catch {}
+  }
+  v = v.replace(/^['"]+|['"]+$/g, '').replace(/\\r/g, '').replace(/\\n/g, '\n');
+  const m = v.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+  const body = (m ? m[1] : v).replace(/[^A-Za-z0-9+/=]/g, '');
+  const lines = body.match(/.{1,64}/g) || [];
+  return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----\n`;
+}
+
 const cache = new Map<string, { token: string; until: number }>();
 
 export async function googleAccessToken(env: GoogleEnv, scopes: string[]): Promise<string> {
   const key = scopes.join(' ');
   const hit = cache.get(key);
   if (hit && hit.until > Date.now() + 60_000) return hit.token;
-  // Keys pasted into Vercel often keep "\n" as two characters, sometimes inside quotes
-  const pem = String(env.FIREBASE_PRIVATE_KEY).trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
-  const pk = await importPKCS8(pem, 'RS256');
+  const pk = await importPKCS8(normalizePem(String(env.FIREBASE_PRIVATE_KEY)), 'RS256');
   const now = Math.floor(Date.now() / 1000);
   const assertion = await new SignJWT({ scope: key })
     .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
