@@ -1,4 +1,5 @@
 import { auth } from '../firebase';
+import { apiUrl } from './apiBase';
 
 export const R2_PUBLIC_URL = (import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-73f603986a164324a3a48f1c03847cf3.r2.dev').replace(/\/+$/, '');
 
@@ -10,7 +11,7 @@ async function callR2Api<T>(payload: Record<string, unknown>): Promise<T> {
   const user = auth.currentUser;
   if (!user) throw new Error('R2 request requires a signed-in user');
   const idToken = await user.getIdToken();
-  const response = await fetch('/api/r2', {
+  const response = await fetch(apiUrl('/api/r2'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
     body: JSON.stringify(payload),

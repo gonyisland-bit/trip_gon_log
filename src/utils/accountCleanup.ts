@@ -1,6 +1,7 @@
 import { createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword, type User, type UserCredential } from 'firebase/auth';
 import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { apiUrl } from './apiBase';
 
 // Deleted members (v1.3.6). Removing a member in the manage hub deletes their profile; the sign-in
 // account itself can only be removed on the server (api/account, needs a service account) or by
@@ -83,7 +84,7 @@ export async function deleteAuthAccount(uid: string): Promise<'deleted' | 'unava
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) return 'failed';
-    const res = await fetch('/api/account', {
+    const res = await fetch(apiUrl('/api/account'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ action: 'delete', uid }),

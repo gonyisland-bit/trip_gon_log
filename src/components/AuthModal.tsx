@@ -642,6 +642,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
                   >
                     {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
                   </button>
+                  <p className="text-meta text-black/55 dark:text-white/55 text-center break-keep">
+                    가입하면 <a href="/terms.html" target="_blank" rel="noopener" className="underline underline-offset-2">이용약관</a>과 <a href="/privacy.html" target="_blank" rel="noopener" className="underline underline-offset-2">개인정보처리방침</a>에 동의하게 됩니다.
+                  </p>
 
                   {/* Back to Sign In Link */}
                   <div className="pt-3 border-t border-black/15 dark:border-white/15 text-center">

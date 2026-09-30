@@ -1,4 +1,5 @@
 import { handlePushRequest } from './_pushcore.js';
+import { handleCors } from './_cors.js';
 
 interface NodeReq {
   method?: string;
@@ -10,6 +11,7 @@ interface NodeRes {
   status(code: number): NodeRes;
   json(body: unknown): void;
   setHeader(name: string, value: string): void;
+  end?: () => void;
 }
 
 function first(v: string | string[] | undefined): string | undefined {
@@ -18,6 +20,7 @@ function first(v: string | string[] | undefined): string | undefined {
 
 export default async function handler(req: NodeReq, res: NodeRes) {
   res.setHeader('Cache-Control', 'no-store');
+  if (handleCors(req, res)) return;
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     res.status(405).json({ error: 'Method not allowed' });

@@ -459,15 +459,18 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
     - [x] 5-b 여정 공유 버튼(2026.09.30). 규칙 게시 완료.
     - [x] 5-c 인원 ↔ 친구(2026.09.30).
     - [x] 5-d 공유 서랍(2026.09.30). **5단계 완료.**
-  - 진행 중: **6단계 알림과 앱 배포 준비** — 계획서 https://claude.ai/artifact/TsUDdorzbA8u4VyBZy7QG8. 결정: 푸시는 Vercel 함수 + 서비스 계정, iOS SNS → 포켓은 단축어 먼저, 알림 종류는 친구 수락 · 여정 공유받음 · 함께 편집 변경 · 포켓 공개 전부, 스토어는 Capacitor 프로젝트 준비까지(빌드 · 제출은 직접).
+  - 완료: **6단계 알림과 앱 배포 준비** — 계획서 https://claude.ai/artifact/TsUDdorzbA8u4VyBZy7QG8. 결정: 푸시는 Vercel 함수 + 서비스 계정, iOS SNS → 포켓은 단축어 먼저, 알림 종류는 친구 수락 · 여정 공유받음 · 함께 편집 변경 · 포켓 공개 전부, 스토어는 Capacitor 프로젝트 준비까지(빌드 · 제출은 직접).
     - [x] 6-a 앱 안 알림함(2026.09.30). **새 규칙(`firestore.rules`) 게시 필요.**
     - [x] 6-b 웹 푸시(2026.09.30). **환경 변수 필요**: Vercel에 `VITE_FCM_VAPID_KEY`(Firebase 콘솔 → 프로젝트 설정 → Cloud Messaging → 웹 푸시 인증서의 키 쌍, 공개 키)와 서비스 계정 `FIREBASE_CLIENT_EMAIL` · `FIREBASE_PRIVATE_KEY`. 넣은 뒤 다시 배포.
     - [x] 6-c iOS 단축어(2026.09.30).
-    - [ ] 6-d 스토어 준비.
+    - [x] 6-d 스토어 준비(2026.09.30). **6단계 완료.** 빌드 · 서명 · 제출은 Android Studio / Xcode에서 직접(아래 6-d 항목의 순서).
   - 전체 로드맵 https://claude.ai/artifact/E7Puu2UGGrbJhLcnHu6xzE
   - 운영 계정이 할 수 있는 남은 일(선택): 관리 → USERS 데이터 카드의 `생일 · 전화번호 지우기`(기존 회원 저장값 일괄 삭제, 되돌릴 수 없음).
   - 구조 요점: 여정 콘텐츠 쓰기는 `utils/ownership`의 `setDoc` · `writeBatch` 래퍼(ownerId · access · editors · publicShare 자동), 구독은 `access array-contains uid`, 개인 문서는 `users/{uid}/…`, R2 업로드는 `u/{uid}/`. 새 기능이 여정 콘텐츠에 쓸 때도 반드시 이 래퍼를 쓸 것.
   - Walkthrough: 1단계 https://claude.ai/artifact/9MnD3BAMiPfrByxrTofUNA · 2단계 https://claude.ai/artifact/8bSYJbgXw6V8AMdz8fLkjL · 3단계 https://claude.ai/artifact/LfrW7amAejc8BAG9phmth4 · 4단계 https://claude.ai/artifact/Lkgpu265KUUyy7Bov3D4ga · 5-a https://claude.ai/artifact/YUk1ZvNTpkAj4wjfkzzbHT · 5-b https://claude.ai/artifact/APzdf8MtPDGSorL4FbFENu · 5-c https://claude.ai/artifact/AwEZBhZs6QnefabQro4kHe · 5-d https://claude.ai/artifact/M69k2vTd3ppzSRaGq4Usms
+- 6-d 스토어 준비: 개인정보처리방침 `public/privacy.html` · 이용약관 `public/terms.html`(가입 화면과 설정 아래에 링크, 운영자 연락처 gonyisland@naver.com). PWA 아이콘 `public/icons/`(192 · 512 maskable, 512, 스토어용 1024) · `manifest.json` 갱신. Capacitor 7(`capacitor.config.ts`, appId `com.tripgonlog.app` — 첫 업로드 전에만 바꿀 수 있음), `android/` · `ios/` 프로젝트, iOS 권한 문구(사진 · 카메라 · 위치). 아이콘 · 스플래시 원본 `assets/icon-only.png` · `assets/splash.png`(`npm run cap:assets`로 네이티브 크기 생성). 서버 주소 `VITE_API_ORIGIN`(`utils/apiBase`, 앱은 capacitor://localhost에서 돌아 서버 함수를 배포 주소로 부름), 서버 함수는 앱 주소에만 CORS 허용(`api/_cors.ts`).
+  - 앱 빌드 순서: `.env.local`에 `VITE_API_ORIGIN=https://배포주소` → `npm run build` → `npm run cap:assets`(처음 한 번) → `npm run cap:sync` → `npm run cap:android` 또는 `npm run cap:ios`(Mac에서 `cd ios/App && pod install` 먼저).
+  - 남은 일: 스토어용 고해상도 아이콘 원본(지금 1024는 192px에서 키운 것), 심사용 데모 계정(예시 여정 · 친구 · 포켓), 스크린샷, 스토어 설명. 앱 안 웹 푸시는 WebView에서 동작하지 않아 앱 푸시는 `@capacitor/push-notifications` + APNs가 따로 필요. iOS 공유 확장도 앱 단계에서.
 - 6-c iOS SNS → 포켓: 설정에 `iPhone · iPad` 카드(`components/pocket/IosShortcutGuide`, iOS에서는 펼친 채로). 단축어 5단계 안내(공유 시트에서 보기 · URL 인코딩 · 텍스트 · URL 열기)와 복사할 주소 `/pocket?share_text=`. 단축어는 Android 공유 대상과 같은 경로를 타서 `utils/shareTarget`이 첫 웹 링크를 골라 포켓 담기 화면을 엶. 단축어는 Safari로 열리므로 Safari에서도 로그인이 필요.
 - 6-b 웹 푸시: 서비스 워커 `public/firebase-messaging-sw.js`(firebase 12.14.0 compat, 패키지 버전과 맞출 것), 기기 토큰 `users/{uid}/devices/{token}`(`utils/push`), 설정 → Notifications에 이 기기 푸시 켜기 · 끄기와 받을 소식 칩(끈 종류는 `users/{uid}/settings/notify`의 `muted`, 푸시만 막고 알림함에는 남음). 알림을 쓴 뒤 `api/push`가 그 알림을 Firestore에서 다시 읽어 보낸 사람이 맞는지 확인하고, 받는 사람의 기기마다 FCM으로 보냄(없어진 토큰은 지움). 푸시를 누르면 여정(`/?id=…&open=1`) · 포켓 · 홈이 열림. 로그아웃하면 이 기기 토큰을 지움. `manifest.json`은 `standalone`(iOS는 홈 화면에 추가한 앱만 푸시 가능, 설정에 안내). 서버 공용 토큰 헬퍼 `api/_google.ts`.
 - 6-a 앱 안 알림함: 헤더 종 아이콘(안 읽은 개수, `components/notifications/NotificationBell`)과 알림 시트(모두 읽음, 누르면 여정 · 포켓 · 설정으로 이동하고 읽음, 90일 지난 알림 정리). 저장 `users/{uid}/notifications/{id}`(`utils/notifications`), 규칙은 친구만 자기 이름으로 안 읽은 알림을 만들고 받는 사람이 읽고 지움. 종류: 친구 수락(초대 수락 때), 여정 공유받음(`setJourneyPeople`에서 새로 보거나 함께 편집이 된 친구), 함께 편집 여정 변경(편집자가 있는 여정에 쓰면 주인 · 다른 편집자에게, 여정마다 1시간에 한 번, 같은 문서를 덮어써 한 줄로 묶음), 포켓 공개(내 포켓 보여주기를 켤 때).

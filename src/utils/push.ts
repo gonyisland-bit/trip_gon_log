@@ -2,6 +2,7 @@ import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messa
 import { deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { app, auth, db } from '../firebase';
 import type { NotificationKind } from './notifications';
+import { apiUrl } from './apiBase';
 
 // Web push (v1.3.6 6-b). This device's FCM token lives in users/{uid}/devices/{token}; api/push
 // sends a friend's notification to every device listed there. Kinds a member mutes are kept in
@@ -89,7 +90,7 @@ export async function pushNotification(to: string, id: string): Promise<void> {
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) return;
-    await fetch('/api/push', {
+    await fetch(apiUrl('/api/push'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ to, id }),

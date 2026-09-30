@@ -11,11 +11,18 @@
     "clean": "rm -rf dist node_modules/.vite node_modules/.tmp",
     "lint": "eslint .",
     "preview": "vite preview",
-    "migrate:r2": "node scripts/migrate-to-r2.mjs"
+    "migrate:r2": "node scripts/migrate-to-r2.mjs",
+    "cap:sync": "cap sync",
+    "cap:android": "cap open android",
+    "cap:ios": "cap open ios",
+    "cap:assets": "npx @capacitor/assets generate --iconBackgroundColor #FFFFFF --splashBackgroundColor #F6F4EF --splashBackgroundColorDark #11110F"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1123.0",
     "@aws-sdk/s3-request-presigner": "^3.1141.0",
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/ios": "^7.6.9",
     "firebase": "^12.14.0",
     "html2canvas": "^1.4.1",
     "jose": "^6.2.12",
@@ -25,6 +32,7 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.6.9",
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",

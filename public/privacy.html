@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>개인정보처리방침 · Tripgon log</title>
+<link rel="icon" href="/favicon.png">
+<style>
+:root{--paper:#F6F4EF;--surface:#FFFDF9;--ink:#141412;--muted:#6B6960;--line:rgba(0,0,0,.08);color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--paper:#11110F;--surface:#1A1A17;--ink:#EFECE6;--muted:#9C998F;--line:rgba(255,255,255,.09);color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.7 "Noto Sans KR",-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:40px 16px 80px;display:flex;flex-direction:column;gap:18px}
+.meta{font:600 11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(26px,5vw,34px);font-weight:800;letter-spacing:-.02em;margin:0}
+section{background:var(--surface);border-radius:20px;padding:20px 22px;display:flex;flex-direction:column;gap:8px}
+h2{font-size:17px;font-weight:800;margin:0}
+p,ul{margin:0}ul{padding-left:20px}li+li{margin-top:4px}
+a{color:inherit}
+.back{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border-radius:999px;background:var(--line);text-decoration:none;font-weight:700;font-size:14px;align-self:flex-start}
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="/">Tripgon log로 돌아가기</a>
+<span class="meta">시행일 2026년 10월 1일</span>
+<h1>개인정보처리방침</h1>
+<p>Tripgon log(이하 "서비스")는 여행 기록을 저장하고 친구와 나누는 데 필요한 정보만 받고, 그 목적 밖으로 쓰지 않습니다.</p>
+<section><h2>1. 받는 정보</h2><ul>
+<li>가입: 성, 이름, 아이디, 이메일, 비밀번호(암호화되어 Firebase 인증에만 저장되며 서비스는 볼 수 없음), 프로필 그림</li>
+<li>이용 중 직접 넣는 것: 여정 · 일정 · 항공 · 숙소 · 교통 기록, 사진 · 영상, 포켓 장소, 캘린더 일정, 정산 기록, 친구 관계</li>
+<li>자동으로 남는 것: 마지막 접속 시각, 알림을 켠 기기의 푸시 토큰, 위치 날씨를 켠 경우 기기의 대략적인 좌표(이 기기에만 저장하고 서비스 서버로 보내지 않음, 날씨를 받을 때 날씨 서비스에 전달)</li>
+</ul></section>
+<section><h2>2. 쓰는 곳</h2><ul>
+<li>회원 확인과 로그인, 메일 인증, 비밀번호 재설정</li>
+<li>여정 · 사진 · 포켓을 여러 기기에서 똑같이 보여 주기</li>
+<li>회원이 고른 친구에게 여정 · 포켓을 보여 주고, 친구 소식을 알림으로 전하기</li>
+</ul></section>
+<section><h2>3. 맡기는 곳</h2><ul>
+<li>Google Firebase(인증, 데이터 저장, 푸시 알림)</li>
+<li>Cloudflare R2(사진 · 영상 파일 저장)</li>
+<li>Vercel(웹사이트와 서버 기능 운영)</li>
+<li>지도 · 날씨 · 링크 미리보기를 보여 줄 때 Google 지도, OpenStreetMap, OpenWeather · Open-Meteo, 링크 미리보기 서비스에 장소 이름 · 좌표 · 링크 주소를 보냅니다. 이름 · 이메일은 보내지 않습니다.</li>
+</ul></section>
+<section><h2>4. 누가 보나요</h2><p>여정과 포켓은 만든 사람만 봅니다. 회원이 공유한 친구, 공유 링크를 받은 사람만 그 여정을 볼 수 있습니다. 운영자도 회원이 공유하지 않은 여정 내용은 볼 수 없습니다.</p></section>
+<section><h2>5. 보관과 삭제</h2><ul>
+<li>탈퇴(설정 → 프로필 · 비밀번호 · 탈퇴)하면 프로필, 만든 여정과 항목, 포켓 · 캘린더 · 설정, 올린 사진 · 영상 파일을 바로 지웁니다. 친구가 공유해 준 여정은 친구의 것이라 남습니다.</li>
+<li>휴지통의 여정은 회원이 영구 삭제할 때까지 보관합니다. 알림은 90일 뒤 지웁니다.</li>
+</ul></section>
+<section><h2>6. 회원의 권리</h2><p>언제든 설정에서 정보를 고치거나 탈퇴할 수 있고, 이용 중 궁금한 점이나 삭제 요청은 아래로 보내 주세요.</p></section>
+<section><h2>7. 문의</h2><p>운영자 이메일: gonyisland@naver.com</p></section>
+<p class="meta">이 방침이 바뀌면 시행 7일 전에 서비스 안에서 알립니다.</p>
+</main>
+</body>
+</html>

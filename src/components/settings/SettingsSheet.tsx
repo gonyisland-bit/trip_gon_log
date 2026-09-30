@@ -225,6 +225,11 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
             </ul>
           )}
         </section>
+
+        <nav className="flex justify-center gap-4 py-2 text-meta text-black/55 dark:text-white/55" aria-label="약관">
+          <a href="/terms.html" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-black dark:hover:text-white">이용약관</a>
+          <a href="/privacy.html" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-black dark:hover:text-white">개인정보처리방침</a>
+        </nav>
       </div>
     </Sheet>
   );
