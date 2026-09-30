@@ -28,6 +28,7 @@ import {
   PresetTripPlan, getSavedPresets, restoreDefaultPresets, saveAllPresets, WORLD_COUNTRIES
 } from '../../data/worldDestinations';
 import { notify, confirmDialog } from '../../utils/feedback';
+import { deleteAuthAccount } from '../../utils/accountCleanup';
 
 export interface ManageHubPageProps {
   trips: Trip[];
@@ -747,7 +748,12 @@ export function useManageHubState(props: ManageHubPageProps) {
         deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${user.uid}`))
       ]);
       setUsersList(prev => prev.filter(u => u.uid !== user.uid));
-      setUserActionToast(`[${fullName}] 회원 계정이 영구 삭제되었습니다.`);
+      // The sign-in account goes too when the server has a service account; otherwise it removes
+      // itself the next time it signs in (no empty profile is brought back)
+      const account = await deleteAuthAccount(user.uid);
+      setUserActionToast(account === 'deleted'
+        ? `[${fullName}] 회원 계정을 삭제했습니다. 같은 이메일로 다시 가입할 수 있습니다.`
+        : `[${fullName}] 회원 프로필을 삭제했습니다. 로그인 계정은 다음 로그인 때 정리됩니다.`);
       setTimeout(() => setUserActionToast(null), 3000);
     } catch (err: any) {
       console.error('Failed to delete user:', err);

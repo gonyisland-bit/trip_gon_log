@@ -28,6 +28,8 @@ import {
 } from './appUtils';
 import { notify } from '../utils/feedback';
 import { completeVerification } from '../utils/emailVerification';
+import { clearOrphanAccount, hasNoProfile, isSettledAccount } from '../utils/accountCleanup';
+import { linkFriendMembersByName, renameMembersInItems, shareWithMembers } from '../utils/memberLinks';
 import { pendingInvite, personCard, promptAcceptInvite, takeInviteFromUrl, type PersonCard } from '../utils/friends';
 import { CONTENT_COLLECTIONS, journeyItems, ownTrash, pickHomeKeys, registerJourneys, sharedContent, visibleContent } from '../utils/ownership';
 import type { RemixPayload } from '../components/RemixSheet';
@@ -603,6 +605,18 @@ export function useAppState() {
                 return;
               }
               setCurrentUserProfile(pubProfile);
+            } else {
+              // Neither profile exists: the operator deleted this member (v1.3.6). A session that
+              // was still signed in removes its account instead of living on as an empty member.
+              // Accounts made minutes ago may still be writing their profile, so they are left alone.
+              const user = auth.currentUser;
+              if (user && user.uid === currentUid && !pubSnap.metadata.fromCache && !isSigningUpRef.current && isSettledAccount(user)) {
+                hasNoProfile(currentUid).then(gone => {
+                  if (!gone || auth.currentUser?.uid !== currentUid) return;
+                  setCurrentUserProfile(null);
+                  clearOrphanAccount(user).finally(() => notify('삭제된 계정입니다. 같은 이메일로 다시 가입할 수 있습니다.'));
+                }).catch(() => {});
+              }
             }
           }, (pubErr) => {
             console.warn('Failed to listen to public user profile fallback:', pubErr);
@@ -627,21 +641,24 @@ export function useAppState() {
   }, [isSuperAdmin, isLoggedIn]);
 
   // Update lastActiveAt heartbeat periodically (every 5 minutes and on mount)
+  // Only updates profiles that exist: a merge write here used to recreate a deleted member's
+  // shared profile as an empty "ghost" row in the manage hub.
+  const hasProfile = Boolean(currentUserProfile);
   useEffect(() => {
-    if (!isLoggedIn || !auth.currentUser) return;
+    if (!isLoggedIn || !auth.currentUser || !hasProfile) return;
     const currentUid = auth.currentUser.uid;
     const updateActivity = () => {
       const now = Date.now();
       Promise.allSettled([
         updateDoc(doc(db, 'users', currentUid), { lastActiveAt: now }),
-        setDoc(doc(db, 'users', 'public', 'users', currentUid), { lastActiveAt: now }, { merge: true }),
+        updateDoc(doc(db, 'users', 'public', 'users', currentUid), { lastActiveAt: now }),
       ]).catch(() => {});
     };
 
     updateActivity();
     const interval = setInterval(updateActivity, 5 * 60 * 1000); // every 5 minutes
     return () => clearInterval(interval);
-  }, [isLoggedIn]);
+  }, [isLoggedIn, hasProfile]);
 
   // Trip permission helpers: Super Admin/Admin has all rights; users can edit/delete their own trips, or trips they are delegated to
   // Own content (v1.3.6): the owner edits and deletes; editors the owner named may edit.
@@ -2113,16 +2130,27 @@ export function useAppState() {
     return list;
   };
 
-  const handleEditTripSave = async (tripId: number, updatedData: Partial<Trip>) => {
+  const handleEditTripSave = async (tripId: number, updatedData: Partial<Trip>, extra?: { renames?: Record<string, string> }) => {
     if (!isLoggedIn) return;
     const isPlan = plans.some(p => String(p.id) === String(tripId));
     const collectionName = isPlan ? 'plans' : 'trips';
     const oldTrip = (isPlan ? plans : trips).find(t => String(t.id) === String(tripId));
     const dateChanged = oldTrip && updatedData.date && oldTrip.date !== updatedData.date;
+    const renames = extra?.renames || {};
+    // A member renamed to a friend's name keeps their custom expenses (5-c)
+    if (Object.keys(renames).length && oldTrip?.customExpenses?.length) {
+      updatedData = { ...updatedData, customExpenses: oldTrip.customExpenses.map(e => (renames[e.paidBy] ? { ...e, paidBy: renames[e.paidBy] } : e)) };
+    }
 
     try {
       await setDoc(doc(db, 'users', 'public', collectionName, String(tripId)), cleanForFirestore(updatedData), { merge: true });
-      
+      await renameMembersInItems(tripId, renames).catch(err => console.warn('Member rename on items failed:', err));
+      // Linked friends see the journey (view; the share sheet raises it to edit)
+      if (myCard && updatedData.memberLinks?.length) {
+        await shareWithMembers(tripId, isPlan, updatedData.memberLinks, myCard)
+          .catch(err => { console.warn('Sharing with linked members failed:', err); notify('친구에게 공유하지 못했습니다. 공유 시트에서 다시 시도해 주세요.', 'error'); });
+      }
+
       if (dateChanged && oldTrip && updatedData.date) {
         const oldDates = generateDateList(oldTrip.date);
         const newDates = generateDateList(updatedData.date);
@@ -2227,6 +2255,11 @@ export function useAppState() {
     try {
       // 1. Save journey doc immediately with cleanForFirestore to purge undefined values
       await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), cleanForFirestore(newJourney));
+      // Members picked from the friend list see the new journey from the start (5-c)
+      if (myCard && members?.length) {
+        await linkFriendMembersByName(newId, collectionName === 'plans', members, myCard)
+          .catch(err => console.warn('Linking friend members failed:', err));
+      }
 
       // 1-1. 기존 여정들의 displayOrder를 배치 업데이트하여 클라우드 서버 영속성 보장 (일관된 최신순 정렬)
       try {

@@ -57,7 +57,9 @@ export interface Trip {
     };
   };
   members?: string[];
-  customExpenses?: CustomExpenseItem[];
+  /** Which friend account a member name stands for (v1.3.6 5-c) */
+  memberLinks?: { name: string; uid: string }[];
+customExpenses?: CustomExpenseItem[];
   pocketSpots?: SpotPocketItem[];
   /** Own content (v1.3.6): who made it, who may read it, who may edit it, shared by link */
   ownerId?: string;

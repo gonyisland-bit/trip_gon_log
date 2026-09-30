@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Edit2, Loader2, Upload, Tag, MapPin, ClipboardPaste, Copy } from 'lucide-react';
+import { X, Save, Edit2, Loader2, Upload, Tag, MapPin, ClipboardPaste, Copy, UserPlus } from 'lucide-react';
 import { Trip } from '../types';
 import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
@@ -8,13 +8,18 @@ import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { ConfirmModal } from './ConfirmModal';
 import { notify, confirmDialog } from '../utils/feedback';
+import { currentUid } from '../utils/ownership';
+import { useFriends } from './friends/useFriends';
+import { UserProfileAvatar } from './UserProfileAvatar';
+import type { MemberLink } from '../utils/memberLinks';
 
 
 interface EditTripModalProps {
   isOpen: boolean;
   onClose: () => void;
   trip: Trip | undefined;
-  onSave: (tripId: number, updatedData: Partial<Trip>) => Promise<void>;
+  /** extra.renames: member names replaced by a friend's name (old → new), for "paid by" on items */
+  onSave: (tripId: number, updatedData: Partial<Trip>, extra?: { renames?: Record<string, string> }) => Promise<void>;
   isLoggedIn: boolean;
   existingTags: string[];
   onMoveToPlans?: (trip: Trip) => Promise<void> | void;
@@ -107,7 +112,14 @@ export function EditTripModal({
   const [tagInput, setTagInput] = useState('');
   const [members, setMembers] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState('');
-  const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | 'PLAN' | ''>('');
+  // Members linked to friend accounts (v1.3.6 5-c); only the owner links, since linking shares
+  const [memberLinks, setMemberLinks] = useState<MemberLink[]>([]);
+  const [renames, setRenames] = useState<Record<string, string>>({});
+  const [linkTarget, setLinkTarget] = useState<string | null>(null);
+  const uid = currentUid();
+  const isOwner = Boolean(trip && uid && (!trip.ownerId || trip.ownerId === uid));
+  const { friends } = useFriends(isOwner && isOpen ? uid : null);
+const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | 'PLAN' | ''>('');
   const [country, setCountry] = useState('');
   const [isVideoDragActive, setIsVideoDragActive] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -139,7 +151,10 @@ export function EditTripModal({
       setTags(trip.tags || []);
       setTagInput('');
       setMembers(trip.members || []);
-      const isPlan = (trip as any).isPlan || trip.tags?.includes('Plan') || trip.title?.includes('(Plan)');
+      setMemberLinks(trip.memberLinks || []);
+      setRenames({});
+      setLinkTarget(null);
+const isPlan = (trip as any).isPlan || trip.tags?.includes('Plan') || trip.title?.includes('(Plan)');
       setStatusBadge(trip.statusBadge || (isPlan ? 'PLAN' : ''));
       setShowUnsavedConfirm(false);
       setCoverTab('main');
@@ -166,8 +181,9 @@ export function EditTripModal({
       heroVideoUrl !== (trip.heroVideoUrl || '') ||
       statusBadge !== (trip.statusBadge || '') ||
       JSON.stringify(tags) !== JSON.stringify(trip.tags || []) ||
-      JSON.stringify(members) !== JSON.stringify(trip.members || [])
-    )
+      JSON.stringify(members) !== JSON.stringify(trip.members || []) ||
+      JSON.stringify(memberLinks) !== JSON.stringify(trip.memberLinks || [])
+)
   );
 
   const handleAttemptClose = () => {
@@ -302,8 +318,9 @@ export function EditTripModal({
         heroVideoUrl,
         tags: finalTags,
         members,
+        memberLinks: memberLinks.filter(l => members.includes(l.name)),
         statusBadge,
-      });
+      }, { renames });
       onClose();
     } catch (err) {
       console.error(err);
@@ -849,12 +866,15 @@ export function EditTripModal({
               {members.length === 0 ? (
                 <span className="text-meta text-black/60 dark:text-white/60 italic">설정된 인원이 없습니다.</span>
               ) : (
-                members.map(m => (
-                  <span 
-                    key={m} 
-                    className="luggage-tag group/luggage cursor-default"
+                members.map(m => {
+                  const link = memberLinks.find(l => l.name === m);
+                  const friend = link && friends.find(f => f.uid === link.uid);
+                  return (
+                  <span
+                    key={m}
+                    className={`luggage-tag group/luggage cursor-default ${linkTarget === m ? 'ring-2 ring-red-600' : ''}`}
                   >
-                    <span className="luggage-tag-hole" />
+                    {link ? <UserProfileAvatar profile={friend || { uid: link.uid }} size="xs" fallbackName={m} /> : <span className="luggage-tag-hole" />}
                     <span>{m}</span>
                     <span className="luggage-barcode-strip">
                       <span className="luggage-barcode-bar w-[1px]" />
@@ -866,6 +886,8 @@ export function EditTripModal({
                       onClick={async () => {
                         if (await confirmDialog(`정말 '${m}' 인원을 삭제하시겠습니까?`)) {
                           setMembers(prev => prev.filter(x => x !== m));
+                          setMemberLinks(prev => prev.filter(l => l.name !== m));
+                          if (linkTarget === m) setLinkTarget(null);
                         }
                       }}
                       className="tap-target text-red-500 hover:text-red-700 transition-colors font-bold text-meta ml-0.5 leading-none p-0.5"
@@ -873,10 +895,67 @@ export function EditTripModal({
                     >
                       <X className="w-2.5 h-2.5" />
                     </button>
+                    {isOwner && !link && friends.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setLinkTarget(prev => prev === m ? null : m)}
+                        className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors ml-0.5 leading-none p-0.5"
+                        title={`${m}을(를) 친구 계정과 연결`}
+                        aria-label={`${m}을(를) 친구 계정과 연결`}
+                        aria-pressed={linkTarget === m}
+                      >
+                        <UserPlus className="w-3 h-3" />
+                      </button>
+                    )}
                   </span>
-                ))
+                  );
+                })
               )}
             </div>
+            {isOwner && friends.length > 0 && (() => {
+              const free = friends.filter(f => !memberLinks.some(l => l.uid === f.uid));
+              if (!free.length) return null;
+              const pick = (f: typeof free[0]) => {
+                if (linkTarget) {
+                  const old = linkTarget;
+                  if (old !== f.name && members.includes(f.name)) { notify('같은 이름의 인원이 이미 있습니다.'); return; }
+                  setMembers(prev => prev.map(x => (x === old ? f.name : x)));
+                  // Chain renames so an item's "paid by" follows to the final name
+                  setRenames(prev => {
+                    const next: Record<string, string> = {};
+                    Object.entries(prev).forEach(([from, to]) => { next[from] = to === old ? f.name : to; });
+                    if (!Object.values(prev).includes(old) && old !== f.name) next[old] = f.name;
+                    return next;
+                  });
+                  setMemberLinks(prev => [...prev.filter(l => l.name !== old), { name: f.name, uid: f.uid }]);
+                  setLinkTarget(null);
+                } else {
+                  if (members.includes(f.name)) { notify('같은 이름의 인원이 이미 있습니다. 그 이름 옆 연결 버튼을 눌러 주세요.'); return; }
+                  setMembers(prev => [...prev, f.name]);
+                  setMemberLinks(prev => [...prev, { name: f.name, uid: f.uid }]);
+                }
+              };
+              return (
+                <div className="flex flex-col gap-1.5 mb-1.5">
+                  <span className="text-meta text-black/60 dark:text-white/60 break-keep">
+                    {linkTarget ? `'${linkTarget}'을(를) 어떤 친구와 연결할까요? 이름이 친구 이름으로 바뀌고 친구가 이 여정을 볼 수 있습니다.` : '친구를 넣으면 그 친구가 이 여정을 볼 수 있습니다.'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {free.map(f => (
+                      <button
+                        key={f.uid}
+                        type="button"
+                        onClick={() => pick(f)}
+                        className="h-8 pl-1 pr-3 inline-flex items-center gap-1.5 rounded-full border border-black/15 dark:border-white/15 text-meta font-bold hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                      >
+                        <UserProfileAvatar profile={f} size="sm" fallbackName={f.name} />
+                        {f.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="flex gap-2">
               <input
                 type="text"

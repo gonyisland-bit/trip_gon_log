@@ -51,9 +51,9 @@ function getClient(env: R2Env): S3Client {
   return client;
 }
 
-interface Caller { uid: string; email: string }
+export interface Caller { uid: string; email: string }
 
-async function verifyFirebaseToken(authHeader: string | undefined, projectId: string): Promise<Caller | null> {
+export async function verifyFirebaseToken(authHeader: string | undefined, projectId: string): Promise<Caller | null> {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '';
   if (!token) return null;
   try {

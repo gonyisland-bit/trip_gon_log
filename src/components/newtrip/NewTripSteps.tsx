@@ -6,6 +6,9 @@ import { Card, CardRow } from '../ui/Card';
 import { flightHours, formatHours } from '../departure/departureData';
 import { DestinationCity } from '../../data/worldDestinations';
 import { NewTripDraft, StayLength, THEMES, upcomingMonths } from './useNewTripDraft';
+import { useFriends } from '../friends/useFriends';
+import { UserProfileAvatar } from '../UserProfileAvatar';
+import { currentUid } from '../../utils/ownership';
 
 // The four screens of the new trip sheet. Each takes the draft from useNewTripDraft.
 
@@ -234,6 +237,9 @@ export function StepWhen({ d }: { d: NewTripDraft }) {
 // 3 · Who & style
 export function StepWho({ d }: { d: NewTripDraft }) {
   const [name, setName] = useState('');
+  // Friends added here see the journey once it is made (v1.3.6 5-c, view access)
+  const { friends } = useFriends(currentUid());
+  const freeFriends = friends.filter(f => !d.members.includes(f.name));
   const add = () => {
     const n = name.trim();
     if (!n || d.members.includes(n)) return;
@@ -270,6 +276,24 @@ export function StepWho({ d }: { d: NewTripDraft }) {
           </label>
           <button type="submit" className="btn btn-secondary" disabled={!name.trim()}><Plus className="w-4 h-4" />추가</button>
         </form>
+        {freeFriends.length > 0 && (
+          <div className="flex flex-col gap-1.5 pt-1">
+            <span className={`text-meta ${muted}`}>친구를 넣으면 여정을 만들 때 친구도 볼 수 있습니다.</span>
+            <div className="flex flex-wrap gap-1.5">
+              {freeFriends.map(f => (
+                <button
+                  key={f.uid}
+                  type="button"
+                  onClick={() => d.setMembers([...d.members, f.name])}
+                  className="h-9 pl-1 pr-3.5 inline-flex items-center gap-1.5 rounded-full border border-black/15 dark:border-white/15 text-[13px] font-bold hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                >
+                  <UserProfileAvatar profile={f} size="sm" fallbackName={f.name} />
+                  {f.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">

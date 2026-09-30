@@ -17,6 +17,7 @@ import { PasswordInput } from './PasswordInput';
 import { VerifyEmailPanel } from './account/VerifyEmailPanel';
 import { sendVerificationMail } from '../utils/emailVerification';
 import { notify } from '../utils/feedback';
+import { clearOrphanAccount, createAccountReclaiming } from '../utils/accountCleanup';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -223,7 +224,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
         onSignupStart?.();
 
         // 1. Create Firebase Auth user (Native email duplicate & format check)
-        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        // An address whose old account was deleted is reclaimed when the password still opens it
+        const userCredential = await createAccountReclaiming(cleanEmail, password);
         const user = userCredential.user;
 
         const fullName = `${lastName.trim()} ${firstName.trim()}`;
@@ -297,7 +299,16 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
 
           const isSuper = user.email?.toLowerCase() === 'gonyisland@naver.com';
 
-          // If user exists in Auth but has no Firestore profile (isolated account recovery)
+          // No profile: a member the operator deleted. Never bring it back as an empty member;
+          // the account removes itself so the address can sign up again (v1.3.6)
+          if (!prof && !isSuper) {
+            await clearOrphanAccount(user);
+            setError('삭제된 계정입니다. 같은 이메일로 다시 가입할 수 있습니다.');
+            setLoading(false);
+            return;
+          }
+
+          // The operator account initializes its own profile
           if (!prof) {
             const recoveryProfile: UserProfile = {
               uid: user.uid,
