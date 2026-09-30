@@ -107,35 +107,85 @@ service cloud.firestore {
       allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
     }
 
-    // ── Shared settings ──────────────────────────────────────
-    // admin: signed-in users read it to resolve admin status; only admins change it.
-    // pendingApproval_*: approval tokens, admin only (an applicant may create their own).
+    // ── Shared settings: operator-authored (landing, ticker, music, city list, presets) ──
+    // admin: signed-in users read it to resolve admin status. The old shared pockets, wishlist
+    // and migration marker are operator-only since v1.3.6 (members keep their own copies).
     match /users/public/settings/{docId} {
       allow read: if docId == 'admin' ? signedIn()
-        : docId.matches('pendingApproval_.*') ? isAdmin()
+        : (docId in ['pockets', 'map_wishlist', 'migration'] || docId.matches('pendingApproval_.*')) ? isAdmin()
         : true;
-      allow create: if docId == 'admin' ? isAdmin()
-        : docId.matches('pendingApproval_.*')
-          ? (isAdmin() || (signedIn() && docId == 'pendingApproval_' + request.auth.uid))
-        : canWrite();
-      allow update, delete: if docId == 'admin' || docId.matches('pendingApproval_.*')
-        ? isAdmin() : canWrite();
+      allow write: if isAdmin();
     }
 
-    // ── Personal shared data: signed-in read, approved write ─
-    match /users/public/trash/{rest=**} {
-      allow read: if signedIn();
-      allow write: if canWrite();
-    }
+    // ── Legacy shared calendar (members use users/{uid}/calendar_events since v1.3.6) ──
     match /users/public/calendar_events/{rest=**} {
-      allow read: if signedIn();
-      allow write: if canWrite();
+      allow read, write: if isAdmin();
     }
 
-    // ── Journey content: public read (share links), approved write ──
-    match /users/public/{col}/{rest=**} {
-      allow read: if col in ['trips', 'plans', 'timeline', 'flights', 'stays', 'transits'];
-      allow write: if col in ['trips', 'plans', 'timeline', 'flights', 'stays', 'transits'] && canWrite();
+    // ── Own content (v1.3.6) ─────────────────────────────────
+    // Every journey document carries ownerId (who made it), access (who may read it), editors
+    // (who may edit it besides the owner) and publicShare (open to its share link). Items of a
+    // journey (timeline, flights, stays, transits) copy the same fields.
+    function me() {
+      return request.auth.uid;
+    }
+
+    function canRead(d) {
+      return d.get('publicShare', false) == true
+        || (signedIn() && (d.get('ownerId', '') == me() || me() in d.get('access', [])));
+    }
+
+    function ownershipUnchanged() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['ownerId', 'access', 'editors', 'publicShare']);
+    }
+
+    // The owner may change anything but the owner; an editor may change the content only
+    function canUpdate() {
+      return canWrite() && (
+        (resource.data.get('ownerId', '') == me() && request.resource.data.get('ownerId', '') == me())
+        || (me() in resource.data.get('editors', []) && ownershipUnchanged()));
+    }
+
+    // The journey an item belongs to, as it will be after this write (a batch may create both)
+    function journeyAfter(tripId) {
+      return existsAfter(/databases/$(database)/documents/users/public/trips/$(string(tripId)))
+        ? getAfter(/databases/$(database)/documents/users/public/trips/$(string(tripId))).data
+        : getAfter(/databases/$(database)/documents/users/public/plans/$(string(tripId))).data;
+    }
+
+    function canEditJourney(tripId) {
+      return (existsAfter(/databases/$(database)/documents/users/public/trips/$(string(tripId)))
+          || existsAfter(/databases/$(database)/documents/users/public/plans/$(string(tripId))))
+        && (journeyAfter(tripId).get('ownerId', '') == me() || me() in journeyAfter(tripId).get('editors', []));
+    }
+
+    match /users/public/{col}/{docId} {
+      allow read: if col in ['trips', 'plans', 'timeline', 'flights', 'stays', 'transits']
+        && canRead(resource.data);
+
+      // A new journey belongs to whoever makes it
+      allow create: if col in ['trips', 'plans'] && canWrite()
+        && request.resource.data.get('ownerId', '') == me()
+        && me() in request.resource.data.get('access', []);
+      allow update: if col in ['trips', 'plans'] && canUpdate();
+      allow delete: if col in ['trips', 'plans'] && canWrite() && resource.data.get('ownerId', '') == me();
+    }
+
+    match /users/public/{col}/{docId} {
+      // Items are written by the journey's owner or its editors
+      allow create: if col in ['timeline', 'flights', 'stays', 'transits'] && canWrite()
+        && canEditJourney(request.resource.data.get('tripId', -1));
+      allow update: if col in ['timeline', 'flights', 'stays', 'transits'] && canUpdate();
+      allow delete: if col in ['timeline', 'flights', 'stays', 'transits'] && canWrite()
+        && (resource.data.get('ownerId', '') == me() || me() in resource.data.get('editors', []));
+    }
+
+    // ── Trash: each member's own ─────────────────────────────
+    match /users/public/trash/{docId} {
+      allow read: if signedIn() && resource.data.get('ownerId', '') == me();
+      allow create: if canWrite() && request.resource.data.get('ownerId', '') == me();
+      allow update, delete: if canWrite() && resource.data.get('ownerId', '') == me();
     }
 
     // Everything else (including the 'mail' queue) stays closed.

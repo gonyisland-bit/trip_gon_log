@@ -1,5 +1,5 @@
 import { SpotPocketItem, SpotPocketPlatform } from '../types';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { buildImageThumb } from './imageThumbs';
 
@@ -19,7 +19,9 @@ export function buildCardThumb(photoUrl: string): Promise<string> {
   return buildImageThumb(photoUrl, 480, 'pocket_thumbs');
 }
 
-const LOCAL_STORAGE_KEY = 'trip_spot_pockets';
+// Each member's own pockets (v1.3.6): Firestore users/{uid}/settings/pockets, cached per account
+const cacheKey = () => `trip_spot_pockets:${auth.currentUser?.uid || 'guest'}`;
+const pocketDoc = () => doc(db, 'users', auth.currentUser?.uid || 'public', 'settings', 'pockets');
 
 const DEFAULT_SAMPLE_SPOTS: SpotPocketItem[] = [
   {
@@ -86,9 +88,9 @@ const DEFAULT_SAMPLE_SPOTS: SpotPocketItem[] = [
 
 export function getSavedPockets(): SpotPocketItem[] {
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = localStorage.getItem(cacheKey());
     if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_SAMPLE_SPOTS));
+      localStorage.setItem(cacheKey(), JSON.stringify(DEFAULT_SAMPLE_SPOTS));
       return DEFAULT_SAMPLE_SPOTS;
     }
     const parsed = JSON.parse(raw);
@@ -127,11 +129,11 @@ export function sanitizeForFirestore<T>(data: T): T {
  */
 export function subscribePockets(callback: (items: SpotPocketItem[]) => void): () => void {
   try {
-    const docRef = doc(db, 'users', 'public', 'settings', 'pockets');
+    const docRef = pocketDoc();
     return onSnapshot(docRef, (snap) => {
       if (snap.exists() && Array.isArray(snap.data()?.items)) {
         const cloudItems: SpotPocketItem[] = snap.data()?.items;
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cloudItems));
+        localStorage.setItem(cacheKey(), JSON.stringify(cloudItems));
         callback(cloudItems);
       } else {
         // If Firestore document does not exist yet, seed with initial pockets
@@ -155,9 +157,9 @@ export function subscribePockets(callback: (items: SpotPocketItem[]) => void): (
 
 export async function savePockets(items: SpotPocketItem[]): Promise<void> {
   // Always update local cache immediately for zero-latency UI response
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+  localStorage.setItem(cacheKey(), JSON.stringify(items));
   try {
-    const docRef = doc(db, 'users', 'public', 'settings', 'pockets');
+    const docRef = pocketDoc();
     const safeItems = sanitizeForFirestore(items);
     await setDoc(docRef, { items: safeItems, updatedAt: Date.now() }, { merge: true });
   } catch (err) {
@@ -167,11 +169,11 @@ export async function savePockets(items: SpotPocketItem[]): Promise<void> {
 
 export async function syncPocketsFromCloud(): Promise<SpotPocketItem[]> {
   try {
-    const docRef = doc(db, 'users', 'public', 'settings', 'pockets');
+    const docRef = pocketDoc();
     const snap = await getDoc(docRef);
     if (snap.exists() && Array.isArray(snap.data()?.items)) {
       const cloudItems: SpotPocketItem[] = snap.data()?.items;
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cloudItems));
+      localStorage.setItem(cacheKey(), JSON.stringify(cloudItems));
       return cloudItems;
     }
   } catch (err) {

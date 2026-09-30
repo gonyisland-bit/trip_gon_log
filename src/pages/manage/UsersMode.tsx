@@ -3,6 +3,7 @@ import { Trip } from '../../types';
 import { UserProfileAvatar } from '../../components/UserProfileAvatar';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import type { ManageHubState } from './useManageHubState';
+import { OwnContentMigrationCard } from './OwnContentMigrationCard';
 
 export function UsersMode({ s }: { s: ManageHubState }) {
   const {
@@ -34,9 +35,11 @@ export function UsersMode({ s }: { s: ManageHubState }) {
           USERS
         </h2>
         <p className="text-xs text-black/60 dark:text-white/60 font-mono">
-          [가입 유저 목록 조회, 개인정보 수정, 생성/편집/삭제 권한 개별 토글 및 특정 여정 편집 위임 관리]
+          [가입 회원 목록 조회, 개인정보 수정, 이용 제한 및 특정 여정 편집 위임 관리]
         </p>
       </div>
+
+      <OwnContentMigrationCard />
 
       {/* Action Toast */}
       {userActionToast && (
@@ -160,51 +163,6 @@ export function UsersMode({ s }: { s: ManageHubState }) {
 
                     {/* Right: Permission Toggles & Actions */}
                     <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
-                      {/* 3 Permission Toggles: Create / Edit / Delete */}
-                      <div className="flex items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-black/[0.02] dark:bg-white/[0.02]">
-                        <button
-                          type="button"
-                          disabled={isSuper}
-                          onClick={() => handleToggleUserPermission(adminUser, 'canCreate')}
-                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
-                            adminUser.permissions?.canCreate
-                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
-                              : 'text-black/60 dark:text-white/60 hover:text-black'
-                          }`}
-                          title="여정 생성(추가) 권한 토글"
-                        >
-                          추가 {adminUser.permissions?.canCreate ? 'ON' : 'OFF'}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={isSuper}
-                          onClick={() => handleToggleUserPermission(adminUser, 'canEdit')}
-                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
-                            adminUser.permissions?.canEdit
-                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
-                              : 'text-black/60 dark:text-white/60 hover:text-black'
-                          }`}
-                          title="전체 여정 편집 권한 토글"
-                        >
-                          편집 {adminUser.permissions?.canEdit ? 'ON' : 'OFF'}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={isSuper}
-                          onClick={() => handleToggleUserPermission(adminUser, 'canDelete')}
-                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
-                            adminUser.permissions?.canDelete
-                              ? 'bg-red-600 text-white font-extrabold'
-                              : 'text-black/60 dark:text-white/60 hover:text-black'
-                          }`}
-                          title="여정 삭제 권한 토글"
-                        >
-                          삭제 {adminUser.permissions?.canDelete ? 'ON' : 'OFF'}
-                        </button>
-                      </div>
-
                       {/* Edit Info Button */}
                       <button
                         type="button"
@@ -388,51 +346,6 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           이용 제한
                         </button>
                       )}
-
-                      {/* 3 Permission Toggles: Create / Edit / Delete */}
-                      <div className="flex items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-black/[0.02] dark:bg-white/[0.02]">
-                        {/* Create Permission Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleUserPermission(user, 'canCreate')}
-                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                            user.permissions?.canCreate
-                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
-                              : 'text-black/60 dark:text-white/60 hover:text-black'
-                          }`}
-                          title="여정 생성(추가) 권한 토글"
-                        >
-                          추가 {user.permissions?.canCreate ? 'ON' : 'OFF'}
-                        </button>
-
-                        {/* Edit Permission Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleUserPermission(user, 'canEdit')}
-                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                            user.permissions?.canEdit
-                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold'
-                              : 'text-black/60 dark:text-white/60 hover:text-black'
-                          }`}
-                          title="전체 여정 편집 권한 토글"
-                        >
-                          편집 {user.permissions?.canEdit ? 'ON' : 'OFF'}
-                        </button>
-
-                        {/* Delete Permission Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleUserPermission(user, 'canDelete')}
-                          className={`px-2 py-1 text-meta font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                            user.permissions?.canDelete
-                              ? 'bg-red-600 text-white font-extrabold'
-                              : 'text-black/60 dark:text-white/60 hover:text-black'
-                          }`}
-                          title="여정 삭제 권한 토글"
-                        >
-                          삭제 {user.permissions?.canDelete ? 'ON' : 'OFF'}
-                        </button>
-                      </div>
 
                       {/* Delegate Trip Access Button */}
                       <button

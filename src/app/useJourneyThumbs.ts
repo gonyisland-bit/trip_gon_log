@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
+// Journey content writes carry owner / access fields (v1.3.6)
+import { setDoc } from '../utils/ownership';
 import { db } from '../firebase';
 import type { Trip, TimelineItem } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';

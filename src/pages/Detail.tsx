@@ -7,7 +7,9 @@ import { Footer } from '../components/Footer';
 import { FloatingPocketWidget } from '../components/FloatingPocketWidget';
 import { TabType } from '../types';
 import { auth, db } from '../firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
+// Journey content writes carry owner / access fields (v1.3.6)
+import { setDoc } from '../utils/ownership';
 import { useJourneyDetailState, type JourneyDetailPageProps } from './detail/useJourneyDetailState';
 import { DetailMapPanel } from './detail/DetailMapPanel';
 import { TimelineTab } from './detail/TimelineTab';

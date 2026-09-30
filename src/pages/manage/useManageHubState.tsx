@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Save, Upload, Calendar, Check } from 'lucide-react';
-import {
-  collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc, onSnapshot,
-  QuerySnapshot, DocumentData, query
-} from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, onSnapshot, QuerySnapshot, DocumentData, query } from 'firebase/firestore';
+// Journey content writes carry owner / access fields (v1.3.6)
+import { setDoc, visibleContent } from '../../utils/ownership';
 import { auth, db } from '../../firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import {
@@ -1587,12 +1586,12 @@ export function useManageHubState(props: ManageHubPageProps) {
       trashedJourneys.forEach(t => validTripIds.add(String(t.id)));
 
       const [timelineSnap, staysSnap, flightsSnap, transitsSnap, tripsSnap, plansSnap] = await Promise.all([
-        getDocs(collection(db, 'users', uid, 'timeline')),
-        getDocs(collection(db, 'users', uid, 'stays')),
-        getDocs(collection(db, 'users', uid, 'flights')),
-        getDocs(collection(db, 'users', uid, 'transits')),
-        getDocs(collection(db, 'users', uid, 'trips')),
-        getDocs(collection(db, 'users', uid, 'plans'))
+        getDocs(visibleContent('timeline')!),
+        getDocs(visibleContent('stays')!),
+        getDocs(visibleContent('flights')!),
+        getDocs(visibleContent('transits')!),
+        getDocs(visibleContent('trips')!),
+        getDocs(visibleContent('plans')!)
       ]);
 
       const orphanedTimelineDocs: { id: string; tripId?: any }[] = [];
@@ -4004,7 +4003,8 @@ export function useManageHubState(props: ManageHubPageProps) {
   const handleLoadFirestoreMagazineSections = async () => {
     setIsLoadingFirestoreMag(true);
     try {
-      const snap = await getDoc(doc(db, 'users', 'public', 'settings', 'home'));
+      // This member's own magazine (v1.3.6: users/{uid}/settings/home)
+      const snap = await getDoc(doc(db, 'users', auth.currentUser?.uid || 'public', 'settings', 'home'));
       if (snap.exists()) {
         const data = snap.data();
         const sections = Array.isArray(data.magazineSections) ? data.magazineSections as MagazineSection[] : [];

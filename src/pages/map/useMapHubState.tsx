@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Moon, Droplets, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { Trip, Plan, UserProfile } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../../components/SummaryView';
@@ -513,7 +513,7 @@ export function useMapHubState({
 
   // Real-time synchronization of Wishlist from Firebase
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'map_wishlist'), (docSnap) => {
+    const unsub = onSnapshot(doc(db, 'users', auth.currentUser?.uid || 'public', 'settings', 'map_wishlist'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (Array.isArray(data.countries)) {
@@ -528,6 +528,10 @@ export function useMapHubState({
             localStorage.setItem('wishlist_cities', JSON.stringify(data.cities));
           } catch (_) {}
         }
+      } else {
+        // A member without a wishlist yet: never show a cache left by another account on this device
+        setFavoriteCountries([]);
+        setFavoriteCities([]);
       }
     }, (error) => {
       console.warn("Firestore map_wishlist sync error:", error);
@@ -604,7 +608,7 @@ export function useMapHubState({
     } catch (_) {}
 
     try {
-      await setDoc(doc(db, 'users', 'public', 'settings', 'map_wishlist'), {
+      await setDoc(doc(db, 'users', auth.currentUser?.uid || 'public', 'settings', 'map_wishlist'), {
         countries: updated,
         cities: favoriteCities,
         updatedAt: new Date().toISOString()
@@ -641,7 +645,7 @@ export function useMapHubState({
     } catch (_) {}
 
     try {
-      await setDoc(doc(db, 'users', 'public', 'settings', 'map_wishlist'), {
+      await setDoc(doc(db, 'users', auth.currentUser?.uid || 'public', 'settings', 'map_wishlist'), {
         countries: updatedCountries,
         cities: updatedCities,
         updatedAt: new Date().toISOString()

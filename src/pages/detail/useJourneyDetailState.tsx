@@ -20,7 +20,9 @@ import { readExif, extractGpsFromImage } from '../../utils/exifHelper';
 import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../../utils/storageHelper';
 import { auth, db } from '../../firebase';
 import { compressImage } from '../../utils/imageHelper';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
+// Journey content writes carry owner / access fields (v1.3.6)
+import { setDoc, setLinkShare, currentUid } from '../../utils/ownership';
 import { JourneyTitleInput } from './JourneyTitleInput';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import {
@@ -276,17 +278,33 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
   const [mapConfirm, setMapConfirm] = useState<{ placeName: string; url: string } | null>(null);
 
+  // Link sharing (v1.3.6): copying the link opens this journey (and only this one) to whoever has it
+  const isTripOwner = Boolean(trip && (!trip.ownerId || trip.ownerId === currentUid()));
   const handleCopyShareLink = () => {
     if (!trip) return;
     const shareUrl = `${window.location.origin}?id=${trip.id}&share=true`;
+    // Copy inside the click, then open the journey to the link
     navigator.clipboard.writeText(shareUrl)
-      .then(() => {
-        notify("공유 전용 링크가 클립보드에 복사되었습니다.");
+      .then(async () => {
+        if (!trip.publicShare && isTripOwner && trip.ownerId) {
+          await setLinkShare(trip.id, true);
+        }
+        notify("공유 링크를 복사했습니다. 링크가 있는 사람은 이 여정을 볼 수 있습니다.", 'success');
       })
       .catch((err) => {
         console.error("공유 링크 복사 실패:", err);
-        notify("링크 복사에 실패했습니다.");
+        notify("링크를 복사하지 못했습니다.", 'error');
       });
+  };
+  const handleStopLinkShare = async () => {
+    if (!trip) return;
+    try {
+      await setLinkShare(trip.id, false);
+      notify("링크 공유를 껐습니다. 이전에 보낸 링크로는 더 이상 열리지 않습니다.", 'success');
+    } catch (err) {
+      console.error("링크 공유 끄기 실패:", err);
+      notify("링크 공유를 끄지 못했습니다.", 'error');
+    }
   };
 
   // Lightbox & Gallery state
@@ -3313,6 +3331,16 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 <Share2 className="w-3 h-3" />
                 <span>Share</span>
               </button>
+
+              {trip?.publicShare && isTripOwner && (
+                <button
+                  onClick={handleStopLinkShare}
+                  className="btn btn-ghost btn-sm flex"
+                  title="링크로 볼 수 없게 합니다"
+                >
+                  <span>링크 끄기</span>
+                </button>
+              )}
 
               <button
                 onClick={handleOpenInCalendar}

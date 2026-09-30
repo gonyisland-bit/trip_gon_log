@@ -7,7 +7,8 @@ import {
 import { UserProfile } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
-import { uploadFileToR2 } from '../utils/storageHelper';
+import { purgeMyFiles, uploadFileToR2 } from '../utils/storageHelper';
+import { deleteOwnContent } from '../utils/ownership';
 import { compressImage } from '../utils/imageHelper';
 import { deleteUser, updatePassword } from 'firebase/auth';
 import { PasswordInput } from './PasswordInput';
@@ -123,6 +124,8 @@ export function ProfileEditModal({
     setIsDeleting(true);
     try {
       const uid = auth.currentUser.uid;
+      // My journeys, personal documents and files go with the account (v1.3.6)
+      await Promise.allSettled([deleteOwnContent(), purgeMyFiles()]);
       await Promise.allSettled([
         deleteDoc(doc(db, 'users', uid)),
         deleteDoc(doc(db, 'users', 'public', 'users', uid))

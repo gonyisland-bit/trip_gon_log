@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { ArrowRight, Sun } from 'lucide-react';
 import { Trip, Plan, CalendarCustomEvent } from '../../types';
 import { getKoreanHolidays, getHolidayInfo } from '../../utils/koreanHolidays';
-import { db } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { collection, doc, setDoc, deleteDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { fetchCityWeather, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem, cleanCityDisplayName } from '../../utils/weatherApi';
 import { WORLD_CITIES, findCityByNameOrAlias } from '../../data/worldDestinations';
@@ -268,7 +268,7 @@ export function useCalendarHubState({
   // 커스텀 사용자 등록 일정 상태
   const [customEvents, setCustomEvents] = useState<CalendarCustomEvent[]>(() => {
     try {
-      const saved = localStorage.getItem('custom_calendar_events');
+      const saved = localStorage.getItem(`custom_calendar_events:${auth.currentUser?.uid || 'guest'}`);
       if (saved) return JSON.parse(saved);
     } catch (_) {}
     return [];
@@ -509,52 +509,25 @@ export function useCalendarHubState({
   const yearInputRef = useRef<HTMLInputElement>(null);
   const monthInputRef = useRef<HTMLInputElement>(null);
 
-  // Firestore 동기화 (users/public/calendar_events) - 로컬 데이터 영구성 보장
+  // Each member's own events (v1.3.6): Firestore users/{uid}/calendar_events, localStorage is the render cache
+  const eventsCacheKey = `custom_calendar_events:${auth.currentUser?.uid || 'guest'}`;
   useEffect(() => {
-    try {
-      const colRef = collection(db, 'users', 'public', 'calendar_events');
-      const unsubscribe = onSnapshot(colRef, (snapshot) => {
-        const eventsList: CalendarCustomEvent[] = [];
-        snapshot.forEach((docSnap) => {
-          eventsList.push({ id: docSnap.id, ...(docSnap.data() as any) });
-        });
-
-        if (eventsList.length > 0) {
-          // 원격에 데이터가 있으면 로컬과 동기화
-          setCustomEvents(eventsList);
-          try {
-            localStorage.setItem('custom_calendar_events', JSON.stringify(eventsList));
-          } catch (_) {}
-        } else {
-          // 원격이 빈 목록인 경우: 로컬 캐시가 이미 존재한다면 이를 지우지 않고 원격으로 복원 업로드
-          try {
-            const localSaved = localStorage.getItem('custom_calendar_events');
-            if (localSaved) {
-              const localList: CalendarCustomEvent[] = JSON.parse(localSaved);
-              if (Array.isArray(localList) && localList.length > 0) {
-                setCustomEvents(localList);
-                // Firestore에 누락된 로컬 데이터 업로드
-                localList.forEach(evt => {
-                  try {
-                    const docRef = doc(db, 'users', 'public', 'calendar_events', evt.id);
-                    const cleaned: any = {};
-                    Object.entries(evt).forEach(([k, v]) => {
-                      if (v !== undefined) cleaned[k] = v;
-                    });
-                    setDoc(docRef, cleaned).catch(() => {});
-                  } catch (_) {}
-                });
-              }
-            }
-          } catch (_) {}
-        }
-      }, (err) => {
-        console.warn("Firestore calendar_events sync error, using local data", err);
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    const unsubscribe = onSnapshot(collection(db, 'users', uid, 'calendar_events'), (snapshot) => {
+      const eventsList: CalendarCustomEvent[] = [];
+      snapshot.forEach((docSnap) => {
+        eventsList.push({ id: docSnap.id, ...(docSnap.data() as any) });
       });
-      return () => unsubscribe();
-    } catch (e) {
-      console.warn("Firebase snapshot listener setup failed", e);
-    }
+      setCustomEvents(eventsList);
+      try {
+        localStorage.setItem(eventsCacheKey, JSON.stringify(eventsList));
+      } catch (_) {}
+    }, (err) => {
+      console.warn("Firestore calendar_events sync error, using cached data", err);
+    });
+    return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 모든 여정(Archive)과 계획(Plan) 파싱
@@ -1612,14 +1585,14 @@ export function useCalendarHubState({
       const filtered = prev.filter(item => item.id !== eventId);
       const next = [...filtered, newEvent];
       try {
-        localStorage.setItem('custom_calendar_events', JSON.stringify(next));
+        localStorage.setItem(eventsCacheKey, JSON.stringify(next));
       } catch (_) {}
       return next;
     });
 
     // Firestore 영구 저장 (undefined 필드 제거 후 전송)
     try {
-      const docRef = doc(db, 'users', 'public', 'calendar_events', eventId);
+      const docRef = doc(db, 'users', auth.currentUser?.uid || 'guest', 'calendar_events', eventId);
       const cleanedData: any = {};
       Object.entries(newEvent).forEach(([k, v]) => {
         if (v !== undefined) cleanedData[k] = v;
@@ -1639,13 +1612,13 @@ export function useCalendarHubState({
     setCustomEvents(prev => {
       const next = prev.filter(item => item.id !== eventId);
       try {
-        localStorage.setItem('custom_calendar_events', JSON.stringify(next));
+        localStorage.setItem(eventsCacheKey, JSON.stringify(next));
       } catch (_) {}
       return next;
     });
 
     try {
-      const docRef = doc(db, 'users', 'public', 'calendar_events', eventId);
+      const docRef = doc(db, 'users', auth.currentUser?.uid || 'guest', 'calendar_events', eventId);
       await deleteDoc(docRef);
     } catch (err) {
       console.warn("Firestore delete event failed, local cache updated", err);

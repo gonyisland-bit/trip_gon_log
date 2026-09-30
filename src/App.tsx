@@ -38,7 +38,9 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Trip, TimelineData } from './types';
 import { WeatherEffectLayer } from './components/WeatherEffectLayer';
 import { auth, db } from './firebase';
-import { doc, setDoc, writeBatch } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
+// Journey content writes carry owner / access fields (v1.3.6)
+import { setDoc, writeBatch } from './utils/ownership';
 import { lazyWithRetry, cleanForFirestore } from './app/appUtils';
 import { useAppState } from './app/useAppState';
 import { OPEN_INTRO_EVENT, isIntroPath } from './intro/openIntro';
@@ -198,11 +200,6 @@ function App() {
         {dbError && (
           <div className="bg-red-500/10 border-b border-red-500/20 backdrop-blur-md px-6 py-3 text-center text-xs tracking-wide text-red-600 dark:text-red-400 font-medium z-50">
             [ERROR] Firebase 연결 오류: {dbError}. Firestore의 보안 규칙(Security Rules)이나 Config 키가 올바른지 확인해 주세요.
-          </div>
-        )}
-        {!dbError && tripsLoaded && plansLoaded && trips.length === 0 && plans.length === 0 && (
-          <div className="bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-md px-6 py-3 text-center text-xs tracking-wide text-amber-700 dark:text-amber-400 font-medium z-50">
-            [NOTICE] 현재 Firebase(Public 경로)에 데이터가 없습니다. <strong>우측 상단의 로그인 버튼을 통해 로그인해 주시면</strong>, 기존의 기본 목업 데이터가 Firestore로 자동 업로드(Seed)됩니다.
           </div>
         )}
 

@@ -19,16 +19,16 @@ import {
 import { fetchCityWeather, CityWeatherData } from '../utils/weatherApi';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import {
-  collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, getDocs, writeBatch, query,
-  where
-} from 'firebase/firestore';
+import { collection, doc, getDoc, updateDoc, deleteDoc, onSnapshot, getDocs, query, where } from 'firebase/firestore';
+// Journey content writes carry owner / access fields (v1.3.6)
+import { setDoc, writeBatch } from '../utils/ownership';
 import {
   cleanForFirestore, applyJourneyOrder, SUPER_ADMIN_EMAIL, ADMIN_EMAILS, getInitialNavigationState,
   NightModeSetting, isNightTimeNow, runViewTransition
 } from './appUtils';
 import { notify } from '../utils/feedback';
 import { completeVerification } from '../utils/emailVerification';
+import { CONTENT_COLLECTIONS, journeyItems, ownTrash, pickHomeKeys, registerJourneys, sharedContent, visibleContent } from '../utils/ownership';
 import type { RemixPayload } from '../components/RemixSheet';
 import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
@@ -187,6 +187,7 @@ export function useAppState() {
   const initialAuthCheckedRef = useRef<boolean>(false);
   // Prevents onAuthStateChanged from triggering login flow during account creation+signOut cycle
   const isSigningUpRef = useRef<boolean>(false);
+  const homeSettingsApplierRef = useRef<((data: Record<string, any>) => void) | null>(null);
   // Email confirmed through Firebase's verification link (v1.3.6: replaces admin approval)
   const [isEmailVerified, setIsEmailVerified] = useState<boolean>(() => Boolean(auth.currentUser?.emailVerified));
   
@@ -641,28 +642,25 @@ export function useAppState() {
   }, [isLoggedIn]);
 
   // Trip permission helpers: Super Admin/Admin has all rights; users can edit/delete their own trips, or trips they are delegated to
+  // Own content (v1.3.6): the owner edits and deletes; editors the owner named may edit.
+  // Journeys from before the move to owners (no ownerId yet) stay with the operator account.
   const canEditTrip = useCallback((trip?: Trip) => {
     if (!isLoggedIn || !trip) return false;
-    if (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail)) return true;
     if (currentUserProfile?.status === 'pending' && !isEmailVerified) return false;
     const uid = auth.currentUser?.uid;
-    // Trip creator can edit
-    if (trip.ownerId && uid && trip.ownerId === uid) return true;
-    // Specifically allowed editors can edit
-    if (trip.allowedEditors && (trip.allowedEditors.includes(uid || '') || trip.allowedEditors.includes(currentUserEmail))) return true;
-    // If user has global canEdit permission
-    return Boolean(currentUserProfile?.permissions?.canEdit);
-  }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail, isEmailVerified]);
+    if (!uid) return false;
+    if (!trip.ownerId) return isAdmin;
+    return trip.ownerId === uid || Boolean(trip.editors?.includes(uid));
+  }, [isLoggedIn, isAdmin, currentUserProfile, isEmailVerified]);
 
   const canDeleteTrip = useCallback((trip?: Trip) => {
     if (!isLoggedIn || !trip) return false;
-    if (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail)) return true;
     if (currentUserProfile?.status === 'pending' && !isEmailVerified) return false;
     const uid = auth.currentUser?.uid;
-    // Trip creator can delete ONLY IF granted canDelete permission
-    if (trip.ownerId && uid && trip.ownerId === uid && currentUserProfile?.permissions?.canDelete) return true;
-    return false;
-  }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail, isEmailVerified]);
+    if (!uid) return false;
+    if (!trip.ownerId) return isAdmin;
+    return trip.ownerId === uid;
+  }, [isLoggedIn, isAdmin, currentUserProfile, isEmailVerified]);
 
   // Global shortcuts: Ctrl+K (한번에 찾기), / (통합 검색), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
   useEffect(() => {
@@ -895,137 +893,12 @@ export function useAppState() {
     await batch.commit();
   };
 
-  // Real-time Firestore sync pointing to public path by default
+  // Shared home settings and the sign-in listener (journey content is subscribed after sign-in, below)
   useEffect(() => {
-    const uid = 'public';
-
-    const unsubTrips = onSnapshot(collection(db, 'users', uid, 'trips'), (snapshot) => {
-      const list: Trip[] = [];
-      snapshot.forEach(doc => {
-        list.push(doc.data() as Trip);
-      });
-      const ordered = applyJourneyOrder(list);
-      setTrips(ordered);
-      setTripsLoaded(true);
-      setDbError(null);
-      try {
-        localStorage.setItem('cached_trips', JSON.stringify(ordered));
-      } catch (_) {}
-    }, (err) => {
-      console.error("Trips snapshot subscription error:", err);
-      setDbError(err.message);
-      setTripsLoaded(true);
-    });
-
-    const unsubPlans = onSnapshot(collection(db, 'users', uid, 'plans'), (snapshot) => {
-      const list: Plan[] = [];
-      snapshot.forEach(doc => {
-        list.push(doc.data() as Plan);
-      });
-      const ordered = applyJourneyOrder(list);
-      setPlans(ordered);
-      setPlansLoaded(true);
-      setDbError(null);
-      try {
-        localStorage.setItem('cached_plans', JSON.stringify(ordered));
-      } catch (_) {}
-    }, (err) => {
-      console.error("Plans snapshot subscription error:", err);
-      setDbError(err.message);
-      setPlansLoaded(true);
-    });
-
-    const unsubTimeline = onSnapshot(collection(db, 'users', uid, 'timeline'), (snapshot) => {
-      const grouped: TimelineData = {};
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const date = data.date as string;
-        if (!grouped[date]) grouped[date] = [];
-        const { date: _, ...item } = data;
-        grouped[date].push({ ...item, date } as TimelineItem);
-      });
-      Object.keys(grouped).forEach(date => {
-        grouped[date].sort((a, b) => a.id - b.id);
-      });
-      setTimelineData(grouped);
-      setDbError(null);
-      try {
-        localStorage.setItem('cached_timeline', JSON.stringify(grouped));
-      } catch (_) {}
-    }, (err) => {
-      console.error("Timeline snapshot subscription error:", err);
-      setDbError(err.message);
-    });
-
-    const unsubFlights = onSnapshot(collection(db, 'users', uid, 'flights'), (snapshot) => {
-      const grouped: { [tripId: number]: FlightItem[] } = {};
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const tripId = data.tripId as number;
-        if (!grouped[tripId]) grouped[tripId] = [];
-        const { tripId: _, ...item } = data;
-        grouped[tripId].push(item as FlightItem);
-      });
-      Object.keys(grouped).forEach(tid => {
-        grouped[Number(tid)].sort((a, b) => a.id - b.id);
-      });
-      setFlightsByTrip(grouped);
-      setDbError(null);
-      try {
-        localStorage.setItem('cached_flights', JSON.stringify(grouped));
-      } catch (_) {}
-    }, (err) => {
-      console.error("Flights snapshot subscription error:", err);
-      setDbError(err.message);
-    });
-
-    const unsubStays = onSnapshot(collection(db, 'users', uid, 'stays'), (snapshot) => {
-      const grouped: { [tripId: number]: StayItem[] } = {};
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const tripId = data.tripId as number;
-        if (!grouped[tripId]) grouped[tripId] = [];
-        const { tripId: _, ...item } = data;
-        grouped[tripId].push(item as StayItem);
-      });
-      Object.keys(grouped).forEach(tid => {
-        grouped[Number(tid)].sort((a, b) => a.id - b.id);
-      });
-      setStaysByTrip(grouped);
-      setDbError(null);
-      try {
-        localStorage.setItem('cached_stays', JSON.stringify(grouped));
-      } catch (_) {}
-    }, (err) => {
-      console.error("Stays snapshot subscription error:", err);
-      setDbError(err.message);
-    });
-
-    const unsubTransit = onSnapshot(collection(db, 'users', uid, 'transits'), (snapshot) => {
-      const grouped: { [tripId: number]: TransitItem[] } = {};
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const tripId = data.tripId as number;
-        if (!grouped[tripId]) grouped[tripId] = [];
-        const { tripId: _, ...item } = data;
-        grouped[tripId].push(item as TransitItem);
-      });
-      Object.keys(grouped).forEach(tid => {
-        grouped[Number(tid)].sort((a, b) => a.id - b.id);
-      });
-      setTransitByTrip(grouped);
-      setDbError(null);
-      try {
-        localStorage.setItem('cached_transits', JSON.stringify(grouped));
-      } catch (_) {}
-    }, (err) => {
-      console.error("Transit snapshot subscription error:", err);
-      setDbError(err.message);
-    });
-
-    const unsubSettings = onSnapshot(doc(db, 'users', uid, 'settings', 'home'), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+    // Home settings (v1.3.6): the shared doc holds the landing, ticker and music; each member's own
+    // doc holds their hero journeys and magazine. Each listener applies only its own keys.
+    const applyHomeSettings = (data: Record<string, any>) => {
+      {
         if (data.title) setHomeTitle(data.title);
         if (data.subtitle) setHomeSubtitle(data.subtitle);
         if (Array.isArray(data.heroJourneyIds)) {
@@ -1135,6 +1008,10 @@ export function useAppState() {
           saveStoredSlideshowInterval(data.slideshowInterval);
         }
       }
+    };
+    homeSettingsApplierRef.current = applyHomeSettings;
+    const unsubSettings = onSnapshot(doc(db, 'users', 'public', 'settings', 'home'), (docSnap) => {
+      if (docSnap.exists()) applyHomeSettings(pickHomeKeys(docSnap.data(), 'shared'));
       // Always mark settings as loaded, even if doc doesn't exist (prevents premature hydration)
       setSettingsLoaded(true);
     }, (err) => {
@@ -1170,15 +1047,98 @@ export function useAppState() {
 
     return () => {
       unsubscribe();
-      unsubTrips();
-      unsubPlans();
-      unsubTimeline();
-      unsubFlights();
-      unsubStays();
-      unsubTransit();
       unsubSettings();
     };
   }, []);
+
+  // Journey content this member may see (v1.3.6): their own and their family's journeys, followed
+  // live once sign-in is known. A journey opened by share link loads on its own, signed in or not.
+  const shareTripId = isShareMode ? activeTripId : null;
+  useEffect(() => {
+    if (!isAuthReady) return;
+    const uid = auth.currentUser?.uid;
+    const unsubs: Array<() => void> = [];
+    const onError = (label: string) => (err: Error) => {
+      console.error(`${label} snapshot subscription error:`, err);
+      setDbError(err.message);
+    };
+
+    const journeys = (col: 'trips' | 'plans', docs: Trip[]) => {
+      registerJourneys(docs);
+      const ordered = applyJourneyOrder(docs);
+      if (col === 'trips') { setTrips(ordered); setTripsLoaded(true); } else { setPlans(ordered as Plan[]); setPlansLoaded(true); }
+      setDbError(null);
+      try { localStorage.setItem(col === 'trips' ? 'cached_trips' : 'cached_plans', JSON.stringify(ordered)); } catch (_) {}
+    };
+    const timeline = (docs: Record<string, any>[]) => {
+      const grouped: TimelineData = {};
+      docs.forEach(data => {
+        const date = data.date as string;
+        if (!grouped[date]) grouped[date] = [];
+        const { date: _, ...item } = data;
+        grouped[date].push({ ...item, date } as TimelineItem);
+      });
+      Object.keys(grouped).forEach(date => grouped[date].sort((a, b) => a.id - b.id));
+      setTimelineData(grouped);
+      try { localStorage.setItem('cached_timeline', JSON.stringify(grouped)); } catch (_) {}
+    };
+    const byTrip = <T extends { id: number }>(docs: Record<string, any>[]) => {
+      const grouped: { [tripId: number]: T[] } = {};
+      docs.forEach(data => {
+        const tripId = data.tripId as number;
+        if (!grouped[tripId]) grouped[tripId] = [];
+        const { tripId: _, ...item } = data;
+        grouped[tripId].push(item as unknown as T);
+      });
+      Object.keys(grouped).forEach(tid => grouped[Number(tid)].sort((a, b) => a.id - b.id));
+      return grouped;
+    };
+    const apply = {
+      trips: (docs: any[]) => journeys('trips', docs as Trip[]),
+      plans: (docs: any[]) => journeys('plans', docs as Trip[]),
+      timeline,
+      flights: (docs: any[]) => { const g = byTrip<FlightItem>(docs); setFlightsByTrip(g); try { localStorage.setItem('cached_flights', JSON.stringify(g)); } catch (_) {} },
+      stays: (docs: any[]) => { const g = byTrip<StayItem>(docs); setStaysByTrip(g); try { localStorage.setItem('cached_stays', JSON.stringify(g)); } catch (_) {} },
+      transits: (docs: any[]) => { const g = byTrip<TransitItem>(docs); setTransitByTrip(g); try { localStorage.setItem('cached_transits', JSON.stringify(g)); } catch (_) {} },
+    };
+
+    if (shareTripId !== null && shareTripId !== undefined) {
+      // A shared journey: the journey itself (a trip or a plan) and its items marked for link sharing
+      (['trips', 'plans'] as const).forEach(col => {
+        unsubs.push(onSnapshot(doc(db, 'users', 'public', col, String(shareTripId)), snap => {
+          if (snap.exists()) apply[col]([snap.data()]);
+          else if (col === 'trips') setTripsLoaded(true); else setPlansLoaded(true);
+        }, () => { if (col === 'trips') setTripsLoaded(true); else setPlansLoaded(true); }));
+      });
+      (['timeline', 'flights', 'stays', 'transits'] as const).forEach(col => {
+        unsubs.push(onSnapshot(sharedContent(col, shareTripId), snap => apply[col](snap.docs.map(d => d.data())), onError(col)));
+      });
+    } else if (uid && isLoggedIn) {
+      CONTENT_COLLECTIONS.forEach(col => {
+        const q = visibleContent(col);
+        if (q) unsubs.push(onSnapshot(q, snap => apply[col](snap.docs.map(d => d.data())), onError(col)));
+      });
+      // This member's hero journeys and magazine
+      unsubs.push(onSnapshot(doc(db, 'users', uid, 'settings', 'home'), snap => {
+        if (snap.exists()) homeSettingsApplierRef.current?.(pickHomeKeys(snap.data(), 'personal'));
+      }, () => {}));
+    } else {
+      // Signed out: nothing of the previous account stays on screen or in this device's cache
+      setTrips([]);
+      setPlans([]);
+      setTimelineData({});
+      setFlightsByTrip({});
+      setStaysByTrip({});
+      setTransitByTrip({});
+      ['cached_trips', 'cached_plans', 'cached_timeline', 'cached_flights', 'cached_stays', 'cached_transits'].forEach(k => {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
+      setTripsLoaded(true);
+      setPlansLoaded(true);
+    }
+    return () => unsubs.forEach(u => u());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthReady, isLoggedIn, shareTripId]);
 
   // Trash and admin config are readable only when signed in (Firestore rules).
   // Subscribe after auth resolves so a sign-in without reload re-creates the listeners.
@@ -1186,7 +1146,9 @@ export function useAppState() {
     if (!isAuthReady || !isLoggedIn) return;
     const uid = 'public';
 
-    const unsubTrash = onSnapshot(collection(db, 'users', uid, 'trash'), (snapshot) => {
+    const trashQuery = ownTrash();
+    if (!trashQuery) return;
+    const unsubTrash = onSnapshot(trashQuery, (snapshot) => {
       const journeyList: Trip[] = [];
       const sectionList: TrashedMagazineSection[] = [];
       snapshot.forEach(doc => {
@@ -1272,12 +1234,7 @@ export function useAppState() {
     return () => window.removeEventListener('homeConfigChanged', handleConfigChange);
   }, []);
 
-  // Auto-seed if database is empty when admin logs in
-  useEffect(() => {
-    if (isLoggedIn && trips.length === 0 && plans.length === 0) {
-      seedUserData('public');
-    }
-  }, [isLoggedIn, trips.length, plans.length]);
+  // (v1.3.6) No sample data is written for an empty list any more: a new member starts empty.
 
   // Auto-sync magazine moments with latest timeline data (Strict image/ID match & closest prior location)
   useEffect(() => {
@@ -1349,7 +1306,7 @@ export function useAppState() {
       if (mainSec && mainSec.items) {
         setMagazineMoments(mainSec.items);
       }
-      if (isLoggedIn && isAdmin) {
+      if (isLoggedIn) {
         setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
           magazineSections: cleanForFirestore(syncedSections),
           magazineMoments: cleanForFirestore(mainSec?.items || []),
@@ -1675,10 +1632,10 @@ export function useAppState() {
       
       // Parallelize fetching child items from Firestore
       const [timelineSnap, flightsSnap, staysSnap, transitsSnap] = await Promise.all([
-        getDocs(query(collection(db, 'users', uid, 'timeline'), where('tripId', '==', tripId))),
-        getDocs(query(collection(db, 'users', uid, 'flights'), where('tripId', '==', tripId))),
-        getDocs(query(collection(db, 'users', uid, 'stays'), where('tripId', '==', tripId))),
-        getDocs(query(collection(db, 'users', uid, 'transits'), where('tripId', '==', tripId)))
+        getDocs(journeyItems('timeline', tripId)),
+        getDocs(journeyItems('flights', tripId)),
+        getDocs(journeyItems('stays', tripId)),
+        getDocs(journeyItems('transits', tripId))
       ]);
 
       const batch = writeBatch(db);
@@ -2134,9 +2091,7 @@ export function useAppState() {
         const oldDates = generateDateList(oldTrip.date);
         const newDates = generateDateList(updatedData.date);
         if (oldDates.length > 0 && newDates.length > 0) {
-          const timelineRef = collection(db, 'users', 'public', 'timeline');
-          const q = query(timelineRef, where('tripId', '==', tripId));
-          const snapshot = await getDocs(q);
+          const snapshot = await getDocs(journeyItems('timeline', tripId));
           const batch = writeBatch(db);
           snapshot.forEach(docSnap => {
             const itemData = docSnap.data();
@@ -2400,10 +2355,10 @@ export function useAppState() {
 
       // Parallelize fetching existing documents to delete
       const [timelineSnap, flightsSnap, staysSnap, transitsSnap] = await Promise.all([
-        getDocs(query(collection(db, 'users', uid, 'timeline'), where('tripId', '==', tripId))),
-        getDocs(query(collection(db, 'users', uid, 'flights'), where('tripId', '==', tripId))),
-        getDocs(query(collection(db, 'users', uid, 'stays'), where('tripId', '==', tripId))),
-        getDocs(query(collection(db, 'users', uid, 'transits'), where('tripId', '==', tripId)))
+        getDocs(journeyItems('timeline', tripId)),
+        getDocs(journeyItems('flights', tripId)),
+        getDocs(journeyItems('stays', tripId)),
+        getDocs(journeyItems('transits', tripId))
       ]);
 
       // ── 2. Run delete in a single batch ───────────────────────────────────
@@ -2666,24 +2621,23 @@ export function useAppState() {
       batch.delete(trashRef);
 
       // Clean timeline items for this trip
-      const timelineRef = collection(db, 'users', 'public', 'timeline');
-      const timelineSnap = await getDocs(timelineRef);
+      const timelineSnap = await getDocs(visibleContent('timeline')!);
       timelineSnap.forEach(doc => {
         const data = doc.data();
         if (Number(data.tripId) === Number(tripId)) batch.delete(doc.ref);
       });
 
-      const flightsSnap = await getDocs(collection(db, 'users', 'public', 'flights'));
+      const flightsSnap = await getDocs(visibleContent('flights')!);
       flightsSnap.forEach(doc => {
         if (Number(doc.data().tripId) === Number(tripId)) batch.delete(doc.ref);
       });
 
-      const staysSnap = await getDocs(collection(db, 'users', 'public', 'stays'));
+      const staysSnap = await getDocs(visibleContent('stays')!);
       staysSnap.forEach(doc => {
         if (Number(doc.data().tripId) === Number(tripId)) batch.delete(doc.ref);
       });
 
-      const transitsSnap = await getDocs(collection(db, 'users', 'public', 'transits'));
+      const transitsSnap = await getDocs(visibleContent('transits')!);
       transitsSnap.forEach(doc => {
         if (Number(doc.data().tripId) === Number(tripId)) batch.delete(doc.ref);
       });
@@ -2834,24 +2788,23 @@ export function useAppState() {
           batch.delete(trashRef);
         });
 
-        const timelineRef = collection(db, 'users', 'public', 'timeline');
-        const timelineSnap = await getDocs(timelineRef);
+        const timelineSnap = await getDocs(visibleContent('timeline')!);
         timelineSnap.forEach(doc => {
           const data = doc.data();
           if (journeyIdSet.has(Number(data.tripId))) batch.delete(doc.ref);
         });
 
-        const flightsSnap = await getDocs(collection(db, 'users', 'public', 'flights'));
+        const flightsSnap = await getDocs(visibleContent('flights')!);
         flightsSnap.forEach(doc => {
           if (journeyIdSet.has(Number(doc.data().tripId))) batch.delete(doc.ref);
         });
 
-        const staysSnap = await getDocs(collection(db, 'users', 'public', 'stays'));
+        const staysSnap = await getDocs(visibleContent('stays')!);
         staysSnap.forEach(doc => {
           if (journeyIdSet.has(Number(doc.data().tripId))) batch.delete(doc.ref);
         });
 
-        const transitsSnap = await getDocs(collection(db, 'users', 'public', 'transits'));
+        const transitsSnap = await getDocs(visibleContent('transits')!);
         transitsSnap.forEach(doc => {
           if (journeyIdSet.has(Number(doc.data().tripId))) batch.delete(doc.ref);
         });

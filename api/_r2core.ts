@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
@@ -13,6 +13,10 @@ export interface R2Env {
   R2_SECRET_ACCESS_KEY?: string;
   R2_BUCKET_NAME?: string;
   FIREBASE_PROJECT_ID?: string;
+  /** Comma-separated emails of the operator account(s): no storage cap, may delete files from before per-member folders */
+  R2_OWNER_EMAILS?: string;
+  /** Storage cap per member in MB (default 2048) */
+  R2_USER_QUOTA_MB?: string;
 }
 
 export interface R2Result {
@@ -47,7 +51,9 @@ function getClient(env: R2Env): S3Client {
   return client;
 }
 
-async function verifyFirebaseToken(authHeader: string | undefined, projectId: string): Promise<string | null> {
+interface Caller { uid: string; email: string }
+
+async function verifyFirebaseToken(authHeader: string | undefined, projectId: string): Promise<Caller | null> {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '';
   if (!token) return null;
   try {
@@ -57,7 +63,7 @@ async function verifyFirebaseToken(authHeader: string | undefined, projectId: st
     });
     const provider = (payload.firebase as { sign_in_provider?: string } | undefined)?.sign_in_provider;
     if (!payload.sub || provider === 'anonymous') return null;
-    return payload.sub;
+    return { uid: payload.sub, email: String(payload.email || '').toLowerCase() };
   } catch {
     return null;
   }
@@ -72,6 +78,18 @@ function sanitizeKey(raw: unknown): string | null {
   return key;
 }
 
+/** Bytes stored under a member's folder */
+async function folderBytes(client: S3Client, bucket: string, prefix: string): Promise<number> {
+  let total = 0;
+  let token: string | undefined;
+  do {
+    const page = await client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }));
+    (page.Contents || []).forEach(o => { total += o.Size || 0; });
+    token = page.IsTruncated ? page.NextContinuationToken : undefined;
+  } while (token);
+  return total;
+}
+
 export async function handleR2Request(
   body: unknown,
   authHeader: string | undefined,
@@ -81,10 +99,33 @@ export async function handleR2Request(
     return { status: 500, body: { error: 'R2 server credentials are not configured' } };
   }
   const projectId = env.FIREBASE_PROJECT_ID || 'trip-gon-log';
-  const uid = await verifyFirebaseToken(authHeader, projectId);
-  if (!uid) return { status: 401, body: { error: 'Unauthorized' } };
+  const caller = await verifyFirebaseToken(authHeader, projectId);
+  if (!caller) return { status: 401, body: { error: 'Unauthorized' } };
+  // Each member's files live under u/{uid}/ (v1.3.6); only the operator may touch older keys
+  const ownerEmails = (env.R2_OWNER_EMAILS || 'gonyisland@naver.com').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  const isOperator = Boolean(caller.email) && ownerEmails.includes(caller.email);
+  const ownPrefix = `u/${caller.uid}/`;
 
   const req = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+
+  // Account deletion: remove every file in the member's own folder
+  if (req.action === 'purge') {
+    const client = getClient(env);
+    const bucket = env.R2_BUCKET_NAME || 'tripgon';
+    let removed = 0;
+    let token: string | undefined;
+    do {
+      const page = await client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: ownPrefix, ContinuationToken: token }));
+      const keys = (page.Contents || []).map(o => o.Key).filter((k): k is string => Boolean(k));
+      if (keys.length) {
+        await client.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: keys.map(Key => ({ Key })), Quiet: true } }));
+        removed += keys.length;
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
+    return { status: 200, body: { ok: true, removed } };
+  }
+
   const key = sanitizeKey(req.key);
   if (!key) return { status: 400, body: { error: 'Invalid key' } };
 
@@ -95,6 +136,14 @@ export async function handleR2Request(
     const size = Number(req.size);
     if (!Number.isFinite(size) || size <= 0 || size > MAX_UPLOAD_BYTES) {
       return { status: 400, body: { error: 'Invalid file size' } };
+    }
+    if (!key.startsWith(ownPrefix)) return { status: 403, body: { error: 'Uploads go to your own folder' } };
+    if (!isOperator) {
+      const quota = Math.max(1, Number(env.R2_USER_QUOTA_MB) || 2048) * 1024 * 1024;
+      const used = await folderBytes(client, bucket, ownPrefix);
+      if (used + size > quota) {
+        return { status: 413, body: { error: 'Storage limit reached', used, quota } };
+      }
     }
     const contentType = typeof req.contentType === 'string' && req.contentType ? req.contentType : 'application/octet-stream';
     const command = new PutObjectCommand({
@@ -108,6 +157,10 @@ export async function handleR2Request(
   }
 
   if (req.action === 'delete') {
+    const legacyKey = !key.startsWith('u/');
+    if (!key.startsWith(ownPrefix) && !(legacyKey && isOperator)) {
+      return { status: 403, body: { error: 'Not your file' } };
+    }
     await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
     return { status: 200, body: { ok: true } };
   }

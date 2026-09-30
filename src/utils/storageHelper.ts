@@ -16,6 +16,11 @@ async function callR2Api<T>(payload: Record<string, unknown>): Promise<T> {
     body: JSON.stringify(payload),
   });
   const data = await response.json().catch(() => ({}));
+  if (response.status === 413) {
+    // Per-member storage cap (v1.3.6)
+    const { notify } = await import('./feedback');
+    notify('사진 · 영상 저장 공간이 가득 찼습니다. 쓰지 않는 사진을 정리한 뒤 다시 올려 주세요.', 'error');
+  }
   if (!response.ok) {
     throw new Error(`R2 API ${response.status}: ${(data as { error?: string }).error || 'request failed'}`);
   }
@@ -54,7 +59,10 @@ export async function deleteFileFromR2(url: string | undefined | null): Promise<
  */
 export async function uploadFileToR2(file: File | Blob, path: string): Promise<string> {
   // Sanitize path segments to prevent iOS Safari/WebKit URL parsing errors with spaces/special characters
-  const segments = path.replace(/^\/+/, '').split('/');
+  // Every member uploads into their own folder u/{uid}/ (v1.3.6), so the server can check ownership and size
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error('R2 upload requires a signed-in user');
+  const segments = `u/${uid}/${path.replace(/^\/+/, '').replace(/^u\/[^/]+\//, '')}`.split('/');
   const rawFileName = segments.pop() || 'file';
   const safeFileName = rawFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const cleanPath = [...segments, safeFileName].join('/');
@@ -122,4 +130,10 @@ export function getEffectiveImageUrl(url: string | undefined | null): string {
   } catch (_) {
     return converted;
   }
+}
+
+/** Account deletion: removes every file in this member's own R2 folder (u/{uid}/) */
+export async function purgeMyFiles(): Promise<number> {
+  const { removed } = await callR2Api<{ removed: number }>({ action: 'purge' });
+  return removed;
 }
