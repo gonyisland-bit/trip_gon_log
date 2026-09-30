@@ -89,14 +89,11 @@ const DEFAULT_SAMPLE_SPOTS: SpotPocketItem[] = [
 export function getSavedPockets(): SpotPocketItem[] {
   try {
     const raw = localStorage.getItem(cacheKey());
-    if (!raw) {
-      localStorage.setItem(cacheKey(), JSON.stringify(DEFAULT_SAMPLE_SPOTS));
-      return DEFAULT_SAMPLE_SPOTS;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : DEFAULT_SAMPLE_SPOTS;
+    return Array.isArray(parsed) ? parsed : [];
   } catch (_) {
-    return DEFAULT_SAMPLE_SPOTS;
+    return [];
   }
 }
 
@@ -136,13 +133,9 @@ export function subscribePockets(callback: (items: SpotPocketItem[]) => void): (
         localStorage.setItem(cacheKey(), JSON.stringify(cloudItems));
         callback(cloudItems);
       } else {
-        // If Firestore document does not exist yet, seed with initial pockets
-        const initial = getSavedPockets();
-        const safeItems = sanitizeForFirestore(initial);
-        setDoc(docRef, { items: safeItems, updatedAt: Date.now() }, { merge: true }).catch((err) => {
-          console.warn('[pocketStorage] Seed error:', err);
-        });
-        callback(initial);
+        // No pockets yet (v1.3.6): start empty, never write samples into the member's own document
+        localStorage.setItem(cacheKey(), JSON.stringify([]));
+        callback([]);
       }
     }, (err) => {
       console.warn('[pocketStorage] Real-time listener error, falling back to local cache:', err);

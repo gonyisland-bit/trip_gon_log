@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, Coins, Clock, Sliders } from 'lucide-react';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig } from '../types';
 import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
@@ -1896,7 +1896,8 @@ export function HomePage({
 
         // 로컬 커스텀 이벤트 수집
         try {
-          const rawEvents = localStorage.getItem('custom_calendar_events');
+          // Same per-account cache the calendar keeps (v1.3.6)
+          const rawEvents = localStorage.getItem(`custom_calendar_events:${auth.currentUser?.uid || 'guest'}`);
           if (rawEvents) {
             const parsedEvents = JSON.parse(rawEvents);
             if (Array.isArray(parsedEvents)) {

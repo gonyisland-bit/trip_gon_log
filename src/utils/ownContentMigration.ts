@@ -4,7 +4,7 @@ import { CONTENT_COLLECTIONS, pickHomeKeys } from './ownership';
 
 // One-time move to own content (v1.3.6 phase 3), run by the operator account before the new
 // Firestore rules are published. Safe to run again: it recomputes the same fields and only
-// copies personal documents that do not exist yet. Nothing is deleted.
+// merges the shared personal data into the operator's own documents. Nothing is deleted.
 //
 //  - Journeys without an owner become the operator's; every journey is readable by the members
 //    approved today (they are the operator's family accounts) and stays open to its share links.
@@ -91,27 +91,49 @@ export async function migrateToOwnContent(onProgress?: (line: string) => void): 
   await commitInChunks(writes);
   log('주인 · 열람자 정보를 저장했습니다.');
 
-  // Personal copies for the operator
+  // Personal copies for the operator. The app may already have made an (empty or sample) personal
+  // document before this ran, so the shared data is merged in rather than skipped.
   const copied: string[] = [];
-  const copyDoc = async (from: DocumentReference, to: DocumentReference, label: string, pick?: (d: Record<string, any>) => Record<string, any>) => {
-    const [src, dst] = await Promise.all([getDoc(from), getDoc(to)]);
-    if (!src.exists() || dst.exists()) return;
-    const data = pick ? pick(src.data()) : src.data();
-    if (!Object.keys(data).length) return;
-    await writeBatch(db).set(to, data, { merge: true }).commit();
-    copied.push(label);
+  const read = async (ref: DocumentReference) => {
+    const snap = await getDoc(ref);
+    return snap.exists() ? (snap.data() as Record<string, any>) : null;
   };
-  await copyDoc(doc(db, 'users', 'public', 'settings', 'pockets'), doc(db, 'users', operator, 'settings', 'pockets'), '포켓');
-  await copyDoc(doc(db, 'users', 'public', 'settings', 'map_wishlist'), doc(db, 'users', operator, 'settings', 'map_wishlist'), '지도 위시리스트');
-  await copyDoc(doc(db, 'users', 'public', 'settings', 'home'), doc(db, 'users', operator, 'settings', 'home'), '매거진 · 홈 히어로', d => pickHomeKeys(d, 'personal'));
+  const put = (ref: DocumentReference, data: Record<string, unknown>) => writeBatch(db).set(ref, data, { merge: true }).commit();
+
+  const sharedPockets = await read(doc(db, 'users', 'public', 'settings', 'pockets'));
+  if (Array.isArray(sharedPockets?.items) && sharedPockets!.items.length) {
+    const mineRef = doc(db, 'users', operator, 'settings', 'pockets');
+    const mine = await read(mineRef);
+    const ids = new Set(sharedPockets!.items.map((p: any) => p?.id));
+    const extra = (Array.isArray(mine?.items) ? mine!.items : [])
+      .filter((p: any) => p?.id && !ids.has(p.id) && !String(p.id).startsWith('sample-spot-'));
+    await put(mineRef, { items: [...sharedPockets!.items, ...extra], updatedAt: Date.now() });
+    copied.push(`포켓 ${sharedPockets!.items.length + extra.length}개`);
+  }
+
+  const sharedWish = await read(doc(db, 'users', 'public', 'settings', 'map_wishlist'));
+  if (sharedWish) {
+    const mineRef = doc(db, 'users', operator, 'settings', 'map_wishlist');
+    const mine = await read(mineRef);
+    const union = (k: string) => Array.from(new Set([...(sharedWish[k] || []), ...((mine && mine[k]) || [])]));
+    await put(mineRef, { countries: union('countries'), cities: union('cities'), updatedAt: new Date().toISOString() });
+    copied.push('지도 위시리스트');
+  }
+
+  const sharedHome = await read(doc(db, 'users', 'public', 'settings', 'home'));
+  const personalHome = sharedHome ? pickHomeKeys(sharedHome, 'personal') : {};
+  if (Object.keys(personalHome).length) {
+    await put(doc(db, 'users', operator, 'settings', 'home'), personalHome);
+    copied.push('매거진 · 홈 히어로');
+  }
 
   const events = await getDocs(collection(db, 'users', 'public', 'calendar_events'));
   if (!events.empty) {
     const mine = await getDocs(collection(db, 'users', operator, 'calendar_events'));
-    if (mine.empty) {
-      await commitInChunks(events.docs.map(e => ({ ref: doc(db, 'users', operator, 'calendar_events', e.id), data: e.data() })));
-      copied.push(`캘린더 일정 ${events.size}개`);
-    }
+    const have = new Set(mine.docs.map(d => d.id));
+    const add = events.docs.filter(e => !have.has(e.id));
+    if (add.length) await commitInChunks(add.map(e => ({ ref: doc(db, 'users', operator, 'calendar_events', e.id), data: e.data() })));
+    copied.push(`캘린더 일정 ${events.size}개`);
   }
   if (copied.length) log(`내 문서로 복사: ${copied.join(', ')}`);
 
