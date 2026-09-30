@@ -451,6 +451,13 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 ## 7. 변경 이력 (Changelog)
 
 ### v1.3.6 (2026.09.30)
+- **진행 현황 (다른 PC에서 이어가기, 2026.09.30 기준)**
+  - 완료: 1단계 UI · 티켓 동기화, 2단계 메일 인증 가입, 3단계 본인 콘텐츠(데이터 이전 · 새 규칙 게시 완료), 4단계 사용자 중심 개편(카드 메뉴 · 여정 속 매거진 · 자동 히어로 · 설정 시트)과 후속(WY 지도 · 생일 · 전화 삭제 · 히어로 커버 · 프로필 낙서 50종).
+  - 다음: **5단계 친구와 공유** — 계획서 https://claude.ai/artifact/RwMXdxhqjdyLeoH4KzW8qv (5-a 초대 · 친구, 5-b 여정 공유 버튼, 5-c 인원 ↔ 친구, 5-d 공유 서랍). 착수 전 결정 2가지: 친구 연결 방식(추천 A: 초대 링크 · 코드만), 인원 연결 기본 권한(추천 A: 보기). 규칙(`firestore.rules`)을 5-a와 함께 다시 게시해야 함.
+  - 그다음: 6단계 알림(FCM) · SNS → 포켓(iOS) · 앱스토어 준비. 전체 로드맵 https://claude.ai/artifact/E7Puu2UGGrbJhLcnHu6xzE
+  - 운영 계정이 할 수 있는 남은 일(선택): 관리 → USERS 데이터 카드의 `생일 · 전화번호 지우기`(기존 회원 저장값 일괄 삭제, 되돌릴 수 없음).
+  - 구조 요점: 여정 콘텐츠 쓰기는 `utils/ownership`의 `setDoc` · `writeBatch` 래퍼(ownerId · access · editors · publicShare 자동), 구독은 `access array-contains uid`, 개인 문서는 `users/{uid}/…`, R2 업로드는 `u/{uid}/`. 새 기능이 여정 콘텐츠에 쓸 때도 반드시 이 래퍼를 쓸 것.
+  - Walkthrough: 1단계 https://claude.ai/artifact/9MnD3BAMiPfrByxrTofUNA · 2단계 https://claude.ai/artifact/8bSYJbgXw6V8AMdz8fLkjL · 3단계 https://claude.ai/artifact/LfrW7amAejc8BAG9phmth4 · 4단계 https://claude.ai/artifact/Lkgpu265KUUyy7Bov3D4ga
 - 4 후속: 심플 지도 = Snazzy Maps "WY"(`mapTiles.ts`가 스타일 배열을 구글 타일 `apistyle`로 변환, 다크는 반전). 생일 · 전화번호는 수집 · 표시하지 않음(프로필 저장 시 비움, 운영 데이터 카드에 일괄 삭제). 카드 커버 시트에 `카드 커버 / 홈 히어로` 선택(heroImg · heroVideoUrl, 없으면 카드 커버, 되돌리기). 프로필 기본 아이콘 50종 낙서 스타일(남성 · 여성 · 아이 · 동물 · 사물 각 10, `components/profile/FlatAvatars`, 옛 id 자동 대응).
 - 4-d 설정 정리: 메뉴 서랍 `설정`(모든 회원) → `components/settings/SettingsSheet`: 계정(프로필 · 비밀번호 · 탈퇴, 비밀번호 확인 후 프로필 수정), 표시(화면 모드, 발행한 여정을 열 때 매거진 먼저 · 항상 기록 = `prefs.journeyOpen`), 슬라이드쇼(사진 전체 · 화면 채우기, 넘기는 간격, 음량), 저장 공간(R2 `usage`, 사용량 / 2GB 막대), 휴지통(복구 · 영구 삭제). Ctrl+,도 이 시트(운영 계정은 관리 허브). 운영자용 옛 SettingsModal(히어로 선택 · 전광판 · BGM 목록)은 쓰지 않고 관리 허브가 맡음, 서랍의 운영 항목 이름은 `운영`. 여정 탭은 다시 PHOTO, 매거진은 여정 헤더의 책 버튼(발행하면 빨강).
 - 4-c 홈 히어로 자동: 카드 메뉴로 홈에 고정한 여정(고정 순서) → 없으면 발행한 여정 최신순(최대 8) → 없으면 다녀온 여정 최신순(최대 6). 관리 화면 선택 없이 동작. 여정이 하나도 없으면 `EmptyHero`(점 세계지도 · 서울에서 뻗는 점선 경로 · "첫 여행을 계획해 보세요" · New trip · 애니메이션 보기), 목록 로드 뒤에만 표시. 매거진 슬라이드쇼(Memory Reel)는 기본 사진 전체 보기 + 엠비언트 흐림, F 전환, ↑↓ 음량 · M · 밀어서 넘기기.
