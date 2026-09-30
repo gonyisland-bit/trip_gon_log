@@ -39,7 +39,10 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     const result = await handleMailRequest(body, first(req.headers.authorization), process.env, origin, ip);
     res.status(result.status).json(result.body);
   } catch (error) {
-    console.error('Mail handler error:', error instanceof Error ? error.message : error);
-    res.status(500).json({ error: 'Mail request failed' });
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Mail handler error:', message);
+    // Which step failed (e.g. "token exchange failed: 400"), never the details
+    const reason = (message.match(/^[^:]{1,60}(?:: \d{3})?/) || [''])[0];
+    res.status(500).json({ error: 'Mail request failed', reason });
   }
 }
