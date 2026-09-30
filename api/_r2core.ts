@@ -108,6 +108,13 @@ export async function handleR2Request(
 
   const req = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
 
+  // Storage used by the member's own folder, and the cap (Settings → 저장 공간)
+  if (req.action === 'usage') {
+    const quotaMb = Math.max(1, Number(env.R2_USER_QUOTA_MB) || 2048);
+    const used = await folderBytes(getClient(env), env.R2_BUCKET_NAME || 'tripgon', ownPrefix);
+    return { status: 200, body: { used, quota: isOperator ? null : quotaMb * 1024 * 1024 } };
+  }
+
   // Account deletion: remove every file in the member's own folder
   if (req.action === 'purge') {
     const client = getClient(env);

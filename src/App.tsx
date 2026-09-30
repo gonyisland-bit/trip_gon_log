@@ -30,7 +30,7 @@ const PocketHubPage = lazyWithRetry(() => import('./pages/PocketHub').then(m => 
 const NewTripSheet = lazyWithRetry(() => import('./components/newtrip/NewTripSheet').then(m => ({ default: m.NewTripSheet })));
 
 const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
-const SettingsModal = lazyWithRetry(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const SettingsSheet = lazyWithRetry(() => import('./components/settings/SettingsSheet').then(m => ({ default: m.SettingsSheet })));
 const SearchModal = lazyWithRetry(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
 const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
 import { ConfirmModal } from './components/ConfirmModal';
@@ -635,27 +635,25 @@ function App() {
             onSuccess={() => setCurrentView('home')}
           />
 
-          {/* Settings Modal Popup */}
-          <SettingsModal
-            isOpen={isManageModalOpen}
-            onClose={() => setIsManageModalOpen(false)}
-            homeTitle={homeTitle}
-            homeSubtitle={homeSubtitle}
-            onSaveSettings={handleSaveSettings}
-            trashedJourneys={trashedJourneys}
-            onRestoreJourney={handleRestoreJourney}
-            onPermanentDeleteJourney={handlePermanentDeleteJourney}
-            isLoggedIn={isLoggedIn}
-            trips={trips}
-            plans={plans}
-            initialHeroJourneyIds={heroJourneyIds}
-            heroAutoSlide={heroAutoSlide}
-            heroMediaType={heroMediaType}
-            marqueeShow={marqueeShow}
-            marqueeMessage={marqueeMessage}
-            marqueeSpeed={marqueeSpeed}
-            onSaveBgmSettings={handleSaveBgmSettings}
-          />
+          {/* Settings (v1.3.6 4-d): account, display, slideshow, storage, trash. The operator's
+              tools (hero list, ticker, music list) live in the manage hub. */}
+          {isManageModalOpen && isLoggedIn && (
+            <SettingsSheet
+              onClose={() => setIsManageModalOpen(false)}
+              profile={currentUserProfile}
+              displayName={personName(currentUserProfile, auth.currentUser?.displayName) || '나'}
+              email={auth.currentUser?.email || ''}
+              nightMode={nightModeSetting}
+              onNightMode={(v) => {
+                setNightModeSetting(v);
+                if (v === 'light') setIsDarkMode(false);
+                else if (v === 'dark') setIsDarkMode(true);
+              }}
+              trashed={trashedJourneys}
+              onRestore={handleRestoreJourney}
+              onPermanentDelete={handlePermanentDeleteJourney}
+            />
+          )}
 
           {/* Journey card menu: cover, edit, share, pin to home, delete */}
           {actionsTripId !== null && (() => {

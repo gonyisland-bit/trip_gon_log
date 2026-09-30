@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock, Ticket, Wallet } from 'lucide-react';
+import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock, Ticket, Wallet, Settings } from 'lucide-react';
+import { OPEN_PROFILE_EDIT } from '../app/quickActions';
 import { auth, db } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
@@ -76,6 +77,12 @@ export function Navigation({
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
 
   const [isPasswordVerifyOpen, setIsPasswordVerifyOpen] = useState(false);
+  // Settings → account row: profile edit after the password check
+  useEffect(() => {
+    const open = () => setIsPasswordVerifyOpen(true);
+    window.addEventListener(OPEN_PROFILE_EDIT, open);
+    return () => window.removeEventListener(OPEN_PROFILE_EDIT, open);
+  }, []);
   const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
 
   const handleSaveMyProfile = async (updated: Partial<UserProfile>) => {
@@ -420,6 +427,8 @@ export function Navigation({
           {isLoggedIn && ([
             { label: '예약 지갑', icon: Wallet, onClick: openBookingWallet, i: 7 },
             { label: '공항 터미널', icon: Ticket, onClick: openDepartureBoard, i: 8 },
+            // v1.3.6 4-d: account, display, slideshow, storage and trash for every member
+            ...(openSettingModal ? [{ label: '설정', icon: Settings, onClick: openSettingModal, i: 8 }] : []),
           ]).map(row => {
             const Icon = row.icon;
             return (
@@ -476,7 +485,7 @@ export function Navigation({
               <span className="w-8 h-8 shrink-0 rounded-full border border-black/20 dark:border-white/20 grid place-items-center">
                 <SlidersHorizontal className="w-3.5 h-3.5" />
               </span>
-              <span className={`flex-1 text-sm font-bold ${currentView === 'manage' ? 'text-red-600 dark:text-red-400' : ''}`}>SETTINGS</span>
+              <span className={`flex-1 text-sm font-bold ${currentView === 'manage' ? 'text-red-600 dark:text-red-400' : ''}`}>운영</span>
               <span className="font-mono text-micro tracking-widest px-1.5 py-0.5 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60">ADMIN</span>
             </button>
           )}

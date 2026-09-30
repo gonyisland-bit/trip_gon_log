@@ -13,6 +13,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { currentUid, setDoc } from '../utils/ownership';
 import { JourneyMagazine, type MagazinePhoto } from '../components/magazine/JourneyMagazine';
 import { OPEN_JOURNEY_MAGAZINE, takeDetailIntent } from '../utils/detailIntent';
+import { readJourneyOpen } from '../utils/userPrefs';
 import { getLiveTripStatus, getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { notify } from '../utils/feedback';
 import { resolveTimelinePlaceName } from '../utils/magazineHelper';
@@ -62,7 +63,8 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
   useEffect(() => {
     if (!trip) return;
     const intent = takeDetailIntent();
-    if (intent === 'magazine' || (intent !== 'record' && trip.publishedAt)) setMagazineOpen(true);
+    // Settings → "여정 여는 방식" can keep every journey on its record
+    if (intent === 'magazine' || (intent !== 'record' && trip.publishedAt && readJourneyOpen() === 'magazine')) setMagazineOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id]);
 

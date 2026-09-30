@@ -7,6 +7,9 @@ export const POCKET_OPEN_SCRAP_FLAG = 'pocket_open_scrap';
 
 export const OPEN_WALLET_EVENT = 'tgl:open-wallet';
 
+/** Settings → account row asks the menu to start the profile edit (password check first) */
+export const OPEN_PROFILE_EDIT = 'tgl:open-profile-edit';
+
 export function openDepartureBoard() {
   window.dispatchEvent(new Event(OPEN_DEPARTURE_EVENT));
 }

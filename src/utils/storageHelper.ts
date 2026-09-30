@@ -132,6 +132,11 @@ export function getEffectiveImageUrl(url: string | undefined | null): string {
   }
 }
 
+/** Bytes in this member's own folder and their cap (null: no cap, the operator account) */
+export async function getMyStorageUsage(): Promise<{ used: number; quota: number | null }> {
+  return callR2Api<{ used: number; quota: number | null }>({ action: 'usage' });
+}
+
 /** Account deletion: removes every file in this member's own R2 folder (u/{uid}/) */
 export async function purgeMyFiles(): Promise<number> {
   const { removed } = await callR2Api<{ removed: number }>({ action: 'purge' });
