@@ -201,9 +201,11 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
     if (playing) shotStartRef.current = performance.now();
   }, [playing]);
 
-  // Keyboard
+  // Keyboard: the reel takes its keys first (capture) so the page under it, such as the journey
+  // map's play log on Space, never reacts too
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if ([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Escape', 'm', 'M', 'f', 'F', 'p', 'P', 'k', 'K'].includes(e.key)) e.stopImmediatePropagation();
       setChromeVisible(true);
       if (e.key === 'Escape') onClose();
       else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
@@ -214,11 +216,11 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       else if (e.key === 'm' || e.key === 'M') setMuted(m => { flash(m ? '소리 켬' : '소리 끔'); return !m; });
       else if (e.key === 'f' || e.key === 'F') toggleFit();
     };
-    window.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keydown', onKey, true);
       document.body.style.overflow = prevOverflow;
     };
   }, [advance, goBack, onClose, changeVolume, flash, toggleFit]);

@@ -1999,6 +1999,10 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       )) {
         return;
       }
+      // Anything open over the journey (its magazine, a slideshow, a sheet) owns the keyboard
+      if (document.querySelector('[role="dialog"]:not([aria-hidden="true"])')) {
+        return;
+      }
 
       // De-focus buttons on keyboard shortcut to avoid double-toggle / virtual click
       if (document.activeElement instanceof HTMLElement && document.activeElement.tagName === 'BUTTON') {

@@ -384,18 +384,6 @@ export function MapTopBar({ s }: { s: MapHubState }) {
         {/* Map style, as on the journey map (v1.3.7): saved per account */}
         <MapStylePicker value={mapTileStyle} onChange={(v) => { setMapTileStyle(v); applyHubMapStyle(v); }} />
 
-        {/* New trip: the same sheet as everywhere, starting with the country and cities picked here */}
-        <button
-          type="button"
-          onClick={() => handleStartNewTrip(selectedCountry?.name, selectedCountry ? selectedDestCities : [])}
-          className="h-8 sm:h-9 px-3 sm:px-3.5 rounded-full bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark shadow-2xl text-xs font-bold flex items-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shrink-0 z-10"
-          title="새 여행"
-          aria-label="새 여행"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">New trip</span>
-        </button>
-
         {/* Real-time Clock & Day/Night Shade Toggle Pill Widget (Native App Pill Style) */}
         <div className="flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full border border-black/20 dark:border-white/20 bg-surface/95 dark:bg-surface-dark/95 shadow-2xl z-10 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0 transition">
           {/* Live Indicator Pulse Dot */}

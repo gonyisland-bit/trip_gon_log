@@ -440,16 +440,16 @@ export function DepartureBoard({
               </button>
             )}
 
-            {/* Every ticket; tapping one rolls the board over to it */}
+            {/* Every ticket; tapping one rolls the board over to it. On phones the list lives in the ticket wallet, but 새 티켓 stays here */}
             {tickets.length > 0 && (
-              <div className="hidden sm:flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className={`${label} ${muted}`}>My tickets · {tickets.length}</span>
                   <button type="button" onClick={() => onPlan()} className={`inline-flex items-center gap-1 h-8 px-3 rounded-full text-meta font-bold ${muted} hover:text-ink dark:hover:text-ink-dark hover:bg-black/[0.05] dark:hover:bg-white/10`}>
                     <Plus className="w-3.5 h-3.5" aria-hidden />새 티켓
                   </button>
                 </div>
-                <ul className="flex gap-2 overflow-x-auto hide-scrollbar snap-x rounded-card" aria-label="보관한 티켓">
+                <ul className="hidden sm:flex gap-2 overflow-x-auto hide-scrollbar snap-x rounded-card" aria-label="보관한 티켓">
                   {tickets.map(t => (
                     <li key={t.id} className="snap-start shrink-0">
                       <TicketCard t={t} on={t.id === ticket?.id} onSelect={() => select(t)} className="w-[216px] h-full" />
