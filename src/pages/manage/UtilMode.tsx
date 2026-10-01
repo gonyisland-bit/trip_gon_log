@@ -5,7 +5,9 @@ import {
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import type { ManageHubState } from './useManageHubState';
 
-export function UtilMode({ s }: { s: ManageHubState }) {
+// v1.3.7: rendered inside SYSTEM one part at a time (`only`): the ticker, trip presets, or the
+// database tools and trash. Backdrop, music and map style are each member's own settings now.
+export function UtilMode({ s, only }: { s: ManageHubState; only?: 'ui' | 'map' | 'system' }) {
   const {
     trips, trashedJourneys, trashedSections, onRestoreJourney, onRestoreMagazineSection, utilSubTab,
     setUtilSubTab, presetsList, presetSearchQuery, setPresetSearchQuery, presetThemeFilter,
@@ -29,6 +31,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
       onScroll={handleContainerScroll}
       className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-6 pb-32 flex flex-col gap-8 overflow-y-auto h-full flex-1 animate-in fade-in duration-200"
     >
+      {!only && (<>
       {/* Header Title */}
       <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
         <div className="flex items-center justify-between">
@@ -84,155 +87,18 @@ export function UtilMode({ s }: { s: ManageHubState }) {
         </div>
       </div>
 
+      </>)}
+
       {/* 1. UI (홈 화면 비주얼 & 마퀴 설정) */}
-      {utilSubTab === 'ui' && (
+      {(only || utilSubTab) === 'ui' && (
         <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
           <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-red-600 dark:text-red-400" />
               <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
-                UI (홈 비주얼 & 마퀴 설정)
+                TICKER (상단에 흐르는 문구)
               </h3>
             </div>
-          </div>
-
-          {/* Background Gradient */}
-          <div className="flex flex-col gap-2.5">
-            <div className="flex justify-between items-center">
-              <div className="flex flex-col">
-                <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
-                  BACKGROUND GRADIENT
-                </span>
-                <span className="text-meta text-black/60 dark:text-white/60 font-mono">
-                  홈 메인 배경 은은한 그라데이션 활성화
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setGradientEnabled(!gradientEnabled)}
-                className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
-                  gradientEnabled
-                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
-                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
-                }`}
-              >
-                {gradientEnabled ? 'ON' : 'OFF'}
-              </button>
-            </div>
-
-            {gradientEnabled && (
-              <div className="flex flex-col gap-4 pt-2 bg-black/[0.02] dark:bg-white/[0.02] p-4 border border-black/10 dark:border-white/10">
-                {/* Presets */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                    SWISS MINIMAL PRESETS (추천 프리셋)
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                    {[
-                      { name: 'Minimal Sand', from: '#F7F2EB', to: '#E7DEC8' },
-                      { name: 'Soft Lavender', from: '#F4F0F9', to: '#DFD5EB' },
-                      { name: 'Misty Sage', from: '#F0F5F1', to: '#D4E3D2' },
-                      { name: 'Slate Cool', from: '#EFF3F8', to: '#D3DFEE' },
-                      { name: 'Warm Sunset', from: '#FBF1E6', to: '#F0D8C3' },
-                    ].map((p, idx) => {
-                      const isSelected = gradientFrom.toLowerCase() === p.from.toLowerCase() && gradientTo.toLowerCase() === p.to.toLowerCase();
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            setGradientFrom(p.from);
-                            setGradientTo(p.to);
-                          }}
-                          className={`p-2 border text-left flex flex-col gap-1.5 transition-all cursor-pointer relative ${
-                            isSelected
-                              ? 'border-black dark:border-white ring-2 ring-black dark:ring-white bg-black/5 dark:bg-white/10 shadow-sm'
-                              : 'border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white opacity-70 hover:opacity-100'
-                          }`}
-                        >
-                          <div
-                            className="w-full h-5 border border-black/10 dark:border-white/10 relative"
-                            style={{ background: `linear-gradient(135deg, ${p.from}, ${p.to})` }}
-                          >
-                            {isSelected && (
-                              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-black dark:bg-white shadow-xs" />
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between gap-1">
-                            <span className={`text-meta truncate ${isSelected ? 'font-extrabold text-black dark:text-white' : 'font-bold text-black/80 dark:text-white/80'}`}>
-                              {p.name}
-                            </span>
-                            {isSelected && (
-                              <Check className="w-3 h-3 text-black dark:text-white shrink-0" />
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Custom Color Pickers */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                      COLOR 1 (시작 색상)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={gradientFrom}
-                        onChange={e => setGradientFrom(e.target.value)}
-                        className="w-8 h-8 p-0 border border-black/20 dark:border-white/20 rounded-none cursor-pointer bg-transparent"
-                      />
-                      <input
-                        type="text"
-                        value={gradientFrom}
-                        onChange={e => setGradientFrom(e.target.value)}
-                        placeholder="#FAF8F5"
-                        className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-meta font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                      COLOR 2 (끝 색상)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={gradientTo}
-                        onChange={e => setGradientTo(e.target.value)}
-                        className="w-8 h-8 p-0 border border-black/20 dark:border-white/20 rounded-none cursor-pointer bg-transparent"
-                      />
-                      <input
-                        type="text"
-                        value={gradientTo}
-                        onChange={e => setGradientTo(e.target.value)}
-                        placeholder="#F1ECE1"
-                        className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Live Preview Strip */}
-                <div className="flex flex-col gap-1 pt-1">
-                  <label className="text-micro font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                    LIVE PREVIEW (실시간 미리보기)
-                  </label>
-                  <div
-                    className="w-full h-12 border border-black/15 dark:border-white/15 flex items-center justify-center p-3 shadow-inner"
-                    style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
-                  >
-                    <span className="text-xs font-mono font-extrabold text-black/80 tracking-widest uppercase">
-                      PREVIEW: {gradientFrom} &rarr; {gradientTo}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Marquee Banner */}
@@ -303,326 +169,8 @@ export function UtilMode({ s }: { s: ManageHubState }) {
         </section>
       )}
 
-      {/* 2. BACKGROUND MUSIC (배경음) */}
-      {utilSubTab === 'bgm' && (
-        <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
-          <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
-            <div className="flex items-center gap-2">
-              <Music className="w-4 h-4 text-red-600 dark:text-red-400" />
-              <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans truncate">
-                BACKGROUND MUSIC (배경음)
-              </h3>
-            </div>
-          </div>
-
-          {/* Volume & Options Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Default Volume Option */}
-            <div className="flex flex-col gap-2 p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
-                  BGM 기본 볼륨
-                </span>
-                <span className="font-mono text-xs font-extrabold text-red-500">
-                  {bgmDefaultVolume}%
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={bgmDefaultVolume}
-                  onChange={(e) => setBgmDefaultVolume(Number(e.target.value))}
-                  className="w-full accent-red-500 cursor-pointer h-1.5 bg-black/20 dark:bg-white/20 rounded-lg appearance-none"
-                />
-                <div className="flex items-center gap-1 shrink-0">
-                  {[30, 50, 70, 100].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setBgmDefaultVolume(preset)}
-                      className={`px-1.5 py-0.5 text-micro font-mono border transition-colors cursor-pointer ${
-                        bgmDefaultVolume === preset
-                          ? 'bg-red-500 text-white border-red-500 font-bold'
-                          : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5'
-                      }`}
-                    >
-                      {preset}%
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Autoplay & Shuffle Subgrid */}
-            <div className="flex flex-col gap-2">
-              {/* Autoplay Option */}
-              <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
-                <div className="flex flex-col gap-0.5 min-w-0 pr-2">
-                  <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
-                    슬라이드쇼 BGM 자동 재생
-                  </span>
-                  <span className="text-meta text-black/60 dark:text-white/60 font-mono truncate">
-                    쇼 시작 시 자동 재생
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggleBgmAutoplay(!bgmAutoplay)}
-                  className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
-                    bgmAutoplay
-                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
-                      : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
-                  }`}
-                >
-                  {bgmAutoplay ? 'ON' : 'OFF'}
-                </button>
-              </div>
-
-              {/* Shuffle Option */}
-              <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
-                <div className="flex flex-col gap-0.5 min-w-0 pr-2">
-                  <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
-                    BGM 셔플(무작위) 재생
-                  </span>
-                  <span className="text-meta text-black/60 dark:text-white/60 font-mono truncate">
-                    랜덤 순서 순환
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBgmShuffle((prev) => !prev)}
-                  className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
-                    bgmShuffle
-                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white'
-                      : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
-                  }`}
-                >
-                  {bgmShuffle ? 'ON' : 'OFF'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Add Track */}
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
-              ADD TRACK
-            </span>
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDraggingBgmFile(true);
-              }}
-              onDragLeave={() => setIsDraggingBgmFile(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDraggingBgmFile(false);
-                handleBgmFileUpload(e.dataTransfer.files);
-              }}
-              onClick={() => bgmFileInputRef.current?.click()}
-              className={`border-2 border-dashed p-6 sm:p-8 text-center cursor-pointer transition-colors ${
-                isDraggingBgmFile
-                  ? 'border-red-500 bg-red-500/10'
-                  : 'border-black/20 dark:border-white/20 hover:border-black/40 dark:hover:border-white/40 bg-black/[0.01] dark:bg-white/[0.01]'
-              }`}
-            >
-              <input
-                ref={bgmFileInputRef}
-                type="file"
-                accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg"
-                multiple
-                onChange={(e) => handleBgmFileUpload(e.target.files)}
-                className="hidden"
-              />
-              <div className="flex flex-col items-center gap-2">
-                {isUploadingBgm ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin text-red-500" />
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                      음원 파일 업로드 중...
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-5 h-5 text-black/60 dark:text-white/60" />
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                      오디오 파일 추가 (클릭 또는 드래그 앤 드롭)
-                    </span>
-                    <span className="text-meta font-mono text-black/60 dark:text-white/60">
-                      MP3, M4A, WAV, AAC, OGG 파일 지원
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Playlist Tracks */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
-              <div className="flex items-center gap-2">
-                <Music className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
-                  PLAYLIST ({bgmTracks.length})
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={handleRestoreDefaultBgm}
-                className="flex items-center gap-1 text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white underline cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" />
-                기본 트랙 복구
-              </button>
-            </div>
-
-            {bgmTracks.length === 0 ? (
-              <div className="p-8 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/15 dark:border-white/15">
-                등록된 배경음악 트랙이 없습니다.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {bgmTracks.map((track, idx) => (
-                  <div
-                    key={track.id}
-                    className={`flex items-center justify-between p-3 border transition-colors ${
-                      track.enabled
-                        ? 'bg-black/[0.02] dark:bg-white/[0.02] border-black/20 dark:border-white/20'
-                        : 'bg-black/[0.01] dark:bg-white/[0.01] border-black/10 dark:border-white/10 opacity-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                      <input
-                        type="checkbox"
-                        checked={track.enabled}
-                        onChange={() => handleToggleBgmTrack(track.id)}
-                        className="w-4 h-4 accent-red-500 cursor-pointer rounded-none"
-                        title="재생 목록 포함 여부"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60">
-                            #{idx + 1}
-                          </span>
-                          <span className="text-xs font-bold truncate text-black dark:text-white font-sans">
-                            {track.title}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0 font-mono">
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePreviewTrack(track)}
-                        className={`p-1.5 border transition-colors cursor-pointer ${
-                          previewTrackId === track.id
-                            ? 'bg-red-500 text-white border-red-500'
-                            : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
-                        }`}
-                        title={previewTrackId === track.id ? '정지' : '미리듣기'}
-                      >
-                        {previewTrackId === track.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={idx === 0}
-                        onClick={() => handleMoveBgmTrack(idx, 'up')}
-                        className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
-                        title="위로 이동"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={idx === bgmTracks.length - 1}
-                        onClick={() => handleMoveBgmTrack(idx, 'down')}
-                        className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
-                        title="아래로 이동"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteBgmTrack(track.id)}
-                        className="tap-target p-1.5 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
-                        title="트랙 삭제"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* 3. MAP TILESET SETTINGS (월드맵 타일 설정) */}
-      {utilSubTab === 'map' && (
-        <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
-          <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-red-600 dark:text-red-400" />
-              <h3 className="text-sm font-extrabold uppercase tracking-wider text-black dark:text-white font-sans">
-                MAP TILESET (지도 그래픽 타일 설정)
-              </h3>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div
-              onClick={() => {
-                setMapTileStyle('esri');
-                localStorage.setItem('mapTileStyle', 'esri');
-                window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'esri' }));
-              }}
-              className={`p-4 border cursor-pointer transition-all ${
-                mapTileStyle === 'esri'
-                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-md'
-                  : 'bg-surface dark:bg-surface-dark border-black/20 dark:border-white/20 hover:border-black'
-              }`}
-            >
-              <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
-                ESRI WORLD GRAY CANVAS
-              </span>
-              <p className="text-[11px] opacity-70 leading-relaxed">
-                완전 무료, 워터마크 일체 없음, 스위스 미니멀 모노톤 스타일에 완벽 최적화
-              </p>
-            </div>
-
-            <div
-              onClick={() => {
-                setMapTileStyle('google');
-                localStorage.setItem('mapTileStyle', 'google');
-                window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'google' }));
-              }}
-              className={`p-4 border cursor-pointer transition-all ${
-                mapTileStyle === 'google'
-                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-md'
-                  : 'bg-surface dark:bg-surface-dark border-black/20 dark:border-white/20 hover:border-black'
-              }`}
-            >
-              <span className="text-xs font-extrabold uppercase tracking-wider block mb-1">
-                GOOGLE MAPS TILES
-              </span>
-              <p className="text-[11px] opacity-70 leading-relaxed">
-                구글 지도 타일, 한국어 지명 상세 표기, 다크모드 필터 지원
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* 4. TRIP PRESETS (여정 추천 템플릿 관리 - MAP 탭에 통합) */}
-      {utilSubTab === 'map' && (
+      {(only || utilSubTab) === 'map' && (
         <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/15 dark:border-white/15 pb-2">
             <div className="flex items-center gap-2">
@@ -802,7 +350,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
       )}
 
       {/* 5. SYSTEM (DB 최적화 및 휴지통) */}
-      {utilSubTab === 'system' && (
+      {(only || utilSubTab) === 'system' && (
         <section className="flex flex-col gap-6 pt-2 pb-6">
           <div className="flex items-baseline justify-between flex-wrap gap-2 border-b border-black/15 dark:border-white/15 pb-2">
             <div className="flex items-center gap-2">

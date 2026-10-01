@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Save, RotateCcw, ArrowLeft, ArrowUp, Calendar, Check, X, Image as ImageIcon, Search, Eye, Layout,
   Edit, Users
@@ -13,10 +14,15 @@ import { CalendarMode } from './manage/CalendarMode';
 import { MagazineMode } from './manage/MagazineMode';
 import { UtilMode } from './manage/UtilMode';
 import { UsersMode } from './manage/UsersMode';
+import { NoticeEditor } from './manage/NoticeEditor';
+import { Segment } from '../components/ui/Segment';
+
+type SystemTab = 'landing' | 'notice' | 'setup' | 'system';
 import { notify } from '../utils/feedback';
 
 export function ManageHubPage(props: ManageHubPageProps) {
   const s = useManageHubState(props);
+  const [systemTab, setSystemTab] = useState<SystemTab>('landing');
   const {
     trips, plans, trashedJourneys, trashedSections, onDirtyChange, activeMode, setActiveMode,
     editingPreset, setEditingPreset, isPresetModalOpen, setIsPresetModalOpen, presetToDelete,
@@ -64,11 +70,9 @@ export function ManageHubPage(props: ManageHubPageProps) {
         <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
           <div className="flex items-center min-w-max md:min-w-0 pr-1 md:pr-0">
             {([
-              { id: 'HOME', label: 'LANDING' },
-              // TRIP mode retired (v1.3.6 4-a): journeys are managed from their cards and inside the journey
-              { id: 'CALENDAR', label: 'CALENDAR' },
-              // MAGAZINE mode retired (v1.3.6 4-b): each journey's magazine is built from the journey itself
-              { id: 'UTIL', label: 'UTIL' },
+              // v1.3.7: shared surfaces and setup in SYSTEM, members in USERS; everything a member
+              // uses on their own screen lives in their Settings
+              { id: 'SYSTEM', label: 'SYSTEM' },
               { id: 'USERS', label: 'USERS' },
             ] as const).map(tab => (
               <button
@@ -86,10 +90,10 @@ export function ManageHubPage(props: ManageHubPageProps) {
                 }`}
               >
                 <span>{tab.label}</span>
-                {tab.id === 'CALENDAR' && isCalendarDirty && (
+                {tab.id === 'SYSTEM' && isCalendarDirty && (
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
                 )}
-                {tab.id === 'UTIL' && (trashedJourneys.length + trashedSections.length) > 0 && (
+                {tab.id === 'SYSTEM' && (trashedJourneys.length + trashedSections.length) > 0 && (
                   <span className="ml-1 text-micro font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block">
                     {trashedJourneys.length + trashedSections.length}
                   </span>
@@ -109,6 +113,33 @@ export function ManageHubPage(props: ManageHubPageProps) {
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* MODE: HOME (Full App & Home Settings Integration)                   */}
         {/* ─────────────────────────────────────────────────────────────────── */}
+        {activeMode === 'SYSTEM' && (
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4">
+              <Segment<SystemTab>
+                block
+                ariaLabel="SYSTEM 분류"
+                value={systemTab}
+                onChange={setSystemTab}
+                options={[{ value: 'landing', label: '랜딩' }, { value: 'notice', label: '공지' }, { value: 'setup', label: '초기 세팅' }, { value: 'system', label: '데이터' }]}
+              />
+            </div>
+            {systemTab === 'landing' && <HomeMode s={s} />}
+            {systemTab === 'notice' && (
+              <div className="flex-1 overflow-y-auto">
+                <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4"><NoticeEditor /></div>
+                <UtilMode s={s} only="ui" />
+              </div>
+            )}
+            {systemTab === 'setup' && (
+              <div className="flex-1 overflow-y-auto">
+                <CalendarMode s={s} />
+                <UtilMode s={s} only="map" />
+              </div>
+            )}
+            {systemTab === 'system' && <UtilMode s={s} only="system" />}
+          </div>
+        )}
         {activeMode === 'HOME' && <HomeMode s={s} />}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
@@ -241,7 +272,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
         <button
           type="button"
           onClick={async () => {
-            if (activeMode === 'HOME') await handleSaveHome();
+            if (activeMode === 'HOME' || (activeMode === 'SYSTEM' && systemTab === 'landing')) await handleSaveHome();
             else if (activeMode === 'ARCHIVE') await handleSaveJourney();
             else if (activeMode === 'MAGAZINE') await handleSaveMagazine();
             else await handleSaveAllChanges(true);

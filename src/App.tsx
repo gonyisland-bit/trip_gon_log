@@ -18,6 +18,7 @@ import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
 import { FeedbackHost } from './components/FeedbackHost';
+import { NoticeBanner } from './components/NoticeBanner';
 import { notify } from './utils/feedback';
 
 
@@ -226,6 +227,9 @@ function App() {
           />
         )}
         
+        {/* The operator's site notice, for everyone (v1.3.7) */}
+        <NoticeBanner />
+
         {/* Firebase Error/Status Banners */}
         {dbError && (
           <div className="bg-red-500/10 border-b border-red-500/20 backdrop-blur-md px-6 py-3 text-center text-xs tracking-wide text-red-600 dark:text-red-400 font-medium z-50">

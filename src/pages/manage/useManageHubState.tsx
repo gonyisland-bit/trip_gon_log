@@ -254,17 +254,11 @@ export function useManageHubState(props: ManageHubPageProps) {
   };
 
   // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'CALENDAR' | 'MAGAZINE' | 'UTIL' | 'USERS'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'CALENDAR' | 'MAGAZINE' | 'UTIL' | 'USERS'>(() => {
+  // v1.3.7: two tabs, SYSTEM (landing, notice, starting setup, database) and USERS
+  const [activeMode, setActiveMode] = useState<'SYSTEM' | 'HOME' | 'ARCHIVE' | 'CALENDAR' | 'MAGAZINE' | 'UTIL' | 'USERS'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
-    if (fromSession && ['HOME', 'CALENDAR', 'UTIL', 'USERS'].includes(fromSession)) {
-      sessionStorage.removeItem('initialManageTab');
-      return fromSession as any;
-    }
-    if (fromSession && ['MAP', 'BGM', 'TRASH', 'CLEANUP', 'PRESETS'].includes(fromSession)) {
-      sessionStorage.removeItem('initialManageTab');
-      return 'UTIL';
-    }
-    return 'HOME';
+    if (fromSession) sessionStorage.removeItem('initialManageTab');
+    return fromSession === 'USERS' ? 'USERS' : 'SYSTEM';
   });
 
   // CALENDAR Tab State: Weather Cities Management (Central Firestore Sync & Guarded Dirty Tracking)
