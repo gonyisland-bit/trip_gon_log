@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plane, BedDouble, ExternalLink, SlidersHorizontal, ArrowRight, X } from 'lucide-react';
+import { Plane, BedDouble, ExternalLink, SlidersHorizontal, ArrowRight, X, Check } from 'lucide-react';
 import {
   BookingSearchContext,
   extractCleanCityName,
@@ -10,11 +10,15 @@ import {
   buildAgodaUrl,
   buildBookingComUrl,
   buildAirbnbUrl,
+  buildAgodaHotelUrl,
+  buildBookingComHotelUrl,
+  buildGoogleHotelUrl,
   bookingContextFromTrip
 } from '../utils/bookingDeepLinks';
 import { Sheet, useSheetClose } from './Sheet';
 import { Segment } from './ui/Segment';
 import { IconButton } from './ui/IconButton';
+import type { PastStay } from '../utils/pastStays';
 
 // Smart booking (v1.3.5): the journey's route, dates and party become search links on the booking
 // sites. A sheet on phones, a dialog on desktop; flights and stays switch with one segment.
@@ -30,6 +34,8 @@ interface QuickBookingModalProps {
   initialToCode?: string;
   /** Which list opens first (the tab it was opened from) */
   initialKind?: 'flight' | 'stay';
+  /** Stays from earlier journeys at this place, offered for rebooking */
+  pastStays?: PastStay[];
 }
 
 type Kind = 'flight' | 'stay';
@@ -70,6 +76,7 @@ function QuickBookingContent({
   initialFromCode = 'ICN',
   initialToCode = '',
   initialKind = 'flight',
+  pastStays = [],
 }: QuickBookingModalProps) {
   const close = useSheetClose();
 
@@ -91,6 +98,9 @@ function QuickBookingContent({
   const [adults, setAdults] = useState<number>(Math.max(1, memberCount));
   const [kind, setKind] = useState<Kind>(initialKind);
   const [editing, setEditing] = useState(false);
+  // A hotel picked from the ones stayed at before: the search then asks for that hotel by name
+  const [pickedKey, setPickedKey] = useState<string | null>(null);
+  const picked = pastStays.find(p => p.key === pickedKey) || null;
 
   const searchCtx: BookingSearchContext = useMemo(() => ({
     destination: dest,
@@ -107,11 +117,17 @@ function QuickBookingContent({
         { name: '네이버 항공권', note: '국내 카드사 할인', url: buildNaverFlightUrl(searchCtx) },
         { name: '구글 플라이트', note: '가격 변동 추이', url: buildGoogleFlightsUrl(searchCtx) },
       ]
+    : picked
+    ? [
+        { name: '아고다', note: `${picked.title} · 이 여정 날짜로 검색`, url: buildAgodaHotelUrl(searchCtx, picked.title) },
+        { name: '부킹닷컴', note: `${picked.title} · 이 여정 날짜로 검색`, url: buildBookingComHotelUrl(searchCtx, picked.title) },
+        { name: '구글 호텔', note: `${picked.title} · 가격 비교`, url: buildGoogleHotelUrl(searchCtx, picked.title) },
+      ]
     : [
         { name: '아고다', note: '호텔 · 리조트 특가', url: buildAgodaUrl(searchCtx) },
         { name: '부킹닷컴', note: '무료 취소 · 전 세계', url: buildBookingComUrl(searchCtx) },
         { name: '에어비앤비', note: '현지 숙소 · 독채', url: buildAirbnbUrl(searchCtx) },
-      ], [kind, searchCtx]);
+      ], [kind, searchCtx, picked]);
 
   const dates = `${formatShortDate(depDate)}${retDate ? ` – ${formatShortDate(retDate)}` : ''}`;
 
@@ -185,6 +201,37 @@ function QuickBookingContent({
             { value: 'stay', label: '숙소', icon: BedDouble },
           ]}
         />
+
+        {/* Hotels stayed at before at this place: pick one to search for it again */}
+        {kind === 'stay' && pastStays.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <span className="font-mono text-micro font-bold uppercase tracking-wider text-black/50 dark:text-white/50 px-1">다녀온 숙소</span>
+            <ul className="flex flex-col gap-1.5 max-h-[216px] overflow-y-auto overscroll-contain">
+              {pastStays.slice(0, 8).map(p => {
+                const on = p.key === pickedKey;
+                const last = p.visits[0];
+                return (
+                  <li key={p.key}>
+                    <button
+                      type="button"
+                      onClick={() => setPickedKey(on ? null : p.key)}
+                      aria-pressed={on}
+                      className={`w-full min-h-[56px] px-4 py-2.5 rounded-card flex items-center gap-3 text-left transition-colors ${on ? 'bg-surface dark:bg-surface-dark ring-2 ring-red-600' : 'bg-black/[0.035] dark:bg-white/[0.06] hover:bg-black/[0.06] dark:hover:bg-white/[0.1]'}`}
+                    >
+                      <span className="flex-1 min-w-0 flex flex-col">
+                        <span className="text-[15px] font-bold truncate">{p.title}</span>
+                        <span className="text-meta text-black/55 dark:text-white/55 truncate">
+                          {[last.month, last.nights ? `${last.nights}박` : '', p.visits.length > 1 ? `${p.visits.length}회 방문` : ''].filter(Boolean).join(' · ') || last.tripTitle}
+                        </span>
+                      </span>
+                      {on && <span className="w-5 h-5 rounded-full bg-red-600 text-white grid place-items-center shrink-0"><Check className="w-3 h-3" aria-hidden /></span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {/* Booking sites: real links, so no popup blocker gets in the way */}
         <ul className="flex flex-col gap-2">

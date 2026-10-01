@@ -1,10 +1,10 @@
-import { Bed, Plus, Sparkles } from 'lucide-react';
+import { Bed, Plus, Search } from 'lucide-react';
 import { StayCard } from '../../components/StayCard';
 import type { JourneyDetailState } from './useJourneyDetailState';
 
 export function StaysTab({ s }: { s: JourneyDetailState }) {
   const {
-    stays, onDelete, activeTab, visitedTabs, expandedItemId, setExpandedItemId,
+    stays, onDelete, bookingOpen, activeTab, visitedTabs, expandedItemId, setExpandedItemId,
     setIsQuickBookingOpen, isEditing, draftStays, setMapConfirm, tripToUse, defaultCurrency, minDate,
     maxDate, itemRefs, updateStay, updateStayPlace, deleteStay, handleAddStay
   } = s;
@@ -14,21 +14,23 @@ export function StaysTab({ s }: { s: JourneyDetailState }) {
       <div className={`w-full flex flex-col ${activeTab === 'stays' ? 'block' : 'hidden'}`}>
         {visitedTabs.has('stays') && (
           <>
-            {/* Smart booking: compare fares for this journey */}
-            <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-2.5">
-              <span className="text-meta font-bold text-black/55 dark:text-white/55">숙소 비교</span>
-              <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-secondary btn-sm">
-                <Sparkles className="w-3.5 h-3.5" aria-hidden />
-                스마트 부킹
-              </button>
-            </div>
+            {/* Smart booking: compare fares for a journey still ahead */}
+            {bookingOpen && (
+              <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-2.5">
+                <span className="text-meta font-bold text-black/55 dark:text-white/55">숙소 비교</span>
+                <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-secondary btn-sm">
+                  <Search className="w-3.5 h-3.5" aria-hidden />
+                  스마트 부킹
+                </button>
+              </div>
+            )}
             {(isEditing ? draftStays : stays).length === 0 ? (
               <div className="mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-12 rounded-card bg-surface dark:bg-surface-dark tgl-card-edge text-center">
                     <Bed className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
                     <span className="text-sm text-black/60 dark:text-white/60">등록된 숙소가 없습니다.</span>
-                    {!isEditing && (
+                    {!isEditing && bookingOpen && (
                       <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-primary btn-sm">
-                        <Sparkles className="w-3.5 h-3.5" aria-hidden />
+                        <Search className="w-3.5 h-3.5" aria-hidden />
                         숙소 찾기
                       </button>
                     )}

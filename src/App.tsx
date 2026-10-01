@@ -642,6 +642,7 @@ function App() {
                           saveRef={detailSaveRef}
                           allTrips={trips}
                           allPlans={plans}
+                          staysByTrip={staysByTrip}
                         />
                       </div>
                     </ErrorBoundary>

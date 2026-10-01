@@ -5,6 +5,7 @@ import { QuickBookingModal } from '../../components/QuickBookingModal';
 import { Lightbox } from '../../components/Lightbox';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
+import { findPastStays } from '../../utils/pastStays';
 import type { JourneyDetailState } from './useJourneyDetailState';
 
 export function DetailOverlays({ s }: { s: JourneyDetailState }) {
@@ -307,6 +308,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
         initialFromCode={flights[0]?.fromCode || 'ICN'}
         initialToCode={flights[0]?.toCode || ''}
         initialKind={s.activeTab === 'stays' ? 'stay' : 'flight'}
+        pastStays={s.isQuickBookingOpen ? findPastStays(tripToUse || undefined, [...s.allTrips, ...s.allPlans], s.staysByTrip) : []}
       />
     </>
   );

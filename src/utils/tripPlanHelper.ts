@@ -102,6 +102,16 @@ export function parseTripDateRange(dateRangeStr?: string): { start: Date; end: D
   return { start, end: end < start ? start : end };
 }
 
+/** A journey whose last day is behind us (plans and upcoming journeys are never over) */
+export function isJourneyOver(trip: { date?: string; isPlan?: boolean; tags?: string[]; title?: string; statusBadge?: string }): boolean {
+  if (getUpcomingPlanInfo(trip).isPlanOrFuture) return false;
+  const range = parseTripDateRange(trip.date);
+  if (!range) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return range.end.getTime() < today.getTime();
+}
+
 // Helper to detect if today is within the trip date range
 export function getLiveTripStatus(dateRangeStr?: string): { isLive: boolean; currentDay: number; totalDays: number } {
   if (!dateRangeStr) return { isLive: false, currentDay: 0, totalDays: 0 };

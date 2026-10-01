@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import {
   Train, Bus, Car, Trash2, Image as ImageIcon, ChevronDown, MapPin, Loader2, ArrowLeft, ArrowUp,
   ArrowDown, ArrowRight, Share2, Play, Pause, Check, Edit3, DollarSign,
-  X, Undo2, Redo2, Calendar, Sparkles, Users, BookOpen
+  X, Undo2, Redo2, Calendar, Search, Users, BookOpen
 } from 'lucide-react';
 import { OPEN_JOURNEY_MAGAZINE } from '../../utils/detailIntent';
-import { getUpcomingPlanInfo } from '../../utils/tripPlanHelper';
+import { getUpcomingPlanInfo, isJourneyOver } from '../../utils/tripPlanHelper';
 import { getDefaultCurrencyForLocation } from '../../components/SettlementExpenseInput';
 import { generateJourneyMessage } from '../../components/SummaryView';
 import { Lightbox, LightboxImageMeta } from '../../components/Lightbox';
@@ -63,6 +63,8 @@ export interface JourneyDetailPageProps {
   saveRef?: React.MutableRefObject<((showModal?: boolean) => Promise<void>) | null>;
   allTrips?: Trip[];
   allPlans?: Plan[];
+  /** Every journey's stays, for rebooking a place already stayed at */
+  staysByTrip?: Record<number, StayItem[]>;
   isAdmin?: boolean;
   /** The signed-in member's name, offered as the journey's first member */
   myName?: string;
@@ -89,6 +91,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   saveRef,
   allTrips = [],
   allPlans = [],
+  staysByTrip = {},
   isAdmin = false,
   } = props;
 
@@ -350,6 +353,8 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const [activePlaceInputId, setActivePlaceInputId] = useState<number | null>(null);
 
   const tripToUse = isEditing ? draftTrip : trip;
+  // Smart booking is for journeys still ahead (or under way), not for ones already taken
+  const bookingOpen = !(trip && isJourneyOver(trip));
   const defaultCurrency = useMemo(() => {
     return getDefaultCurrencyForLocation(tripToUse?.locationStr);
   }, [tripToUse?.locationStr]);
@@ -3496,16 +3501,18 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                   </span>
                 </div>
 
-                {/* 1-Click Smart Booking Shortcut Button */}
-                <button
-                  type="button"
-                  onClick={() => setIsQuickBookingOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                  title="항공권 & 숙소 원클릭 스마트 예약 비교"
-                >
-                  <Sparkles className="w-3.5 h-3.5" aria-hidden />
-                  <span>스마트 부킹</span>
-                </button>
+                {/* Smart booking: only for journeys still ahead */}
+                {bookingOpen && (
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickBookingOpen(true)}
+                    className="btn btn-secondary btn-sm"
+                    title="항공권 · 숙소 예약 검색"
+                  >
+                    <Search className="w-3.5 h-3.5" aria-hidden />
+                    <span>스마트 부킹</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -3633,7 +3640,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     todayMode,
     isLoggedIn, trip, timelineData, flights, stays, transits, onSave, onDelete, isDarkMode,
     onNavigate, searchFocusItemId, searchFocusTab, onClearSearchFocus, onEditModeChange, saveRef,
-    allTrips, allPlans, isAdmin, activeTab, setActiveTab, visitedTabs, setVisitedTabs,
+    allTrips, allPlans, staysByTrip, bookingOpen, isAdmin, activeTab, setActiveTab, visitedTabs, setVisitedTabs,
     detectedCountry, setDetectedCountry, selectedDate, setSelectedDate, collapsedDays,
     setCollapsedDays, expandedItemId, setExpandedItemId, hoveredItemId, setHoveredItemId,
     flashedItemId, setFlashedItemId, showQuickJump, setShowQuickJump, isQuickJumpExpanded,

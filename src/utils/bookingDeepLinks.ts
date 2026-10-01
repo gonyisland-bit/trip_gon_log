@@ -521,3 +521,30 @@ export function bookingContextFromTrip(
     rooms: 1,
   };
 }
+
+// ── A HOTEL ALREADY STAYED AT ─────────────────────────────────────────────────
+
+const stayDates = (ctx: BookingSearchContext) => {
+  const checkIn = formatDate(ctx.departDate, 'standard');
+  const checkOut = ctx.returnDate ? formatDate(ctx.returnDate, 'standard') : checkIn;
+  const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000) || 1);
+  return { checkIn, checkOut, nights, adults: Math.max(1, ctx.adults || 1), rooms: Math.max(1, ctx.rooms || 1) };
+};
+
+/** Search for one hotel by name with this journey's dates and party */
+export function buildAgodaHotelUrl(ctx: BookingSearchContext, hotel: string): string {
+  const d = stayDates(ctx);
+  return `https://www.agoda.com/ko-kr/search?textToSearch=${encodeURIComponent(hotel)}&checkIn=${d.checkIn}&los=${d.nights}&rooms=${d.rooms}&adults=${d.adults}&children=0`;
+}
+
+export function buildBookingComHotelUrl(ctx: BookingSearchContext, hotel: string): string {
+  const d = stayDates(ctx);
+  const city = extractCleanCityName(ctx.destination || '');
+  const q = encodeURIComponent(city && !hotel.includes(city) ? `${hotel} ${city}` : hotel);
+  return `https://www.booking.com/searchresults.html?ss=${q}&checkin=${d.checkIn}&checkout=${d.checkOut}&group_adults=${d.adults}&no_rooms=${d.rooms}`;
+}
+
+export function buildGoogleHotelUrl(ctx: BookingSearchContext, hotel: string): string {
+  const city = extractCleanCityName(ctx.destination || '');
+  return `https://www.google.com/travel/search?q=${encodeURIComponent(city && !hotel.includes(city) ? `${hotel} ${city}` : hotel)}`;
+}

@@ -1,4 +1,4 @@
-import { Plane, Plus, Sparkles } from 'lucide-react';
+import { Plane, Plus, Search } from 'lucide-react';
 import { FlightCard } from '../../components/FlightCard';
 import { FlightItem } from '../../types';
 import { calculateLayoverTime } from './detailUtils';
@@ -6,7 +6,7 @@ import type { JourneyDetailState } from './useJourneyDetailState';
 
 export function FlightsTab({ s }: { s: JourneyDetailState }) {
   const {
-    flights, onDelete, activeTab, visitedTabs, expandedItemId, setExpandedItemId,
+    flights, onDelete, bookingOpen, activeTab, visitedTabs, expandedItemId, setExpandedItemId,
     setIsQuickBookingOpen, isEditing, draftFlights, setMapConfirm, tripToUse, defaultCurrency,
     minDate, maxDate, itemRefs, updateFlight, deleteFlight, handleAddFlight
   } = s;
@@ -16,14 +16,16 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
       <div className={`w-full flex flex-col ${activeTab === 'flights' ? 'block' : 'hidden'}`}>
         {visitedTabs.has('flights') && (
           <>
-            {/* Smart booking: compare fares for this journey */}
-            <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-2.5">
-              <span className="text-meta font-bold text-black/55 dark:text-white/55">항공권 비교</span>
-              <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-secondary btn-sm">
-                <Sparkles className="w-3.5 h-3.5" aria-hidden />
-                스마트 부킹
-              </button>
-            </div>
+            {/* Smart booking: compare fares for a journey still ahead */}
+            {bookingOpen && (
+              <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-2.5">
+                <span className="text-meta font-bold text-black/55 dark:text-white/55">항공권 비교</span>
+                <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-secondary btn-sm">
+                  <Search className="w-3.5 h-3.5" aria-hidden />
+                  스마트 부킹
+                </button>
+              </div>
+            )}
 
             {(() => {
               const flightsToUse = isEditing ? draftFlights : flights;
@@ -32,9 +34,9 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
                   <div className="mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-12 rounded-card bg-surface dark:bg-surface-dark tgl-card-edge text-center">
                     <Plane className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
                     <span className="text-sm text-black/60 dark:text-white/60">등록된 항공편이 없습니다.</span>
-                    {!isEditing && (
+                    {!isEditing && bookingOpen && (
                       <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-primary btn-sm">
-                        <Sparkles className="w-3.5 h-3.5" aria-hidden />
+                        <Search className="w-3.5 h-3.5" aria-hidden />
                         항공권 찾기
                       </button>
                     )}
