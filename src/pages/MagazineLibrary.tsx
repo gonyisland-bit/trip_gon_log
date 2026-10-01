@@ -72,7 +72,7 @@ export function MagazineLibrary({ trips, onNavigate }: Props) {
             <span className="font-mono text-micro sm:text-meta font-bold uppercase tracking-[0.18em] text-black/55 dark:text-white/55">
               Magazine · {issues.length} issues
             </span>
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-[-0.04em] leading-none">다녀온 여행</h1>
+            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-[-0.04em] leading-[0.98]">다녀온 여행<br /><span className="text-black/30 dark:text-white/35">다시 꺼내 보기</span></h1>
           </div>
           {issues.length > 0 && (
             <Segment<GroupBy>

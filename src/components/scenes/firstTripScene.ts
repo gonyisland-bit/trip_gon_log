@@ -1,5 +1,5 @@
 import { decodeWorldDots } from '../../data/worldDots';
-import { Traveler, poseTraveler, drawTraveler, TRAVELER_LIGHT, TRAVELER_DARK } from '../splash/travelerRig';
+import { Traveler, poseTraveler, drawTraveler, TRAVELER_PEACH, TRAVELER_DARK } from '../splash/travelerRig';
 import { type SceneDraw, sceneInk, seg, smooth, inOut, out, settle, clamp, roundRect, drawPlane } from './useCanvasScene';
 
 // First-run hero (v1.3.6): a light dotted map where a red route leaves Seoul for one city or
@@ -157,8 +157,8 @@ export function createFirstTripScene(onDestination?: (d: Destination) => void): 
     const gap = 26;
     for (let x = -(ground % gap); x < w; x += gap) { ctx.fillRect(x, groundY + 6, 10, 1.5); }
 
-    const pose = poseTraveler(walker, Math.max(70 * s + 10, w * 0.2), groundY, s, dark ? TRAVELER_DARK : TRAVELER_LIGHT);
-    drawTraveler(ctx, pose, dark ? TRAVELER_DARK : TRAVELER_LIGHT);
+    const pose = poseTraveler(walker, Math.max(70 * s + 10, w * 0.2), groundY, s, dark ? TRAVELER_DARK : TRAVELER_PEACH);
+    drawTraveler(ctx, pose, dark ? TRAVELER_DARK : TRAVELER_PEACH);
   };
 }
 

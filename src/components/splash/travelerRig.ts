@@ -9,6 +9,8 @@ export interface TravelerPalette {
   skinShade: string;
   hair: string;
   eye: string;
+  /** Soft blush on the cheek (v1.3.7); omit for none */
+  cheek?: string;
   top: string;
   topShade: string;
   bottom: string;
@@ -25,6 +27,7 @@ export const TRAVELER_LIGHT: TravelerPalette = {
   skinShade: '#E6BC9E',
   hair: '#111111',
   eye: '#000000',
+  cheek: 'rgba(235,120,100,0.45)',
   top: '#FFFFFF',
   topShade: '#E4E1DA',
   bottom: '#111111',
@@ -34,6 +37,20 @@ export const TRAVELER_LIGHT: TravelerPalette = {
   bagShade: '#B31E1E',
   handle: '#111111',
   shadow: 'rgba(0,0,0,0.12)',
+};
+
+// Hub outfits (v1.3.7): the same traveler in each hub's colors, for scenes on that hub's tint
+export const TRAVELER_PEACH: TravelerPalette = {
+  ...TRAVELER_LIGHT, top: '#E5573F', topShade: '#C9452F', bottom: '#2F3A63', bottomFar: '#232C4D', shoe: '#2F3A63',
+  bag: '#F2C94C', bagShade: '#D9AE2E', handle: '#2F3A63', hair: '#E9883A',
+};
+export const TRAVELER_SAGE: TravelerPalette = {
+  ...TRAVELER_LIGHT, top: '#F4EFE6', topShade: '#DCD5C8', bottom: '#E5573F', bottomFar: '#C9452F', shoe: '#1F2A44',
+  bag: '#1F2A44', bagShade: '#141C30', handle: '#1F2A44', hair: '#1F2A44',
+};
+export const TRAVELER_BUTTER: TravelerPalette = {
+  ...TRAVELER_LIGHT, top: '#141412', topShade: '#2A2A28', bottom: '#F4EFE6', bottomFar: '#DCD5C8', shoe: '#141412',
+  bag: '#E5573F', bagShade: '#C9452F', handle: '#141412', hair: '#141412',
 };
 
 // Dark stage: hair and trousers lift to charcoal so the silhouette survives on #111; the eye stays black
@@ -194,7 +211,7 @@ export function poseTraveler(w: Traveler, x: number, groundY: number, s: number,
   const ua2 = (amp * 24 * Math.cos(ph) - 3) * DEG + lean * 0.5;
   const el2 = dir(shF, ua2, 26), fa2 = ua2 + (16 + amp * 20 * Math.max(0, Math.cos(ph))) * DEG;
   const wr2 = dir(el2, fa2, 22);
-  smooth(limb([shF, el2, wr2], [4.3, 3.1, 2.5]), P.skinShade);
+  smooth(limb([shF, el2, wr2], [4.4, 3.4, 2.9]), P.skinShade);
   circ(dir(el2, fa2, 25), 3.1, P.skinShade);
 
   // Legs: shaped calves below the skirt, small rounded flats
@@ -202,7 +219,7 @@ export function poseTraveler(w: Traveler, x: number, groundY: number, s: number,
     const o = (v: Pt): Pt => ({ x: v.x + off, y: v.y });
     const calf = o(lerpPt(L.knee, L.ank, 0.35));
     const calfPush = { x: calf.x - Math.cos(L.shin) * 1.2, y: calf.y + Math.sin(L.shin) * 1.2 };
-    smooth(limb([{ x: off, y: 0 }, o(L.knee), calfPush, o(L.ank)], [8.5, 4.6, 4.4, 2.6]), skin);
+    smooth(limb([{ x: off, y: 0 }, o(L.knee), calfPush, o(L.ank)], [8.5, 4.8, 4.7, 3.0]), skin);
     const heel = o(L.heel), toe = o(L.toe);
     const n = { x: -(toe.y - heel.y), y: toe.x - heel.x }, nl = Math.hypot(n.x, n.y) || 1;
     const nx = n.x / nl, ny = n.y / nl;
@@ -255,23 +272,24 @@ export function poseTraveler(w: Traveler, x: number, groundY: number, s: number,
 
   // Neck, head, face
   smooth(limb([at(sh, 1.2, -1), at(sh, 2.4, 8)], [3.4, 3.1]), P.skin);
-  circ(hc, 10.5, P.skin);
+  circ(hc, 11, P.skin);
   smooth([{ x: hc.x + 9.4, y: hc.y - 2 }, { x: hc.x + 12.4, y: hc.y + 2.4 }, { x: hc.x + 9.4, y: hc.y + 3.6 }], P.skin);
   const capPts: Pt[] = [];
   for (let i = 0; i <= 12; i++) {
     const a = (-40 - i * (220 / 12)) * DEG;
-    capPts.push({ x: hc.x - 0.5 + Math.cos(a) * 11.4, y: hc.y - 0.9 + Math.sin(a) * 11.4 });
+    capPts.push({ x: hc.x - 0.5 + Math.cos(a) * 12.1, y: hc.y - 0.9 + Math.sin(a) * 12.1 });
   }
   capPts.push({ x: hc.x - 4.5, y: hc.y + 2 }, { x: hc.x + 1, y: hc.y - 4.4 }, { x: hc.x + 7, y: hc.y - 5.6 });
   smooth(capPts, P.hair);
   circ({ x: hc.x - 0.8, y: hc.y + 1.8 }, 2.3, P.skinShade);
-  circ({ x: hc.x + 6, y: hc.y - 1 }, 1.15, P.eye);
+  circ({ x: hc.x + 6, y: hc.y - 1 }, 1.2, P.eye);
+  if (P.cheek) circ({ x: hc.x + 4.6, y: hc.y + 3.4 }, 2.3, P.cheek);
 
   // Telescopic handle, then the near (pulling) arm on top
   const rb = bagPt(ch, -cw * 0.35);
   line({ x: rb.x - 1.2, y: rb.y }, { x: hand.x - 1.2, y: hand.y }, 1.7, P.handle);
   line({ x: rb.x + 1.4, y: rb.y + 0.6 }, { x: hand.x + 0.6, y: hand.y + 0.4 }, 1.7, P.handle);
-  smooth(limb([shN, elN, wrN], [4.5, 3.3, 2.7]), P.skin);
+  smooth(limb([shN, elN, wrN], [4.6, 3.6, 3.1]), P.skin);
   circ(hand, 3.3, P.skin);
 
   return { shapes: S, s, hip: T(hip), ground: groundY };

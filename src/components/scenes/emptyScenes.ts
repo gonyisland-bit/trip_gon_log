@@ -1,4 +1,4 @@
-import { Traveler, poseTraveler, drawTraveler, TRAVELER_LIGHT, TRAVELER_DARK } from '../splash/travelerRig';
+import { Traveler, poseTraveler, drawTraveler, TRAVELER_DARK, TRAVELER_PEACH, TRAVELER_SAGE, TRAVELER_BUTTER } from '../splash/travelerRig';
 import { type SceneDraw, sceneInk, seg, smooth, inOut, out, settle, clamp, lerp, roundRect } from './useCanvasScene';
 
 // Empty hubs (v1.3.6): the same traveler as the first-run hero, one small story per hub.
@@ -41,7 +41,7 @@ function tripScene(): SceneDraw {
   const walker = new Traveler();
   let x = -1e9, mode: 'in' | 'pause' | 'out' = 'in', pauseT = 0, lastDist = 0;
   return ({ ctx, dt, w, h, dark, still }) => {
-    const C = sceneInk(dark), P = dark ? TRAVELER_DARK : TRAVELER_LIGHT;
+    const C = sceneInk(dark), P = dark ? TRAVELER_DARK : TRAVELER_PEACH;
     const s = scaleFor(h), gy = groundOf(h), cx = w * 0.36;
     if (still) { x = cx; mode = 'pause'; pauseT = 2.6; walker.amp = 0; }
     else if (x < -1e8) { x = -80 * s; lastDist = walker.distance; }
@@ -120,7 +120,7 @@ function magazineScene(): SceneDraw {
   const PERIOD = 7.2, SHOTS = [0.6, 1.8, 3.0], FLY = 1.15;
   const ARTS: Art[] = ['sea', 'city', 'peak'];
   return ({ ctx, t, dt, w, h, dark, still }) => {
-    const C = sceneInk(dark), P = dark ? TRAVELER_DARK : TRAVELER_LIGHT;
+    const C = sceneInk(dark), P = dark ? TRAVELER_DARK : TRAVELER_BUTTER;
     const s = scaleFor(h), gy = groundOf(h);
     const u = still ? 5 : t % PERIOD;
     walker.step(dt * 1000, 0, 1);
@@ -203,7 +203,7 @@ function pocketScene(): SceneDraw {
   walker.amp = 0;
   const STEP = 3.2;
   return ({ ctx, t, dt, w, h, dark, still }) => {
-    const C = sceneInk(dark), P = dark ? TRAVELER_DARK : TRAVELER_LIGHT;
+    const C = sceneInk(dark), P = dark ? TRAVELER_DARK : TRAVELER_SAGE;
     const s = scaleFor(h), gy = groundOf(h);
     const tt = still ? STEP * 2 + 2.6 : t;
     const i = Math.floor(tt / STEP), u = (tt % STEP) / STEP;
