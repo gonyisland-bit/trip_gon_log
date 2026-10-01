@@ -27,6 +27,14 @@ export default {
         raised: { DEFAULT: '#FFFDF9', dark: '#46453F' },
         // Selected card or list row: a light grey in light mode, the raised step in dark mode
         selected: { DEFAULT: '#ECEAE3', dark: '#46453F' },
+        // Hub tints (v1.3.7, spec 4.2): each hub's soft face color for grounds, tiles and illustration
+        // floors. `ink` is the readable text on the tint, `dark` the tint's dark-mode ground.
+        peach: { DEFAULT: '#F6CDB6', ink: '#9A4A2C', dark: '#3B2A22' },   // trips
+        butter: { DEFAULT: '#F7DB6A', ink: '#6F5600', dark: '#3A3318' },  // plans, D-day, terminal
+        coral: { DEFAULT: '#EF8F70', ink: '#8E2F18', dark: '#4A261C' },   // magazine
+        sage: { DEFAULT: '#9DB58A', ink: '#3E5631', dark: '#26301F' },    // pocket
+        mist: { DEFAULT: '#DCE3E8', ink: '#3B4A57', dark: '#22282D' },    // calendar, weather, map
+        lilac: { DEFAULT: '#E7D7F3', ink: '#5B3E74', dark: '#2E2638' },   // friends
       },
       // Corner steps (spec 4.4): sheet > card > thumb; controls use rounded-full
       borderRadius: {
