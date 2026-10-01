@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { 
   X, MapPin, Heart, Plus, ExternalLink, Edit3, Trash2, 
   Navigation, Utensils, Coffee, Camera, ShoppingBag, Lightbulb,
-  MessageSquare, Send, Check, ZoomIn, ChevronDown } from 'lucide-react';
+  MessageSquare, Send, Check, ZoomIn, ChevronDown, Users } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, PocketComment, UserProfile } from '../types';
 import { confirmDialog } from '../utils/feedback';
 
@@ -15,6 +15,8 @@ interface PocketDetailModalProps {
   onUseInTrip: (spot: SpotPocketItem) => void;
   onEdit?: (spot: SpotPocketItem) => void;
   onDelete?: (spot: SpotPocketItem) => void;
+  /** Share this one spot with friends */
+  onShare?: (spot: SpotPocketItem) => void;
   isLiked: boolean;
   isAdmin?: boolean;
   onSaveComments?: (spotId: string, comments: PocketComment[]) => void;
@@ -40,6 +42,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   onUseInTrip,
   onEdit,
   onDelete,
+  onShare,
   isLiked,
   isAdmin = false,
   onSaveComments,
@@ -488,6 +491,25 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                 {spot.comments?.length || 0}
               </span>
             </button>
+
+            {onShare && (
+              <button
+                type="button"
+                onClick={() => onShare(spot)}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
+                  spot.sharedWith?.length
+                    ? 'bg-lilac text-lilac-ink border-transparent dark:bg-lilac-dark dark:text-lilac'
+                    : 'bg-surface dark:bg-surface-dark border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
+                }`}
+                title="친구에게 이 장소 공유"
+                aria-label="친구에게 이 장소 공유"
+              >
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                {!!spot.sharedWith?.length && (
+                  <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight">{spot.sharedWith.length}</span>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Right Main CTA Buttons */}

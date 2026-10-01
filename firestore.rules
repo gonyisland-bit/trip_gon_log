@@ -150,10 +150,17 @@ service cloud.firestore {
         && request.resource.data.get('read', true) == false;
     }
 
-    // A member's pockets, readable by the friends they chose to show them to (5-d)
+    // A member's pockets, readable by the friends they chose to show them to (5-d).
+    // Legacy: the app now moves this list onto each spot and clears it.
     match /users/{userId}/settings/pockets {
       allow read: if userId != 'public' && signedIn()
         && request.auth.uid in resource.data.get('sharedWith', []);
+    }
+
+    // Single shared spots: users/{owner}/pocket_shares/{friend} holds only what was shared with
+    // that friend, and only that friend may read it (the owner writes it through the rule above).
+    match /users/{userId}/pocket_shares/{friendUid} {
+      allow read: if userId != 'public' && signedIn() && request.auth.uid == friendUid;
     }
 
     // ── Shared profiles: owner and admins only ───────────────

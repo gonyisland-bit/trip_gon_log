@@ -1,7 +1,8 @@
 import { SpotPocketItem, SpotPocketPlatform } from '../types';
 import { auth, db } from '../firebase';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, deleteField } from 'firebase/firestore';
 import { buildImageThumb } from './imageThumbs';
+import { syncPocketShares, withLegacyShares } from './pocketShares';
 
 /** The image a pocket card should load: the small copy when it still matches the photo, else the photo */
 export function getCardThumbUrl(spot: SpotPocketItem): string | undefined {
@@ -130,6 +131,14 @@ export function subscribePockets(callback: (items: SpotPocketItem[]) => void): (
     return onSnapshot(docRef, (snap) => {
       if (snap.exists() && Array.isArray(snap.data()?.items)) {
         const cloudItems: SpotPocketItem[] = snap.data()?.items;
+        // The old whole-list sharing becomes per-spot sharing once, then the list closes to friends
+        const legacy = snap.data()?.sharedWith;
+        if (Array.isArray(legacy) && legacy.length) {
+          const moved = withLegacyShares(cloudItems, legacy);
+          setDoc(docRef, { items: sanitizeForFirestore(moved), sharedWith: deleteField(), updatedAt: Date.now() }, { merge: true })
+            .then(() => syncPocketShares(moved))
+            .catch(err => console.warn('[pocketStorage] Moving pocket sharing failed:', err));
+        }
         localStorage.setItem(cacheKey(), JSON.stringify(cloudItems));
         callback(cloudItems);
       } else {
@@ -155,6 +164,7 @@ export async function savePockets(items: SpotPocketItem[]): Promise<void> {
     const docRef = pocketDoc();
     const safeItems = sanitizeForFirestore(items);
     await setDoc(docRef, { items: safeItems, updatedAt: Date.now() }, { merge: true });
+    syncPocketShares(safeItems);
   } catch (err) {
     console.error('[pocketStorage] Failed to save pockets to Firestore server:', err);
   }

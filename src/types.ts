@@ -227,6 +227,8 @@ export interface SpotPocketItem {
   likes?: number;
   likedBy?: string[];
   comments?: PocketComment[];
+  /** Friends this one spot is shared with (copied to users/{me}/pocket_shares/{friend}) */
+  sharedWith?: string[];
 }
 
 export interface MagazineMoment {

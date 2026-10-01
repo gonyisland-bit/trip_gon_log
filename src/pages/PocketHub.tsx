@@ -17,6 +17,7 @@ import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
+import { PocketShareSheet } from '../components/pocket/PocketShareSheet';
 import { PocketScrapModal } from '../components/PocketScrapModal';
 import { POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG } from '../app/quickActions';
 import { takeSharedLink } from '../utils/shareTarget';
@@ -482,6 +483,15 @@ export function PocketHubPage({
       const updatedItem = updated.find(s => s.id === spotId);
       if (updatedItem) setSelectedSpotForModal(updatedItem);
     }
+  };
+
+  // Sharing one spot with friends (saved with the pocket; the friends' copies follow)
+  const [spotToShare, setSpotToShare] = useState<SpotPocketItem | null>(null);
+  const handleShareSpot = async (spotId: string, sharedWith: string[]) => {
+    const updated = spots.map(s => s.id === spotId ? { ...s, sharedWith } : s);
+    setSpots(updated);
+    setSelectedSpotForModal(prev => prev && prev.id === spotId ? { ...prev, sharedWith } : prev);
+    await savePockets(updated);
   };
 
   const handleSaveSpotComments = async (spotId: string, comments: PocketComment[]) => {
@@ -2285,6 +2295,7 @@ export function PocketHubPage({
         onUseInTrip={(spot) => setSpotToUseInTrip(spot)}
         onEdit={(spot) => handleOpenEditSpot(spot)}
         onDelete={(spot) => setSpotToDelete(spot)}
+        onShare={isLoggedIn ? (spot) => setSpotToShare(spot) : undefined}
         isLiked={isSpotLikedByUser(selectedSpotForModal)}
         isAdmin={isAdmin}
         onSaveComments={handleSaveSpotComments}
@@ -2293,6 +2304,14 @@ export function PocketHubPage({
         currentUserProfile={currentUserProfile}
         onOpenAuthModal={onOpenAuthModal}
       />
+
+      {spotToShare && (
+        <PocketShareSheet
+          spot={spotToShare}
+          onChange={(sharedWith) => handleShareSpot(spotToShare.id, sharedWith)}
+          onClose={() => setSpotToShare(null)}
+        />
+      )}
 
       {/* ── DELETE CONFIRM MODAL ── */}
       <ConfirmModal

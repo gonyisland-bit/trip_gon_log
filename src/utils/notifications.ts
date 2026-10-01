@@ -122,7 +122,7 @@ export function notificationText(n: AppNotification): string {
     case 'friend_joined': return `${n.fromName}님과 친구가 되었습니다.`;
     case 'journey_shared': return `${n.fromName}님이 '${n.title || '여정'}'을(를) ${n.role === 'edit' ? '함께 편집하도록' : '볼 수 있게'} 공유했습니다.`;
     case 'journey_edited': return `${n.fromName}님이 '${n.title || '여정'}'을(를) 고쳤습니다.`;
-    case 'pocket_shared': return `${n.fromName}님이 포켓을 보여 줍니다.`;
+    case 'pocket_shared': return `${n.fromName}님이 포켓 장소를 공유했습니다.`;
     default: return `${n.fromName}님의 소식`;
   }
 }

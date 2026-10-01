@@ -6,7 +6,8 @@ import type { SpotPocketItem, UserProfile } from '../types';
 import { CONTENT_COLLECTIONS, currentUid } from './ownership';
 import { personName } from './personName';
 import { confirmDialog, notify } from './feedback';
-import { notifyFriendJoined, notifyPocketShared } from './notifications';
+import { notifyFriendJoined } from './notifications';
+import { friendSharedSpots } from './pocketShares';
 
 // Friends (v1.3.6 5-a). Two members become friends through an invite the other one made:
 //   invites/{code}                     from · name · picture, expiresAt, usedBy · usedAt
@@ -223,6 +224,7 @@ export async function removeFriend(friendUid: string): Promise<void> {
   const writes = [
     ...refs.map(r => (b: ReturnType<typeof fsWriteBatch>) => b.update(r.ref, { access: arrayRemove(r.who), editors: arrayRemove(r.who) })),
     (b: ReturnType<typeof fsWriteBatch>) => b.set(doc(db, 'users', uid, 'settings', 'pockets'), { sharedWith: arrayRemove(friendUid) }, { merge: true }),
+    (b: ReturnType<typeof fsWriteBatch>) => b.delete(doc(db, 'users', uid, 'pocket_shares', friendUid)),
     (b: ReturnType<typeof fsWriteBatch>) => b.delete(doc(db, 'users', uid, 'friends', friendUid)),
     (b: ReturnType<typeof fsWriteBatch>) => b.delete(doc(db, 'users', friendUid, 'friends', uid)),
   ];
@@ -291,39 +293,11 @@ export async function promptAcceptInvite(code: string, me: PersonCard): Promise<
   }
 }
 
-// ── Pocket sharing (5-d): users/{uid}/settings/pockets carries sharedWith, the friends who may read it ──
-function myPocketRef() {
-  const uid = currentUid();
-  return uid ? doc(db, 'users', uid, 'settings', 'pockets') : null;
-}
+// ── Pocket sharing: one spot at a time (utils/pocketShares) ──
 
-/** The friends I show my pockets to, live */
-export function subscribePocketSharing(onChange: (uids: string[]) => void): () => void {
-  const ref = myPocketRef();
-  if (!ref) { onChange([]); return () => {}; }
-  return onSnapshot(ref, snap => {
-    const list = snap.exists() ? snap.data().sharedWith : null;
-    onChange(Array.isArray(list) ? list : []);
-  }, () => onChange([]));
-}
-
-export async function setPocketShared(friendUid: string, on: boolean): Promise<void> {
-  const ref = myPocketRef();
-  if (!ref) throw new Error('not signed in');
-  await fsSetDoc(ref, { sharedWith: on ? arrayUnion(friendUid) : arrayRemove(friendUid) }, { merge: true });
-  if (on) notifyPocketShared(friendUid);
-}
-
-/** A friend's pockets, or null when they do not show them to me */
-export async function friendPockets(friendUid: string): Promise<SpotPocketItem[] | null> {
-  try {
-    const snap = await getDoc(doc(db, 'users', friendUid, 'settings', 'pockets'));
-    if (!snap.exists()) return null;
-    const items = snap.data().items;
-    return Array.isArray(items) ? items : [];
-  } catch {
-    return null;
-  }
+/** The spots a friend shares with me, or null when they share none */
+export function friendPockets(friendUid: string): Promise<SpotPocketItem[] | null> {
+  return friendSharedSpots(friendUid);
 }
 
 /** A friend's spot as a new spot of mine: their likes, comments, order and journey stay behind */

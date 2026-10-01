@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Copy, Link2, Loader2, LogOut } from 'lucide-react';
+import { ChevronDown, Copy, Link2, Loader2, LogOut } from 'lucide-react';
 import type { Trip } from '../../types';
 import { Sheet, useSheetClose } from '../Sheet';
 import { Segment } from '../ui/Segment';
@@ -19,6 +19,7 @@ export function openJourneyShare(tripId: number) {
 }
 
 type Role = 'none' | 'view' | 'edit';
+const ROLE_LABEL: Record<Role, string> = { none: '공유 안 함', view: '보기', edit: '함께 편집' };
 
 interface Props {
   trip: Trip;
@@ -53,6 +54,7 @@ function Body({ trip, me, onLeft }: Props) {
   const [editors, setEditors] = useState<string[]>(trip.editors || []);
   const [linkOn, setLinkOn] = useState(Boolean(trip.publicShare));
   const [busy, setBusy] = useState<string | null>(null);
+  const [openRow, setOpenRow] = useState<string | null>(null);
 
   // Follow the saved journey when its snapshot arrives
   useEffect(() => { setAccess(trip.access || []); setEditors(trip.editors || []); }, [trip.access?.join(), trip.editors?.join()]);
@@ -165,27 +167,50 @@ function Body({ trip, me, onLeft }: Props) {
     );
   }
 
-  const personRow = (u: string, name: string, profile: any) => (
-    <li key={u} className="flex flex-col gap-2">
-      <div className="flex items-center gap-3">
-        <UserProfileAvatar profile={profile} size="md" fallbackName={name} />
-        <span className="flex-1 min-w-0 text-[14px] font-bold truncate">{name}</span>
-        {busy === u && <Loader2 className="w-4 h-4 animate-spin text-black/50 dark:text-white/50" aria-hidden />}
-      </div>
-      <Segment<Role>
-        block
-        size="sm"
-        ariaLabel={`${name}님 공유`}
-        value={roleOf(u)}
-        onChange={(r) => changeRole(u, name, r)}
-        options={[
-          { value: 'none', label: '공유 안 함' },
-          { value: 'view', label: '보기' },
-          { value: 'edit', label: '함께 편집' },
-        ]}
-      />
-    </li>
-  );
+  // One line per person; the role chip opens the three choices under its row
+  const personRow = (u: string, name: string, profile: any) => {
+    const role = roleOf(u);
+    const open = openRow === u;
+    return (
+      <li key={u} className="flex flex-col">
+        <div className="flex items-center gap-3 min-h-[52px]">
+          <UserProfileAvatar profile={profile} size="md" fallbackName={name} />
+          <span className="flex-1 min-w-0 text-[14px] font-bold truncate">{name}</span>
+          {busy === u && <Loader2 className="w-4 h-4 animate-spin text-black/50 dark:text-white/50" aria-hidden />}
+          <button
+            type="button"
+            onClick={() => setOpenRow(open ? null : u)}
+            aria-expanded={open}
+            aria-label={`${name}님 공유: ${ROLE_LABEL[role]}`}
+            className={`h-8 pl-3 pr-2 rounded-full inline-flex items-center gap-1 text-meta font-bold shrink-0 transition-colors ${
+              role === 'none'
+                ? 'border border-black/15 dark:border-white/20 text-black/60 dark:text-white/60'
+                : 'bg-lilac text-lilac-ink dark:bg-lilac-dark dark:text-lilac'
+            }`}
+          >
+            {ROLE_LABEL[role]}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+          </button>
+        </div>
+        {open && (
+          <div className="pb-2">
+            <Segment<Role>
+              block
+              size="sm"
+              ariaLabel={`${name}님 공유`}
+              value={role}
+              onChange={(r) => { setOpenRow(null); changeRole(u, name, r); }}
+              options={[
+                { value: 'none', label: ROLE_LABEL.none },
+                { value: 'view', label: ROLE_LABEL.view },
+                { value: 'edit', label: ROLE_LABEL.edit },
+              ]}
+            />
+          </div>
+        )}
+      </li>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-3 p-4 pt-2 min-h-0 overflow-y-auto overscroll-contain">
@@ -198,7 +223,7 @@ function Body({ trip, me, onLeft }: Props) {
         ) : friends.length === 0 && others.length === 0 ? (
           <span className={muted}>아직 친구가 없습니다. 설정 → Friends에서 초대 링크나 코드로 친구를 맺으면 여기서 공유할 수 있습니다.</span>
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col">
             {friends.map(f => personRow(f.uid, f.name, f))}
             {others.map(u => personRow(u, '친구 목록에 없는 회원', { uid: u }))}
           </ul>

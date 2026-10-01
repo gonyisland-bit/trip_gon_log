@@ -11,7 +11,7 @@ const KINDS: { kind: NotificationKind; label: string }[] = [
   { kind: 'journey_shared', label: '여정 공유받음' },
   { kind: 'journey_edited', label: '함께 편집 여정 변경' },
   { kind: 'friend_joined', label: '친구 수락' },
-  { kind: 'pocket_shared', label: '포켓 공개' },
+  { kind: 'pocket_shared', label: '포켓 장소 공유' },
 ];
 
 const STATE_TEXT: Record<PushState, string> = {
