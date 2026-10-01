@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock, Ticket, Wallet, Settings } from 'lucide-react';
+import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock, Ticket, Settings } from 'lucide-react';
 import { OPEN_PROFILE_EDIT } from '../app/quickActions';
 import { auth, db } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
@@ -14,7 +14,8 @@ import { NotificationBell } from './notifications/NotificationBell';
 import { confirmDialog } from '../utils/feedback';
 import { openIntro, prefetchIntro } from '../intro/openIntro';
 import { preloadPocketPage } from '../utils/prefetchHelper';
-import { openBookingWallet, openDepartureBoard } from '../app/quickActions';
+import { openDepartureBoard } from '../app/quickActions';
+import { DURATION as INTRO_SECONDS } from '../intro/timeline';
 import { NewTripButton } from './NewTripButton';
 import { Segment } from './ui/Segment';
 import { personName } from '../utils/personName';
@@ -434,11 +435,10 @@ export function Navigation({
               <Play className="w-3.5 h-3.5 fill-current translate-x-[1px]" />
             </span>
             <span className="flex-1 text-sm font-bold">소개 영상</span>
-            <span className="font-mono text-micro text-black/60 dark:text-white/60 tabular-nums">0:49</span>
+            <span className="font-mono text-micro text-black/60 dark:text-white/60 tabular-nums">{`${Math.floor(INTRO_SECONDS / 60)}:${String(Math.round(INTRO_SECONDS % 60)).padStart(2, '0')}`}</span>
           </button>
 
           {isLoggedIn && ([
-            { label: '예약 지갑', icon: Wallet, onClick: openBookingWallet, i: 7 },
             { label: '공항 터미널', icon: Ticket, onClick: openDepartureBoard, i: 8 },
             // v1.3.6 4-d: account, display, slideshow, storage and trash for every member
             ...(openSettingModal ? [{ label: '설정', icon: Settings, onClick: openSettingModal, i: 8 }] : []),

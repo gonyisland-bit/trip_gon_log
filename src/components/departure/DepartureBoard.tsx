@@ -11,12 +11,17 @@ import { prefersReducedMotion } from '../../motion';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { IconButton } from '../ui/IconButton';
 import { Sheet, useSheetClose } from '../Sheet';
+import { Segment } from '../ui/Segment';
+import { UpcomingBookings, countUpcoming } from './UpcomingBookings';
+import type { Trip, Plan, FlightItem, StayItem, TransitItem } from '../../types';
 import { DepartureTicket, TicketStore, daysUntil, formatHours, readCachedTickets, removeTicket, subscribeTickets, ticketCity } from './departureData';
 
 // Airport terminal (spec 3.2): where a planned trip waits before it becomes a journey.
 // Tickets are issued from the New trip sheet. The black split-flap board shows the chosen
 // ticket (destination, dates, stay, party, gate); another ticket rolls the board over to it.
 // Boarding creates the journey from the ticket and opens it.
+// Two tabs (v1.3.6): 보관 티켓 (the tickets above) and 탑승 예정, the journeys already made with
+// their flight, stay and transit bookings (the old booking wallet).
 
 const FLAP_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:+';
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -167,12 +172,27 @@ interface DepartureBoardProps {
   weatherCityName?: string;
   weatherCityEn?: string;
   weatherTemp?: number;
+  /** Which tab opens first */
+  initialTab?: TerminalTab;
+  trips?: Trip[];
+  plans?: Plan[];
+  flightsByTrip?: Record<number, FlightItem[]>;
+  staysByTrip?: Record<number, StayItem[]>;
+  transitByTrip?: Record<number, TransitItem[]>;
+  /** Opens a booking inside its journey */
+  onOpenBooking?: (tripId: number, tab: string, itemId: number | null) => void;
 }
+
+export type TerminalTab = 'tickets' | 'upcoming';
 
 export function DepartureBoard({
   onClose, onBoard, onPlan, initialTicketId, covered = false, isDarkMode = true,
   weatherCode, precipitationProb = 0, weatherCityName, weatherCityEn, weatherTemp,
+  initialTab = 'tickets', trips = [], plans = [], flightsByTrip = {}, staysByTrip = {}, transitByTrip = {}, onOpenBooking,
 }: DepartureBoardProps) {
+  const [tab, setTab] = useState<TerminalTab>(initialTab);
+  useEffect(() => { setTab(initialTab); }, [initialTab]);
+  const upcomingCount = useMemo(() => countUpcoming(trips, plans), [trips, plans]);
   const weatherType = resolveWeatherEffectType(weatherCode, precipitationProb);
   const weatherIntensity = precipitationIntensity(weatherCode, precipitationProb);
   const [store, setStore] = useState<TicketStore>(() => readCachedTickets());
@@ -303,9 +323,33 @@ export function DepartureBoard({
           </div>
         </div>
 
+        <div className="shrink-0 w-full max-w-5xl mx-auto px-4 sm:px-6 pb-3">
+          <Segment<TerminalTab>
+            block
+            ariaLabel="터미널 보기"
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'tickets', label: `보관 티켓 ${tickets.length}` },
+              { value: 'upcoming', label: `탑승 예정 ${upcomingCount}` },
+            ]}
+          />
+        </div>
+
         {/* Board, the ticket's actions, then every ticket: two thirds of the height (scrolls inside when short) */}
         <div className={`flex-[2] min-h-0 overflow-y-auto overscroll-contain hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
           <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-2 flex flex-col gap-3">
+            {tab === 'upcoming' ? (
+              <UpcomingBookings
+                trips={trips}
+                plans={plans}
+                flightsByTrip={flightsByTrip}
+                staysByTrip={staysByTrip}
+                transitByTrip={transitByTrip}
+                onOpenBooking={(id, t, item) => onOpenBooking?.(id, t, item)}
+                onNewTrip={() => onPlan()}
+              />
+            ) : (<>
             <section aria-label="출발 안내판" className="dark rounded-card bg-[#101012] text-[#F2F2EE] p-3.5 sm:p-4 flex flex-col gap-3 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
               <div className="flex items-end gap-x-3 sm:gap-x-4">
                 <div className="flex flex-col gap-1">
@@ -414,6 +458,7 @@ export function DepartureBoard({
                 </ul>
               </div>
             )}
+            </>)}
           </div>
         </div>
 

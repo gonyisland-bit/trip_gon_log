@@ -79,7 +79,7 @@ export function IntroTipView({ onWatch, onDismiss }: { onWatch: () => void; onDi
             className="flex flex-col items-start pl-1 pr-3 whitespace-nowrap text-left"
           >
             <span className="text-sm font-bold leading-tight tgl-introtip-line">트립곤 둘러보기</span>
-            <span className="font-mono text-micro uppercase tracking-widest text-white/60 dark:text-black/60 leading-tight tgl-introtip-line" style={{ animationDelay: '330ms' }}>Intro · 0:49</span>
+            <span className="font-mono text-micro uppercase tracking-widest text-white/60 dark:text-black/60 leading-tight tgl-introtip-line" style={{ animationDelay: '330ms' }}>Intro · 0:40</span>
           </button>
         </div>
 

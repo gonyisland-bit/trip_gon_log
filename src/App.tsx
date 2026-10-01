@@ -56,7 +56,6 @@ import { OPEN_SETTINGS_EVENT } from './utils/myCities';
 import type { SettingsTab } from './components/settings/SettingsSheet';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
-const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
 const CommandPalette = lazyWithRetry(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const RemixSheet = lazyWithRetry(() => import('./components/RemixSheet').then(m => ({ default: m.RemixSheet })));
 // Intro 2.0 (Three.js) loads only when opened
@@ -119,7 +118,8 @@ function App() {
   // The ticket the terminal opens on (just issued from the New trip sheet)
   const [departureTicketId, setDepartureTicketId] = useState<string | undefined>(undefined);
   const issuedTicketRef = useRef<string | null>(null);
-  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  // The terminal opens on its tickets, or on "탑승 예정" (the old booking wallet)
+  const [departureTab, setDepartureTab] = useState<'tickets' | 'upcoming'>('tickets');
   // One journey's card menu (v1.3.6 4-a), opened from any journey card
   const [actionsTripId, setActionsTripId] = useState<number | null>(null);
   useEffect(() => {
@@ -168,8 +168,8 @@ function App() {
     if (isIntroOpen && uid) setDoc(doc(db, 'users', uid, 'settings', 'intro'), { seenAt: Date.now(), watched: true }, { merge: true }).catch(() => {});
   }, [isIntroOpen]);
   useEffect(() => {
-    const openDeparture = () => { setDepartureTicketId(undefined); setIsDepartureOpen(true); };
-    const openWallet = () => setIsWalletOpen(true);
+    const openDeparture = () => { setDepartureTicketId(undefined); setDepartureTab('tickets'); setIsDepartureOpen(true); };
+    const openWallet = () => { setDepartureTicketId(undefined); setDepartureTab('upcoming'); setIsDepartureOpen(true); };
     const togglePalette = () => setIsPaletteOpen(v => !v);
     const openRemixSheet = (e: Event) => { const id = (e as CustomEvent<number>).detail; if (typeof id === 'number') setRemixSourceId(id); };
     window.addEventListener(OPEN_DEPARTURE_EVENT, openDeparture);
@@ -810,23 +810,6 @@ function App() {
           </>
         )}
 
-        {/* Booking Wallet: every upcoming booking with its D-day (v1.3 P5) */}
-        {isWalletOpen && (
-          <LayerBoundary name="예약 지갑" onClose={() => setIsWalletOpen(false)}>
-          <Suspense fallback={null}>
-            <BookingWallet
-              trips={trips}
-              plans={plans}
-              flightsByTrip={flightsByTrip}
-              staysByTrip={staysByTrip}
-              transitByTrip={transitByTrip}
-              onClose={() => setIsWalletOpen(false)}
-              onOpenBooking={handleSearchResultClick}
-              onNewTrip={() => handleCreateTripForCountry('', '')}
-            />
-          </Suspense>
-          </LayerBoundary>
-        )}
 
         {/* Journey Remix: pick places from a journey into a new plan (v1.3 P5) */}
         {remixSourceId !== null && isLoggedIn && (() => {
@@ -935,6 +918,13 @@ function App() {
             <DepartureBoard
               onClose={() => setIsDepartureOpen(false)}
               initialTicketId={departureTicketId}
+              initialTab={departureTab}
+              trips={trips}
+              plans={plans}
+              flightsByTrip={flightsByTrip}
+              staysByTrip={staysByTrip}
+              transitByTrip={transitByTrip}
+              onOpenBooking={(tripId, tab, itemId) => { setIsDepartureOpen(false); handleSearchResultClick(tripId, tab, itemId); }}
               onBoard={async (t) => {
                 const p = t.plan!;
                 await handleCreateJourney(p.title, p.dateRange, p.location, p.tags, p.lat, p.lng, p.members, p.locations, 'NEW', p.country, p.coverImg, p.timeline, 'plan');

@@ -252,7 +252,7 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
                 </button>
                 <div>
                   <p className="text-base font-extrabold">탭해서 시작</p>
-                  <p className="mt-1 font-mono text-micro uppercase tracking-widest text-black/60">0:49 · 소리와 함께 보면 더 좋아요</p>
+                  <p className="mt-1 font-mono text-micro uppercase tracking-widest text-black/60">0:40 · 소리와 함께 보면 더 좋아요</p>
                 </div>
               </div>
             ) : (
