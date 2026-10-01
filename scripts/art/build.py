@@ -1,45 +1,63 @@
-"""Builds public/art from the traced sheet (assets/art-sheet.webp).
+"""Builds public/art from the illustrations in assets/illust (full-colour flat pictures of the bear).
 
-  python3 -m venv .venv && .venv/bin/pip install pillow numpy opencv-python-headless scipy potracer
+  python3 -m venv .venv && .venv/bin/pip install pillow numpy scipy
   .venv/bin/python scripts/art/build.py
 
-Writes public/art/{id}.svg (light), public/art/dark/{id}.svg and public/art/tile/{id}-{tint}.svg
-(on a hub tint, for covers and thumbnails), and src/art/catalog.ts. Colour classes: fp paper, fa accent,
-fl line, fh solid ink; the same classes as the old hand-drawn kit.
+Writes public/art/{id}.webp (the scene, transparent where the picture stood on white), public/art/tile/{id}-{tint}.svg
+(the scene on a hub tint, square, for covers and thumbnails; a plain path so it also works stored as a cover) and
+src/art/catalog.ts. The source pictures are portrait JPEGs; each one is cleaned here: the caption some of them carry is
+cut off, a white ground is made transparent, and a picture that fills its frame (a room, a pool) is cut to a window around
+the bear and given round corners.
 """
-import sys
+import base64, io
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from trace import svg_for, svg_for_image  # noqa: E402
+import numpy as np
+from PIL import Image, ImageDraw
+from scipy import ndimage as ndi
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+SRC = ROOT / 'assets' / 'illust'
 OUT = ROOT / 'public' / 'art'
 
-# Every cut of the sheet that is worth having: cell index -> scene id. Only the ones in USED are built, so
-# the app ships what it shows; to use another cut, add its id to EXTRA_USED (or to a KIND_ART list) and rebuild.
-NAMES = {
-    0: 'restaurant-exterior', 1: 'outdoor-bistro', 2: 'beer-break', 3: 'coffee-break', 4: 'snack-break', 5: 'dining-plate',
-    6: 'table-rest', 7: 'cafe-table', 8: 'beer-standing', 9: 'snack-bite', 10: 'coffee-cup', 11: 'wine-tasting',
-    12: 'restaurant-menu', 13: 'paying-bill', 14: 'landmark-paris', 15: 'landmark-paris-2', 16: 'landmark-newyork',
-    17: 'landmark-egypt', 18: 'landmark-london', 19: 'landmark-japan', 20: 'landmark-japan-2', 21: 'landmark-paris-3',
-    24: 'landmark-egypt-2', 27: 'landmark-japan-torii', 28: 'itinerary-empty', 29: 'itinerary-empty-2', 30: 'pocket-empty',
-    31: 'search-location', 32: 'search-pin', 33: 'no-results', 34: 'map-looking', 35: 'backpacking', 36: 'luggage-travel',
-    37: 'photo-memory', 38: 'train-journey', 39: 'train-station', 40: 'departure-board', 41: 'waiting-gate',
-    42: 'backpacking-2', 43: 'luggage-travel-2', 44: 'photo-memory-2', 46: 'bike-ride', 47: 'bike-ride-2',
-    48: 'window-waiting', 49: 'city-walk', 50: 'tourist-guide', 52: 'public-transport', 53: 'public-transport-2',
-    54: 'museum-visit', 55: 'museum-visit-2', 56: 'resort-hammock', 57: 'beach-relaxation', 58: 'beach-relaxation-2',
-    59: 'beach-surfing', 60: 'swimming', 61: 'swimming-2', 62: 'poolside-cocktail', 64: 'beach-drink', 65: 'beach-sit',
-    66: 'sofa-rest', 67: 'sleeping', 68: 'cafe-cat', 69: 'window-cat', 70: 'cat-petting-street', 71: 'cat-petting-street-2',
-    72: 'cat-petting', 73: 'cat-sofa', 74: 'window-cat-2',
+# scene id -> source file. Ids without a picture (landmark-london, landmark-japan) are not part of the catalog.
+FILES = {
+    'restaurant-exterior': 'restaurant-exterior.jpg', 'outdoor-bistro': 'Teal_bear_sitting_at_cafe_20261001215430.jpg',
+    'beer-break': 'beer-break.jpg', 'coffee-break': 'coffee-break1.jpg', 'snack-break': 'Teal_bear_eating_snack_20261001215430_2.jpg',
+    'dining-plate': 'dining-plate.jpg', 'cafe-table': 'cafe-table.jpg', 'beer-standing': 'beer-standing.jpg',
+    'snack-bite': 'snack-bite.jpg', 'coffee-cup': 'coffee-cup.jpg', 'wine-tasting': 'wine-tasting.jpg',
+    'restaurant-menu': 'restaurant-menu.jpg', 'paying-bill': 'paying-bill.jpg', 'landmark-paris': 'landmark-paris.jpg',
+    'landmark-newyork': 'landmark-newyork.jpg', 'landmark-egypt': 'landmark-egypt.jpg', 'landmark-japan-torii': 'landmark-japan-torii.jpg',
+    'itinerary-empty': 'itinerary-empty.jpg', 'pocket-empty': 'pocket-empty.jpg', 'no-results': 'no-results.jpg',
+    'map-looking': 'map-looking.jpg', 'backpacking': 'backpacking.jpg', 'luggage-travel': 'luggage-travel.jpg',
+    'photo-memory': 'photo-memory.jpg', 'train-journey': 'train-journey.jpg', 'train-station': 'train-station.jpg',
+    'departure-board': 'departure-board.jpg', 'waiting-gate': 'waiting-gate.jpg', 'backpacking-2': 'backpacking-2.jpg',
+    'luggage-travel-2': 'luggage-travel-2.jpg', 'photo-memory-2': 'photo-memory-2.jpg', 'bike-ride': 'bike-ride.jpg',
+    'window-waiting': 'window-waiting.jpg', 'city-walk': 'city-walk.jpg', 'tourist-guide': 'tourist-guide.jpg',
+    'public-transport': 'public-transport1.jpg', 'public-transport-2': 'public-transport2.jpg', 'museum-visit': 'museum-visit.jpg',
+    'museum-visit-2': 'museum-visit-2.jpg', 'resort-hammock': 'resort-hammock.jpg', 'beach-relaxation': 'beach-relaxation.jpg',
+    'beach-relaxation-2': 'beach-relaxation-2.jpg', 'beach-surfing': 'beach-surfing.jpg', 'swimming': 'swimming.jpg',
+    'poolside-cocktail': 'poolside-cocktail.jpg', 'beach-drink': 'beach-drink1.jpg', 'sofa-rest': 'sofa-rest.jpg', 'sleeping': 'sleeping.jpg',
 }
 
-# Replace a cut with a hi-res picture: put assets/art-override/<id>.png (dark lines on white, accent in yellow)
-# next to the sheet and rebuild. It is traced like a sheet cell, so nothing else changes.
-OVERRIDES = ROOT / 'assets' / 'art-override'
+# Pictures that carry a caption under the art: rows from this one down are dropped
+CAPTION_FROM = {
+    'backpacking-2': 1100, 'beach-drink': 1260, 'beer-break': 1000, 'luggage-travel-2': 970, 'map-looking': 1100,
+    'photo-memory-2': 1000, 'public-transport': 990, 'resort-hammock': 1030, 'restaurant-menu': 960, 'sleeping': 1020,
+    'snack-bite': 1130, 'sofa-rest': 910, 'window-waiting': 1060, 'wine-tasting': 1030,
+}
+
+# Pictures that fill their frame: the window (x0, y0, x1, y1) kept around the bear; they become a rounded card
+CARDS = {
+    'coffee-cup': (0, 300, 768, 1260), 'departure-board': (0, 60, 768, 1290), 'landmark-egypt': (0, 300, 768, 1260),
+    'poolside-cocktail': (0, 200, 768, 1160), 'restaurant-exterior': (0, 200, 768, 1160), 'swimming': (0, 300, 768, 1180),
+    'train-journey': (0, 250, 768, 1250), 'waiting-gate': (42, 252, 768, 960), 'public-transport-2': (0, 130, 768, 1075),
+    'landmark-paris': (0, 140, 768, 1300), 'museum-visit-2': (0, 300, 768, 1180),
+}
+
+# Pictures with a white pocket the ground cannot reach (between a staff and an arm): enclosed pure white above this size is dropped too
+HOLES = {'backpacking-2': 1500}
 
 TINTS = {'peach': '#F6CDB6', 'butter': '#F7DB6A', 'sage': '#C9D8BC', 'mist': '#DCE3E8', 'lilac': '#E7D7F3'}
-LIGHT = dict(line='#141412', paper='#FFFDF9', hair='#141412', accent='#F2B33D')
-DARK = dict(line='#EDEAE2', paper='#2A2A25', hair='#0A0A09', accent='#E3A94B')
 
 # What a place or plan item looks like, by kind (src/utils/placeArt.ts picks one scene by seed).
 # Each kind sits on one hub tint, so a tile exists once per scene, not once per tint.
@@ -47,10 +65,10 @@ KIND_ART = {
     'beach': ['beach-relaxation', 'beach-relaxation-2', 'beach-surfing', 'swimming', 'resort-hammock', 'poolside-cocktail'],
     'mountain': ['backpacking', 'backpacking-2', 'map-looking'],
     'city': ['city-walk', 'tourist-guide', 'public-transport-2'],
-    'temple': ['landmark-japan', 'landmark-japan-torii', 'museum-visit-2'],
+    'temple': ['landmark-japan-torii', 'museum-visit-2'],
     'meal': ['restaurant-exterior', 'outdoor-bistro', 'dining-plate', 'restaurant-menu'],
     'cafe': ['coffee-break', 'coffee-cup', 'cafe-table'],
-    'landmark': ['landmark-paris', 'landmark-newyork', 'landmark-london', 'landmark-egypt', 'landmark-japan'],
+    'landmark': ['landmark-paris', 'landmark-newyork', 'landmark-egypt', 'landmark-japan-torii'],
     'stay': ['resort-hammock', 'sofa-rest', 'sleeping'],
     'transit': ['train-journey', 'public-transport', 'train-station', 'bike-ride'],
     'shopping': ['luggage-travel', 'luggage-travel-2', 'paying-bill'],
@@ -63,52 +81,127 @@ KIND_TINT = {
     'beach': 'mist', 'mountain': 'sage', 'city': 'lilac', 'temple': 'peach', 'meal': 'butter', 'cafe': 'peach', 'landmark': 'mist',
     'stay': 'sage', 'transit': 'mist', 'shopping': 'lilac', 'night': 'lilac', 'art': 'peach', 'market': 'butter', 'activity': 'sage',
 }
+# Covers saved before these scenes were dropped still point at their tiles; the same files now show the nearest scene
+ALIAS_TILES = [('landmark-japan', 'landmark-japan-torii', 'mist'), ('landmark-japan', 'landmark-japan-torii', 'peach'),
+               ('landmark-london', 'landmark-newyork', 'mist')]
 TILES = sorted({(i, KIND_TINT[k]) for k, ids in KIND_ART.items() for i in ids})
 
-def css(c):
-    return (f".fl{{fill:{c['line']}}}.fp{{fill:{c['paper']}}}.fh{{fill:{c['hair']}}}.fa{{fill:{c['accent']}}}"
-            f".ks{{fill:none;stroke:{c['line']};stroke-linecap:round;stroke-linejoin:round}}")
-
-def svg(m, c, bg=None):
-    vx, vy, s, _ = (int(v) for v in m['vb'].split())
-    rect = f'<rect x="{vx}" y="{vy}" width="{s}" height="{s}" fill="{bg}"/>' if bg else ''
-    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{m["vb"]}" width="{s}" height="{s}"><style>{css(c)}</style>{rect}{m["body"]}</svg>'
-
-# Scenes used outside the kind lists: empty states, the first-trip hero, the terminal, the intro, the map marker
-EXTRA_USED = [
-    'itinerary-empty', 'pocket-empty', 'no-results', 'departure-board', 'waiting-gate', 'window-waiting', 'train-station',
-    'luggage-travel', 'backpacking', 'beach-drink', 'landmark-paris', 'city-walk', 'beach-surfing', 'beach-relaxation',
-    'landmark-japan', 'poolside-cocktail',
-]
-USED = {i for ids in KIND_ART.values() for i in ids} | set(EXTRA_USED)
+SCENE_MAX = 640      # longest side of a scene, px
+TILE_ART = 400       # longest side of the art inside a tile, px (the tile itself is a 320 unit square)
+WATERMARK = 1296     # the source pictures carry a faint mark in the bottom corner; nothing below this row is used
 
 
-def traced(idx, name):
-    for ext in ('png', 'webp', 'jpg'):
-        f = OVERRIDES / f'{name}.{ext}'
-        if f.exists():
-            return svg_for_image(str(f))
-    return svg_for(idx)
+def load(name):
+    return np.array(Image.open(SRC / FILES[name]).convert('RGB'))[:WATERMARK]
+
+
+def cut_ground(rgb, holes=0):
+    """RGBA of a picture standing on white: the white that touches the edge is dropped, whites inside stay.
+    Colour under the transparent part is copied from the nearest picture pixel so resizing leaves no halo."""
+    near_white = rgb.min(axis=2) >= 236
+    lab, _ = ndi.label(near_white)
+    edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    ground = np.isin(lab, edge[edge > 0])
+    if holes:
+        white = rgb.min(axis=2) >= 246
+        wl, wn = ndi.label(white)
+        sizes = ndi.sum(white, wl, index=np.arange(1, wn + 1))
+        for k in np.where(sizes >= holes)[0]:
+            ground |= wl == k + 1
+    solid = ~ground
+    # specks (compression noise, the corner mark) are not part of the picture
+    sl, n = ndi.label(solid)
+    if n:
+        sizes = ndi.sum(solid, sl, index=np.arange(1, n + 1))
+        for k in np.where(sizes < 120)[0]:
+            solid[sl == k + 1] = False
+    core = ndi.binary_erosion(solid, iterations=1)
+    alpha = ndi.gaussian_filter(core.astype(np.float32), 0.7)
+    _, (iy, ix) = ndi.distance_transform_edt(~core, return_indices=True)
+    out = np.dstack([rgb[iy, ix], (alpha * 255).astype(np.uint8)])
+    ys, xs = np.where(solid)
+    pad = int(0.06 * max(ys.max() - ys.min(), xs.max() - xs.min()))
+    y0, y1 = max(0, ys.min() - pad), min(out.shape[0], ys.max() + pad + 1)
+    x0, x1 = max(0, xs.min() - pad), min(out.shape[1], xs.max() + pad + 1)
+    return Image.fromarray(out[y0:y1, x0:x1], 'RGBA')
+
+
+def rounded(im, frac=0.055):
+    w, h = im.size
+    k = 4
+    m = Image.new('L', (w * k, h * k), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, w * k - 1, h * k - 1), radius=int(min(w, h) * frac * k), fill=255)
+    out = im.convert('RGBA')
+    out.putalpha(m.resize((w, h), Image.LANCZOS))
+    return out
+
+
+def fit(im, longest):
+    w, h = im.size
+    s = longest / max(w, h)
+    return im if s >= 1 else im.resize((max(1, round(w * s)), max(1, round(h * s))), Image.LANCZOS)
+
+
+def webp_b64(im, q=82, alpha=True):
+    buf = io.BytesIO()
+    (im if alpha else im.convert('RGB')).save(buf, 'WEBP', quality=q, method=6)
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+def scene_for(name):
+    """(scene image, tile image, tile art is a full square picture)"""
+    if name in CARDS:
+        x0, y0, x1, y1 = CARDS[name]
+        card = Image.fromarray(load(name)[y0:y1, x0:x1])
+        w, h = card.size
+        s = min(w, h)
+        sq = card.crop(((w - s) // 2, (h - s) // 2, (w - s) // 2 + s, (h - s) // 2 + s))
+        return rounded(fit(card, SCENE_MAX)), fit(sq, 480), True
+    rgb = load(name)
+    if name in CAPTION_FROM:
+        rgb = rgb[:CAPTION_FROM[name]]
+    art = cut_ground(rgb, HOLES.get(name, 0))
+    return fit(art, SCENE_MAX), fit(art, TILE_ART), False
+
+
+def tile_svg(tile, full, tint):
+    s = 320
+    if full:
+        x = y = 0
+        w = h = s
+    else:
+        k = 0.84 * s / max(tile.size)
+        w, h = tile.size[0] * k, tile.size[1] * k
+        x, y = (s - w) / 2, (s - h) / 2
+    img = f'<image x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" href="data:image/webp;base64,{webp_b64(tile, 80, not full)}"/>'
+    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {s} {s}" width="{s}" height="{s}"><rect width="{s}" height="{s}" fill="{TINTS[tint]}"/>{img}</svg>'
 
 
 def main():
-    for d in (OUT, OUT / 'dark', OUT / 'tile'):
-        d.mkdir(parents=True, exist_ok=True)
-        for f in d.glob('*.svg'): f.unlink()
-    ids = []
-    for idx, name in NAMES.items():
-        if name not in USED:
-            continue
-        m = traced(idx, name)
-        (OUT / f'{name}.svg').write_text(svg(m, LIGHT))
-        (OUT / 'dark' / f'{name}.svg').write_text(svg(m, DARK))
-        for tid, tint in TILES:
-            if tid == name:
-                (OUT / 'tile' / f'{name}-{tint}.svg').write_text(svg(m, LIGHT, TINTS[tint]))
-        ids.append(name)
-    missing = [t for t, _ in TILES if t not in ids]
-    assert not missing, missing
-    lines = ["// Generated by scripts/art/build.py from assets/art-sheet.webp. Do not edit by hand.", "",
+    (OUT / 'tile').mkdir(parents=True, exist_ok=True)
+    for d in (OUT, OUT / 'tile'):
+        for f in list(d.glob('*.svg')) + list(d.glob('*.webp')):
+            f.unlink()
+    dark = OUT / 'dark'
+    if dark.exists():
+        for f in dark.glob('*'):
+            f.unlink()
+        dark.rmdir()
+    used = {i for ids in KIND_ART.values() for i in ids}
+    assert used <= set(FILES), sorted(used - set(FILES))
+    ids = list(FILES)
+    made = {}
+    for name in ids:
+        scene, tile, full = scene_for(name)
+        made[name] = (tile, full)
+        scene.save(OUT / f'{name}.webp', 'WEBP', quality=84, method=6)
+    for name, tint in TILES:
+        tile, full = made[name]
+        (OUT / 'tile' / f'{name}-{tint}.svg').write_text(tile_svg(tile, full, tint))
+    for old, new, tint in ALIAS_TILES:
+        tile, full = made[new]
+        (OUT / 'tile' / f'{old}-{tint}.svg').write_text(tile_svg(tile, full, tint))
+    lines = ["// Generated by scripts/art/build.py from assets/illust. Do not edit by hand.", "",
              "export const ART_IDS = ["] + [f"  '{i}'," for i in ids] + ["] as const;", "",
              "export type ArtId = typeof ART_IDS[number];", "",
              "export type ArtTint = 'peach' | 'butter' | 'sage' | 'mist' | 'lilac';", "",
@@ -121,6 +214,7 @@ def main():
     (ROOT / 'src' / 'art').mkdir(exist_ok=True)
     (ROOT / 'src' / 'art' / 'catalog.ts').write_text("\n".join(lines))
     print(len(ids), 'scenes,', len(TILES), 'tiles')
+
 
 if __name__ == '__main__':
     main()

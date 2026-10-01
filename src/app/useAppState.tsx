@@ -38,7 +38,8 @@ import { CONTENT_COLLECTIONS, journeyItems, ownTrash, pickHomeKeys, registerJour
 import type { RemixPayload } from '../components/RemixSheet';
 import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
-import { CURRENT_LOCATION_EN, applyJourneyOpen, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
+import { applyJourneyOpenBy } from '../utils/journeyOpen';
+import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
 import { applyHubMapStyle, applyMapStyle, isHubMapStyle, isMapStyle } from '../utils/mapTiles';
 import { noteRecentJourney } from '../utils/recentJourneys';
 import { orderWithNewFirst } from '../utils/journeyOrderHelper';
@@ -262,7 +263,7 @@ export function useAppState() {
       if (typeof prefs.logoSplash === 'boolean') setLogoSplash(prefs.logoSplash, false);
       if (isMapStyle(prefs.mapStyle)) applyMapStyle(prefs.mapStyle, false);
       if (isHubMapStyle(prefs.hubMapStyle)) applyHubMapStyle(prefs.hubMapStyle, false);
-      if (prefs.journeyOpen === 'record' || prefs.journeyOpen === 'magazine') applyJourneyOpen(prefs.journeyOpen, false);
+      applyJourneyOpenBy(prefs.journeyOpenBy);
       if (prefs.weatherBg !== undefined) {
         setIsGlobalWeatherBgEnabled(prefs.weatherBg);
         try { localStorage.setItem('calendar_weather_bg_enabled', String(prefs.weatherBg)); } catch (_) {}

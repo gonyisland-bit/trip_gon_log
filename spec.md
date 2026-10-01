@@ -196,6 +196,8 @@
 | 미스트 | `mist` | `#DCE3E8` · `#3B4A57` · `#22282D` | 달력 · 날씨 · 지도 |
 | 라일락 | `lilac` | `#E7D7F3` · `#5B3E74` · `#2E2638` | 친구 |
 
+**보드 타일 색 (v1.3.7)** — 여정 머리 피치, 항공 잉크, 숙소 세이지, 교통 버터, 장소 미스트. 글자는 같은 계열의 `-ink`(다크는 바탕 `-dark` + 밝은 글자). 다음 일정만 흰 바탕에 레드 테두리, 비어 있는 "추가" 타일은 흰색. 종류는 색만이 아니라 아이콘과 라벨로도 구분합니다.
+
 ### 4.3 타이포그래피 규칙 (Typography Specs)
 - **폰트 패밀리**:
   - 기본 본문: `Inter, Noto Sans KR, -apple-system, sans-serif` (Tailwind `font-sans`는 Satoshi → Inter → Noto Sans KR 순)
@@ -480,7 +482,13 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 - **플레이로그 · 지도**: 플레이로그가 모바일 하단 시트에 가리던 위치를 올리고 빨간 재생 원 알약으로 새로 디자인. 지도 핀 · 장소 · 포켓 태그를 알약으로, 지도 허브 모달 · 카드를 Swiss Soft 표면으로.
 - **사진 · 매거진**: 여정 PHOTO 탭을 없앰(탭은 BOARD · TIME · FLIGHT · STAY · TRANS). 사진은 매거진에서 탭하면 전체보기, 상단 버튼으로 추가, 직접 올린 사진은 삭제. 타임라인 사진 썸네일도 바로 전체보기. 매거진 허브(내비게이션 항목 · 화면)를 없애고 Trip 허브에 `발행됨` 필터를 둠(옛 `/magazine` 주소는 Trip으로). 지도의 사진 위치 핀은 더 이상 나오지 않음.
 - **터미널**: 탭은 카운터 / 보관. 카운터는 활성 티켓 한 장, 보관은 작성 중 · 발권 완료 · 탑승 예정. 보관 티켓은 "카운터로" 올리거나 삭제, 새 티켓은 카운터의 기존 티켓을 보관으로 옮기는 확인 후. 티켓 문서 `users/{uid}/departure/tickets`에 `activeId`(없으면 가장 최근 티켓).
-- **일러스트 전면 교체**: 첨부 시트(`assets/art-sheet.webp`)를 트레이싱한 벡터 50컷(`public/art`, 쓰는 컷만). `scripts/art/build.py`가 시트를 컷별로 잘라 부드럽게 벡터화하고, 눈 · 코 · 입은 트레이싱과 무관하게 모든 얼굴을 찾아 동그란 점 눈(한쪽이 빠지면 맞은편에 복원) · 점 코 · 짧은 곡선 입(없으면 기본 미소)으로 다시 그림. 컷 하나를 고해상도로 바꾸려면 `assets/art-override/{id}.png`를 넣고 다시 빌드(`scripts/art/README.md`). 이미 저장된 옛 도식 커버(데이터 주소)는 `getEffectiveImageUrl`이 14종 지문으로 알아보고 같은 종류의 새 타일로 보여 줌(저장 데이터는 그대로). 선 · 종이 면 · 포인트 노랑 · 검정 채움 네 레이어로 나뉘어 다크 모드(`public/art/dark`)는 선이 밝아지고 머리는 검정으로 남음. 컴포넌트 `art/Art`(두 테마 이미지를 `dark:` 클래스로 전환), 허브 색 바탕 타일은 종류별 한 색(`public/art/tile`). 빈 상태(여정 · 포켓 · 검색) · 첫 여행 히어로(도시별 장면이 차례로) · 터미널 창(날씨 파티클 유지) · 새 여행 도시 · 템플릿 · 일정 썸네일 · 보드 머리 타일 · 지도 위 걷는 표시 · 인트로(터미널 → 도시 → 바다 장면)에 적용. 옛 캔버스 캐릭터(`travelerRig`), 로비 씬, 빈 상태 · 첫 여행 캔버스 장면, `walker.png`, 손으로 그린 `placeArt` 도식은 삭제. 장면 id 목록은 `src/art/catalog.ts`(자동 생성).
+- **일러스트 전면 교체 (1차, 대체됨)**: 첨부 시트(`assets/art-sheet.webp`)를 트레이싱한 벡터 50컷. 원본 컷이 약 132px라 선이 울퉁불퉁하고 얼굴이 뭉개져 디자인 개선 (3)에서 아래 풀컬러 곰 그림으로 다시 교체했습니다.
+
+### v1.3.7 디자인 개선 (3)
+- **일러스트 전면 교체**: `assets/illust`의 풀컬러 곰 그림 48컷(768×1376 JPG)으로 교체. `scripts/art/build.py`가 컷마다 글자 캡션을 잘라 내고(`CAPTION_FROM`), 흰 바탕에 선 그림은 바탕을 투명하게(갇힌 흰 면은 `HOLES`), 방 · 수영장처럼 화면을 가득 채우는 11컷은 곰 주변 창으로 잘라 둥근 카드로(`CARDS`) 만든다. 결과는 `public/art/{id}.webp`(라이트 · 다크 공용, `public/art/dark` 폐지) · `public/art/tile/{id}-{tint}.svg`(허브 색 바탕 정사각 타일, webp를 담은 SVG라 커버로 저장된 옛 경로가 그대로 유효) · `src/art/catalog.ts`(자동 생성). 그림이 없는 `landmark-london` · `landmark-japan`은 카탈로그에서 빼고 도쿄 장면은 `landmark-japan-torii`로, 옛 타일 경로 3개(`landmark-japan-{mist,peach}` · `landmark-london-mist`)는 `ALIAS_TILES`로 비슷한 장면에 이음. `outdoor-bistro` · `snack-break`는 `Teal_bear_*` 파일을 씀. 옛 트레이싱 도구(`trace.py` · `lib.py` · `cells.*`)와 `assets/art-sheet.webp`는 삭제. `art/Art`는 이미지 한 장(`object-contain`), 인트로의 걷는 장면은 가로세로 비율을 지켜 그림, 지도 위 걷는 표시는 `backpacking.webp`. 컷 추가 · 교체 방법은 `scripts/art/README.md`.
+- **카드 열기 방식**: 카드 옵션 시트의 보드 | 매거진 토글은 더 이상 바로 열지 않고 그 여정의 열기 방식만 저장한다(`prefs.journeyOpenBy`, 여정 id → `board` | `magazine`, 기기 캐시 `tgl_journey_open_by`, `utils/journeyOpen`). 홈 · 여정 허브 카드를 누르면 `openJourneyFromCard`가 저장된 방식대로 연다(보드 = 여정의 BOARD 탭, 매거진 = 매거진 읽기). 정한 적 없으면 발행된 여정은 매거진, 아니면 보드. 계획(Plan)은 보드 고정. 옛 `prefs.journeyOpen`(record | magazine)은 쓰지 않음.
+- **보드 타일 색**: 숙소 세이지, 교통 버터를 더해 여정 머리 피치 · 항공 잉크 · 숙소 세이지 · 교통 버터 · 장소 미스트(다음 일정은 흰 바탕 + 레드 테두리). 4.2 참조.
+- **보드 이미지 공유**: `html2canvas`(화면 전체를 최대 3배로 복제해 멈추고, 글자 줄바꿈이 달라져 겹침 · 잘림 발생)를 버리고 `board/boardImage`가 보드 데이터로 캔버스(1080px 너비)에 직접 그림. 글자는 쓰는 폰트로 줄 수를 재서 타일 높이를 정해 겹침 · 잘림이 없고, 생성은 1초 안팎. 라이트 · 다크는 화면 테마를 따르고, 머리에 여정 이름 · 날짜와 아래 서명이 들어감. 화면과 이미지가 같은 계산(`boardStatus` · `transitEnds` · `placesPerDay`)을 씀. 이미지 안에는 복사 칩 같은 조작 요소와 비어 있는 "추가" 타일은 그리지 않음.
 
 ### v1.3.6 (2026.09.30)
 - **진행 현황 (다른 PC에서 이어가기, 2026.09.30 기준)**

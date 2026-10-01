@@ -1,15 +1,14 @@
 import React from 'react';
 import type { ArtId } from './catalog';
 
-// A scene from the traveler sheet (public/art, traced from assets/art-sheet.webp). Two files, one
-// per theme: lines turn light and the hair stays black in the dark, so it follows the app's own
-// light / dark switch (the `dark` class) and not just the system setting.
+// A scene of the bear (public/art, built from assets/illust by scripts/art/build.py). The pictures are
+// full colour and stand on a transparent ground, so one file serves the light and the dark theme.
 
-export const artSrc = (id: ArtId, dark = false) => `/art/${dark ? 'dark/' : ''}${id}.svg`;
+export const artSrc = (id: ArtId) => `/art/${id}.webp`;
 
 interface ArtProps {
   id: ArtId;
-  /** Applied to both theme images: size it with `h-` or `w-` (the scene is square) */
+  /** Size it with `h-` or `w-`; scenes are portrait or square, so the other side follows */
   className?: string;
   /** Empty for decoration; a short description when the scene carries meaning */
   alt?: string;
@@ -17,11 +16,14 @@ interface ArtProps {
 }
 
 export function Art({ id, className = '', alt = '', eager }: ArtProps) {
-  const common = { loading: eager ? 'eager' : 'lazy', decoding: 'async', draggable: false } as const;
   return (
-    <>
-      <img src={artSrc(id)} alt={alt} {...common} className={`dark:hidden select-none ${className}`} />
-      <img src={artSrc(id, true)} alt="" aria-hidden {...common} className={`hidden dark:block select-none ${className}`} />
-    </>
+    <img
+      src={artSrc(id)}
+      alt={alt}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      draggable={false}
+      className={`select-none object-contain ${className}`}
+    />
   );
 }

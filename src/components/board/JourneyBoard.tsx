@@ -10,14 +10,15 @@ import { useBackToClose } from '../../utils/overlayHistory';
 import { notify } from '../../utils/feedback';
 import { kindArtUrl, placeKind } from '../../utils/placeArt';
 import { mapSearchUrl } from '../../utils/mapLinks';
-import { buildBoard, md, openJourneyBoard, type BoardEntry } from './boardData';
+import { boardPlaces, boardStatus, buildBoard, md, openJourneyBoard, placesPerDay, transitEnds, type BoardEntry } from './boardData';
 
 // Journey board: a journey's flights, stays, transport and places on one screen, as long and
 // short tiles. Made for the airport counter, the hotel desk and the station: the codes people
 // ask for are large, a tap copies them, and a tile opens its full details. It is the first tab of
 // a journey (embedded) and also opens full screen from home and the card menu.
-// Colour follows spec 4.2: the head tile wears the journey tint (peach), flights are ink
-// tickets, places are mist, and only the next stop is red. Kinds are told apart by icon and label.
+// Colour follows spec 4.2: the head tile wears the journey tint (peach), flights are ink tickets,
+// stays are sage, transport is butter, places are mist, and only the next stop is red. Kinds are
+// also told apart by icon and label.
 
 type Detail =
   | { kind: 'flight'; item: FlightItem }
@@ -107,31 +108,23 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
   const [detail, setDetail] = useState<Detail | null>(null);
   const [sharing, setSharing] = useState(false);
   const [wrapRef, width] = useWidth<HTMLDivElement>();
-  const captureRef = useRef<HTMLDivElement>(null);
   const cols = width >= 720 ? 4 : 2;
   // Only a journey still ahead or under way dims what is behind; a finished one shows all alike
   const dimPast = b.phase !== 'past';
 
-  const place = (trip.locationStr || '').split(',').map(s => s.trim()).filter(Boolean);
-  const status =
-    b.phase === 'live' ? `DAY ${b.day}/${b.totalDays}` :
-    b.phase === 'upcoming' ? (b.daysLeft === 0 ? 'D-DAY' : b.daysLeft > 0 ? `D-${b.daysLeft}` : '계획') :
-    '다녀온 여행';
+  const place = boardPlaces(trip);
+  const status = boardStatus(b);
   const [outbound, ...otherFlights] = b.flights;
   const art = useMemo(() => kindArtUrl(placeKind(trip.tags || [], trip.locationStr || trip.title), String(trip.id)), [trip.id, trip.tags, trip.locationStr, trip.title]);
 
   // Places per day, for the little bars on the places tile
-  const perDay = useMemo(() => {
-    const counts = new Map<string, number>();
-    b.places.forEach(p => counts.set(p.dayKey, (counts.get(p.dayKey) || 0) + 1));
-    return Array.from(counts.entries()).sort((x, y) => x[0].localeCompare(y[0])).map(([, n]) => n).slice(0, 14);
-  }, [b.places]);
+  const perDay = useMemo(() => placesPerDay(b), [b]);
   const maxDay = Math.max(1, ...perDay);
 
   // Short tiles fill the grid in pairs; an odd last one on two columns spans the row
   const singles: React.ReactNode[] = [];
   b.stays.forEach(s => singles.push(
-    <Tile key={`s${s.id}`} className="bg-surface dark:bg-surface-dark" dim={dimPast && s.at.past} label={`숙소 ${s.title}`} onOpen={() => setDetail({ kind: 'stay', item: s })}>
+    <Tile key={`s${s.id}`} className="bg-sage text-sage-ink dark:bg-sage-dark dark:text-sage" dim={dimPast && s.at.past} label={`숙소 ${s.title}`} onOpen={() => setDetail({ kind: 'stay', item: s })}>
       <span className={kicker}><BedDouble className="w-3.5 h-3.5" aria-hidden />숙소</span>
       <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep [overflow-wrap:anywhere]">{s.title}</span>
       <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums break-keep">{s.dateRange}</span>
@@ -161,10 +154,9 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
   );
   b.transits.forEach(t => {
     const Icon = transitIcon(t);
-    const from = t.departPlace || t.route?.split(/→|->|-|~/)[0]?.trim();
-    const to = t.arrivePlace || t.route?.split(/→|->|-|~/)[1]?.trim();
+    const { from, to } = transitEnds(t);
     singles.push(
-      <Tile key={`t${t.id}`} className="bg-surface dark:bg-surface-dark" dim={dimPast && t.at.past} label={`교통 ${t.title}`} onOpen={() => setDetail({ kind: 'transit', item: t })}>
+      <Tile key={`t${t.id}`} className="bg-butter text-butter-ink dark:bg-butter-dark dark:text-butter" dim={dimPast && t.at.past} label={`교통 ${t.title}`} onOpen={() => setDetail({ kind: 'transit', item: t })}>
         <span className={kicker}><Icon className="w-3.5 h-3.5" aria-hidden />{t.ticketType || '교통'}</span>
         <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep [overflow-wrap:anywhere]">{t.title || t.route}</span>
         {(from || to) && (
@@ -187,20 +179,16 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
   ));
   const oddLast = cols === 2 && singles.length % 2 === 1;
 
-  // One PNG of the whole board: the phone's share sheet when it can take files, else a download
+  // One PNG of the whole board: drawn straight from the board's data (see boardImage), then the phone's
+  // share sheet when it can take files, else a download
   const shareImage = async () => {
-    const el = captureRef.current;
-    if (!el || sharing) return;
+    if (sharing) return;
     setSharing(true);
     try {
-      const { default: html2canvas } = await import('html2canvas');
-      const bg = getComputedStyle(document.body).backgroundColor || '#F6F4EF';
-      const canvas = await html2canvas(el, { backgroundColor: bg, scale: Math.min(2, window.devicePixelRatio || 1) * 1.5, useCORS: true, logging: false,
-        // The picture carries the journey's name and a small signature that the screen leaves out
-        onclone: (doc) => { doc.querySelectorAll('[data-capture-only]').forEach(n => n.classList.remove('hidden')); },
-      });
-      const blob: Blob | null = await new Promise(r => canvas.toBlob(r, 'image/png'));
-      if (!blob) throw new Error('no image');
+      // Let the spinner paint before the drawing starts
+      await new Promise(r => requestAnimationFrame(() => r(null)));
+      const { renderBoardImage } = await import('./boardImage');
+      const blob = await renderBoardImage(b, { dark: document.documentElement.classList.contains('dark'), dimPast, art, title: trip.title, date: trip.date });
       const name = `${(trip.title || 'board').replace(/[\\/:*?"<>|]/g, '').slice(0, 40)}-board.png`;
       const file = new File([blob], name, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
@@ -224,7 +212,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
 
   return (
     <div ref={wrapRef} className="flex flex-col gap-2.5 min-w-0">
-      <div className="flex items-center justify-end gap-2" data-html2canvas-ignore>
+      <div className="flex items-center justify-end gap-2">
         {embedded && (
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => openJourneyBoard(trip.id)}>
             <Maximize2 className="w-3.5 h-3.5" aria-hidden />전체 화면
@@ -236,11 +224,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
         </button>
       </div>
 
-      <div ref={captureRef} className="flex flex-col gap-2.5">
-        <div className="hidden flex flex-col gap-0.5 px-1 pb-1" data-capture-only>
-          <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-black/55 dark:text-white/55">Board · {trip.date}</span>
-          <span className="text-[24px] font-extrabold tracking-[-0.03em] leading-tight break-keep">{trip.title}</span>
-        </div>
+      <div className="flex flex-col gap-2.5">
         <div className={`grid gap-2.5 [grid-auto-flow:dense] ${cols === 4 ? 'grid-cols-4' : 'grid-cols-2'}`}>
           {/* Journey: when, where, how much is ready, with the place drawn flat */}
           <Tile className="col-span-2 bg-peach text-peach-ink dark:bg-peach-dark dark:text-peach overflow-hidden" label="여정 일정" onOpen={() => onOpenItem('timeline', null)}>
@@ -315,7 +299,6 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
             </div>
           )}
         </div>
-        <span className="hidden font-mono text-micro text-black/45 dark:text-white/45 text-right" data-capture-only>Tripgon log · Board</span>
       </div>
 
       {detail && <BoardDetail detail={detail} onClose={() => setDetail(null)} onOpenItem={(tab, id) => { setDetail(null); onOpenItem(tab, id); }} />}

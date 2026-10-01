@@ -112,6 +112,29 @@ export function buildBoard(
   };
 }
 
+/** The head tile's status: where the journey stands */
+export function boardStatus(b: BoardModel): string {
+  if (b.phase === 'live') return `DAY ${b.day}/${b.totalDays}`;
+  if (b.phase === 'upcoming') return b.daysLeft === 0 ? 'D-DAY' : b.daysLeft > 0 ? `D-${b.daysLeft}` : '계획';
+  return '다녀온 여행';
+}
+
+/** Up to three places of the journey's location line */
+export const boardPlaces = (trip: Trip | Plan) => (trip.locationStr || '').split(',').map(s => s.trim()).filter(Boolean);
+
+/** Where a transport booking leaves from and arrives at: the named places, else the two halves of its route */
+export function transitEnds(t: TransitItem): { from?: string; to?: string } {
+  const parts = t.route?.split(/→|->|-|~/);
+  return { from: t.departPlace || parts?.[0]?.trim(), to: t.arrivePlace || parts?.[1]?.trim() };
+}
+
+/** Places per day (up to 14 days), for the little bars on the places tile */
+export function placesPerDay(b: BoardModel): number[] {
+  const counts = new Map<string, number>();
+  b.places.forEach(p => counts.set(p.dayKey, (counts.get(p.dayKey) || 0) + 1));
+  return Array.from(counts.entries()).sort((x, y) => x[0].localeCompare(y[0])).map(([, n]) => n).slice(0, 14);
+}
+
 /** The journey worth a board right now: the one under way, else the next to leave (null when none) */
 export function boardJourney(trips: Array<Trip | Plan>): Trip | Plan | null {
   const now = today0();

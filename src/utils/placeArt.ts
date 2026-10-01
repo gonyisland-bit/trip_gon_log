@@ -1,5 +1,5 @@
 // Place art (v1.3.8): the thumbnail and cover of a place, a template or a plan item is one scene
-// from the traveler sheet (public/art, drawn from assets/art-sheet.webp), on its hub tint.
+// of the bear (public/art, built from assets/illust by scripts/art/build.py), on its hub tint.
 // Each kind has a few scenes and `seed` picks one, so cities of one kind still differ.
 import { KIND_ART, KIND_TINT } from '../art/catalog';
 

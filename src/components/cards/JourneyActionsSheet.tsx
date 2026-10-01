@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { BookOpen, Check, Clapperboard, ImagePlus, LayoutGrid, Loader2, Share2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
 import { openJourneyBoard } from '../board/boardData';
+import { getJourneyOpenMode, setJourneyOpenMode, type JourneyOpenMode } from '../../utils/journeyOpen';
 import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Trip } from '../../types';
@@ -32,8 +33,6 @@ interface Props {
   onEdit: () => void;
   onDelete: () => void;
   onTogglePin: () => void;
-  /** Opens the journey on its record or its magazine */
-  onOpenAs: (view: 'record' | 'magazine') => void;
 }
 
 export function JourneyActionsSheet(props: Props) {
@@ -51,8 +50,9 @@ const pick = (on: boolean) => `h-12 px-3 inline-flex items-center justify-center
   on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.03] dark:hover:bg-white/[0.06]'
 }`;
 
-function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, onOpenAs }: Props) {
+function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin }: Props) {
   const close = useSheetClose();
+  const [openMode, setOpenMode] = useState<JourneyOpenMode>(() => getJourneyOpenMode(trip));
   const isOwner = !trip.ownerId || trip.ownerId === currentUid();
   const canEdit = isOwner || Boolean(trip.editors?.includes(currentUid() || ''));
   // Which cover panel is open: the card's, or the home hero's own photo or video
@@ -114,17 +114,17 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
       )}
 
       <div className="flex flex-col gap-2">
-        {/* How to open: tapping a side opens the journey that way (a published one rests on its magazine) */}
+        {/* How the card opens: the choice is kept for this journey, and tapping the card shows it */}
         {isPlan ? (
           <button type="button" className={row} onClick={() => { close(); openJourneyBoard(trip.id); }}>
             <LayoutGrid className="w-[18px] h-[18px] shrink-0" aria-hidden />보드로 보기
           </button>
         ) : (
-          <Segment<'board' | 'magazine'>
+          <Segment<JourneyOpenMode>
             block
             ariaLabel="열기 방식"
-            value={trip.publishedAt ? 'magazine' : 'board'}
-            onChange={(v) => { close(); if (v === 'board') openJourneyBoard(trip.id); else onOpenAs('magazine'); }}
+            value={openMode}
+            onChange={(v) => { setOpenMode(v); setJourneyOpenMode(trip.id, v); }}
             options={[
               { value: 'board', label: '보드', icon: LayoutGrid },
               { value: 'magazine', label: '매거진', icon: BookOpen },

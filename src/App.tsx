@@ -720,7 +720,6 @@ function App() {
                 isPlan={Boolean(plan)}
                 photos={photos}
                 pinned={pinned}
-                onOpenAs={(view) => { setDetailIntent(view); navigateTo('detail', trip.id); }}
                 onClose={() => setActionsTripId(null)}
                 onEdit={() => setEditingTripId(trip.id)}
                 onDelete={() => handleDeleteJourney(trip.id)}

@@ -81,7 +81,7 @@ export class IntroStage {
         const img = new Image();
         img.onload = () => { this.art.set(id, img); resolve(); };
         img.onerror = () => resolve();
-        img.src = `/art/${id}.svg`;
+        img.src = `/art/${id}.webp`;
       })));
     }
     if (typeof document === 'undefined' || !document.fonts?.load) return;
@@ -247,7 +247,10 @@ export class IntroStage {
       const img = this.art.get(s.id);
       if (a <= 0 || !img || !img.naturalWidth) continue;
       ctx.globalAlpha = a;
-      ctx.drawImage(img, L.walkX - size / 2, L.gy - size * 0.93 + bob, size, size);
+      // The scenes are not square: fit the longer side to the box, feet on the ground line
+      const k = size / Math.max(img.naturalWidth, img.naturalHeight);
+      const w = img.naturalWidth * k, h = img.naturalHeight * k;
+      ctx.drawImage(img, L.walkX - w / 2, L.gy - h * 0.97 + bob, w, h);
     }
     ctx.globalAlpha = 1;
   }

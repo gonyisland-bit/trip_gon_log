@@ -14,8 +14,8 @@ export interface UserPrefs {
   nightMode?: 'auto' | 'light' | 'dark';
   /** Journey map tiles (see mapTiles.ts) */
   mapStyle?: 'normal' | 'terrain' | 'simple';
-  /** How a published journey opens from its card (v1.3.6): its magazine first, or always the record */
-  journeyOpen?: JourneyOpen;
+  /** How each journey opens from its card, by journey id (see journeyOpen.ts) */
+  journeyOpenBy?: Record<string, 'board' | 'magazine'>;
   /** Up to four more cities next to weatherCity (see myCities.ts), by English name */
   favoriteCities?: string[];
   /** Page backdrop template id (see backdrop.ts) */
@@ -32,19 +32,6 @@ export interface UserPrefs {
   welcomeSeen?: number;
   /** Tapping the logo plays the splash (see logoSplash.ts) */
   logoSplash?: boolean;
-}
-
-export type JourneyOpen = 'magazine' | 'record';
-const JOURNEY_OPEN_KEY = 'tgl_journey_open';
-
-export function readJourneyOpen(): JourneyOpen {
-  try { return localStorage.getItem(JOURNEY_OPEN_KEY) === 'record' ? 'record' : 'magazine'; } catch { return 'magazine'; }
-}
-
-/** Applies on this device and, with `save`, on the account */
-export function applyJourneyOpen(v: JourneyOpen, save = true) {
-  try { localStorage.setItem(JOURNEY_OPEN_KEY, v); } catch { /* cache only */ }
-  if (save) saveUserPref({ journeyOpen: v });
 }
 
 // Writes wait until this account's prefs have been read, so the cache never overwrites the cloud
