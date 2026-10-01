@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { prefersReducedMotion } from '../../motion';
 import { useBackToClose } from '../../utils/overlayHistory';
-import { Home as HomeIcon, Layers, List, Plane, RotateCcw, Sun, Tag, X } from 'lucide-react';
+import { Home as HomeIcon, List, Plane, RotateCcw, Settings2, Sun, Tag, X } from 'lucide-react';
 
 // Map layers (v1.3 P5-6): one panel for what the map shows and what each mark
 // means. A popover on desktop, a bottom sheet on phones. With day and night on,
@@ -33,8 +33,8 @@ const PinSwatch = ({ color }: { color: string }) => (
 
 function Switch({ on }: { on: boolean }) {
   return (
-    <span className={`relative w-8 h-[18px] shrink-0 border transition-colors ${on ? 'bg-black border-black dark:bg-white dark:border-white' : 'border-black/30 dark:border-white/30'}`}>
-      <span className={`absolute top-[2px] w-3 h-3 transition-[left,background-color] duration-base ease-emphasized ${on ? 'left-[16px] bg-white dark:bg-black' : 'left-[2px] bg-black/40 dark:bg-white/40'}`} />
+    <span className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${on ? 'bg-ink dark:bg-ink-dark' : 'bg-black/15 dark:bg-white/20'}`}>
+      <span className={`absolute top-[3px] w-[14px] h-[14px] rounded-full bg-white dark:bg-paper-dark shadow-sm transition-[left] duration-base ease-emphasized ${on ? 'left-[19px]' : 'left-[3px]'}`} />
     </span>
   );
 }
@@ -78,12 +78,13 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
         type="button"
         onClick={() => (open ? close() : setOpen(true))}
         aria-expanded={open}
-        aria-label="지도 레이어"
-        className={`tap-target h-8 sm:h-9 px-2.5 sm:px-3 flex items-center gap-1.5 border shadow-2xl backdrop-blur-md transition-colors cursor-pointer ${
-          open ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'bg-surface/95 dark:bg-surface-dark/95 border-black/20 dark:border-white/20 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10'
+        aria-label="지도 표시 설정"
+        title="지도 표시 설정"
+        className={`tap-target h-8 sm:h-9 px-3 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-colors cursor-pointer ${
+          open ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'bg-surface/95 dark:bg-surface-dark/95 text-black dark:text-white hover:bg-surface dark:hover:bg-surface-dark'
         }`}
       >
-        <Layers className="w-3.5 h-3.5" />
+        <Settings2 className="w-3.5 h-3.5" />
         <span className="font-mono text-micro font-bold tabular-nums">{activeCount}</span>
         {offset !== 0 && <span className="font-mono text-micro font-bold text-amber-500">{offset > 0 ? `+${offset}` : offset}h</span>}
       </button>
@@ -94,14 +95,14 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
           <div className={`sm:hidden fixed inset-0 z-[60] bg-black/30 ${closing ? 'tgl-sheet-backdrop-out' : 'tgl-sheet-backdrop-in'}`} onClick={close} />
           <div
             role="dialog"
-            aria-label="지도 레이어"
-            className={`${closing ? 'tgl-sheet-out' : 'tgl-sheet-in'} z-[61] max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-surface dark:bg-surface-dark text-black dark:text-white border-t sm:border border-black/20 dark:border-white/20 shadow-[0_-12px_40px_rgba(0,0,0,0.25)] sm:shadow-2xl`}
+            aria-label="지도 표시 설정"
+            className={`${closing ? 'tgl-sheet-out' : 'tgl-sheet-in'} z-[61] overflow-hidden max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-t-sheet sm:absolute sm:left-0 sm:top-full sm:mt-2 sm:w-80 sm:max-w-[calc(100vw-2rem)] sm:rounded-card bg-surface dark:bg-surface-dark text-black dark:text-white shadow-[0_-12px_40px_rgba(0,0,0,0.18)] sm:shadow-xl`}
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
-            <div className="sm:hidden w-10 h-1 bg-black/20 dark:bg-white/20 mx-auto mt-2" />
+            <div className="sm:hidden w-10 h-1 rounded-full bg-black/20 dark:bg-white/20 mx-auto mt-2" />
             <div className="flex items-center justify-between px-4 pt-3 pb-2">
-              <span className="font-mono text-micro font-bold uppercase tracking-widest text-black/60 dark:text-white/60">Layers</span>
-              <button type="button" onClick={close} className="tap-target w-7 h-7 grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer" aria-label="닫기">
+              <span className="font-mono text-micro font-bold uppercase tracking-widest text-black/60 dark:text-white/60">Map</span>
+              <button type="button" onClick={close} className="tap-target w-8 h-8 rounded-full grid place-items-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer" aria-label="닫기">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
-import { ArrowUpRight, MoreHorizontal } from 'lucide-react';
+import { ArrowUpRight, CalendarClock, MoreHorizontal } from 'lucide-react';
 import { useLongPress } from './useLongPress';
 import { SharedMark, sharedOwner } from './SharedMark';
 import { Trip } from '../../types';
@@ -91,11 +91,9 @@ export function JourneyCard({
       {/* Photo with the year */}
       <div
         ref={mediaRef}
-        className={`tgl-journey-media relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden rounded-card bg-black/5 dark:bg-white/5 ${
-          isPlan ? 'outline outline-2 outline-dashed outline-offset-2 outline-amber-500' : ''
-        } ${isActive ? 'ring-2 ring-red-600/60 ring-offset-2 dark:ring-offset-[#11110F]' : ''}`}
+        className={`tgl-journey-media relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden rounded-card bg-black/5 dark:bg-white/5 ${isActive ? 'ring-2 ring-red-600/60 ring-offset-2 dark:ring-offset-[#11110F]' : ''}`}
       >
-        {/* Only the photo goes grey, so the plan outline and badge keep their amber */}
+        {/* Plans: the photo is grey and regains colour as departure nears */}
         <div
           className="absolute inset-0"
           style={isPlan ? { filter: `grayscale(${planGrayscale(planInfo.daysLeft, planInfo.isUpcoming)})` } : undefined}
@@ -118,8 +116,8 @@ export function JourneyCard({
         {(() => {
           const owner = sharedOwner(trip);
           return owner ? (
-            <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 pointer-events-none">
-              <SharedMark owner={owner} tone="photo" />
+            <div className={`absolute top-2 sm:top-3 pointer-events-none ${onMenu ? 'right-12 sm:right-[3.25rem]' : 'right-2 sm:right-3'}`}>
+              <SharedMark owner={owner} tone="photo" compact />
             </div>
           ) : null;
         })()}
@@ -136,12 +134,7 @@ export function JourneyCard({
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
             <span>DAY {live.currentDay}/{live.totalDays}</span>
           </div>
-        ) : isPlan ? (
-          <div className="absolute left-3 bottom-3 sm:left-4 sm:bottom-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500 text-black font-mono text-micro font-bold tracking-wider pointer-events-none">
-            <span>PLAN</span>
-            {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && <span className="tabular-nums">· {planInfo.dDayLabel}</span>}
-          </div>
-        ) : trip.publishedAt ? (
+        ) : isPlan ? null : trip.publishedAt ? (
           // Published as a magazine: the card opens on it
           <div className="absolute left-3 bottom-3 sm:left-4 sm:bottom-4 px-2.5 py-1 rounded-full bg-black/35 font-mono text-micro font-bold tracking-wider text-white pointer-events-none">
             MAGAZINE
@@ -155,14 +148,21 @@ export function JourneyCard({
       </div>
 
       {/* Period */}
-      <div className="flex items-baseline justify-between gap-2 font-mono text-meta tabular-nums">
-        <span className="font-semibold text-black dark:text-white truncate">{dateRange || trip.date}</span>
-        {rightMeta && (
-          <span className={`shrink-0 ${isPlan ? 'font-semibold text-amber-600 dark:text-amber-500' : 'text-black/60 dark:text-white/60'}`}>
-            {rightMeta}
+      {isPlan ? (
+        // A plan reads from its butter band: dates and the days left, no outline on the photo
+        <div className="flex items-center justify-between gap-2 h-8 px-3 rounded-full bg-butter text-butter-ink dark:bg-butter-dark dark:text-butter font-mono text-meta tabular-nums">
+          <span className="font-semibold truncate">{dateRange || trip.date}</span>
+          <span className="shrink-0 inline-flex items-center gap-1 font-bold">
+            <CalendarClock className="w-3.5 h-3.5" aria-hidden />
+            {planInfo.dDayLabel !== 'PLAN' ? planInfo.dDayLabel : '계획'}
           </span>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex items-baseline justify-between gap-2 font-mono text-meta tabular-nums">
+          <span className="font-semibold text-black dark:text-white truncate">{dateRange || trip.date}</span>
+          {rightMeta && <span className="shrink-0 text-black/60 dark:text-white/60">{rightMeta}</span>}
+        </div>
+      )}
 
       {/* Title and ment */}
       <div className="flex flex-col gap-1 -mt-1">

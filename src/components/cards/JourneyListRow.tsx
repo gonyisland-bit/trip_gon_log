@@ -34,7 +34,7 @@ interface JourneyListRowProps {
 
 const BADGE: Record<JourneyRowBadge['kind'], string> = {
   live: 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark',
-  plan: 'bg-amber-500 text-black',
+  plan: 'bg-butter text-butter-ink dark:bg-butter-dark dark:text-butter',
   new: 'bg-red-600 text-white dark:bg-red-500',
   editing: 'bg-amber-500 text-black',
 };
@@ -53,10 +53,10 @@ export function JourneyListRow({ img, title, year, month, meta, badge, dDay, act
         active ? 'ring-[1.5px] ring-inset ring-red-600 dark:ring-red-500' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.04]'
       }`}
     >
-      <span className={`relative w-20 sm:w-28 aspect-[4/3] shrink-0 rounded-thumb overflow-hidden bg-black/[0.06] dark:bg-white/10 ${badge?.kind === 'plan' ? 'outline outline-[1.5px] outline-dashed outline-offset-2 outline-amber-500' : ''}`}>
+      <span className={`relative w-20 sm:w-28 aspect-[4/3] shrink-0 rounded-thumb overflow-hidden bg-black/[0.06] dark:bg-white/10`}>
         <img src={getEffectiveImageUrl(img)} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         {dDay && (
-          <span className="absolute left-1.5 bottom-1.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-black font-mono text-micro font-bold leading-none tabular-nums">
+          <span className="absolute left-1.5 bottom-1.5 px-1.5 py-0.5 rounded-full bg-butter text-butter-ink font-mono text-micro font-bold leading-none tabular-nums">
             {dDay}
           </span>
         )}

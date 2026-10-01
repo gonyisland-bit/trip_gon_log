@@ -35,7 +35,7 @@ function MapStylePicker({ value, onChange }: { value: HubMapStyle; onChange: (v:
         aria-expanded={open}
         aria-label="지도 스타일"
         title="지도 스타일"
-        className={`h-8 sm:h-9 px-3 rounded-full shadow-2xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${open ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'bg-surface/95 dark:bg-surface-dark/95 border border-black/20 dark:border-white/20 text-black dark:text-white'}`}
+        className={`h-8 sm:h-9 px-3 rounded-full shadow-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${open ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'bg-surface/95 dark:bg-surface-dark/95 text-black dark:text-white'}`}
       >
         <Layers className="w-3.5 h-3.5" aria-hidden />
         <span className="hidden sm:inline">{HUB_MAP_STYLE_LABEL[value]}</span>
@@ -194,7 +194,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
         {/* Country & Continent Search Bar with Integrated Wishlist Star Button (Expandable Swiss Minimal) */}
         <div
           ref={searchContainerRef}
-          className="relative flex items-center bg-surface/95 dark:bg-surface-dark/95 border border-black/20 dark:border-white/20 shadow-2xl z-30 shrink min-w-0 transition duration-200"
+          className="relative flex items-center h-8 sm:h-9 rounded-full bg-surface/95 dark:bg-surface-dark/95 shadow-lg z-30 shrink min-w-0 transition duration-200"
         >
           {/* Collapsed Search Icon Trigger (Visible when search is closed & empty) */}
           {!isSearchExpanded && !searchQuery ? (
@@ -205,14 +205,14 @@ export function MapTopBar({ s }: { s: MapHubState }) {
                 setIsSearchExpanded(true);
                 setTimeout(() => searchInputRef.current?.focus(), 60);
               }}
-              className="tap-target p-2 sm:px-2.5 sm:py-2 flex items-center justify-center text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+              className="tap-target h-full pl-3 pr-2 rounded-l-full flex items-center justify-center text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
               title="검색 (클릭하여 열기)"
             >
               <Search className="w-3.5 h-3.5" />
             </button>
           ) : (
             /* Expanded Search Input Field */
-            <div className="flex-1 w-[calc(100vw-150px)] max-w-[240px] xs:max-w-[280px] sm:max-w-none sm:w-72 flex items-center px-2 py-1.5 sm:px-3 sm:py-2 animate-card-entrance">
+            <div className="flex-1 w-[calc(100vw-150px)] max-w-[240px] xs:max-w-[280px] sm:max-w-none sm:w-72 flex items-center pl-3 pr-2 animate-card-entrance">
               <Search className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0 mr-1.5 sm:mr-2" />
               <input
                 ref={searchInputRef}
@@ -288,7 +288,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
           <button
             type="button"
             onClick={() => setIsWishlistModalOpen(true)}
-            className={`p-2 sm:px-3 sm:py-2 border-l border-black/15 dark:border-white/15 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 ${
+            className={`h-full pl-2 pr-3 rounded-r-full border-l border-black/10 dark:border-white/10 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 ${
               favoriteCountries.length > 0
                 ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
                 : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -313,7 +313,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
               />
               <div 
                 ref={searchDropdownRef}
-                className="absolute top-full left-0 mt-1 w-[calc(100vw-24px)] max-w-sm sm:w-full sm:max-w-none bg-surface/95 dark:bg-surface-dark/95 border border-black/15 dark:border-white/15 max-h-60 overflow-y-auto z-[600] shadow-2xl divide-y divide-black/5 dark:divide-white/5"
+                className="absolute top-full left-0 mt-2 w-[calc(100vw-24px)] max-w-sm sm:w-full sm:min-w-[18rem] sm:max-w-none rounded-card bg-surface dark:bg-surface-dark max-h-60 overflow-y-auto z-[600] shadow-xl divide-y divide-black/5 dark:divide-white/5"
               >
                 {filteredCountries.map((c, idx) => {
                   const isSelected = searchSelectedIndex === idx;
@@ -348,7 +348,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
                         </div>
                         {/* Row 2: Continent Pill + Representative Cities */}
                         <div className="flex items-center gap-1.5 mt-0.5 text-micro font-mono text-black/60 dark:text-white/60 truncate">
-                          <span className="px-1 py-0.2 text-micro font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
+                          <span className="px-1.5 rounded-full text-micro font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
                             {c.continentKo}
                           </span>
                           <span className="truncate">
@@ -385,7 +385,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
         <MapStylePicker value={mapTileStyle} onChange={(v) => { setMapTileStyle(v); applyHubMapStyle(v); }} />
 
         {/* Real-time Clock & Day/Night Shade Toggle Pill Widget (Native App Pill Style) */}
-        <div className="flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full border border-black/20 dark:border-white/20 bg-surface/95 dark:bg-surface-dark/95 shadow-2xl z-10 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0 transition">
+        <div className="flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full bg-surface/95 dark:bg-surface-dark/95 shadow-lg z-10 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0 transition">
           {/* Live Indicator Pulse Dot */}
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse shrink-0" />
           
