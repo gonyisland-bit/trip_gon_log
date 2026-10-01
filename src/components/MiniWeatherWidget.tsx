@@ -4,17 +4,11 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CityWeatherConfig } from '../types';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
-import { cachedCurrentLocation, CURRENT_LOCATION_EN, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
+import { cachedCurrentLocation, CURRENT_LOCATION_EN, saveUserPref } from '../utils/userPrefs';
+import { makeMain, openSettings, useMyCities } from '../utils/myCities';
 import { CurrentLocationRow } from './weather/CurrentLocationRow';
 import { useCitiesWeather } from './weather/useCitiesWeather';
 import { WeatherReading } from './weather/WeatherReading';
-
-const DEFAULT_CITIES: CityWeatherConfig[] = [
-  { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.9780, country: 'KR', timezone: 'Asia/Seoul' },
-  { name: '도쿄', nameEn: 'TOKYO', lat: 35.6762, lng: 139.6503, country: 'JP', timezone: 'Asia/Tokyo' },
-  { name: '파리', nameEn: 'PARIS', lat: 48.8566, lng: 2.3522, country: 'FR', timezone: 'Europe/Paris' },
-  { name: '런던', nameEn: 'LONDON', lat: 51.5074, lng: -0.1278, country: 'GB', timezone: 'Europe/London' },
-];
 
 interface MiniWeatherWidgetProps {
   className?: string;
@@ -24,66 +18,8 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 날씨 도시 목록 구독 (Firestore 표준 경로)
-  const [cities, setCities] = useState<CityWeatherConfig[]>(() => {
-    try {
-      const saved = localStorage.getItem('cached_calendar_weather_cities');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (_) {}
-    return DEFAULT_CITIES;
-  });
-
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        if (Array.isArray(data?.cities) && data.cities.length > 0) {
-          setCities(data.cities);
-          try {
-            localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
-          } catch (_) {}
-        }
-      }
-    }, (err) => {
-      console.warn("MiniWeatherWidget cities sync notice:", err);
-    });
-    return () => unsub();
-  }, []);
-
-  // 선택된 날씨 도시 (영속 유지)
-  const [selectedCity, setSelectedCity] = useState<CityWeatherConfig>(() => {
-    try {
-      const savedEn = localStorage.getItem('selected_weather_city_en');
-      if (savedEn === CURRENT_LOCATION_EN) { const here = cachedCurrentLocation(); if (here) return here; }
-      if (savedEn) {
-        const found = cities.find(c => c.nameEn.toUpperCase() === savedEn.toUpperCase());
-        if (found) return found;
-      }
-    } catch (_) {}
-    return cities[0] || DEFAULT_CITIES[0];
-  });
-
-  // 다른 컴포넌트(CalendarHub 등)에서 도시를 변경했을 때 동기화 수신
-  useEffect(() => {
-    const handleGlobalChange = (e: Event) => {
-      const customEvent = e as CustomEvent<CityWeatherConfig>;
-      if (customEvent.detail && customEvent.detail.nameEn) {
-        const matchingCity = cities.find(c => c.nameEn.toUpperCase() === customEvent.detail.nameEn.toUpperCase());
-        if (matchingCity) {
-          setSelectedCity(matchingCity);
-        } else {
-          setSelectedCity(customEvent.detail);
-        }
-      }
-    };
-    window.addEventListener('selectedWeatherCityChanged', handleGlobalChange);
-    return () => {
-      window.removeEventListener('selectedWeatherCityChanged', handleGlobalChange);
-    };
-  }, [cities]);
+  // This member's cities: the main one is the pill, the list is main plus favourites (myCities.ts)
+  const { main: selectedCity, list: cities } = useMyCities();
 
   // 날씨 배경 모션 토글 상태 및 동기화
   const [isBgEnabled, setIsBgEnabled] = useState<boolean>(() => {
@@ -166,9 +102,8 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
   }, [selectedCity]);
 
   const handleSelectCity = (city: CityWeatherConfig) => {
-    setSelectedCity(city);
     setIsOpen(false);
-    selectWeatherCity(city);
+    makeMain(city);
   };
 
   // Every row's weather, fetched on hover or open so the list shows it straight away
@@ -220,7 +155,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
               onLocated={handleSelectCity}
               trailing={here ? <WeatherReading data={cityNow[here.nameEn]} /> : undefined}
             />
-            {cities.map((city) => {
+            {cities.filter(c => c.nameEn !== CURRENT_LOCATION_EN).map((city) => {
               const isSelected = city.nameEn.toUpperCase() === selectedCity.nameEn.toUpperCase();
               return (
                 <button
@@ -245,6 +180,13 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
             })}
           </div>
 
+          <button
+            type="button"
+            onClick={() => { setIsOpen(false); openSettings('cities'); }}
+            className="w-full min-h-10 px-3 py-2 text-left text-sm font-semibold text-black/60 dark:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer"
+          >
+            도시 편집
+          </button>
           <div className="mt-1 px-3 pt-2 pb-1 border-t border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between gap-3">
             <span className="text-sm font-bold">배경 날씨 효과</span>
             <button

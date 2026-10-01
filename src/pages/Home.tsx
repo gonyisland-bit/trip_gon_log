@@ -23,6 +23,9 @@ import { JourneyPhaseStrip } from '../components/home/JourneyPhaseStrip';
 import { DepartureTeaser } from '../components/home/DepartureTeaser';
 import { FirstTripHero, type FirstTripPick } from '../components/home/FirstTripHero';
 import { EmptyScene } from '../components/scenes/EmptyScene';
+import { useMyCities } from '../utils/myCities';
+import { useHomeWidgets } from '../utils/homeWidgetPrefs';
+import { CURRENT_LOCATION_EN } from '../utils/userPrefs';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -831,86 +834,11 @@ export function HomePage({
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
   const [cardViewMode, setCardViewMode] = useState<'grid' | 'wide' | 'list'>(() => (localStorage.getItem('cardViewMode') as any) || 'grid');
 
-  const [widgetConfig, setWidgetConfig] = useState<HomeWidgetConfig>(() => {
-    try {
-      const cached = localStorage.getItem('cached_home_widget_config');
-      if (cached) return JSON.parse(cached);
-    } catch (_) {}
-    return {
-      showCalendarArchive: true,
-      showLiveWeather: true,
-      widgetOrder: 'calendar-first',
-      showExchangeRates: false,
-      showUpcomingDDay: false,
-      cities: []
-    };
-  });
+  // Which widgets this member turned on in Settings → 화면 (homeWidgetPrefs.ts)
+  const widgetConfig = useHomeWidgets();
 
-  useEffect(() => {
-    // Standard secure path under users/public/settings with fallback to app_settings
-    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'home_widgets'), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data() as HomeWidgetConfig;
-        setWidgetConfig(data);
-        try {
-          localStorage.setItem('cached_home_widget_config', JSON.stringify(data));
-        } catch (_) {}
-      } else {
-        // Fallback for backward compatibility
-        getDoc(doc(db, 'app_settings', 'home_widgets')).then((legacySnap) => {
-          if (legacySnap.exists()) {
-            const legacyData = legacySnap.data() as HomeWidgetConfig;
-            setWidgetConfig(legacyData);
-            try {
-              localStorage.setItem('cached_home_widget_config', JSON.stringify(legacyData));
-            } catch (_) {}
-          }
-        }).catch(() => {});
-      }
-    }, (err) => {
-      console.warn("Home widgets firestore listen notice:", err);
-    });
-    return () => unsub();
-  }, []);
-
-  const [calendarWeatherCities, setCalendarWeatherCities] = useState<CityWeatherConfig[]>(() => {
-    try {
-      const saved = localStorage.getItem('cached_calendar_weather_cities');
-      if (saved) return JSON.parse(saved);
-    } catch (_) {}
-    return [];
-  });
-
-  useEffect(() => {
-    // Standard secure path under users/public/settings with fallback to settings
-    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        if (Array.isArray(data?.cities)) {
-          setCalendarWeatherCities(data.cities);
-          try {
-            localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
-          } catch (_) {}
-        }
-      } else {
-        // Fallback for legacy path
-        getDoc(doc(db, 'settings', 'calendar_weather_cities')).then((legacySnap) => {
-          if (legacySnap.exists()) {
-            const data = legacySnap.data();
-            if (Array.isArray(data?.cities)) {
-              setCalendarWeatherCities(data.cities);
-              try {
-                localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
-              } catch (_) {}
-            }
-          }
-        }).catch(() => {});
-      }
-    }, (err) => {
-      console.warn("Calendar weather cities listen notice:", err);
-    });
-    return () => unsub();
-  }, []);
+  // The weather widget shows this member's cities (main first), not the operator's list
+  const { list: myCityList } = useMyCities();
 
   const handleSetCardViewMode = (mode: 'grid' | 'wide' | 'list') => {
     setCardViewMode(mode);
@@ -2134,7 +2062,7 @@ export function HomePage({
         <HomeWeatherWidget 
           trips={trips} 
           isAdmin={isAdmin}
-          customCities={Array.isArray(widgetConfig.cities) && widgetConfig.cities.length > 0 ? widgetConfig.cities : undefined}
+          customCities={myCityList.filter(c => c.nameEn !== CURRENT_LOCATION_EN)}
         />
       );
 

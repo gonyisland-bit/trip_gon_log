@@ -40,6 +40,8 @@ import { CURRENT_LOCATION_EN, applyJourneyOpen, cachedCurrentLocation, loadUserP
 import { applyMapStyle, isMapStyle } from '../utils/mapTiles';
 import { noteRecentJourney } from '../utils/recentJourneys';
 import { orderWithNewFirst } from '../utils/journeyOrderHelper';
+import { applyFavoritePrefs, findCity, readMainCity } from '../utils/myCities';
+import { setHomeWidgets } from '../utils/homeWidgetPrefs';
 
 export function useAppState() {
   const [initialNavState] = useState(() => getInitialNavigationState());
@@ -196,19 +198,8 @@ export function useAppState() {
   const [isEmailVerified, setIsEmailVerified] = useState<boolean>(() => Boolean(auth.currentUser?.emailVerified));
   
   // ── Global Weather Ambience State (All Hubs Realtime Sync) ──
-  const [globalWeatherCity, setGlobalWeatherCity] = useState<CityWeatherConfig | null>(() => {
-    try {
-      const savedEn = localStorage.getItem('selected_weather_city_en') || 'SEOUL';
-      if (savedEn === CURRENT_LOCATION_EN) { const here = cachedCurrentLocation(); if (here) return here; }
-      const cached = localStorage.getItem('cached_calendar_weather_cities');
-      if (cached) {
-        const parsed: CityWeatherConfig[] = JSON.parse(cached);
-        const found = parsed.find(c => c.nameEn.toUpperCase() === savedEn.toUpperCase());
-        if (found) return found;
-      }
-    } catch (_) {}
-    return { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.9780, country: 'KR', timezone: 'Asia/Seoul' };
-  });
+  // The main city of this member's cities (see myCities.ts)
+  const [globalWeatherCity, setGlobalWeatherCity] = useState<CityWeatherConfig | null>(readMainCity);
 
   const [globalWeatherData, setGlobalWeatherData] = useState<CityWeatherData | null>(null);
 
@@ -261,6 +252,7 @@ export function useAppState() {
         let bg = true;
         try { bg = localStorage.getItem('calendar_weather_bg_enabled') !== 'false'; } catch (_) {}
         saveUserPref({ weatherCity: localStorage.getItem('selected_weather_city_en') || 'SEOUL', weatherBg: bg, nightMode: (localStorage.getItem('nightModeSetting') as NightModeSetting) || 'auto' });
+        applyFavoritePrefs(prefs.favoriteCities);
         return;
       }
       if (prefs.nightMode) setNightModeSetting(prefs.nightMode);
@@ -278,15 +270,15 @@ export function useAppState() {
           locateMe().then(selectWeatherCity).catch(() => { if (here) selectWeatherCity(here); });
         } else if (here) selectWeatherCity(here);
       } else if (prefs.weatherCity) {
-        try {
-          const list: CityWeatherConfig[] = JSON.parse(localStorage.getItem('cached_calendar_weather_cities') || '[]');
-          const found = list.find(c => c.nameEn.toUpperCase() === prefs.weatherCity!.toUpperCase());
-          if (found) {
-            localStorage.setItem('selected_weather_city_en', found.nameEn);
-            window.dispatchEvent(new CustomEvent('selectedWeatherCityChanged', { detail: found }));
-          }
-        } catch (_) {}
+        // Any city of the world catalog, not only the operator's list
+        const found = findCity(prefs.weatherCity);
+        if (found) {
+          try { localStorage.setItem('selected_weather_city_en', found.nameEn); } catch (_) {}
+          window.dispatchEvent(new CustomEvent('selectedWeatherCityChanged', { detail: found }));
+        }
       }
+      applyFavoritePrefs(prefs.favoriteCities);
+      if (prefs.homeWidgets) setHomeWidgets(prefs.homeWidgets, false);
     });
   };
 

@@ -16,6 +16,10 @@ export interface UserPrefs {
   mapStyle?: 'normal' | 'terrain' | 'simple';
   /** How a published journey opens from its card (v1.3.6): its magazine first, or always the record */
   journeyOpen?: JourneyOpen;
+  /** Up to four more cities next to weatherCity (see myCities.ts), by English name */
+  favoriteCities?: string[];
+  /** Which home widgets show (see homeWidgetPrefs.ts) */
+  homeWidgets?: import('./homeWidgetPrefs').HomeWidgetPrefs;
 }
 
 export type JourneyOpen = 'magazine' | 'record';

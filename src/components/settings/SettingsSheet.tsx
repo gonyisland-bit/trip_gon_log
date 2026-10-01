@@ -12,14 +12,27 @@ import { confirmDialog } from '../../utils/feedback';
 import { FriendsSection } from '../friends/FriendsSection';
 import { NotificationSettings } from '../notifications/NotificationSettings';
 import { IosShortcutGuide } from '../pocket/IosShortcutGuide';
+import { MyCitiesEditor, WeatherBgSwitch } from './MyCitiesEditor';
+import { HomeWidgetPrefs } from './HomeWidgetPrefs';
 import type { PersonCard } from '../../utils/friends';
 
-// Settings for every member (v1.3.6 4-d): account, friends (5-a), notifications (6-b), display, storage and trash.
+// Settings for every member (v1.3.6), in five tabs so no tab scrolls long:
+//   프로필 account · 친구 friends · 도시 my cities and weather · 화면 display, home widgets, slideshow,
+//   notifications · 데이터 storage, trash, terms. The last tab opened is remembered on this device.
 // Journeys are managed from their cards; the operator's tools live in the manage hub.
 
 import { OPEN_PROFILE_EDIT } from '../../app/quickActions';
 type NightMode = 'auto' | 'light' | 'dark';
 type ReelFit = 'fit' | 'fill';
+export type SettingsTab = 'profile' | 'friends' | 'cities' | 'display' | 'data';
+const TABS: { value: SettingsTab; label: string }[] = [
+  { value: 'profile', label: '프로필' }, { value: 'friends', label: '친구' }, { value: 'cities', label: '도시' },
+  { value: 'display', label: '화면' }, { value: 'data', label: '데이터' },
+];
+const TAB_KEY = 'tgl_settings_tab';
+function readTab(): SettingsTab {
+  try { const v = localStorage.getItem(TAB_KEY); return TABS.some(t => t.value === v) ? (v as SettingsTab) : 'profile'; } catch { return 'profile'; }
+}
 
 interface Props {
   onClose: () => void;
@@ -36,6 +49,8 @@ interface Props {
   journeys: Trip[];
   onOpenJourney: (id: number) => void;
   onOpenPocket: () => void;
+  /** Open on this tab (a "도시 편집" link, for example); otherwise the last one used */
+  initialTab?: SettingsTab;
 }
 
 const card = 'rounded-card bg-surface dark:bg-surface-dark p-4 flex flex-col gap-3';
@@ -47,7 +62,15 @@ function formatBytes(n: number): string {
   return `${Math.round(n / 1024 ** 2)} MB`;
 }
 
-export function SettingsSheet({ onClose, profile, displayName, email, nightMode, onNightMode, trashed, onRestore, onPermanentDelete, me, canWrite, journeys, onOpenJourney, onOpenPocket }: Props){
+export function SettingsSheet({ onClose, profile, displayName, email, nightMode, onNightMode, trashed, onRestore, onPermanentDelete, me, canWrite, journeys, onOpenJourney, onOpenPocket, initialTab }: Props){
+  const [tab, setTabState] = useState<SettingsTab>(() => initialTab || readTab());
+  const setTab = (t: SettingsTab) => { setTabState(t); try { localStorage.setItem(TAB_KEY, t); } catch { /* per device */ } };
+  const [weatherBg, setWeatherBg] = useState(() => { try { return localStorage.getItem('calendar_weather_bg_enabled') !== 'false'; } catch { return true; } });
+  useEffect(() => {
+    const on = (e: Event) => { const v = (e as CustomEvent<boolean>).detail; if (typeof v === 'boolean') setWeatherBg(v); };
+    window.addEventListener('weatherBgToggled', on);
+    return () => window.removeEventListener('weatherBgToggled', on);
+  }, []);
   const [journeyOpen, setJourneyOpen] = useState<JourneyOpen>(readJourneyOpen);
   const [fit, setFit] = useState<ReelFit>(() => { try { return localStorage.getItem('tgl_reel_fit') === 'fill' ? 'fill' : 'fit'; } catch { return 'fit'; } });
   const [interval, setIntervalMs] = useState(() => getStoredSlideshowInterval());
@@ -65,6 +88,9 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
     <Sheet label="설정" onClose={onClose} tone="paper" panelClassName="sm:max-w-lg max-h-[90dvh]">
       <div className="flex flex-col gap-3 p-4 pt-2 min-h-0 overflow-y-auto overscroll-contain">
         <h2 className="text-[20px] font-extrabold tracking-tight px-1">설정</h2>
+        <Segment<SettingsTab> block size="sm" ariaLabel="설정 분류" value={tab} onChange={setTab} options={TABS} />
+
+        {tab === 'profile' && (<>
 
         {/* Account */}
         <section className={card}>
@@ -83,8 +109,9 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
             <ChevronRight className="w-4 h-4 shrink-0 text-black/40 dark:text-white/40" aria-hidden />
           </button>
         </section>
+        </>)}
 
-        {me && (
+        {tab === 'friends' && (me ? (
           <FriendsSection
             me={me}
             canWrite={canWrite}
@@ -94,12 +121,19 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
             onOpenJourney={(id) => { onClose(); onOpenJourney(id); }}
             onOpenPocket={() => { onClose(); onOpenPocket(); }}
           />
-        )}
+        ) : (
+          <section className={card}><span className="text-meta text-black/55 dark:text-white/55">로그인하면 친구를 맺고 여정을 함께 볼 수 있습니다.</span></section>
+        ))}
 
-        {me && <NotificationSettings cardClass={card} labelClass={label} />}
+        {tab === 'cities' && (<>
+          <MyCitiesEditor cardClass={card} labelClass={label} />
+          <section className={card}>
+            <span className={label}>Weather</span>
+            <WeatherBgSwitch value={weatherBg} onChange={setWeatherBg} />
+          </section>
+        </>)}
 
-        {me && <IosShortcutGuide cardClass={card} labelClass={label} />}
-
+        {tab === 'display' && (<>
         {/* Display */}
         <section className={card}>
           <span className={label}>Display</span>
@@ -168,6 +202,14 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
           </label>
         </section>
 
+        <HomeWidgetPrefs cardClass={card} labelClass={label} />
+
+        {me && <NotificationSettings cardClass={card} labelClass={label} />}
+
+        {me && <IosShortcutGuide cardClass={card} labelClass={label} />}
+        </>)}
+
+        {tab === 'data' && (<>
         {/* Storage */}
         <section className={card}>
           <span className={label}>Storage</span>
@@ -230,6 +272,7 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
           <a href="/terms.html" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-black dark:hover:text-white">이용약관</a>
           <a href="/privacy.html" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-black dark:hover:text-white">개인정보처리방침</a>
         </nav>
+        </>)}
       </div>
     </Sheet>
   );

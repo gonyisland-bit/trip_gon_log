@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 import type { CityWeatherConfig } from '../../types';
 import { getWeatherMeta } from '../../utils/weatherApi';
-import { CURRENT_LOCATION_EN, cachedCurrentLocation, selectWeatherCity } from '../../utils/userPrefs';
+import { CURRENT_LOCATION_EN, cachedCurrentLocation } from '../../utils/userPrefs';
+import { makeMain, openSettings, useMyCities } from '../../utils/myCities';
 import { CurrentLocationRow } from '../weather/CurrentLocationRow';
 import { useCitiesWeather } from '../weather/useCitiesWeather';
 import { WeatherReading } from '../weather/WeatherReading';
@@ -10,26 +11,12 @@ import { WeatherReading } from '../weather/WeatherReading';
 // Weather location for the terminal window: the same per-user choice as the header weather pill.
 // Each row shows that place's weather now, so the user can pick the sky they want to see.
 
-const FALLBACK: CityWeatherConfig[] = [
-  { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.978, country: 'KR', timezone: 'Asia/Seoul' },
-  { name: '도쿄', nameEn: 'TOKYO', lat: 35.6762, lng: 139.6503, country: 'JP', timezone: 'Asia/Tokyo' },
-  { name: '파리', nameEn: 'PARIS', lat: 48.8566, lng: 2.3522, country: 'FR', timezone: 'Europe/Paris' },
-  { name: '런던', nameEn: 'LONDON', lat: 51.5074, lng: -0.1278, country: 'GB', timezone: 'Europe/London' },
-];
-
-function savedCities(): CityWeatherConfig[] {
-  try {
-    const list = JSON.parse(localStorage.getItem('cached_calendar_weather_cities') || '[]');
-    if (Array.isArray(list) && list.length) return list;
-  } catch { /* fall back */ }
-  return FALLBACK;
-}
-
 export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
   name?: string; nameEn?: string; temp?: number; code?: number; pop?: number;
 }) {
   const [open, setOpen] = useState(false);
-  const [cities] = useState(savedCities);
+  // This member's cities (main and favourites), shared with the header and the calendar
+  const cities = useMyCities().list.filter(c => c.nameEn !== CURRENT_LOCATION_EN);
   const { now, prefetch } = useCitiesWeather(cities);
   const here = cachedCurrentLocation();
   const ref = useRef<HTMLDivElement>(null);
@@ -47,7 +34,7 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
 
   const meta = code !== undefined ? getWeatherMeta(code, pop, temp) : null;
   const Icon = meta?.icon;
-  const pick = (c: CityWeatherConfig) => { selectWeatherCity(c); setOpen(false); };
+  const pick = (c: CityWeatherConfig) => { makeMain(c); setOpen(false); };
 
   return (
     <div className="relative" ref={ref}>
@@ -90,6 +77,13 @@ export function TerminalWeatherPicker({ name, nameEn, temp, code, pop }: {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => { setOpen(false); openSettings('cities'); }}
+            className="w-full min-h-10 px-3 py-2 text-left text-xs font-semibold text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+          >
+            도시 편집
+          </button>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 // Calendar hub state: everything the calendar screens read and do (moved from CalendarHub.tsx, unchanged).
-import { saveUserPref, selectWeatherCity } from '../../utils/userPrefs';
+import { saveUserPref } from '../../utils/userPrefs';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { ArrowRight, Sun } from 'lucide-react';
 import { Trip, Plan, CalendarCustomEvent } from '../../types';
@@ -10,6 +10,7 @@ import { fetchCityWeather, getSimulatedWeatherForDate, CityWeatherData, DailyFor
 import { WORLD_CITIES, findCityByNameOrAlias } from '../../data/worldDestinations';
 import { confirmDialog } from '../../utils/feedback';
 import { swipeStart, swipeDirection, SwipeStart } from '../../utils/swipe';
+import { useMyCities } from '../../utils/myCities';
 import { CalendarWeatherCity, CALENDAR_WEATHER_CITIES, CalendarHubPageProps, MONTH_TABS, EVENT_CATEGORIES, DayCellData, parseTripDateRange, getDaysDifference, normalizeRange } from './calendarData';
 
 export function useCalendarHubState({
@@ -274,48 +275,9 @@ export function useCalendarHubState({
     return [];
   });
 
-  // 날씨 도시 목록 (로컬 및 클라우드 영속성)
-  const [weatherCities, setWeatherCities] = useState<CalendarWeatherCity[]>(() => {
-    try {
-      const saved = localStorage.getItem('cached_calendar_weather_cities');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (_) {}
-    return CALENDAR_WEATHER_CITIES;
-  });
-
-  // Firestore 동기화 (다중 디바이스 지원 & 보안 표준 경로)
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        if (Array.isArray(data?.cities) && data.cities.length > 0) {
-          setWeatherCities(data.cities);
-          try {
-            localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
-          } catch (_) {}
-        }
-      } else {
-        // Fallback for legacy path
-        getDoc(doc(db, 'settings', 'calendar_weather_cities')).then((legacySnap) => {
-          if (legacySnap.exists()) {
-            const data = legacySnap.data();
-            if (Array.isArray(data?.cities) && data.cities.length > 0) {
-              setWeatherCities(data.cities);
-              try {
-                localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
-              } catch (_) {}
-            }
-          }
-        }).catch(() => {});
-      }
-    }, (err) => {
-      console.warn("Calendar weather cities sync notice:", err);
-    });
-    return () => unsub();
-  }, []);
+  // This member's cities (main and favourites, myCities.ts); the operator's list is only the starting set
+  const { list: myCityList } = useMyCities();
+  const weatherCities: CalendarWeatherCity[] = myCityList;
 
   // 날씨 토글 및 선택 도시 상태 (기본: 저장된 도시 또는 서울)
   const [isWeatherMode, setIsWeatherMode] = useState<boolean>(false);
@@ -374,7 +336,7 @@ export function useCalendarHubState({
 
   const handleSelectCity = (c: CalendarWeatherCity) => {
     setSelectedWeatherCity(c);
-    selectWeatherCity(c);
+    // Only the calendar looks at this city; the main city stays where the member set it
     if (selectedWeatherDay) {
       const exact = cityWeatherData?.forecast?.find(f => f.date === selectedWeatherDay.dateStr);
       const w = exact || getSimulatedWeatherForDate(c.nameEn, selectedWeatherDay.dateStr);
@@ -1715,7 +1677,6 @@ export function useCalendarHubState({
     customEvents,
     setCustomEvents,
     weatherCities,
-    setWeatherCities,
     isWeatherMode,
     setIsWeatherMode,
     selectedWeatherCity,

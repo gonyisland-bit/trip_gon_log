@@ -52,6 +52,8 @@ import { VerifyEmailPanel } from './components/account/VerifyEmailPanel';
 import { JourneyActionsSheet, OPEN_JOURNEY_ACTIONS } from './components/cards/JourneyActionsSheet';
 import { OPEN_JOURNEY_SHARE } from './components/share/ShareJourneySheet';
 import { setDetailIntent } from './utils/detailIntent';
+import { OPEN_SETTINGS_EVENT } from './utils/myCities';
+import type { SettingsTab } from './components/settings/SettingsSheet';
 
 const DepartureBoard = lazyWithRetry(() => import('./components/departure/DepartureBoard').then(m => ({ default: m.DepartureBoard })));
 const BookingWallet = lazyWithRetry(() => import('./components/wallet/BookingWallet').then(m => ({ default: m.BookingWallet })));
@@ -131,6 +133,14 @@ function App() {
     const open = (e: Event) => setShareTripId((e as CustomEvent<number>).detail);
     window.addEventListener(OPEN_JOURNEY_SHARE, open);
     return () => window.removeEventListener(OPEN_JOURNEY_SHARE, open);
+  }, []);
+  // Settings on a given tab, from links like "도시 편집" in a weather list
+  const [settingsTab, setSettingsTab] = useState<SettingsTab | undefined>(undefined);
+  useEffect(() => {
+    const open = (e: Event) => { setSettingsTab((e as CustomEvent<SettingsTab | undefined>).detail); setIsManageModalOpen(true); };
+    window.addEventListener(OPEN_SETTINGS_EVENT, open);
+    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
@@ -650,7 +660,8 @@ function App() {
               tools (hero list, ticker, music list) live in the manage hub. */}
           {isManageModalOpen && isLoggedIn && (
             <SettingsSheet
-              onClose={() => setIsManageModalOpen(false)}
+              initialTab={settingsTab}
+              onClose={() => { setIsManageModalOpen(false); setSettingsTab(undefined); }}
               profile={currentUserProfile}
               displayName={personName(currentUserProfile, auth.currentUser?.displayName) || '나'}
               email={auth.currentUser?.email || ''}
