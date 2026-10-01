@@ -64,7 +64,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
         <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
           <div className="flex items-center min-w-max md:min-w-0 pr-1 md:pr-0">
             {([
-              { id: 'HOME', label: 'HOME' },
+              { id: 'HOME', label: 'LANDING' },
               // TRIP mode retired (v1.3.6 4-a): journeys are managed from their cards and inside the journey
               { id: 'CALENDAR', label: 'CALENDAR' },
               // MAGAZINE mode retired (v1.3.6 4-b): each journey's magazine is built from the journey itself

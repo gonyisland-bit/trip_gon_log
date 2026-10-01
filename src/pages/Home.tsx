@@ -25,6 +25,7 @@ import { FirstTripHero, type FirstTripPick } from '../components/home/FirstTripH
 import { EmptyScene } from '../components/scenes/EmptyScene';
 import { useMyCities } from '../utils/myCities';
 import { useHomeWidgets } from '../utils/homeWidgetPrefs';
+import { setDetailIntent } from '../utils/detailIntent';
 import { CURRENT_LOCATION_EN } from '../utils/userPrefs';
 
 interface HomePageProps {
@@ -1564,103 +1565,52 @@ export function HomePage({
         {/* 02. EDITORIAL MAGAZINE MOMENTS (잡지 연출 섹션)                       */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {(() => {
-          // 1. First find selected magazine section from master magazineSections or active tab
-          const availableSections = (magazineSections && magazineSections.length > 0)
-            ? magazineSections
-            : [];
-          const selectedSection = availableSections.find(s => s.id === activeHomeSectionId)
-            || availableSections.find(s => s.id === homeMagazineSectionId)
-            || availableSections[0]
-            || null;
-
-          const currentSecIndex = availableSections.findIndex(s => s.id === (selectedSection?.id || activeHomeSectionId));
-          const safeSecIndex = Math.max(0, currentSecIndex);
-
-          const handleSelectSection = (sectionId: string) => {
-            setActiveHomeSectionId(sectionId);
-            setMagazineSpreadIndex(0);
-            const tabBtn = document.getElementById(`home-mag-tab-${sectionId}`);
-            if (tabBtn) {
-              tabBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }
-          };
-
-          const handlePrevSection = () => {
-            if (safeSecIndex > 0) {
-              handleSelectSection(availableSections[safeSecIndex - 1].id);
-            }
-          };
-
-          const handleNextSection = () => {
-            if (safeSecIndex < availableSections.length - 1) {
-              handleSelectSection(availableSections[safeSecIndex + 1].id);
-            }
-          };
-
-          const handleGoToMagazineSection = (secId?: string) => {
-            const targetSec = secId || selectedSection?.id;
-            onNavigate('magazine');
-            // navigateTo resets the magazine to its hub; mark the issue after it so the issue opens
-            if (targetSec) {
-              sessionStorage.setItem('lastMagazineSectionId', String(targetSec));
-              sessionStorage.setItem('magazineViewMode', 'section');
-            }
-          };
-
-          if (availableSections.length === 0) return null;
-
-          // Cards for an issue: its photo stories, else the loose moments, else the latest journeys
+          // Home magazine (v1.3.6): this member's own published journeys, newest first. Nothing is
+          // picked by hand: publishing a journey puts it here, unpublishing takes it away.
+          const issues = trips
+            .filter(t => t.publishedAt)
+            .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
+            .slice(0, 6);
+          if (issues.length === 0) return null;
+          const sections: MagazineSection[] = issues.map((t, i) => ({ id: String(t.id), title: t.title, items: [], order: i }));
+          const activeId = sections.some(sec => sec.id === activeHomeSectionId) ? activeHomeSectionId : sections[0].id;
           const cardsFor = (sec: MagazineSection): SpreadCard[] => {
-            let secMoments: MagazineMoment[] = [];
-            if (sec.items && sec.items.length > 0) {
-              secMoments = sec.items.filter(item => !item.isTextOnly && Boolean(item.img));
-            } else if (magazineMoments && magazineMoments.length > 0) {
-              secMoments = magazineMoments.filter(item => !item.isTextOnly && Boolean(item.img));
-            } else {
-              secMoments = trips.slice(0, 3).map((t, idx) => ({
-                id: `fallback-${t.id}`, tripId: t.id, title: t.title, date: t.date, location: t.locationStr,
-                placeName: (t.locations && t.locations[0]?.name) || '', caption: '', quote: '', img: t.img, order: idx,
-              })).filter(item => Boolean(item.img));
+            const trip = issues.find(t => String(t.id) === sec.id);
+            if (!trip) return [];
+            const shots = allTimelineItems.filter(it => it.tripId === trip.id && it.img).slice(0, 3);
+            if (shots.length === 0) {
+              return trip.img ? [{ key: `${trip.id}-cover`, img: trip.img, title: trip.title, place: trip.locationStr || trip.country || '', date: trip.date || '' }] : [];
             }
-            return secMoments.slice(0, 3).map((moment, idx) => {
-              const parentTrip = trips.find(t => t.id === moment.tripId);
-              let matched: any = null;
-              if (allTimelineItems.length > 0 && moment.img) {
-                const eff = getEffectiveImageUrl(moment.img);
-                matched = allTimelineItems.find(it => it.img && (it.img === moment.img || getEffectiveImageUrl(it.img) === eff));
-              }
-              let googlePlace = '';
-              if (typeof matched?.location === 'string' && matched.location.trim()) googlePlace = matched.location.trim().split(',')[0].trim();
-              else if (matched?.location?.name) googlePlace = matched.location.name;
-              return {
-                key: String(moment.id || idx),
-                img: moment.img,
-                title: matched?.place?.trim() || moment.title || 'UNTITLED MOMENT',
-                place: googlePlace || moment.placeName || moment.location || parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE',
-                date: formatSimpleDateWithDay(matched?.date || moment.date),
-              };
-            });
+            return shots.map((it, idx) => ({
+              key: `${trip.id}-${idx}`,
+              img: it.img as string,
+              title: it.place?.trim() || trip.title,
+              place: (it.location || '').split(',')[0].trim() || trip.locationStr || trip.country || '',
+              date: formatSimpleDateWithDay(it.date),
+            }));
           };
+          const openIssue = (id: string) => { setDetailIntent('magazine'); onNavigate('detail', Number(id)); };
+          const current = sections.find(sec => sec.id === activeId);
 
           return (
             <div className="w-full max-w-[1920px] mx-auto border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12">
               <MagazineSpread
-                sections={availableSections}
-                activeId={selectedSection?.id || activeHomeSectionId}
+                sections={sections}
+                activeId={activeId}
                 onSelect={(id) => { setActiveHomeSectionId(id); setMagazineSpreadIndex(0); }}
                 cardsFor={cardsFor}
-                onOpen={(id) => handleGoToMagazineSection(id)}
+                onOpen={openIssue}
                 heading={
                   <div className="flex items-baseline gap-4 flex-wrap">
                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">MAGAZINE</h2>
-                    {selectedSection && (
+                    {current && (
                       <span className="text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70">
-                        {selectedSection.title}
+                        {current.title}
                       </span>
                     )}
                   </div>
                 }
-                ctaLabel="EXPLORE MAGAZINE HUB"
+                ctaLabel="OPEN MAGAZINE"
                 tabIdPrefix="home-mag-tab"
               />
             </div>

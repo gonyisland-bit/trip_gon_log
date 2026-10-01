@@ -49,7 +49,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
           </button>
         </div>
         <p className="text-xs text-black/60 dark:text-white/60 font-mono">
-          [캘린더 허브 및 홈허브 하단에 실시간 연동될 날씨 도시 목록과 순서를 관리합니다]
+          [새 회원이 처음 받는 자주 보는 도시입니다. 회원은 설정 → 도시에서 각자 바꿉니다]
         </p>
       </div>
 
@@ -59,7 +59,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-red-600 dark:text-red-500" />
             <h3 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
-              WEATHER CITIES MANAGEMENT
+              NEW MEMBER CITIES
             </h3>
           </div>
           <span className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60">
