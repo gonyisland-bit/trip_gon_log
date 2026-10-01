@@ -146,7 +146,7 @@ export function JourneyPhaseStrip({ trips, plans, onNavigate, timelineData = {},
           )}
 
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn btn-primary" onClick={() => openJourneyBoard(trip.id)}>
+            <button type="button" className="btn btn-accent" onClick={() => openJourneyBoard(trip.id)}>
               <LayoutGrid className="w-4 h-4" aria-hidden />보드 열기
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => onNavigate('detail', trip.id)}>

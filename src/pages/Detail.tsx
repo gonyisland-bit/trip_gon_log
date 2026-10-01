@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronUp, ChevronDown, Map as MapIcon, FileText, Clock, Plane, BedDouble, TrainFront, Image as ImageIcon, type LucideIcon } from 'lucide-react';
-import { getDefaultCurrencyForLocation } from '../components/SettlementExpenseInput';
+import { ChevronUp, ChevronDown, Map as MapIcon, LayoutGrid, Clock, Plane, BedDouble, TrainFront, Image as ImageIcon, type LucideIcon } from 'lucide-react';
 import { SettlementView } from '../components/SettlementView';
-import { SummaryView } from '../components/SummaryView';
+import { BoardView } from '../components/board/JourneyBoard';
 import { Lightbox } from '../components/Lightbox';
 import { Footer } from '../components/Footer';
 import { FloatingPocketWidget } from '../components/FloatingPocketWidget';
@@ -27,7 +26,8 @@ import { DetailOverlays } from './detail/DetailOverlays';
 import { DetailSkeleton } from '../components/EditorialSkeleton';
 
 const DETAIL_TABS: { id: TabType; label: string; icon: LucideIcon }[] = [
-  { id: 'summary', label: 'SUM', icon: FileText },
+  // The board replaces the old summary (it keeps the 'summary' id, so links and the map overlay still work)
+  { id: 'summary', label: 'BOARD', icon: LayoutGrid },
   { id: 'timeline', label: 'TIME', icon: Clock },
   { id: 'flights', label: 'FLIGHT', icon: Plane },
   { id: 'stays', label: 'STAY', icon: BedDouble },
@@ -155,7 +155,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           )}
         </div>
         
-        {/* Tab Headers - Unified Single-line Sleek Design (SUM, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
+        {/* Tab Headers - Unified Single-line Sleek Design (BOARD, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
         <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap shrink-0 mx-3 sm:mx-4 mt-1 md:mt-3 mb-2 p-1 rounded-full bg-black/[0.06] dark:bg-white/10 h-12 sm:h-11 md:h-12 xl:h-11">
           {/* Active tab block slides between tabs */}
           {DETAIL_TABS.some(t => t.id === activeTab) && (
@@ -180,7 +180,9 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
               // From md the list is half the window: icon over label until xl, so all six tabs fit
               title={tab.label}
               className={`relative z-[1] flex-1 min-w-0 h-full px-0.5 sm:px-2 flex flex-col sm:flex-row md:flex-col xl:flex-row items-center justify-center gap-0.5 sm:gap-1.5 md:gap-0.5 xl:gap-1.5 text-micro sm:text-meta md:text-micro xl:text-xs font-bold uppercase tracking-wider rounded-full transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
-                activeTab === tab.id
+                tab.id === 'summary'
+                  ? 'text-red-600 dark:text-red-400'
+                  : activeTab === tab.id
                   ? 'text-ink dark:text-ink-dark'
                   : 'text-black/60 dark:text-white/60 hover:text-ink dark:hover:text-ink-dark'
               }`}
@@ -209,21 +211,23 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
             </div>
           )}
 
-          {/* SUMMARY TAB */}
-          <div className={activeTab === 'summary' ? 'contents' : 'hidden'}>
-            <SummaryView 
-              trip={tripToUse!}
-              timelineData={timelineData}
-              flights={isEditing ? draftFlights : flights}
-              stays={isEditing ? draftStays : stays}
-              transits={isEditing ? draftTransits : transits}
-              defaultCurrency={getDefaultCurrencyForLocation(tripToUse?.locationStr || '')}
-              onSelectTab={(tab) => {
-                setActiveTab(tab as TabType);
-                setExpandedItemId(null);
-              }}
-            />
-          </div>
+          {/* BOARD TAB: the first thing a journey shows */}
+          {activeTab === 'summary' && tripToUse && (
+            <div className="px-3 sm:px-4 pb-24">
+              <BoardView
+                embedded
+                trip={tripToUse}
+                timelineData={timelineData}
+                flights={isEditing ? draftFlights : flights}
+                stays={isEditing ? draftStays : stays}
+                transits={isEditing ? draftTransits : transits}
+                onOpenItem={(tab, itemId) => {
+                  setActiveTab(tab as TabType);
+                  setExpandedItemId(itemId);
+                }}
+              />
+            </div>
+          )}
           
           {/* LOG TAB */}
           <TimelineTab s={s} />

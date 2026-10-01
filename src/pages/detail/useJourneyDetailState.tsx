@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   Train, Bus, Car, Trash2, Image as ImageIcon, ChevronDown, MapPin, Loader2, ArrowLeft, ArrowUp,
-  ArrowDown, ArrowRight, FileText, Share2, Play, Pause, Check, Edit3, DollarSign,
-  X, Undo2, Redo2, Calendar, Sparkles, Users, BookOpen, LayoutGrid
+  ArrowDown, ArrowRight, Share2, Play, Pause, Check, Edit3, DollarSign,
+  X, Undo2, Redo2, Calendar, Sparkles, Users, BookOpen
 } from 'lucide-react';
 import { OPEN_JOURNEY_MAGAZINE } from '../../utils/detailIntent';
-import { openJourneyBoard } from '../../components/board/boardData';
 import { getUpcomingPlanInfo } from '../../utils/tripPlanHelper';
 import { getDefaultCurrencyForLocation } from '../../components/SettlementExpenseInput';
 import { generateJourneyMessage } from '../../components/SummaryView';
@@ -3232,7 +3231,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 setExpandedItemId(null);
               }}
               className="text-[15px] sm:text-[17px] font-extrabold tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
-              title="여정 요약 보기"
+              title="보드 보기"
             >
               {(trip!.title || '').replace(' (Plan)', '')}
             </h1>
@@ -3255,13 +3254,6 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
             </>
           )}
 
-          {/* Board: bookings and places on one screen, for use on the road */}
-          {!isEditing && trip && (
-            <button type="button" onClick={() => openJourneyBoard(trip.id)} className={hdrBtn(false)} aria-label="보드" title="보드">
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-          )}
-
           {/* Magazine (v1.3.6 4-b): the journey read as an issue; red once published */}
           {!isEditing && (
             <button
@@ -3277,19 +3269,6 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
-              setExpandedItemId(null);
-            }}
-            className={hdrBtn(activeTab === 'summary')}
-            aria-pressed={activeTab === 'summary'}
-            aria-label="여정 요약"
-            title="여정 요약"
-          >
-            <FileText className="w-4 h-4" />
-          </button>
 
           {isLoggedIn && (
             <button
