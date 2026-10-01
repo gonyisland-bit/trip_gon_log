@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Segment } from '../../components/ui/Segment';
-import { EMPTY_NOTICE, saveNotice, subscribeNotice, type SiteNotice } from '../../utils/notice';
+import { DEFAULT_WELCOME, EMPTY_NOTICE, WELCOME_DAYS, saveNotice, saveWelcome, subscribeNotice, type SiteNotice, type WelcomeNotice } from '../../utils/notice';
 import { notify } from '../../utils/feedback';
 
 // SYSTEM → 공지 (v1.3.7): the site notice everyone sees above the page, including a maintenance mode.
@@ -67,6 +67,64 @@ export function NoticeEditor() {
           className="h-10 px-3 rounded-full border border-black/15 dark:border-white/15 bg-transparent text-[13px]"
         />
       </label>
+      <button type="button" onClick={save} disabled={saving} className="btn btn-primary self-start">{saving ? '저장 중' : '저장'}</button>
+    </section>
+  );
+}
+
+// SYSTEM → 신규 가입 환영: an automatic line for members in their first days. {name} is replaced.
+export function WelcomeEditor() {
+  const [w, setW] = useState<WelcomeNotice>(DEFAULT_WELCOME);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => subscribeNotice(v => { if (!loaded) { setW({ ...DEFAULT_WELCOME, ...(v.welcome || {}) }); setLoaded(true); } }), [loaded]);
+
+  const save = async () => {
+    setSaving(true);
+    try { await saveWelcome(w); notify(w.on ? '환영 공지를 켰습니다.' : '환영 공지를 껐습니다.', 'success'); }
+    catch { notify('환영 공지를 저장하지 못했습니다.', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <section className="rounded-card bg-surface dark:bg-surface-dark p-5 flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col">
+          <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-black/55 dark:text-white/55">Welcome</span>
+          <span className="text-[15px] font-extrabold">신규 가입 환영</span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={w.on}
+          aria-label="환영 공지 켜기"
+          onClick={() => setW({ ...w, on: !w.on })}
+          className={`relative w-10 h-6 rounded-full transition-colors cursor-pointer shrink-0 ${w.on ? 'bg-ink dark:bg-ink-dark' : 'bg-black/15 dark:bg-white/20'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface dark:bg-paper-dark shadow-sm transition-transform ${w.on ? 'translate-x-4' : ''}`} />
+        </button>
+      </div>
+      <input
+        id="welcome-message"
+        value={w.message}
+        maxLength={200}
+        onChange={(e) => setW({ ...w, message: e.target.value })}
+        placeholder={DEFAULT_WELCOME.message}
+        className="h-11 px-4 rounded-full border border-black/15 dark:border-white/15 bg-transparent text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+        aria-label="환영 공지 문구"
+      />
+      <span className="text-meta text-black/55 dark:text-white/55 break-keep">{'{name}'}은 회원 이름으로 바뀝니다. 회원이 닫으면 그 계정에선 다시 뜨지 않고, 문구를 바꾸면 기간 안의 회원에게 한 번 더 뜹니다.</span>
+      <div className="flex flex-col gap-2">
+        <span className="text-[14px] font-bold">가입 후 보여 줄 기간</span>
+        <Segment<string>
+          block
+          size="sm"
+          ariaLabel="가입 후 보여 줄 기간"
+          value={String(w.days)}
+          onChange={(v) => setW({ ...w, days: Number(v) })}
+          options={WELCOME_DAYS.map(d => ({ value: String(d), label: `${d}일` }))}
+        />
+      </div>
       <button type="button" onClick={save} disabled={saving} className="btn btn-primary self-start">{saving ? '저장 중' : '저장'}</button>
     </section>
   );

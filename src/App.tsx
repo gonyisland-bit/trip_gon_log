@@ -49,6 +49,7 @@ import { lazyWithRetry, cleanForFirestore } from './app/appUtils';
 import { useAppState } from './app/useAppState';
 import { OPEN_INTRO_EVENT, isIntroPath } from './intro/openIntro';
 import { IntroTip } from './components/home/IntroTip';
+import { WelcomeBanner } from './components/WelcomeBanner';
 import { personName } from './utils/personName';
 import { VerifyEmailPanel } from './components/account/VerifyEmailPanel';
 import { JourneyActionsSheet, OPEN_JOURNEY_ACTIONS } from './components/cards/JourneyActionsSheet';
@@ -243,6 +244,7 @@ function App() {
         
         {/* The operator's site notice, for everyone (v1.3.7) */}
         <NoticeBanner />
+        {isLoggedIn && <WelcomeBanner name={myCard?.name || ''} />}
 
         {/* Firebase Error/Status Banners */}
         {dbError && (

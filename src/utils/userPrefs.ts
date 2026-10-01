@@ -28,6 +28,8 @@ export interface UserPrefs {
   hubMapStyle?: 'gray' | 'normal' | 'terrain' | 'simple';
   /** Which home widgets show (see homeWidgetPrefs.ts) */
   homeWidgets?: import('./homeWidgetPrefs').HomeWidgetPrefs;
+  /** The welcome notice version this member closed (see notice.ts) */
+  welcomeSeen?: number;
 }
 
 export type JourneyOpen = 'magazine' | 'record';

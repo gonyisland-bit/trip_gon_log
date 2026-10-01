@@ -14,7 +14,7 @@ import { CalendarMode } from './manage/CalendarMode';
 import { MagazineMode } from './manage/MagazineMode';
 import { UtilMode } from './manage/UtilMode';
 import { UsersMode } from './manage/UsersMode';
-import { NoticeEditor } from './manage/NoticeEditor';
+import { NoticeEditor, WelcomeEditor } from './manage/NoticeEditor';
 import { Segment } from '../components/ui/Segment';
 
 type SystemTab = 'landing' | 'notice' | 'setup' | 'system';
@@ -127,7 +127,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
             {systemTab === 'landing' && <HomeMode s={s} />}
             {systemTab === 'notice' && (
               <div className="flex-1 overflow-y-auto">
-                <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4"><NoticeEditor /></div>
+                <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4 flex flex-col gap-4"><NoticeEditor /><WelcomeEditor /></div>
                 <UtilMode s={s} only="ui" />
               </div>
             )}
