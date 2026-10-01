@@ -13,7 +13,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { currentUid, setDoc } from '../utils/ownership';
 import { JourneyMagazine, type MagazinePhoto } from '../components/magazine/JourneyMagazine';
 import { OPEN_JOURNEY_MAGAZINE, takeDetailIntent } from '../utils/detailIntent';
-import { readJourneyOpen } from '../utils/userPrefs';
 import { getLiveTripStatus, getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { notify } from '../utils/feedback';
 import { resolveTimelinePlaceName } from '../utils/magazineHelper';
@@ -59,12 +58,13 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
   const published = Boolean(trip?.publishedAt);
   const canPublish = canEdit && isPast;
 
-  // A published journey opens on its magazine, unless the card asked for the record
+  // Journey cards open the record; the magazine opens when asked for (the magazine hub, the home
+  // magazine, a card menu preview). Opened that way it is a reader of its own: closing it goes back
+  // to where the member came from instead of revealing the record underneath (v1.3.7).
+  const [magazineOnly, setMagazineOnly] = useState(false);
   useEffect(() => {
     if (!trip) return;
-    const intent = takeDetailIntent();
-    // Settings → "여정 여는 방식" can keep every journey on its record
-    if (intent === 'magazine' || (intent !== 'record' && trip.publishedAt && readJourneyOpen() === 'magazine')) setMagazineOpen(true);
+    if (takeDetailIntent() === 'magazine') { setMagazineOpen(true); setMagazineOnly(true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id]);
 
@@ -99,7 +99,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
       const id = String(trip.id);
       const col = (await getDoc(doc(db, 'users', 'public', 'plans', id)).catch(() => null))?.exists() ? 'plans' : 'trips';
       await setDoc(doc(db, 'users', 'public', col, id), { publishedAt: on ? Date.now() : null }, { merge: true });
-      notify(on ? '매거진으로 발행했습니다. 이제 카드를 누르면 매거진이 먼저 열립니다.' : '발행을 취소했습니다.', 'success');
+      notify(on ? '매거진으로 발행했습니다. 매거진 허브와 홈 매거진에서 볼 수 있습니다.' : '발행을 취소했습니다.', 'success');
     } catch (err) {
       console.error('Publish failed:', err);
       notify('저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
@@ -418,8 +418,11 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           published={published}
           onPublish={() => setPublished(true)}
           onUnpublish={() => setPublished(false)}
-          onClose={() => setMagazineOpen(false)}
-          onShowRecord={() => { setMagazineOpen(false); setActiveTab('timeline' as TabType); }}
+          onClose={() => {
+            setMagazineOpen(false);
+            if (magazineOnly) { setMagazineOnly(false); window.history.back(); }
+          }}
+          onShowRecord={() => { setMagazineOnly(false); setMagazineOpen(false); setActiveTab('timeline' as TabType); }}
         />
       )}
     </main>

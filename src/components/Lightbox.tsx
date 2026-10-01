@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense } from 'react';
+import { lazyWithRetry } from '../app/appUtils';
 import { createPortal } from 'react-dom';
 import { useBackToClose } from '../utils/overlayHistory';
 import {
@@ -36,6 +38,9 @@ import {
   BgmTrack,
 } from '../utils/audioHelper';
 import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from './player/PlayerDock';
+
+// The slideshow is the magazine's Memory Reel (v1.3.7)
+const MemoryReel = lazyWithRetry(() => import('./reel/MemoryReel').then(m => ({ default: m.MemoryReel })));
 
 export interface LightboxImageMeta {
   url: string;
@@ -581,7 +586,14 @@ export function Lightbox({
     };
   }, [isOpen, stopSlideshow]);
 
+  // Slideshow (v1.3.7): the photo viewer hands over to the magazine's Memory Reel from this photo,
+  // so there is one slideshow with one set of controls and keys
+  const [reelFrom, setReelFrom] = useState<number | null>(null);
   const handleStartSlideshow = async () => {
+    setReelFrom(currentIndex);
+  };
+  // The viewer's own slideshow, kept for reference until it is removed
+  const legacyStartSlideshow = async () => {
     // Record whether user was already in fullscreen before starting slideshow
     const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
     wasFullscreenBeforeSlideshowRef.current = isCurrentlyFullscreen;
@@ -888,6 +900,19 @@ export function Lightbox({
   }, [scale]);
 
   if (!isOpen || images.length === 0) return null;
+
+  if (reelFrom !== null) {
+    return (
+      <Suspense fallback={null}>
+        <MemoryReel
+          title={images[reelFrom]?.location || images[reelFrom]?.place || '사진'}
+          shots={images.map(im => ({ src: im.url, place: im.place, location: im.location, date: im.date, line: im.imgNote }))}
+          startIndex={reelFrom}
+          onClose={() => setReelFrom(null)}
+        />
+      </Suspense>
+    );
+  }
 
   const currentMeta = images[currentIndex];
   const prevMeta = images.length > 1 ? images[(currentIndex - 1 + images.length) % images.length] : null;

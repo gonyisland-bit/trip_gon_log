@@ -4,7 +4,6 @@ import type { Trip, UserProfile } from '../../types';
 import { Sheet } from '../Sheet';
 import { Segment } from '../ui/Segment';
 import { UserProfileAvatar } from '../UserProfileAvatar';
-import { applyJourneyOpen, readJourneyOpen, type JourneyOpen } from '../../utils/userPrefs';
 import { getMyStorageUsage } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { confirmDialog } from '../../utils/feedback';
@@ -70,7 +69,6 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
     window.addEventListener('weatherBgToggled', on);
     return () => window.removeEventListener('weatherBgToggled', on);
   }, []);
-  const [journeyOpen, setJourneyOpen] = useState<JourneyOpen>(readJourneyOpen);
   const [usage, setUsage] = useState<{ used: number; quota: number | null } | null>(null);
   const [usageError, setUsageError] = useState(false);
 
@@ -145,16 +143,6 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
                 { value: 'light', label: '라이트', icon: Sun },
                 { value: 'dark', label: '다크', icon: Moon },
               ]}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className={rowLabel}>발행한 여정을 열 때</span>
-            <Segment<JourneyOpen>
-              block
-              ariaLabel="발행한 여정을 열 때"
-              value={journeyOpen}
-              onChange={(v) => { setJourneyOpen(v); applyJourneyOpen(v); }}
-              options={[{ value: 'magazine', label: '매거진 먼저' }, { value: 'record', label: '항상 기록' }]}
             />
           </div>
         </section>

@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackToClose } from '../../utils/overlayHistory';
-import { Maximize2, Minimize2, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { Maximize2, Minimize2, SkipForward, SlidersHorizontal, Volume2, VolumeX } from 'lucide-react';
 import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from '../player/PlayerDock';
-import { getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval, saveStoredBgmDefaultVolume } from '../../utils/audioHelper';
+import { getStoredBgmAutoplay, getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval, saveStoredBgmDefaultVolume, saveStoredSlideshowInterval } from '../../utils/audioHelper';
 import { prefersReducedMotion } from '../../motion';
 
 // Memory Reel (v1.3): a full-screen photo film with music.
@@ -11,6 +11,9 @@ import { prefersReducedMotion } from '../../motion';
 //  - cuts land on the music's beats when the track can be analysed (same-origin
 //    audio); otherwise shots follow the slideshow interval from settings
 //  - ends on a credit card: title, place, dates and counts
+//  - v1.3.7: the photo viewer's controls live here too, in one options panel (volume, pace,
+//    next track, captions on / off) with keys ← → (shots), ↑ ↓ (volume), Space (play),
+//    M (sound), F (fit), I (captions), N (next track)
 
 export interface ReelShot {
   src: string;
@@ -27,6 +30,8 @@ interface MemoryReelProps {
   dateLabel?: string;
   shots: ReelShot[];
   onClose: () => void;
+  /** Shot to start on (the photo the viewer was looking at) */
+  startIndex?: number;
 }
 
 const FADE_MS = 1100;
@@ -39,10 +44,10 @@ function readFit(): ShotFit {
   try { return localStorage.getItem(FIT_KEY) === 'fill' ? 'fill' : 'fit'; } catch { return 'fit'; }
 }
 
-function pickTrack(): string | null {
-  const tracks = getStoredBgmTracks().filter(t => t.enabled && t.url);
-  if (!tracks.length) return null;
-  return (getStoredBgmShuffle() ? tracks[Math.floor(Math.random() * tracks.length)] : tracks[0]).url;
+/** The tracks this member lets play (none when slideshow music is off) */
+function playableTracks(): string[] {
+  if (!getStoredBgmAutoplay()) return [];
+  return getStoredBgmTracks().filter(t => t.enabled && t.url).map(t => t.url);
 }
 
 function isSameOrigin(url: string): boolean {
@@ -53,9 +58,9 @@ function isSameOrigin(url: string): boolean {
   }
 }
 
-export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose }: MemoryReelProps) {
+export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose, startIndex = 0 }: MemoryReelProps) {
   useBackToClose(true, onClose);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => Math.max(0, Math.min(shots.length - 1, startIndex)));
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
   const [ended, setEnded] = useState(false);
@@ -63,6 +68,14 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   const [fit, setFit] = useState<ShotFit>(readFit);
   const [volume, setVolume] = useState(() => getStoredBgmDefaultVolume());
   const [volumePanel, setVolumePanel] = useState(false);
+  const [captions, setCaptions] = useState(true);
+  const tracks = useMemo(playableTracks, []);
+  const [trackIdx, setTrackIdx] = useState(() => (tracks.length && getStoredBgmShuffle() ? Math.floor(Math.random() * tracks.length) : 0));
+  const trackUrl = tracks[trackIdx] || null;
+  const nextTrack = useCallback(() => {
+    if (tracks.length < 2) return;
+    setTrackIdx(i => (i + 1) % tracks.length);
+  }, [tracks.length]);
   const [hud, setHud] = useState<string | null>(null);
   const volumeRef = useRef(volume);
   volumeRef.current = volume;
@@ -92,7 +105,12 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
     });
   }, [flash]);
   const reduced = useMemo(() => prefersReducedMotion(), []);
-  const interval = useMemo(() => Math.max(3200, getStoredSlideshowInterval()), []);
+  const [interval, setIntervalMs] = useState(() => Math.max(3000, getStoredSlideshowInterval()));
+  const changePace = useCallback((ms: number) => {
+    setIntervalMs(ms);
+    saveStoredSlideshowInterval(ms);
+    flash(`${ms / 1000}초마다 넘기기`);
+  }, [flash]);
   const minShot = Math.max(2600, interval * 0.7);
   const maxShot = interval * 1.5;
 
@@ -127,7 +145,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
 
   // Music
   useEffect(() => {
-    const url = pickTrack();
+    const url = trackUrl;
     if (!url) return;
     const audio = new Audio(url);
     audio.loop = true;
@@ -156,7 +174,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       audioRef.current = null;
       analyserRef.current = null;
     };
-  }, [reduced]);
+  }, [reduced, trackUrl]);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume / 100;
@@ -205,7 +223,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   // map's play log on Space, never reacts too
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Escape', 'm', 'M', 'f', 'F', 'p', 'P', 'k', 'K'].includes(e.key)) e.stopImmediatePropagation();
+      if ([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Escape', 'm', 'M', 'f', 'F', 'i', 'I', 'n', 'N', 'p', 'P', 'k', 'K'].includes(e.key)) e.stopImmediatePropagation();
       setChromeVisible(true);
       if (e.key === 'Escape') onClose();
       else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
@@ -215,6 +233,8 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       else if (e.key === 'ArrowDown') { e.preventDefault(); changeVolume(volumeRef.current - 10); }
       else if (e.key === 'm' || e.key === 'M') setMuted(m => { flash(m ? '소리 켬' : '소리 끔'); return !m; });
       else if (e.key === 'f' || e.key === 'F') toggleFit();
+      else if (e.key === 'i' || e.key === 'I') setCaptions(c => { flash(c ? '사진 정보 숨김' : '사진 정보 표시'); return !c; });
+      else if (e.key === 'n' || e.key === 'N') { nextTrack(); flash('다음 곡'); }
     };
     window.addEventListener('keydown', onKey, true);
     const prevOverflow = document.body.style.overflow;
@@ -223,7 +243,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       window.removeEventListener('keydown', onKey, true);
       document.body.style.overflow = prevOverflow;
     };
-  }, [advance, goBack, onClose, changeVolume, flash, toggleFit]);
+  }, [advance, goBack, onClose, changeVolume, flash, toggleFit, nextTrack]);
 
   // Controls fade out while watching
   useEffect(() => {
@@ -310,7 +330,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       />
 
       {/* Lower third */}
-      {shot && !ended && (
+      {shot && !ended && captions && (
         <div key={index} className="absolute left-4 right-4 sm:left-10 sm:right-10 bottom-28 sm:bottom-24 z-[5] max-w-3xl tgl-reel-caption">
           <div className="flex items-center gap-2 font-mono text-micro sm:text-meta tracking-[0.16em] uppercase text-white/85">
             <span className="w-6 h-px bg-red-500" />
@@ -374,7 +394,20 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
                 />
                 <span className="w-10 text-right font-mono text-meta tabular-nums">{muted ? 0 : volume}%</span>
               </DockPanelRow>
-              <span className="font-mono text-micro text-white/55">↑ ↓ 음량 · M 소리 · F 보기 방식 · ← → 넘기기 · Space 재생</span>
+              <DockPanelRow label="Pace">
+                <div className="flex gap-1" role="radiogroup" aria-label="넘기는 간격">
+                  {[3000, 4000, 6000, 8000].map(ms => (
+                    <button key={ms} type="button" role="radio" aria-checked={interval === ms} onClick={() => changePace(ms)} className={`h-8 px-3 rounded-full font-mono text-meta tabular-nums ${interval === ms ? 'bg-white text-black font-bold' : 'bg-white/10 hover:bg-white/20'}`}>{ms / 1000}s</button>
+                  ))}
+                </div>
+              </DockPanelRow>
+              <DockPanelRow label="Info">
+                <button type="button" role="switch" aria-checked={captions} onClick={() => setCaptions(c => !c)} className={`h-8 px-3 rounded-full text-meta font-bold ${captions ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'}`}>{captions ? '사진 정보 표시' : '사진 정보 숨김'}</button>
+                {tracks.length > 1 && (
+                  <button type="button" onClick={() => { nextTrack(); flash('다음 곡'); }} className="h-8 px-3 rounded-full bg-white/10 hover:bg-white/20 text-meta font-bold inline-flex items-center gap-1.5"><SkipForward className="w-3.5 h-3.5" aria-hidden />다음 곡</button>
+                )}
+              </DockPanelRow>
+              <span className="font-mono text-micro text-white/55">← → 넘기기 · Space 재생 · ↑ ↓ 음량 · M 소리 · F 보기 · I 정보 · N 다음 곡</span>
             </DockPanel>
           ) : undefined}
           leading={
@@ -382,8 +415,8 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
               <DockButton label={muted ? '소리 켜기 (M)' : '소리 끄기 (M)'} onClick={() => setMuted(m => !m)}>
                 {muted ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
               </DockButton>
-              <DockButton label="음량 (↑ ↓)" onClick={() => setVolumePanel(v => !v)}>
-                <Volume1 className={`w-5 h-5 ${volumePanel ? 'text-red-400' : ''}`} />
+              <DockButton label="옵션" onClick={() => setVolumePanel(v => !v)}>
+                <SlidersHorizontal className={`w-5 h-5 ${volumePanel ? 'text-red-400' : ''}`} />
               </DockButton>
             </>
           }
