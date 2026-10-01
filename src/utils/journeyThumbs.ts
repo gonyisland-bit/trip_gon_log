@@ -3,13 +3,13 @@
 import type { Trip } from '../types';
 import { getEffectiveImageUrl } from './storageHelper';
 import { isOwnPhoto } from './imageThumbs';
-import { artDataUrl, GENERIC_COVER } from './placeArt';
+import { kindArtUrl, GENERIC_COVER } from './placeArt';
 
 /** Cover for cards and list rows: the 960px copy when it matches the cover, else the cover */
 export function cardCoverUrl(trip: Pick<Trip, 'img' | 'imgSmall' | 'imgSmallSrc'>): string {
   const cover = getEffectiveImageUrl(trip.img);
   // Journeys made from a template before v1.3.7 got a shared stock photo that no longer loads
-  if (cover.includes(GENERIC_COVER)) return artDataUrl('landmark', cover);
+  if (cover.includes(GENERIC_COVER)) return kindArtUrl('landmark', cover);
   if (trip.imgSmall && trip.imgSmallSrc && getEffectiveImageUrl(trip.imgSmallSrc) === cover) return trip.imgSmall;
   return cover;
 }

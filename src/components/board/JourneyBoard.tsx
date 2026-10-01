@@ -8,7 +8,7 @@ import { Sheet } from '../Sheet';
 import { IconButton } from '../ui/IconButton';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { notify } from '../../utils/feedback';
-import { artDataUrl, placeKind } from '../../utils/placeArt';
+import { kindArtUrl, placeKind } from '../../utils/placeArt';
 import { buildBoard, md, openJourneyBoard, type BoardEntry } from './boardData';
 
 // Journey board: a journey's flights, stays, transport and places on one screen, as long and
@@ -117,7 +117,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
     b.phase === 'upcoming' ? (b.daysLeft === 0 ? 'D-DAY' : b.daysLeft > 0 ? `D-${b.daysLeft}` : '계획') :
     '다녀온 여행';
   const [outbound, ...otherFlights] = b.flights;
-  const art = useMemo(() => artDataUrl(placeKind(trip.tags || [], trip.locationStr || trip.title), String(trip.id)), [trip.id, trip.tags, trip.locationStr, trip.title]);
+  const art = useMemo(() => kindArtUrl(placeKind(trip.tags || [], trip.locationStr || trip.title), String(trip.id)), [trip.id, trip.tags, trip.locationStr, trip.title]);
 
   // Places per day, for the little bars on the places tile
   const perDay = useMemo(() => {

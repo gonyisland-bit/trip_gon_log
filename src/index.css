@@ -114,27 +114,11 @@
   }
 }
 
-@keyframes cinematicWalkerTrack {
-  0% {
-    left: 4%;
-  }
-  100% {
-    left: 96%;
-  }
-}
-
 .animate-cinematic-progress {
   animation-name: cinematicProgressTrack;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
   will-change: width;
-}
-
-.animate-cinematic-walker {
-  animation-name: cinematicWalkerTrack;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
-  will-change: left;
 }
 
 /* Traveler vehicle and runner marker anti-ghosting GPU acceleration */

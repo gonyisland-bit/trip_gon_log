@@ -186,9 +186,9 @@ const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null
       </style>
       <div style="${isMoving ? 'animation: walkerBobbing 0.44s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: bottom center; will-change: transform;">
         <img
-          src="/walker.png"
-          alt="Walker"
-          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(1.5px 0 0 #FFFFFF) drop-shadow(-1.5px 0 0 #FFFFFF) drop-shadow(0 1.5px 0 #FFFFFF) drop-shadow(0 -1.5px 0 #FFFFFF) drop-shadow(0 2px 4px rgba(0,0,0,0.65));"
+          src="/art/backpacking.svg"
+          alt=""
+          style="width: 46px; height: 46px; object-fit: contain; display: block; filter: drop-shadow(1.5px 0 0 #FFFFFF) drop-shadow(-1.5px 0 0 #FFFFFF) drop-shadow(0 1.5px 0 #FFFFFF) drop-shadow(0 -1.5px 0 #FFFFFF) drop-shadow(0 2px 4px rgba(0,0,0,0.65));"
         />
       </div>
       <div style="width: 24px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; ${isMoving ? 'animation: walkerShadowPulse 0.44s ease-in-out infinite;' : ''} margin-top: -2px;"></div>

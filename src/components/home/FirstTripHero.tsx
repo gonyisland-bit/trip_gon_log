@@ -1,11 +1,12 @@
-import React, { useCallback, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BookOpen, CalendarRange, Plane } from 'lucide-react';
-import { useCanvasScene } from '../scenes/useCanvasScene';
-import { createFirstTripScene, FIRST_TRIP_DESTINATIONS, type Destination } from '../scenes/firstTripScene';
+import { Art } from '../../art/Art';
+import { FIRST_TRIP_DESTINATIONS, FIRST_TRIP_PERIOD } from './firstTripPicks';
 import { openDepartureBoard } from '../../app/quickActions';
 import { openIntro, prefetchIntro } from '../../intro/openIntro';
 
 export interface FirstTripPick { city?: string }
+
 
 // Each step wears its hub's tint: plans butter, trips peach, magazine coral
 const STEPS = [
@@ -14,19 +15,31 @@ const STEPS = [
   { icon: BookOpen, label: '매거진', copy: '다녀온 뒤 사진이 모여 한 권이 돼요', tint: 'bg-coral/70 text-coral-ink dark:bg-coral-dark dark:text-coral' },
 ] as const;
 
-// Home hero before the first journey (v1.3.6): a light stage where a route leaves Seoul for one
-// city or beach after another and the traveler walks on below. The city on the map lights up in
-// the picks, and a pick opens New trip with that city filled in. The first journey's cover replaces it.
+// Home hero before the first journey (v1.3.6): the traveler stands in one city's scene after another
+// (v1.3.8) and that city lights up in the picks; a pick opens New trip with that city filled in.
+// The first journey's cover replaces it.
 export function FirstTripHero({ onNewTrip }: { onNewTrip?: (pick?: FirstTripPick) => void }) {
-  const [current, setCurrent] = useState<string>(FIRST_TRIP_DESTINATIONS[0].name);
-  const make = useCallback(() => createFirstTripScene((d: Destination) => setCurrent(d.name)), []);
-  const canvasRef = useCanvasScene(make, 4.2);
+  const [index, setIndex] = useState(0);
+  const current = FIRST_TRIP_DESTINATIONS[index].name;
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setIndex(i => (i + 1) % FIRST_TRIP_DESTINATIONS.length), FIRST_TRIP_PERIOD * 1000);
+    return () => clearInterval(t);
+  }, []);
 
   return (
     <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 flex flex-col gap-3">
       <div className="relative overflow-hidden rounded-card bg-surface dark:bg-surface-dark grid md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <div className="relative h-[220px] sm:h-[300px] md:h-auto md:min-h-[440px] md:order-2 bg-peach/60 dark:bg-peach-dark">
-          <canvas ref={canvasRef} aria-hidden className="absolute inset-0 w-full h-full" />
+          {/* Every scene stacked: the old one fades out, then the lit city's fades in, so lines never ghost over each other */}
+          {FIRST_TRIP_DESTINATIONS.map((d, i) => (
+            <Art
+              key={d.code}
+              id={d.art}
+              eager={i === 0}
+              className={`absolute inset-0 m-auto h-[84%] w-auto max-w-[92%] transition-opacity duration-500 ${i === index ? 'opacity-100 delay-500' : 'opacity-0'}`}
+            />
+          ))}
         </div>
         <div className="md:order-1 flex flex-col justify-center gap-5 p-6 sm:p-10 md:p-12 min-w-0">
           <span className="font-mono text-micro sm:text-meta font-bold uppercase tracking-[0.2em] text-black/50 dark:text-white/50">First journey · From Seoul</span>

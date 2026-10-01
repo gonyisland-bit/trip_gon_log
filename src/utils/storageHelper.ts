@@ -125,8 +125,8 @@ export function convertFirebaseStorageUrlToR2(url: string): string {
  */
 export function getEffectiveImageUrl(url: string | undefined | null): string {
   if (!url) return '';
-  // Generated illustrations (placeArt) are already complete data URLs
-  if (url.startsWith('data:')) return url;
+  // Generated illustrations are complete data URLs; scene tiles are our own files (public/art)
+  if (url.startsWith('data:') || url.startsWith('/art/')) return url;
   const converted = convertFirebaseStorageUrlToR2(url);
   try {
     return encodeURI(decodeURI(converted));
