@@ -103,6 +103,27 @@ export function issueTicket(opts: {
   };
 }
 
+/** The ticket's state for the board and the cards: D-day amber, boarding day red, no dates yet amber */
+export function ticketStatus(t: DepartureTicket): { text: string; tone: 'ink' | 'amber' | 'red' } {
+  if (!t.startDate) return { text: 'PLANNING', tone: 'amber' };
+  const days = daysUntil(t.startDate);
+  if (days < 0) return { text: 'DEPARTED', tone: 'ink' };
+  if (days === 0) return { text: 'BOARDING', tone: 'red' };
+  return { text: `D-${days}`, tone: 'amber' };
+}
+
+/** "10.09 – 10.12", or the month while the dates are not set */
+export function ticketRange(t: DepartureTicket): string {
+  if (!t.startDate) return `${t.year}.${String(t.month).padStart(2, '0')} · 일정 미정`;
+  const f = (s: string) => s.slice(5).replace('-', '.');
+  return `${f(t.startDate)} – ${t.endDate ? f(t.endDate) : ''}`;
+}
+
+/** Every stop of the trip, in order */
+export function ticketStops(t: DepartureTicket): { en: string; ko: string }[] {
+  return t.cities?.length ? t.cities : [{ en: t.cityEn, ko: t.cityKo }];
+}
+
 export function ticketCity(t: DepartureTicket): DestinationCity | undefined {
   return findCityByNameOrAlias(t.cityEn) ?? findCityByNameOrAlias(t.cityKo);
 }

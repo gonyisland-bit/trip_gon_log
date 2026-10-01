@@ -24,6 +24,7 @@ import type { PersonCard } from '../../utils/friends';
 import { OPEN_PROFILE_EDIT } from '../../app/quickActions';
 import { logoSplashOn, setLogoSplash } from '../../utils/logoSplash';
 import { HeroPrefs, type HeroPatch, type HeroSettings } from './HeroPrefs';
+import { EmptyScene } from '../scenes/EmptyScene';
 type NightMode = 'auto' | 'light' | 'dark';
 export type SettingsTab = 'me' | 'cities' | 'display' | 'data';
 const TABS: { value: SettingsTab; label: string }[] = [
@@ -213,7 +214,7 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
             <span className="font-mono text-meta text-black/50 dark:text-white/50 tabular-nums">{trashed.length}</span>
           </div>
           {trashed.length === 0 ? (
-            <span className="text-meta text-black/55 dark:text-white/55">휴지통이 비어 있습니다.</span>
+            <EmptyScene kind="trash" mini bare title="휴지통이 비어 있어요" />
           ) : (
             <ul className="flex flex-col gap-2">
               {trashed.map(t => (

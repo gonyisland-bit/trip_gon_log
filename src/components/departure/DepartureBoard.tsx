@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cityThumb, GENERIC_COVER } from '../../utils/placeArt';
-import { ArrowUp, PencilLine, Plane, Plus, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowUp, Plane, Plus, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { TerminalScene } from './TerminalScene';
 import { TerminalWeatherPicker } from './TerminalWeatherPicker';
@@ -14,15 +14,19 @@ import { IconButton } from '../ui/IconButton';
 import { Segment } from '../ui/Segment';
 import { UpcomingBookings, countUpcoming } from './UpcomingBookings';
 import type { Trip, Plan, FlightItem, StayItem, TransitItem } from '../../types';
-import { DepartureTicket, TicketStore, activeTicketOf, daysUntil, formatHours, readCachedTickets, removeTicket, setActiveTicket, subscribeTickets, ticketCity } from './departureData';
+import { TicketCard, TicketFace } from './TicketCard';
+import { TicketSheet } from './TicketSheet';
+import { EmptyScene } from '../scenes/EmptyScene';
+import { DepartureTicket, TicketStore, activeTicketOf, formatHours, readCachedTickets, removeTicket, setActiveTicket, subscribeTickets, ticketCity, ticketStatus } from './departureData';
 
 // Airport terminal (spec 3.2): where a planned trip waits before it becomes a journey.
 // Tickets are issued from the New trip sheet. The counter holds one ticket at a time, shown on the
 // black split-flap board (destination, dates, stay, party, gate); every other ticket is kept in
 // storage, with the bookings of journeys still ahead. Raising a kept ticket rolls the board over to it.
 // Boarding creates the journey from the ticket and opens it.
-// Two tabs: 카운터 (the one ticket being written or just finished) and 보관 (tickets written
-// but not at the counter, and 탑승 예정, the bookings of journeys already made).
+// Two tabs: 카운터 (the one ticket being written or just finished, shown as a boarding pass under the
+// boarding button) and 발권표 (tickets written but not at the counter, and 탑승 예정, the bookings of
+// journeys already made). A ticket opens its own sheet, which holds smart booking.
 
 const FLAP_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:+';
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -94,8 +98,8 @@ function FlapRow({ text, cells, rollKey, size = 'md', onFlip, tone = 'ink' }: {
   }, [rollKey, target.join('')]);
 
   const dims = size === 'lg'
-    ? 'w-[clamp(15px,min(4.6vw,4vh),40px)] h-[clamp(24px,min(7vw,5.8vh),54px)] text-[clamp(14px,min(4vw,3.3vh),32px)]'
-    : 'w-[clamp(14px,min(3.4vw,2.6vh),22px)] h-[clamp(21px,min(4.8vw,3.5vh),30px)] text-[clamp(12px,min(2.7vw,2.1vh),17px)]';
+    ? 'w-[clamp(15px,min(4.6vw,4vh),40px)] h-[clamp(24px,min(7vw,5.8vh),54px)] text-[clamp(14px,min(4vw,3.3vh),32px)] md:w-[clamp(26px,min(4vw,4.4vh),48px)] md:h-[clamp(40px,min(7vw,6.4vh),72px)] md:text-[clamp(20px,min(4vw,4vh),38px)]'
+    : 'w-[clamp(14px,min(3.4vw,2.6vh),22px)] h-[clamp(21px,min(4.8vw,3.5vh),30px)] text-[clamp(12px,min(2.7vw,2.1vh),17px)] md:h-[clamp(30px,4.2vh,42px)] md:text-[clamp(14px,2.3vh,20px)]';
   const color = tone === 'amber' ? 'text-amber-400' : tone === 'red' ? 'text-red-500' : 'text-[#F2F2EE]';
   return (
     <div className="flex gap-[3px]" aria-label={text}>
@@ -138,21 +142,6 @@ function boardDate(iso?: string): string {
   if (!iso) return '';
   const [, m, d] = iso.split('-').map(Number);
   return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]}`;
-}
-
-/** "10.09 – 10.12" */
-function shortRange(t: DepartureTicket): string {
-  if (!t.startDate) return `${t.year}.${String(t.month).padStart(2, '0')} · 일정 미정`;
-  const f = (s: string) => s.slice(5).replace('-', '.');
-  return `${f(t.startDate)} – ${t.endDate ? f(t.endDate) : ''}`;
-}
-
-function ticketStatus(t: DepartureTicket): { text: string; tone: 'ink' | 'amber' | 'red' } {
-  if (!t.startDate) return { text: 'PLANNING', tone: 'amber' };
-  const days = daysUntil(t.startDate);
-  if (days < 0) return { text: 'DEPARTED', tone: 'ink' };
-  if (days === 0) return { text: 'BOARDING', tone: 'red' };
-  return { text: `D-${days}`, tone: 'amber' };
 }
 
 interface DepartureBoardProps {
@@ -200,6 +189,7 @@ export function DepartureBoard({
   const [rollKey, setRollKey] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const [boarding, setBoarding] = useState(false);
+  const [sheetId, setSheetId] = useState<string | null>(null);
   const [muted, setMuted] = useState(() => { try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return false; } });
   const [clock, setClock] = useState(() => new Date());
   const flip = useFlapSound(muted);
@@ -226,6 +216,8 @@ export function DepartureBoard({
   const kept = useMemo(() => tickets.filter(t => t.id !== ticket?.id), [tickets, ticket?.id]);
   const drafts = useMemo(() => kept.filter(t => !t.plan), [kept]);
   const finished = useMemo(() => kept.filter(t => t.plan), [kept]);
+  const sheetTicket = sheetId ? tickets.find(t => t.id === sheetId) ?? null : null;
+  const ticketCount = kept.length + upcomingCount;
   const city = ticket ? ticketCity(ticket) : undefined;
   const status = ticket ? ticketStatus(ticket) : null;
 
@@ -236,8 +228,8 @@ export function DepartureBoard({
   }, [onClose]);
 
   // A kept ticket goes to the counter; the one there goes back to storage
-  const raise = async (t: DepartureTicket) => {
-    if (t.id === ticket?.id) { setTab('counter'); return; }
+  const raise = async (t: DepartureTicket): Promise<boolean> => {
+    if (t.id === ticket?.id) { setTab('counter'); return true; }
     setStore(prev => ({ ...prev, activeId: t.id }));
     setTab('counter');
     setRollKey(k => k + 1);
@@ -246,7 +238,9 @@ export function DepartureBoard({
     } catch {
       notify('티켓을 옮기지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
       setStore(readCachedTickets());
+      return false;
     }
+    return true;
   };
 
   // The counter holds one ticket: a new one sends the current one to storage, after a check
@@ -287,40 +281,34 @@ export function DepartureBoard({
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  const board = async () => {
-    if (!ticket?.plan || boarding) return;
+  const board = async (): Promise<boolean> => {
+    if (!ticket?.plan || boarding) return false;
     const ok = await confirmDialog(`'${ticket.plan.title}' 여정을 만들까요? 탑승한 티켓은 목록에서 사라집니다.`, { title: 'BOARDING', confirmLabel: '탑승' });
-    if (!ok) return;
+    if (!ok) return false;
     setBoarding(true);
     try {
       await onBoard(ticket);
     } catch {
       notify('여정을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
       setBoarding(false);
-      return;
+      return false;
     }
     // The journey exists now: the ticket has been used
     await removeTicket(ticket.id).catch(() => {});
     onClose();
+    return true;
   };
 
-  const removeKept = async (t: DepartureTicket) => {
-    if (!(await confirmDialog(`${t.cityKo} 티켓을 삭제할까요?`, { title: 'DELETE TICKET', confirmLabel: '삭제' }))) return;
+  // Deleting a ticket, at the counter or in storage: asked first, resolves true when it is gone
+  const removeAny = async (t: DepartureTicket): Promise<boolean> => {
+    if (!(await confirmDialog(`${t.cityKo} 티켓을 삭제할까요?`, { title: 'DELETE TICKET', confirmLabel: '삭제' }))) return false;
     try {
       setStore(await removeTicket(t.id));
+      if (t.id === ticket?.id) setRollKey(k => k + 1);
+      return true;
     } catch {
       notify('티켓을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
-    }
-  };
-
-  const remove = async () => {
-    if (!ticket) return;
-    if (!(await confirmDialog(`${ticket.cityKo} 티켓을 삭제할까요?`, { title: 'DELETE TICKET', confirmLabel: '삭제' }))) return;
-    try {
-      setStore(await removeTicket(ticket.id));
-      setRollKey(k => k + 1);
-    } catch {
-      notify('티켓을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+      return false;
     }
   };
 
@@ -356,27 +344,38 @@ export function DepartureBoard({
             onChange={setTab}
             options={[
               { value: 'counter', label: '카운터' },
-              { value: 'storage', label: `보관 ${kept.length + upcomingCount}` },
+              {
+                value: 'storage',
+                label: (
+                  <span className="inline-flex items-center gap-1.5">
+                    발권표
+                    {ticketCount > 0 && (
+                      <span className="min-w-4 h-4 px-1 rounded-full bg-red-600 dark:bg-red-500 text-white font-mono text-[10px] font-bold leading-4 text-center tabular-nums" aria-hidden>
+                        {ticketCount > 9 ? '9+' : ticketCount}
+                      </span>
+                    )}
+                    {ticketCount > 0 && <span className="sr-only">티켓 {ticketCount}개</span>}
+                  </span>
+                ),
+              },
             ]}
           />
         </div>
 
         {/* The counter's ticket and its actions, or storage: two thirds of the height (scrolls inside when short) */}
-        <div className={`flex-[2] min-h-0 overflow-y-auto overscroll-contain hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
-          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-2 flex flex-col gap-3">
+        <div className={`flex-[2] md:flex-1 min-h-0 overflow-y-auto overscroll-contain hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
+          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-2 min-h-full flex flex-col gap-3">
             {tab === 'storage' ? (
               <div className="flex flex-col gap-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[17px] font-extrabold tracking-tight">보관</span>
-                  <button type="button" onClick={newTicket} className="btn btn-secondary btn-sm">
-                    <Plus className="w-3.5 h-3.5" aria-hidden />새 티켓
+                  <span className="text-[17px] font-extrabold tracking-tight">발권표</span>
+                  <button type="button" onClick={newTicket} className="btn btn-secondary">
+                    <Plus className="w-4 h-4 shrink-0" aria-hidden />새 티켓
                   </button>
                 </div>
-                <StoredGroup title="작성 중" tickets={drafts} onRaise={raise} onRemove={removeKept} />
-                <StoredGroup title="발권 완료" tickets={finished} onRaise={raise} onRemove={removeKept} />
-                {kept.length === 0 && (
-                  <p className={`text-[14px] ${muted}`}>카운터 밖에 보관한 티켓이 없습니다.</p>
-                )}
+                <StoredGroup title="작성 중" tickets={drafts} onOpen={t => setSheetId(t.id)} onRaise={raise} onRemove={removeAny} />
+                <StoredGroup title="발권 완료" tickets={finished} onOpen={t => setSheetId(t.id)} onRaise={raise} onRemove={removeAny} />
+                {kept.length === 0 && <EmptyScene kind="storage" mini title="카운터 밖에 둔 티켓이 없어요" />}
                 <div className="flex flex-col gap-2">
                   <span className={`${label} ${muted}`}>탑승 예정 · {upcomingCount}</span>
                   <UpcomingBookings
@@ -451,22 +450,23 @@ export function DepartureBoard({
               </div>
             </section>
 
-            {/* This ticket's actions */}
+            {/* The ticket's main action and a new ticket, on one line: both the same pill size */}
             {ticket ? (
               <div className="flex items-center gap-2">
                 {ticket.plan ? (
-                  <button type="button" className="btn btn-accent btn-lg flex-1" onClick={board} disabled={boarding}>
+                  <button type="button" className="btn btn-accent btn-lg flex-1 min-w-0" onClick={() => { void board(); }} disabled={boarding}>
                     <Plane className="w-4 h-4 shrink-0 rotate-45" aria-hidden />
-                    {boarding ? '탑승 중' : '탑승 · 여정 만들기'}
+                    <span className="truncate">{boarding ? '탑승 중' : '탑승 · 여정 만들기'}</span>
                   </button>
                 ) : (
-                  <button type="button" className="btn btn-accent btn-lg flex-1" onClick={() => onPlan(ticket)}>
+                  <button type="button" className="btn btn-accent btn-lg flex-1 min-w-0" onClick={() => onPlan(ticket)}>
                     <Ticket className="w-4 h-4 shrink-0" aria-hidden />
-                    일정 정하고 발권
+                    <span className="truncate">일정 정하고 발권</span>
                   </button>
                 )}
-                {ticket.plan && <IconButton icon={PencilLine} label="다시 계획하기" onClick={() => onPlan(ticket)} disabled={boarding} />}
-                <IconButton icon={Trash2} label="티켓 삭제" onClick={remove} disabled={boarding} />
+                <button type="button" className="btn btn-secondary btn-lg shrink-0" onClick={newTicket} disabled={boarding}>
+                  <Plus className="w-4 h-4 shrink-0" aria-hidden />새 티켓
+                </button>
               </div>
             ) : (
               <button type="button" className="btn btn-accent btn-lg w-full" onClick={() => onPlan()}>
@@ -475,19 +475,19 @@ export function DepartureBoard({
               </button>
             )}
 
-            {/* The counter holds one ticket; the others wait in storage */}
-            {ticket && (
-              <button type="button" onClick={newTicket} className={`self-center inline-flex items-center gap-1 h-8 px-3 rounded-full text-meta font-bold ${muted} hover:text-ink dark:hover:text-ink-dark hover:bg-black/[0.05] dark:hover:bg-white/10 transition-colors`}>
-                <Plus className="w-3.5 h-3.5" aria-hidden />새 티켓
-              </button>
-            )}
+            {/* The counter's ticket, one card wide, in the room that is left */}
+            <div className="flex-1 min-h-[132px] flex items-center justify-center py-1">
+              {ticket
+                ? <TicketCard ticket={ticket} onOpen={() => setSheetId(ticket.id)} />
+                : <EmptyScene kind="ticket" mini bare title="발권한 티켓이 없어요" />}
+            </div>
 
             </>)}
           </div>
         </div>
 
-        {/* The lobby below, one third of the height, in a rounded window with the page's side margins */}
-        <div className="flex-[1] min-h-[120px] w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+        {/* The lobby below: a third of the height on phones, taller on the web so the departure sign shows, in a rounded window with the page's side margins */}
+        <div className="flex-[1] min-h-[120px] md:flex-none md:h-[clamp(240px,32vh,440px)] w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="tgl-lobby-scene relative h-full rounded-card overflow-hidden">
           <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
           {skyNote && (
@@ -500,39 +500,48 @@ export function DepartureBoard({
         </div>
       </div>
 
+      {sheetTicket && (
+        <TicketSheet
+          ticket={sheetTicket}
+          atCounter={sheetTicket.id === ticket?.id}
+          trips={trips}
+          plans={plans}
+          staysByTrip={staysByTrip}
+          boarding={boarding}
+          onClose={() => setSheetId(null)}
+          onBoard={board}
+          onRaise={() => raise(sheetTicket)}
+          onRemove={() => removeAny(sheetTicket)}
+          onPlan={() => onPlan(sheetTicket)}
+        />
+      )}
     </div>
   );
 }
 
-/** Tickets kept out of the counter: one row each, raised to the counter or deleted */
-function StoredGroup({ title, tickets, onRaise, onRemove }: {
-  title: string; tickets: DepartureTicket[]; onRaise: (t: DepartureTicket) => void; onRemove: (t: DepartureTicket) => void;
+/** Tickets kept out of the counter: each a boarding pass that opens its sheet, raised to the counter or deleted */
+function StoredGroup({ title, tickets, onOpen, onRaise, onRemove }: {
+  title: string; tickets: DepartureTicket[]; onOpen: (t: DepartureTicket) => void;
+  onRaise: (t: DepartureTicket) => Promise<boolean>; onRemove: (t: DepartureTicket) => Promise<boolean>;
 }) {
   if (tickets.length === 0) return null;
   return (
     <div className="flex flex-col gap-2">
       <span className={`${label} ${muted}`}>{title} · {tickets.length}</span>
-      <ul className="flex flex-col gap-2">
-        {tickets.map(t => {
-          const st = ticketStatus(t);
-          const n = t.cities?.length || 1;
-          return (
-            <li key={t.id} className="flex items-center gap-3 rounded-card bg-surface dark:bg-surface-dark pl-4 pr-2 py-2.5">
-              <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <span className={`${label} ${muted} truncate`}>{t.flightNo} · Gate {t.gate}</span>
-                <span className="text-[17px] font-extrabold tracking-tight uppercase truncate">{t.cityEn}{n > 1 ? ` +${n - 1}` : ''}</span>
-                <span className={`text-meta truncate ${muted}`}>
-                  {shortRange(t)}
-                  <span className={`ml-2 font-mono font-bold ${st.tone === 'amber' ? 'text-amber-600 dark:text-amber-400' : st.tone === 'red' ? 'text-red-600 dark:text-red-400' : ''}`}>{st.text}</span>
-                </span>
-              </span>
-              <button type="button" onClick={() => onRaise(t)} className="btn btn-secondary btn-sm shrink-0">
+      <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+        {tickets.map(t => (
+          <li key={t.id} className="flex flex-col gap-2">
+            <button type="button" onClick={() => onOpen(t)} aria-label={`${t.cityKo} 티켓 열기`} className="tgl-press block w-full rounded-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600">
+              <TicketFace ticket={t} />
+            </button>
+            <div className="flex items-center justify-end gap-2">
+              <button type="button" onClick={() => { void onRaise(t); }} className="btn btn-secondary btn-sm shrink-0">
                 <ArrowUp className="w-3.5 h-3.5" aria-hidden />카운터로
               </button>
-              <IconButton icon={Trash2} label="티켓 삭제" size="sm" onClick={() => onRemove(t)} />
-            </li>
-          );
-        })}
+              <IconButton icon={Trash2} label="티켓 삭제" size="sm" onClick={() => { void onRemove(t); }} />
+            </div>
+          </li>
+        ))}
       </ul>
     </div>
   );

@@ -31,6 +31,7 @@ FILES = {
     'itinerary-empty': 'itinerary-empty.jpg', 'pocket-empty': 'pocket-empty.jpg', 'no-results': 'no-results.jpg',
     'map-looking': 'map-looking.jpg', 'backpacking': 'backpacking.jpg', 'luggage-travel': 'luggage-travel.jpg',
     'photo-memory': 'photo-memory.jpg', 'train-journey': 'train-journey.jpg', 'train-station': 'train-station.jpg',
+    'departure-board': 'departure-board.jpg', 'waiting-gate': 'waiting-gate.jpg', 'window-waiting': 'window-waiting.jpg',
     'backpacking-2': 'backpacking-2.jpg',
     'luggage-travel-2': 'luggage-travel-2.jpg', 'photo-memory-2': 'photo-memory-2.jpg', 'bike-ride': 'bike-ride.jpg',
     'city-walk': 'city-walk.jpg', 'tourist-guide': 'tourist-guide.jpg',
@@ -49,7 +50,7 @@ CAPTION_FROM = {
 
 # Pictures that fill their frame: the window (x0, y0, x1, y1) kept around the bear; they become a rounded card
 CARDS = {
-    'coffee-cup': (0, 300, 768, 1260), 'landmark-japan': (0, 250, 768, 1250), 'landmark-egypt': (0, 300, 768, 1260),
+    'coffee-cup': (0, 300, 768, 1260), 'departure-board': (0, 60, 768, 1290), 'waiting-gate': (42, 252, 768, 960), 'landmark-japan': (0, 250, 768, 1250), 'landmark-egypt': (0, 300, 768, 1260),
     'poolside-cocktail': (0, 200, 768, 1160), 'restaurant-exterior': (0, 200, 768, 1160), 'swimming': (0, 300, 768, 1180),
     'train-journey': (0, 250, 768, 1250), 'public-transport-2': (0, 130, 768, 1075),
     'landmark-paris': (0, 140, 768, 1300), 'museum-visit-2': (0, 300, 768, 1180),

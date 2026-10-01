@@ -9,6 +9,7 @@ import {
   activeInvite, createInvite, inviteLink, normalizeCode, promptAcceptInvite,
   type Invite, type PersonCard, friendLabel } from '../../utils/friends';
 import { useFriends } from './useFriends';
+import { EmptyScene } from '../scenes/EmptyScene';
 
 // Settings → Friends (v1.3.6 5-a): the friend list, an invite to hand out (link or 6-letter
 // code) and a field to enter a code someone gave you. No search by email. A friend opens their
@@ -102,7 +103,7 @@ export function FriendsSection({ me, canWrite, cardClass, labelClass, journeys, 
       {!loaded ? (
         <span className="text-meta text-black/55 dark:text-white/55">친구 목록을 불러오는 중</span>
       ) : friends.length === 0 ? (
-        <span className="text-meta text-black/55 dark:text-white/55">아직 친구가 없습니다. 초대 링크나 코드로 친구를 맺어 보세요.</span>
+        <EmptyScene kind="friends" mini bare title="아직 친구가 없어요" copy="초대 링크나 코드로 친구를 맺어 보세요." />
       ) : (
         <ul className="flex flex-col gap-2">
           {friends.map(f => (

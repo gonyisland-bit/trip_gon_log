@@ -17,6 +17,7 @@ import { VerifyEmailPanel } from './account/VerifyEmailPanel';
 import { friendlyMailError, sendResetMail, sendVerificationMail } from '../utils/emailVerification';
 import { notify } from '../utils/feedback';
 import { LEFTOVER_ACCOUNT, clearOrphanAccount, createAccountReclaiming, isGhostProfile } from '../utils/accountCleanup';
+import { Art } from '../art/Art';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -421,7 +422,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
         ) : (
           <>
             {/* Header - Swiss Minimal with Inter font */}
-            <div className="border-b border-black/15 dark:border-white/15 pb-4 mb-5">
+            <div className="border-b border-black/15 dark:border-white/15 pb-4 mb-5 flex items-end justify-between gap-3">
+              <div className="min-w-0">
               <span className="text-meta font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
                 {isSignUp ? 'USER REGISTRATION' : 'AUTHENTICATION'}
               </span>
@@ -433,6 +435,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
                   ? '가입한 뒤 본인 메일 인증을 마치면 바로 시작할 수 있습니다.' 
                   : '여정 편집 및 관리를 위해 등록된 계정으로 로그인하세요.'}
               </p>
+              </div>
+              <Art id={isSignUp ? 'backpacking-2' : 'tourist-guide'} className="h-[84px] w-auto shrink-0" />
             </div>
 
             {/* Error message */}

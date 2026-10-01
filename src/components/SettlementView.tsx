@@ -10,6 +10,7 @@ import { auth } from '../firebase';
 import html2canvas from 'html2canvas';
 import { createPortal } from 'react-dom';
 import { notify, confirmDialog } from '../utils/feedback';
+import { EmptyScene } from './scenes/EmptyScene';
 
 const EXCHANGE_RATES: { [currency: string]: number } = {
   KRW: 1,
@@ -634,9 +635,7 @@ export function SettlementView({
         )}
 
         {expenseItems.length === 0 ? (
-          <div className="text-center py-12 text-xs md:text-sm font-bold text-black/60 dark:text-white/60 uppercase">
-            지출 내역이 없습니다. (각 카드에 금액을 등록하거나 직접 추가해 주세요)
-          </div>
+          <EmptyScene kind="spend" mini bare className="py-8" title="지출 내역이 없어요" copy="각 카드에 금액을 등록하거나 직접 추가해 주세요." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
@@ -892,9 +891,7 @@ export function SettlementView({
             <span>Send</span>
           </span>
           {transfers.length === 0 ? (
-            <div className="text-center py-4 text-meta text-black/60 dark:text-white/60 font-bold border border-dashed border-black/10 dark:border-white/10">
-              송금할 내역이 없습니다. 정산 완료!
-            </div>
+            <EmptyScene kind="settled" mini bare title="송금할 내역이 없어요. 정산 완료!" />
           ) : (
             <div className="flex flex-col gap-2">
               {transfers.map((tr, idx) => (

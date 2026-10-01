@@ -3,6 +3,7 @@ import { FlightCard } from '../../components/FlightCard';
 import { FlightItem } from '../../types';
 import { calculateLayoverTime } from './detailUtils';
 import type { JourneyDetailState } from './useJourneyDetailState';
+import { EmptyScene } from '../../components/scenes/EmptyScene';
 
 export function FlightsTab({ s }: { s: JourneyDetailState }) {
   const {
@@ -31,9 +32,8 @@ export function FlightsTab({ s }: { s: JourneyDetailState }) {
               const flightsToUse = isEditing ? draftFlights : flights;
               if (flightsToUse.length === 0) {
                 return (
-                  <div className="mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-12 rounded-card bg-surface dark:bg-surface-dark tgl-card-edge text-center">
-                    <Plane className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
-                    <span className="text-sm text-black/60 dark:text-white/60">등록된 항공편이 없습니다.</span>
+                  <div className="mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-6 rounded-card bg-surface dark:bg-surface-dark tgl-card-edge text-center">
+                    <EmptyScene kind="flights" mini bare title="등록된 항공편이 없어요" />
                     {!isEditing && bookingOpen && (
                       <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-primary btn-sm">
                         <Search className="w-3.5 h-3.5" aria-hidden />

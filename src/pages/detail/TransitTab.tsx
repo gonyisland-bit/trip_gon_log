@@ -4,6 +4,7 @@ import { Segment } from '../../components/ui/Segment';
 import { TransitItem } from '../../types';
 import { parseTimeToMinutes } from './detailUtils';
 import type { JourneyDetailState } from './useJourneyDetailState';
+import { EmptyScene } from '../../components/scenes/EmptyScene';
 
 export function TransitTab({ s }: { s: JourneyDetailState }) {
   const {
@@ -36,9 +37,8 @@ export function TransitTab({ s }: { s: JourneyDetailState }) {
             const rawTransitList = isEditing ? draftTransits : transits;
             if (rawTransitList.length === 0) {
               return (
-                <div className="tgl-card-edge mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-12 rounded-card bg-surface dark:bg-surface-dark text-center">
-                  <Train className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
-                  <span className="text-sm text-black/60 dark:text-white/60">등록된 교통편이 없습니다.</span>
+                <div className="tgl-card-edge mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-6 rounded-card bg-surface dark:bg-surface-dark text-center">
+                  <EmptyScene kind="transit" mini bare title="등록된 교통편이 없어요" />
                 </div>
               );
             }

@@ -5,6 +5,7 @@ import { parseTripDateRange } from '../../utils/tripPlanHelper';
 import { bookingContextFromTrip, buildAgodaUrl, buildBookingComUrl, buildNaverFlightUrl, buildSkyscannerFlightUrl } from '../../utils/bookingDeepLinks';
 import { notify } from '../../utils/feedback';
 import { NewTripButton } from '../NewTripButton';
+import { EmptyScene } from '../scenes/EmptyScene';
 
 // Upcoming bookings (v1.3.6, the old Booking Wallet now inside the airport terminal): every flight,
 // stay and transit booking of the journeys still ahead, with a D-day on each and a booked / missing
@@ -139,9 +140,8 @@ export function UpcomingBookings({ trips, plans, flightsByTrip, staysByTrip, tra
 
   if (journeys.length === 0) {
     return (
-      <div className="rounded-card bg-surface dark:bg-surface-dark py-12 px-6 flex flex-col items-center gap-3 text-center">
-        <span className="text-[15px] font-extrabold">탑승 예정인 여정이 없어요</span>
-        <span className="text-meta text-black/55 dark:text-white/55 max-w-sm break-keep">보관 티켓에서 탑승하거나 새 여행을 만들면, 항공 · 숙소 · 교통 예약을 여기서 한눈에 챙길 수 있습니다.</span>
+      <div className="rounded-card bg-surface dark:bg-surface-dark pb-6 flex flex-col items-center gap-2">
+        <EmptyScene kind="upcoming" mini bare title="탑승 예정인 여정이 없어요" copy="발권표에서 탑승하거나 새 여행을 만들면, 항공 · 숙소 · 교통 예약을 여기서 한눈에 챙길 수 있습니다." />
         <NewTripButton onClick={onNewTrip} />
       </div>
     );

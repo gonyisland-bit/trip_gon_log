@@ -18,6 +18,7 @@ import type { JourneyDetailState } from './useJourneyDetailState';
 import { formatCountdown } from './useTodayMode';
 import { useState } from 'react';
 import { mapSearchUrl } from '../../utils/mapLinks';
+import { EmptyScene } from '../../components/scenes/EmptyScene';
 
 // The red hairline that marks the current time between today's items
 function NowLine({ label }: { label: string }) {
@@ -464,8 +465,8 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
               selectedDate === 'ALL' && emptyDays.length > 0 ? (
                 emptyDays.map(renderEmptyDay)
               ) : (
-                <div className="flex flex-col items-center gap-3 py-16 text-sm text-black/55 dark:text-white/55">
-                  해당 날짜에 등록된 일정이 없습니다.
+                <div className="flex flex-col items-center gap-3 py-10 text-sm text-black/55 dark:text-white/55">
+                  <EmptyScene kind="timeline" mini bare title="해당 날짜에 등록된 일정이 없어요" />
                   {isLoggedIn && selectedDate !== 'ALL' && !isEditing && (
                     <button type="button" onClick={() => addToDay(selectedDate)} className="btn btn-secondary btn-sm">
                       <Plus className="w-3.5 h-3.5" aria-hidden />일정 추가

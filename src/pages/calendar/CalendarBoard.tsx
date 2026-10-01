@@ -4,6 +4,7 @@ import { Trip, Plan, CalendarCustomEvent } from '../../types';
 import { getWeatherMeta } from '../../utils/weatherApi';
 import { MONTH_TABS, WEEKDAYS, EVENT_CATEGORIES, getDaysDifference } from './calendarData';
 import type { CalendarHubState } from './useCalendarHubState';
+import { EmptyScene } from '../../components/scenes/EmptyScene';
 
 export function CalendarBoard({ s }: { s: CalendarHubState }) {
   const {
@@ -514,9 +515,7 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
 
                 if (items.length === 0) {
                   return (
-                    <div className="text-xs font-mono text-black/60 dark:text-white/60 py-8 text-center uppercase tracking-wider">
-                      이번 달에 등록된 일정이 없습니다.
-                    </div>
+                    <EmptyScene kind="calendar" mini bare className="py-6" title="이번 달에 등록된 일정이 없어요" />
                   );
                 }
 

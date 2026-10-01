@@ -1,6 +1,7 @@
 import { Bed, Plus, Search } from 'lucide-react';
 import { StayCard } from '../../components/StayCard';
 import type { JourneyDetailState } from './useJourneyDetailState';
+import { EmptyScene } from '../../components/scenes/EmptyScene';
 
 export function StaysTab({ s }: { s: JourneyDetailState }) {
   const {
@@ -25,9 +26,8 @@ export function StaysTab({ s }: { s: JourneyDetailState }) {
               </div>
             )}
             {(isEditing ? draftStays : stays).length === 0 ? (
-              <div className="mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-12 rounded-card bg-surface dark:bg-surface-dark tgl-card-edge text-center">
-                    <Bed className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
-                    <span className="text-sm text-black/60 dark:text-white/60">등록된 숙소가 없습니다.</span>
+              <div className="mx-3 sm:mx-4 my-2 flex flex-col items-center gap-3 py-6 rounded-card bg-surface dark:bg-surface-dark tgl-card-edge text-center">
+                    <EmptyScene kind="stays" mini bare title="등록된 숙소가 없어요" />
                     {!isEditing && bookingOpen && (
                       <button type="button" onClick={() => setIsQuickBookingOpen(true)} className="btn btn-primary btn-sm">
                         <Search className="w-3.5 h-3.5" aria-hidden />

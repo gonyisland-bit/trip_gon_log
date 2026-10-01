@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { isStaleChunkError, reloadForNewBuild } from '../app/appUtils';
+import { Art } from '../art/Art';
 
 interface Props {
   children: ReactNode;
@@ -32,6 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
       return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 bg-[#F9F8F6] dark:bg-[#111111] text-black dark:text-white">
+          <Art id="pocket-empty" className="h-[120px] w-auto mb-3" />
           <div className="text-xs font-bold uppercase tracking-widest text-red-500 mb-4">
             Render Error
           </div>
