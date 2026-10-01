@@ -592,36 +592,6 @@ export function Lightbox({
   const handleStartSlideshow = async () => {
     setReelFrom(currentIndex);
   };
-  // The viewer's own slideshow, kept for reference until it is removed
-  const legacyStartSlideshow = async () => {
-    // Record whether user was already in fullscreen before starting slideshow
-    const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
-    wasFullscreenBeforeSlideshowRef.current = isCurrentlyFullscreen;
-
-    if (!isCurrentlyFullscreen) {
-      try {
-        const docEl = document.documentElement as any;
-        if (docEl.requestFullscreen) {
-          await docEl.requestFullscreen();
-        } else if (docEl.webkitRequestFullscreen) {
-          await docEl.webkitRequestFullscreen();
-        }
-      } catch (err) {
-        console.warn('Fullscreen request denied or not supported:', err);
-      }
-    }
-
-    setIsSlideshow(true);
-    setIsPaused(false);
-    setIsControlsVisible(true);
-    resetZoom();
-    triggerPulse('play');
-
-    if (getStoredBgmAutoplay()) {
-      const defaultVol = getStoredBgmDefaultVolume() / 100;
-      bgmPlayer.fadeIn(defaultVol, 600);
-    }
-  };
 
   const handleStopSlideshow = async () => {
     setIsSlideshow(false);
