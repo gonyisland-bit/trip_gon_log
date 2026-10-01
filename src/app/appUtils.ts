@@ -126,3 +126,19 @@ export function runViewTransition(update: () => void, fallback: (update: () => v
   transition.finished.catch(() => {});
   transition.updateCallbackDone.catch(() => {});
 }
+
+/** True for the errors a browser gives when a deploy has removed the chunk this page asked for */
+export function isStaleChunkError(error: unknown): boolean {
+  const msg = String((error as Error)?.message || error || '');
+  return /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/i.test(msg);
+}
+
+/** Reloads to pick up the new build, at most once every 10 seconds (no reload loops) */
+export function reloadForNewBuild(): boolean {
+  const key = 'chunk_reload_ts';
+  const last = parseInt(sessionStorage.getItem(key) || '0', 10);
+  if (Date.now() - last < 10000) return false;
+  sessionStorage.setItem(key, Date.now().toString());
+  window.location.reload();
+  return true;
+}

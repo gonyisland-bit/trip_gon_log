@@ -1,4 +1,5 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import { lazyWithRetry } from '../../app/appUtils';
 import { createPortal } from 'react-dom';
 import { BookCheck, Clock, Play, X } from 'lucide-react';
 import type { Trip } from '../../types';
@@ -7,7 +8,8 @@ import { useBackToClose } from '../../utils/overlayHistory';
 import { confirmDialog } from '../../utils/feedback';
 import { IconButton } from '../ui/IconButton';
 
-const MemoryReel = lazy(() => import('../reel/MemoryReel').then(m => ({ default: m.MemoryReel })));
+// Retries, then reloads once, when a deploy has replaced the chunk this page was built with
+const MemoryReel = lazyWithRetry(() => import('../reel/MemoryReel').then(m => ({ default: m.MemoryReel })));
 
 // A journey's magazine (v1.3.6 4-b): the journey itself, read as an issue. It covers the map and
 // the record, starts on the cover (no title animation) and is built from the journey's own photos,

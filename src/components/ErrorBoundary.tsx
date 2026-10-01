@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { isStaleChunkError, reloadForNewBuild } from '../app/appUtils';
 
 interface Props {
   children: ReactNode;
@@ -21,6 +22,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // A new deploy removed the chunk this page was built with: load the new build instead of failing
+    if (isStaleChunkError(error) && reloadForNewBuild()) return;
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
