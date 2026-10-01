@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { cityThumb, GENERIC_COVER } from '../../utils/placeArt';
 import { PencilLine, Plane, Plus, Ticket, Trash2, Volume2, VolumeX, Wallet, X } from 'lucide-react';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { LobbyScene } from './LobbyScene';
@@ -392,8 +393,8 @@ export function DepartureBoard({
               <div className="border-t border-white/10 pt-2.5 flex gap-3 items-center min-h-[48px]">
                 {ticket ? (
                   <>
-                    {(ticket.plan?.coverImg || city?.coverImage) && (
-                      <img src={getEffectiveImageUrl(ticket.plan?.coverImg || city?.coverImage || '')} alt="" loading="lazy" className="w-12 h-12 rounded-thumb object-cover shrink-0" />
+                    {(ticket.plan?.coverImg || city) && (
+                      <img src={getEffectiveImageUrl(ticket.plan?.coverImg && !ticket.plan.coverImg.includes(GENERIC_COVER) ? ticket.plan.coverImg : city ? cityThumb(city) : '')} alt="" loading="lazy" className="w-12 h-12 rounded-thumb object-cover shrink-0" />
                     )}
                     <span key={ticket.id} className="tgl-rise flex-1 min-w-0 flex flex-col gap-0.5">
                       <span className="text-[15px] sm:text-[17px] font-extrabold leading-snug line-clamp-2">{ticket.plan?.title || `${ticket.cityKo} 여행`}</span>

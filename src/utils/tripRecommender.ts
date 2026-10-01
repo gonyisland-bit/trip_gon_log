@@ -1,4 +1,5 @@
 import { DestinationCity, DestinationCountry, WORLD_CITIES, WORLD_COUNTRIES, PresetTripPlan } from '../data/worldDestinations';
+import { cityThumb } from './placeArt';
 
 export interface CuratedTripProposal {
   id: string;
@@ -468,52 +469,92 @@ function buildRichCuratedTimeline(
       };
     }
 
-    return {
-      date: dStr,
-      items: [
-        {
-          time: '09:30 AM',
-          title: '모닝 브런치 & 베이커리',
-          location: `${city.nameKo} 감성 카페`,
-          memo: '신선한 로컬 브런치로 상쾌하게 시작하는 아침',
-          category: '식사',
-          type: 'dining' as const
-        },
-        {
-          time: '11:00 AM',
-          title: spotA,
-          location: spotA,
-          memo: `${meta.label} 테마를 온전히 느끼는 대표 명소 투어`,
-          category: '관광',
-          type: 'activity' as const
-        },
-        {
-          time: '01:30 PM',
-          title: `${city.nameKo} 숨은 맛집 탐방`,
-          location: `${city.nameKo} 골목 맛집`,
-          memo: '큐레이터가 엄선한 현지식 오리지널 미식',
-          category: '식사',
-          type: 'dining' as const
-        },
-        {
-          time: '03:30 PM',
-          title: spotB,
-          location: spotB,
-          memo: '도심 속 여유와 이국적인 정취를 즐기는 스팟',
-          category: '관광',
-          type: 'activity' as const
-        },
-        {
-          time: '07:30 PM',
-          title: `${city.nameKo} 로컬 나이트 라이프`,
-          location: `${city.nameKo} 야간 명소`,
-          memo: '아름다운 야경과 함께하는 디너 & 바 타임',
-          category: '식사',
-          type: 'dining' as const
-        }
-      ]
-    };
+    // Middle days (v1.3.7): each day has its own character, rotated from the theme's order, with its
+    // own two spots, meals and a cafe, so day 2 and day 3 never read the same
+    return { date: dStr, items: middleDay(city, dIdx, themeKey, spots, meta.label) };
   });
+}
+
+type PlanItem = { time: string; title: string; location: string; memo: string; category: string; type: 'activity' | 'dining' | 'stay' | 'transit' };
+
+// What a day can be about, and the order each theme leans to
+const DAY_KINDS = ['landmark', 'market', 'nature', 'culture', 'cafe', 'night'] as const;
+type DayKind = typeof DAY_KINDS[number];
+const THEME_DAY_ORDER: Record<string, DayKind[]> = {
+  food: ['market', 'cafe', 'landmark', 'night', 'culture', 'nature'],
+  shopping: ['cafe', 'landmark', 'market', 'night', 'culture', 'nature'],
+  nature: ['nature', 'landmark', 'cafe', 'culture', 'market', 'night'],
+  activity: ['landmark', 'nature', 'night', 'market', 'cafe', 'culture'],
+  art: ['culture', 'cafe', 'landmark', 'market', 'night', 'nature'],
+  all: ['landmark', 'market', 'culture', 'cafe', 'nature', 'night'],
+};
+
+const BREAKFASTS = ['로컬 베이커리 조식', '시장 골목 아침 국수', '호텔 근처 브런치 카페', '현지식 아침 정식', '과일 스탠드와 커피'];
+const LUNCHES = ['현지인 줄 서는 점심 맛집', '시장 안 노포 점심', '대표 향토 요리 점심', '골목 덮밥 · 면 요리', '테라스 레스토랑 런치'];
+const DINNERS = ['제철 재료 디너 코스', '로컬 펍 · 이자카야 저녁', '야시장 먹거리 투어', '전망 좋은 루프탑 디너', '숨은 가정식 저녁'];
+
+function middleDay(city: DestinationCity, dIdx: number, themeKey: string, spots: string[], label: string): PlanItem[] {
+  const order = THEME_DAY_ORDER[themeKey] || THEME_DAY_ORDER.all;
+  const kind = order[(dIdx - 1) % order.length];
+  const n = Math.max(1, spots.length);
+  const a = spots[(dIdx * 2) % n] || `${city.nameKo} 대표 명소`;
+  const b = spots[(dIdx * 2 + 1) % n] || `${city.nameKo} 숨은 명소`;
+  const pick = (list: string[], k: number) => list[(dIdx + k) % list.length];
+  const name = city.nameKo;
+  const breakfast: PlanItem = { time: '09:00 AM', title: pick(BREAKFASTS, 0), location: `${name} 숙소 근처`, memo: '가볍게 하루를 여는 아침', category: '식사', type: 'dining' };
+  const lunch: PlanItem = { time: '12:30 PM', title: pick(LUNCHES, 1), location: `${name} 시내`, memo: '점심은 현지 사람들 틈에서', category: '식사', type: 'dining' };
+  const dinner: PlanItem = { time: '07:00 PM', title: pick(DINNERS, 2), location: `${name} 저녁 거리`, memo: '하루를 마무리하는 저녁', category: '식사', type: 'dining' };
+  const spot = (time: string, title: string, memo: string, category = '관광'): PlanItem => ({ time, title, location: title, memo, category, type: 'activity' });
+
+  switch (kind) {
+    case 'market': return [
+      breakfast,
+      spot('10:30 AM', `${name} 전통 시장`, '시장 골목을 걸으며 길거리 간식 맛보기', '시장'),
+      lunch,
+      spot('03:00 PM', a, `${label} 동선 속 대표 명소`),
+      { time: '05:00 PM', title: '골목 디저트 카페', location: `${name} 카페거리`, memo: '시장 다음은 달콤한 쉼표', category: '카페', type: 'dining' },
+      dinner,
+    ];
+    case 'nature': return [
+      breakfast,
+      spot('10:00 AM', `${name} 근교 자연 산책`, '공원 · 해변 · 숲길 중 날씨에 맞춰', '자연'),
+      { time: '01:00 PM', title: '자연 속 피크닉 런치', location: `${name} 근교`, memo: '도시락이나 근교 식당에서', category: '식사', type: 'dining' },
+      spot('03:30 PM', a, '풍경이 좋은 뷰포인트'),
+      dinner,
+    ];
+    case 'culture': return [
+      breakfast,
+      spot('10:00 AM', `${name} 미술관 · 박물관`, '오전 한산할 때 전시 관람', '전시'),
+      lunch,
+      spot('02:30 PM', a, '역사와 건축을 따라 걷는 산책'),
+      spot('04:30 PM', b, '오후 빛이 좋은 시간의 명소'),
+      dinner,
+    ];
+    case 'cafe': return [
+      { time: '10:00 AM', title: '스페셜티 커피 로스터리', location: `${name} 카페거리`, memo: '느지막이 시작하는 커피 한 잔', category: '카페', type: 'dining' },
+      spot('11:30 AM', `${name} 편집숍 · 소품 거리`, '기념품과 작은 가게 구경', '쇼핑'),
+      lunch,
+      spot('03:00 PM', a, '여유롭게 둘러보는 명소'),
+      { time: '05:00 PM', title: '디저트 & 티타임', location: `${name} 디저트 숍`, memo: '오후의 단맛', category: '카페', type: 'dining' },
+      dinner,
+    ];
+    case 'night': return [
+      breakfast,
+      spot('11:00 AM', a, '낮에 보는 대표 명소'),
+      lunch,
+      spot('03:00 PM', b, '오후의 산책'),
+      dinner,
+      spot('09:00 PM', `${name} 야경 전망대`, '도시의 불빛이 켜지는 시간', '야경'),
+    ];
+    default: return [
+      breakfast,
+      spot('10:00 AM', a, `${label} 핵심 랜드마크`),
+      lunch,
+      spot('02:30 PM', b, '랜드마크 주변 골목 산책'),
+      spot('05:00 PM', `${name} 전망 포인트`, '해 질 녘 풍경', '관광'),
+      dinner,
+    ];
+  }
 }
 
 /**
@@ -616,7 +657,7 @@ export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTri
         endDate: dateCalc.endDate,
         durationDays: dur,
         nightsDays: `${dur}박 ${dur + 1}일`,
-        coverImg: city.coverImage,
+        coverImg: cityThumb(city),
         seasonBadge: `${dateCalc.startMonth}월 최적 시즌`,
         seasonNote: dateCalc.isUpcomingBest
           ? `${dateCalc.startMonth}월은 ${city.nameKo}을(를) 여행하기 가장 온화하고 쾌적한 최적 시기입니다.`
@@ -698,7 +739,7 @@ export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTri
       endDate: dateCalc.endDate,
       durationDays: durToUse,
       nightsDays: `${durToUse}박 ${durToUse + 1}일`,
-      coverImg: cObj.coverImage,
+      coverImg: cityThumb(cObj),
       seasonBadge: `${dateCalc.startMonth}월 최적 시즌`,
       seasonNote: dateCalc.isUpcomingBest
         ? `${dateCalc.startMonth}월은 ${cObj.nameKo}을(를) 여행하기 가장 온화하고 쾌적한 최적 시기입니다.`

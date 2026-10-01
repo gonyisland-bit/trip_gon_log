@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { artDataUrl, cityThumb, itemKind, themeKind } from '../../utils/placeArt';
 import { Bookmark, Plane, Plus, Route, Search, Shuffle, X } from 'lucide-react';
 import { Segment } from '../ui/Segment';
 import { Chip } from '../ui/Chip';
@@ -96,7 +97,7 @@ export function StepWhere({ d, recentCities, saved, onResume, onDiscard }: {
         <ul className="flex flex-col gap-1.5" aria-label="검색 결과">
           {results.map(c => (
             <li key={`${c.countryEn}-${c.nameEn}`}>
-              <CardRow thumb={c.coverImage} title={c.nameKo} meta={`${c.countryKo} · ${formatHours(flightHours(c))}`} onClick={() => pick(c)} />
+              <CardRow thumb={cityThumb(c)} title={c.nameKo} meta={`${c.countryKo} · ${formatHours(flightHours(c))}`} onClick={() => pick(c)} />
             </li>
           ))}
         </ul>
@@ -129,7 +130,7 @@ export function StepWhere({ d, recentCities, saved, onResume, onDiscard }: {
       {(d.city || d.country) && d.allCities.length <= 1 && results.length === 0 && (
         <Card padding="sm" className="flex items-center gap-3">
           <span className="w-14 h-14 rounded-thumb overflow-hidden bg-black/[0.06] dark:bg-white/10 shrink-0">
-            {d.city?.coverImage && <img src={d.city.coverImage} alt="" className="w-full h-full object-cover" />}
+            {d.city && <img src={cityThumb(d.city)} alt="" className="w-full h-full object-cover" />}
           </span>
           <span className="flex-1 min-w-0 flex flex-col">
             <span className="text-[17px] font-extrabold truncate">{d.city ? d.city.nameKo : d.country?.nameKo}</span>
@@ -326,6 +327,8 @@ export function StepWho({ d }: { d: NewTripDraft }) {
 }
 
 // 4 · Preview
+const x0 = (p: { id: string }) => p.id;
+
 export function StepPreview({ d }: { d: NewTripDraft }) {
   const p = d.selected;
   return (
@@ -343,7 +346,7 @@ export function StepPreview({ d }: { d: NewTripDraft }) {
             {d.proposals.map(x => (
               <li key={x.id}>
                 <CardRow
-                  thumb={x.coverImg}
+                  thumb={artDataUrl(themeKind(x.theme), x.id)}
                   title={x.title}
                   meta={`${x.nightsDays} · ${x.themeLabel} · ${x.startDate.slice(5).replace('-', '.')}`}
                   current={p?.id === x.id}
@@ -360,12 +363,14 @@ export function StepPreview({ d }: { d: NewTripDraft }) {
                 {p.timeline.map((day, i) => (
                   <li key={day.date}>
                     <Card padding="sm" className="flex gap-3 items-start">
-                      <span className="w-12 h-12 rounded-thumb bg-black/[0.06] dark:bg-white/10 flex flex-col items-center justify-center shrink-0">
-                        <span className={`${label} ${muted} leading-none`}>Day</span>
-                        <span className="text-[17px] font-extrabold leading-tight">{i + 1}</span>
-                      </span>
+                      {/* The day's lead item as a flat picture (a landmark, a market, a cafe...) */}
+                      <img
+                        src={artDataUrl(itemKind(day.items.find(it => it.type !== 'transit' && it.type !== 'stay' && it.type !== 'dining') || day.items[0] || {}), `${x0(p)}-${i}`)}
+                        alt=""
+                        className="w-12 h-12 rounded-thumb shrink-0"
+                      />
                       <span className="flex-1 min-w-0 flex flex-col py-0.5">
-                        <span className={`${label} ${muted}`}>{day.date.slice(5).replace('-', '.')}</span>
+                        <span className={`${label} ${muted}`}>Day {i + 1} · {day.date.slice(5).replace('-', '.')}</span>
                         <span className="text-[14px] font-bold leading-snug line-clamp-2">
                           {day.items.filter(it => it.type !== 'transit').slice(0, 3).map(it => it.title).join(' · ') || '자유 일정'}
                         </span>
