@@ -32,6 +32,7 @@ const NewTripSheet = lazyWithRetry(() => import('./components/newtrip/NewTripShe
 
 const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
 const ShareJourneySheet = lazyWithRetry(() => import('./components/share/ShareJourneySheet').then(m => ({ default: m.ShareJourneySheet })));
+const JourneyBoard = lazyWithRetry(() => import('./components/board/JourneyBoard').then(m => ({ default: m.JourneyBoard })));
 const SettingsSheet = lazyWithRetry(() => import('./components/settings/SettingsSheet').then(m => ({ default: m.SettingsSheet })));
 const SearchModal = lazyWithRetry(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
 const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
@@ -52,6 +53,7 @@ import { personName } from './utils/personName';
 import { VerifyEmailPanel } from './components/account/VerifyEmailPanel';
 import { JourneyActionsSheet, OPEN_JOURNEY_ACTIONS } from './components/cards/JourneyActionsSheet';
 import { OPEN_JOURNEY_SHARE } from './components/share/ShareJourneySheet';
+import { OPEN_JOURNEY_BOARD } from './components/board/boardData';
 import { setDetailIntent } from './utils/detailIntent';
 import { OPEN_SETTINGS_EVENT } from './utils/myCities';
 import type { SettingsTab } from './components/settings/SettingsSheet';
@@ -134,6 +136,18 @@ function App() {
     const open = (e: Event) => setShareTripId((e as CustomEvent<number>).detail);
     window.addEventListener(OPEN_JOURNEY_SHARE, open);
     return () => window.removeEventListener(OPEN_JOURNEY_SHARE, open);
+  }, []);
+  // A journey's board (bookings and places on one screen), from the journey header, card menu,
+  // home, or a link with ?id=…&board=1
+  const [boardTripId, setBoardTripId] = useState<number | null>(() => {
+    const q = new URLSearchParams(window.location.search);
+    const id = Number(q.get('id'));
+    return q.get('board') === '1' && id ? id : null;
+  });
+  useEffect(() => {
+    const open = (e: Event) => setBoardTripId((e as CustomEvent<number>).detail);
+    window.addEventListener(OPEN_JOURNEY_BOARD, open);
+    return () => window.removeEventListener(OPEN_JOURNEY_BOARD, open);
   }, []);
   // Settings on a given tab, from links like "도시 편집" in a weather list
   const [settingsTab, setSettingsTab] = useState<SettingsTab | undefined>(undefined);
@@ -718,6 +732,26 @@ function App() {
                     .catch(() => notify('저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error'));
                 }}
               />
+            );
+          })()}
+
+          {boardTripId !== null && (() => {
+            const trip = plans.find(p => p.id === boardTripId) || trips.find(t => t.id === boardTripId);
+            if (!trip) return null;
+            return (
+              <LayerBoundary name="여정 보드" onClose={() => setBoardTripId(null)}>
+                <Suspense fallback={null}>
+                  <JourneyBoard
+                    trip={trip}
+                    timelineData={timelineData}
+                    flights={flightsByTrip[trip.id] || []}
+                    stays={staysByTrip[trip.id] || []}
+                    transits={transitByTrip[trip.id] || []}
+                    onClose={() => setBoardTripId(null)}
+                    onOpenItem={(tab, itemId) => { setBoardTripId(null); handleSearchResultClick(trip.id, tab, itemId); }}
+                  />
+                </Suspense>
+              </LayerBoundary>
             );
           })()}
 

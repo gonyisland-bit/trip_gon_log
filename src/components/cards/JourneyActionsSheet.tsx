@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { BookOpen, Check, Clock, ImagePlus, Loader2, Share2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
+import { BookOpen, Check, Clock, ImagePlus, LayoutGrid, Loader2, Share2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
+import { openJourneyBoard } from '../board/boardData';
 import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Trip } from '../../types';
@@ -106,6 +107,9 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
       )}
 
       <div className="flex flex-col gap-1.5">
+        <button type="button" className={row} onClick={() => { close(); openJourneyBoard(trip.id); }}>
+          <LayoutGrid className="w-[18px] h-[18px] shrink-0" aria-hidden />보드로 보기
+        </button>
         {/* A published journey opens on its magazine; the other view is one tap away */}
         {!isPlan && (trip.publishedAt ? (
           <button type="button" className={row} onClick={() => { close(); onOpenAs('record'); }}>

@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import {
   Train, Bus, Car, Trash2, Image as ImageIcon, ChevronDown, MapPin, Loader2, ArrowLeft, ArrowUp,
   ArrowDown, ArrowRight, FileText, Share2, Play, Pause, Check, Edit3, DollarSign,
-  X, Undo2, Redo2, Calendar, Sparkles, Users, BookOpen
+  X, Undo2, Redo2, Calendar, Sparkles, Users, BookOpen, LayoutGrid
 } from 'lucide-react';
 import { OPEN_JOURNEY_MAGAZINE } from '../../utils/detailIntent';
+import { openJourneyBoard } from '../../components/board/boardData';
 import { getUpcomingPlanInfo } from '../../utils/tripPlanHelper';
 import { getDefaultCurrencyForLocation } from '../../components/SettlementExpenseInput';
 import { generateJourneyMessage } from '../../components/SummaryView';
@@ -3252,6 +3253,13 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 <Redo2 className="w-4 h-4" />
               </button>
             </>
+          )}
+
+          {/* Board: bookings and places on one screen, for use on the road */}
+          {!isEditing && trip && (
+            <button type="button" onClick={() => openJourneyBoard(trip.id)} className={hdrBtn(false)} aria-label="보드" title="보드">
+              <LayoutGrid className="w-4 h-4" />
+            </button>
           )}
 
           {/* Magazine (v1.3.6 4-b): the journey read as an issue; red once published */}
