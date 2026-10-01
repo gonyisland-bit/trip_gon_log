@@ -30,3 +30,6 @@ public/media__*
 public/brain_imgs/
 .vercel
 promo/out/
+
+# art tracing
+scripts/art/__pycache__/

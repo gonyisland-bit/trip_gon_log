@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bed, Trash2, ImagePlus, Loader2, X, ChevronDown, ChevronUp, Copy, Check, Camera } from 'lucide-react';
 import { StayItem } from '../types';
+import { mapSearchUrl } from '../utils/mapLinks';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
@@ -382,9 +383,10 @@ export function StayCard({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stay.address)}`;
+                  const url = mapSearchUrl(stay.title, stay.address);
+                  if (!url) return;
                   if (onOpenMapConfirm) {
-                    onOpenMapConfirm(stay.address, url);
+                    onOpenMapConfirm(stay.title || stay.address, url);
                   } else {
                     window.open(url, '_blank');
                   }

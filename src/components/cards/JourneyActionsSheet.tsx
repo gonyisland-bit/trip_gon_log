@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { BookOpen, Check, Clapperboard, Clock, ImagePlus, LayoutGrid, Loader2, Share2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
+import { BookOpen, Check, Clapperboard, ImagePlus, LayoutGrid, Loader2, Share2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
 import { openJourneyBoard } from '../board/boardData';
 import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Trip } from '../../types';
 import { Sheet, useSheetClose } from '../Sheet';
+import { Segment } from '../ui/Segment';
 import { compressImage } from '../../utils/imageHelper';
 import { getEffectiveImageUrl, uploadFileToR2 } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
@@ -14,7 +15,8 @@ import { notify } from '../../utils/feedback';
 
 // One journey's actions from its card (v1.3.6 4-a): cover, edit, share (5-b sheet), pin to home, delete.
 // Opened from the ⋯ button or a long press on any journey card, so members never need a
-// separate management screen for their own journeys.
+// separate management screen for their own journeys. Four short rows: how to open (board or
+// magazine), the two covers, edit and share, and a small delete behind its own confirmation.
 
 export const OPEN_JOURNEY_ACTIONS = 'tgl:journey-actions';
 export function openJourneyActions(tripId: number) {
@@ -43,6 +45,11 @@ export function JourneyActionsSheet(props: Props) {
 }
 
 const row = 'w-full min-h-12 px-4 flex items-center gap-3 rounded-card bg-surface dark:bg-surface-dark text-left text-[15px] font-bold transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.06] disabled:opacity-40';
+
+// Two-up buttons: a pill that inks when its panel is open
+const pick = (on: boolean) => `h-12 px-3 inline-flex items-center justify-center gap-2 rounded-full text-[14px] font-bold transition-colors ${
+  on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.03] dark:hover:bg-white/[0.06]'
+}`;
 
 function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, onOpenAs }: Props) {
   const close = useSheetClose();
@@ -106,29 +113,33 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
         <p className="text-meta text-black/55 dark:text-white/55">함께 보는 여정이라 보기만 할 수 있습니다.</p>
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <button type="button" className={row} onClick={() => { close(); openJourneyBoard(trip.id); }}>
-          <LayoutGrid className="w-[18px] h-[18px] shrink-0" aria-hidden />보드로 보기
-        </button>
-        {/* A published journey opens on its magazine; the other view is one tap away */}
-        {!isPlan && (trip.publishedAt ? (
-          <button type="button" className={row} onClick={() => { close(); onOpenAs('record'); }}>
-            <Clock className="w-[18px] h-[18px] shrink-0" aria-hidden />기록으로 열기
+      <div className="flex flex-col gap-2">
+        {/* How to open: tapping a side opens the journey that way (a published one rests on its magazine) */}
+        {isPlan ? (
+          <button type="button" className={row} onClick={() => { close(); openJourneyBoard(trip.id); }}>
+            <LayoutGrid className="w-[18px] h-[18px] shrink-0" aria-hidden />보드로 보기
           </button>
         ) : (
-          <button type="button" className={row} onClick={() => { close(); onOpenAs('magazine'); }}>
-            <BookOpen className="w-[18px] h-[18px] shrink-0" aria-hidden />매거진으로 보기
-          </button>
-        ))}
-        {canEdit && (
-          <button type="button" className={row} onClick={() => setCoverOpen(v => v === 'card' ? null : 'card')} aria-expanded={coverOpen === 'card'}>
-            <ImagePlus className="w-[18px] h-[18px] shrink-0" aria-hidden />카드 커버
-          </button>
+          <Segment<'board' | 'magazine'>
+            block
+            ariaLabel="열기 방식"
+            value={trip.publishedAt ? 'magazine' : 'board'}
+            onChange={(v) => { close(); if (v === 'board') openJourneyBoard(trip.id); else onOpenAs('magazine'); }}
+            options={[
+              { value: 'board', label: '보드', icon: LayoutGrid },
+              { value: 'magazine', label: '매거진', icon: BookOpen },
+            ]}
+          />
         )}
         {canEdit && (
-          <button type="button" className={row} onClick={() => setCoverOpen(v => v === 'hero' ? null : 'hero')} aria-expanded={coverOpen === 'hero'}>
-            <Clapperboard className="w-[18px] h-[18px] shrink-0" aria-hidden />홈 히어로 이미지 · 영상
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className={pick(coverOpen === 'card')} onClick={() => setCoverOpen(v => v === 'card' ? null : 'card')} aria-expanded={coverOpen === 'card'}>
+              <ImagePlus className="w-4 h-4 shrink-0" aria-hidden />카드 커버
+            </button>
+            <button type="button" className={pick(coverOpen === 'hero')} onClick={() => setCoverOpen(v => v === 'hero' ? null : 'hero')} aria-expanded={coverOpen === 'hero'}>
+              <Clapperboard className="w-4 h-4 shrink-0" aria-hidden />히어로 커버
+            </button>
+          </div>
         )}
         {coverOpen && (
           <div className="rounded-card bg-surface dark:bg-surface-dark p-3 flex flex-col gap-3">
@@ -197,21 +208,23 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
             )}
           </div>
         )}
-        {canEdit && (
-          <button type="button" className={row} onClick={() => { close(); onEdit(); }}>
-            <PencilLine className="w-[18px] h-[18px] shrink-0" aria-hidden />편집
+        <div className="grid grid-cols-2 gap-2">
+          {canEdit && (
+            <button type="button" className={pick(false)} onClick={() => { close(); onEdit(); }}>
+              <PencilLine className="w-4 h-4 shrink-0" aria-hidden />편집
+            </button>
+          )}
+          <button type="button" className={`${pick(false)} ${canEdit ? '' : 'col-span-2'}`} onClick={() => { close(); openJourneyShare(trip.id); }}>
+            <Share2 className="w-4 h-4 shrink-0" aria-hidden />공유
           </button>
-        )}
-        <button type="button" className={row} onClick={() => { close(); openJourneyShare(trip.id); }}>
-          <Share2 className="w-[18px] h-[18px] shrink-0" aria-hidden />공유
-        </button>
-        <button type="button" className={row} onClick={() => { onTogglePin(); close(); }}>
-          {pinned ? <PinOff className="w-[18px] h-[18px] shrink-0" aria-hidden /> : <Pin className="w-[18px] h-[18px] shrink-0" aria-hidden />}
-          {pinned ? '홈 히어로에서 빼기' : '홈 히어로에 띄우기'}
-        </button>
+        </div>
         {isOwner && (
-          <button type="button" className={`${row} text-red-600 dark:text-red-400`} onClick={() => { close(); onDelete(); }}>
-            <Trash2 className="w-[18px] h-[18px] shrink-0" aria-hidden />삭제
+          <button
+            type="button"
+            className="self-center mt-1 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-meta font-bold text-red-600 dark:text-red-400 hover:bg-red-600/10 transition-colors"
+            onClick={() => { close(); onDelete(); }}
+          >
+            <Trash2 className="w-3.5 h-3.5" aria-hidden />삭제
           </button>
         )}
       </div>

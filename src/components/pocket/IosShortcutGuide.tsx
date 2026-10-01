@@ -6,12 +6,8 @@ import { notify } from '../../utils/feedback';
 // does it: it takes the shared link or text and opens /pocket?share_text=…, the same path the
 // Android share target uses (utils/shareTarget picks the first web link out of it).
 
-function isIOS(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
-
 export function IosShortcutGuide({ cardClass, labelClass }: { cardClass: string; labelClass: string }) {
-  const [open, setOpen] = useState(isIOS);
+  const [open, setOpen] = useState(false);
   const base = `${window.location.origin}/pocket?share_text=`;
 
   const copy = async () => {
@@ -34,16 +30,13 @@ export function IosShortcutGuide({ cardClass, labelClass }: { cardClass: string;
       </button>
       {open && (
         <div className="flex flex-col gap-3">
-          <p className="text-meta text-black/60 dark:text-white/60 break-keep">
-            한 번 만들어 두면 인스타그램 · 유튜브 · 블로그의 공유 버튼에서 <b>Tripgon 포켓에 담기</b>를 누를 때 포켓 담기 화면이 바로 열립니다.
-            Android는 설치한 앱이 공유 목록에 이미 나옵니다.
-          </p>
-          <ol className="flex flex-col gap-2 pl-5 list-decimal text-[14px] leading-relaxed break-keep">
-            <li><b>단축어</b> 앱 → 오른쪽 위 <b>+</b> → 이름을 <b>Tripgon 포켓에 담기</b>로.</li>
-            <li>아래 <b>세부사항</b> 버튼 → <b>공유 시트에서 보기</b> 켜기. 받는 유형은 <b>URL</b>과 <b>텍스트</b>만 남깁니다.</li>
-            <li>동작 추가 → <b>URL 인코딩</b>(입력: 단축어 입력).</li>
-            <li>동작 추가 → <b>텍스트</b>에 아래 주소를 붙여 넣고, 끝에 변수 <b>인코딩된 텍스트</b>를 넣습니다.</li>
-            <li>동작 추가 → <b>URL 열기</b>(입력: 텍스트). 완료.</li>
+          <p className="text-meta text-black/60 dark:text-white/60 break-keep">공유 버튼에서 바로 포켓에 담는 단축어입니다. Android는 따로 만들 필요가 없습니다.</p>
+          <ol className="flex flex-col gap-1.5 pl-5 list-decimal text-[14px] leading-snug break-keep">
+            <li>단축어 앱에서 새로 만들고 이름을 <b>Tripgon 포켓에 담기</b>로.</li>
+            <li>세부사항에서 <b>공유 시트에서 보기</b>를 켜고 URL · 텍스트만 남기기.</li>
+            <li><b>URL 인코딩</b> 동작 추가.</li>
+            <li><b>텍스트</b>에 아래 주소와 <b>인코딩된 텍스트</b> 넣기.</li>
+            <li><b>URL 열기</b>(입력: 텍스트) 추가.</li>
           </ol>
           <div className="flex items-center gap-2 min-w-0">
             <code className="flex-1 min-w-0 truncate font-mono text-meta px-3 h-9 leading-9 rounded-full bg-black/[0.05] dark:bg-white/10">{base}</code>
@@ -51,7 +44,7 @@ export function IosShortcutGuide({ cardClass, labelClass }: { cardClass: string;
               <Copy className="w-3.5 h-3.5" aria-hidden />복사
             </button>
           </div>
-          <p className="text-meta text-black/55 dark:text-white/55 break-keep">단축어는 Safari로 열립니다. Safari에서도 Tripgon에 로그인해 두세요.</p>
+          <p className="text-meta text-black/55 dark:text-white/55 break-keep">Safari에서도 로그인해 두세요.</p>
         </div>
       )}
     </section>

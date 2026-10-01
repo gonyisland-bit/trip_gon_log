@@ -186,9 +186,9 @@ const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null
       </style>
       <div style="${isMoving ? 'animation: walkerBobbing 0.44s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: bottom center; will-change: transform;">
         <img
-          src="/walker.png"
-          alt="Walker"
-          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(1.5px 0 0 #FFFFFF) drop-shadow(-1.5px 0 0 #FFFFFF) drop-shadow(0 1.5px 0 #FFFFFF) drop-shadow(0 -1.5px 0 #FFFFFF) drop-shadow(0 2px 4px rgba(0,0,0,0.65));"
+          src="/art/backpacking.svg"
+          alt=""
+          style="width: 46px; height: 46px; object-fit: contain; display: block; filter: drop-shadow(1.5px 0 0 #FFFFFF) drop-shadow(-1.5px 0 0 #FFFFFF) drop-shadow(0 1.5px 0 #FFFFFF) drop-shadow(0 -1.5px 0 #FFFFFF) drop-shadow(0 2px 4px rgba(0,0,0,0.65));"
         />
       </div>
       <div style="width: 24px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; ${isMoving ? 'animation: walkerShadowPulse 0.44s ease-in-out infinite;' : ''} margin-top: -2px;"></div>
@@ -455,7 +455,7 @@ export function MapArea({
       polyline.bindTooltip(distText, {
         permanent: true,
         direction: 'center',
-        className: 'font-mono text-meta font-extrabold bg-[#111] text-white px-2 py-0.5 rounded border border-white/20 shadow-md',
+        className: 'font-mono text-meta font-extrabold bg-[#141412] text-white px-2.5 py-0.5 rounded-full border-0 shadow-md',
       });
     }
 
@@ -581,8 +581,8 @@ export function MapArea({
           </div>
 
           <!-- Clean Swiss Minimal Gray Label (Hidden by default, shown on hover/click) -->
-          <div class="pocket-pin-label" style="position: absolute; top: 25px; left: 50%; z-index: 10; background: rgba(244, 244, 246, 0.96); backdrop-filter: blur(8px); border: 1px solid rgba(212, 212, 216, 0.95); border-radius: 4px; color: #18181b; font-size: 11px; font-weight: 700; padding: 2.5px 7px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center;">
-            <span style="background: #e4e4e7; color: #52525b; font-size: 11px; font-weight: 800; padding: 1px 4px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em; border: 0.5px solid rgba(82,82,91,0.25);">POCKET</span>
+          <div class="pocket-pin-label" style="position: absolute; top: 25px; left: 50%; z-index: 10; background: rgba(244, 244, 246, 0.96); backdrop-filter: blur(8px); border: 0; border-radius: 9999px; color: #18181b; font-size: 11px; font-weight: 700; padding: 3px 10px 3px 3px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center;">
+            <span style="background: #52525B; color: #ffffff; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 9999px; margin-right: 5px; letter-spacing: 0.02em;">POCKET</span>
             <span style="color: #18181b; font-weight: 700;">${spot.title}</span>
           </div>
         </div>
@@ -839,10 +839,9 @@ export function MapArea({
       !isNaN(Number(p.lat)) && !isNaN(Number(p.lng))
     );
 
-    const isGalleryTab = activeTab === 'gallery';
     const isSummaryMode = activeTab === 'summary';
     if (valid.length === 0) {
-      if (!hasFitRef.current || isGalleryTab) {
+      if (!hasFitRef.current) {
         const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
         const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
         map.setView([lat, lng], 13);
@@ -1250,7 +1249,7 @@ export function MapArea({
         try { sessionStorage.removeItem(`trip_map_view_${trip.id}`); } catch (_) {}
       }
 
-      const shouldFitAll = explicitNavigation || (!userMovedMapRef.current && (!isInteractive || !hasFitRef.current || isGalleryTab || (itemIdChanged && expandedItemId === null)));
+      const shouldFitAll = explicitNavigation || (!userMovedMapRef.current && (!isInteractive || !hasFitRef.current || (itemIdChanged && expandedItemId === null)));
       if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && shouldFitAll) {
         const bounds = L.latLngBounds(coords);
         if (coords.length === 1 || bounds.getNorthEast().equals(bounds.getSouthWest())) {
@@ -1973,7 +1972,7 @@ export function MapArea({
 
       {/* ── Nearby POI Toggles Overlay (Stays tab only: Minimal Icon Bar) ── */}
       {isStayTab && (
-        <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20 flex items-center gap-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 border border-black/15 dark:border-white/15 p-1 rounded-md shadow-sm transition duration-300">
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20 flex items-center gap-1 bg-surface/95 dark:bg-surface-dark/95 p-1 rounded-full shadow-lg transition duration-300">
           {isPoiExpanded ? (
             <div className="flex items-center gap-1 animate-in fade-in duration-200">
               {/* 편의점 */}

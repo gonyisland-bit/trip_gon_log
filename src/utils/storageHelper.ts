@@ -1,5 +1,6 @@
 import { auth } from '../firebase';
 import { apiUrl } from './apiBase';
+import { legacyArtTile } from './placeArt';
 
 export const R2_PUBLIC_URL = (import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-73f603986a164324a3a48f1c03847cf3.r2.dev').replace(/\/+$/, '');
 
@@ -125,8 +126,9 @@ export function convertFirebaseStorageUrlToR2(url: string): string {
  */
 export function getEffectiveImageUrl(url: string | undefined | null): string {
   if (!url) return '';
-  // Generated illustrations (placeArt) are already complete data URLs
-  if (url.startsWith('data:')) return url;
+  // Generated illustrations are complete data URLs (an old hand-drawn cover is shown as its new tile); scene tiles are our own files (public/art)
+  if (url.startsWith('data:')) return legacyArtTile(url) ?? url;
+  if (url.startsWith('/art/')) return url;
   const converted = convertFirebaseStorageUrlToR2(url);
   try {
     return encodeURI(decodeURI(converted));

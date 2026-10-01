@@ -147,7 +147,7 @@ export function MapModals({ s }: { s: MapHubState }) {
       {/* Wishlist Modal (Favorite Countries & Cities) */}
       {isWishlistModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-lg bg-[#FAF9F6] dark:bg-[#181818] border border-black/20 dark:border-white/20 p-5 shadow-2xl flex flex-col gap-4 font-['Inter',sans-serif]">
+          <div className="w-full max-w-lg bg-surface dark:bg-surface-dark rounded-card p-5 shadow-2xl flex flex-col gap-4">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2">
@@ -373,9 +373,9 @@ export function MapModals({ s }: { s: MapHubState }) {
                       setSelectedPinGroup(null);
                       onNavigate('detail', journey.id);
                     }}
-                    className="p-3 border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center justify-between gap-3 cursor-pointer group rounded-none"
+                    className="p-3 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 transition flex items-center justify-between gap-3 cursor-pointer group rounded-card"
                   >
-                    <div className="w-12 h-12 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
+                    <div className="w-12 h-12 aspect-square rounded-thumb shrink-0 overflow-hidden bg-black/10">
                       <img
                         src={getEffectiveImageUrl(journey.img)}
                         alt={cleanTitle}
@@ -451,7 +451,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                   value={placeSearchQuery}
                   onChange={e => setPlaceSearchQuery(e.target.value)}
                   placeholder="도시 또는 국가 검색..."
-                  className="w-full pl-9 pr-3 py-2 text-xs font-mono font-bold bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 outline-none text-black dark:text-white rounded-none"
+                  className="w-full pl-9 pr-3 py-2 text-xs font-mono font-bold bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 outline-none text-black dark:text-white rounded-full"
                   autoFocus
                 />
               </div>
@@ -480,7 +480,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                       className="group flex items-center justify-between py-2.5 px-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 aspect-square overflow-hidden bg-black/10 shrink-0 border border-black/10 dark:border-white/10">
+                        <div className="w-10 h-10 aspect-square overflow-hidden bg-black/10 shrink-0 rounded-thumb">
                           {repJourney?.img ? (
                             <img src={getEffectiveImageUrl(repJourney.img)} alt={group.city} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                           ) : (
@@ -507,7 +507,7 @@ export function MapModals({ s }: { s: MapHubState }) {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-meta font-sans font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10">
+                        <span className="text-meta font-sans font-bold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70">
                           {group.journeys.length} Trip
                         </span>
                         <ArrowRight className="w-3.5 h-3.5 text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition" />

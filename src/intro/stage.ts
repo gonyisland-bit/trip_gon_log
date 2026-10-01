@@ -5,7 +5,7 @@
 // Every change eases over one or two beats: no shake, no punch, no bounce.
 import { BRAND_LOGO_PATHS, BRAND_LOGO_VIEWBOX } from '../components/brandLogoData';
 import { decodeWorldDots, type WorldDot } from '../data/worldDots';
-import { Traveler, poseTraveler, drawTraveler, TRAVELER_LIGHT, STRIDE_PER_RAD } from '../components/splash/travelerRig';
+import type { ArtId } from '../art/catalog';
 import { BEAT, LINES, TOTAL_BEATS, clamp, ease, lerp, seg, span } from './timeline';
 
 const PAPER = '#F6F4EF', SURFACE = '#FFFDF9', INK = '#141412', RED = '#DC2626', AMBER = '#E9A23B';
@@ -15,6 +15,14 @@ const SANS = '"Satoshi", "Noto Sans KR", -apple-system, sans-serif';
 const MONO = '"SF Mono", Consolas, "Noto Sans KR", monospace';
 const TAU = Math.PI * 2;
 const N = 120; // points along the line
+/** How far the scenery rolls per radian of the film's step clock (the old walker's stride) */
+const STRIDE_PER_RAD = 18.85;
+/** The traveler's scene on each stretch of the journey: gate, city, beach */
+const TRAVEL_ART: { id: ArtId; from: number; to: number }[] = [
+  { id: 'luggage-travel', from: 20.2, to: 28.8 },
+  { id: 'backpacking', from: 28.2, to: 36.8 },
+  { id: 'beach-drink', from: 36.2, to: 44.8 },
+];
 
 export interface StageOptions {
   /** The canvas the film is drawn on (the name is kept from the 3D stage) */
@@ -53,7 +61,7 @@ export class IntroStage {
   private dots: WorldDot[] = [];
   private logo: Path2D[] = [];
   private logoBox = { w: 489.16, h: 87.57 };
-  private walker = new Traveler();
+  private art = new Map<ArtId, HTMLImageElement>();
 
   constructor(opts: StageOptions) {
     this.opts = opts;
@@ -68,6 +76,14 @@ export class IntroStage {
   }
 
   async load() {
+    if (typeof Image !== 'undefined') {
+      await Promise.all(TRAVEL_ART.map(({ id }) => new Promise<void>(resolve => {
+        const img = new Image();
+        img.onload = () => { this.art.set(id, img); resolve(); };
+        img.onerror = () => resolve();
+        img.src = `/art/${id}.svg`;
+      })));
+    }
     if (typeof document === 'undefined' || !document.fonts?.load) return;
     await Promise.all([
       document.fonts.load(`800 40px ${SANS}`, '도시로바다로 Tripgon'),
@@ -119,11 +135,9 @@ export class IntroStage {
     ctx.fillStyle = PAPER;
     ctx.fillRect(0, 0, L.w, L.h);
 
-    // The traveler's gait runs on the clock: one step a beat
-    const w = this.walker;
-    w.phase = t * TAU * 0.75;
-    w.amp = 1;
-    const ground = w.phase * STRIDE_PER_RAD * L.s;
+    // The scenery rolls on the clock: one step a beat
+    const phase = t * TAU * 0.75;
+    const ground = phase * STRIDE_PER_RAD * L.s;
 
     this.mapScene(b);
     this.gateScene(b, t);
@@ -132,8 +146,7 @@ export class IntroStage {
     this.groundDashes(b, ground);
     this.line(b);
     this.logScene(b, t);
-    const walkA = span(b, 20.2, 44.8, 1.2);
-    if (walkA > 0) drawTraveler(ctx, poseTraveler(w, L.walkX, L.gy, L.s, TRAVELER_LIGHT), TRAVELER_LIGHT, walkA);
+    this.traveler(b, phase);
     this.logoAndTagline(b);
     this.captions(b);
   }
@@ -224,6 +237,21 @@ export class IntroStage {
   }
 
   // ── map ──────────────────────────────────────────────────────────────
+  /** The traveler in the scene of each stretch, rocking a little with the step */
+  private traveler(b: number, phase: number) {
+    const ctx = this.ctx, L = this.L;
+    const size = (L.portrait ? 230 : 200) * L.u;
+    const bob = Math.sin(phase) * 2.5 * L.u;
+    for (const s of TRAVEL_ART) {
+      const a = span(b, s.from, s.to, 1.2);
+      const img = this.art.get(s.id);
+      if (a <= 0 || !img || !img.naturalWidth) continue;
+      ctx.globalAlpha = a;
+      ctx.drawImage(img, L.walkX - size / 2, L.gy - size * 0.93 + bob, size, size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   private mapScene(b: number) {
     if (b < 8 || b > 21) return;
     const ctx = this.ctx, L = this.L, u = L.u;

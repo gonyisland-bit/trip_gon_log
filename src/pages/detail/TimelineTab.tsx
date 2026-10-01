@@ -17,6 +17,7 @@ import {
 import type { JourneyDetailState } from './useJourneyDetailState';
 import { formatCountdown } from './useTodayMode';
 import { useState } from 'react';
+import { mapSearchUrl } from '../../utils/mapLinks';
 
 // The red hairline that marks the current time between today's items
 function NowLine({ label }: { label: string }) {
@@ -42,7 +43,8 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
     handleDropTimelineItem, handleGenerateDefaultTemplate, allTripDates, dynamicDates,
     currentTimeline, handleAddTimelineItemRelativeTo, updateTimelineItem, updateTimelineItemFields,
     toggleFrequentPlace, isFrequent, handleSelectFrequent, handleToggleExcludeFromMap,
-    handleAddTimelineItem, handleDeleteTimelineItem, handleWeatherChange, todayMode, handleStartEditing
+    handleAddTimelineItem, handleDeleteTimelineItem, handleWeatherChange, todayMode, handleStartEditing,
+    setLightboxIndex, setIsLightboxOpen, galleryUrlIndexMap
   } = s;
 
   // Today mode shows on today's page and on ALL, never while editing
@@ -851,8 +853,8 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
-                                    setMapConfirm({ placeName: item.location || '', url });
+                                    const url = mapSearchUrl(item.place, item.location, item.lat, item.lng);
+                                    if (url) setMapConfirm({ placeName: item.place || item.location || '', url });
                                   }}
                                   className="tap-target p-1 -m-1 text-black/60 hover:text-red-600 dark:text-white/60 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
                                   title="구글 지도에서 위치 확인 (새 창)"
@@ -898,14 +900,9 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             onClick={(e) => {
                               if (!isEditing) {
                                 e.stopPropagation();
-                                setActiveTab('gallery');
-                                setExpandedItemId(600000000 + item.id);
-                                setTimeout(() => {
-                                  const el = itemRefs.current[600000000 + item.id];
-                                  if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                  }
-                                }, 300);
+                                // The photo opens full screen, at its place in the journey's photos
+                                setLightboxIndex(galleryUrlIndexMap.get(getEffectiveImageUrl(item.img as string)) ?? 0);
+                                setIsLightboxOpen(true);
                               }
                             }}
                           >

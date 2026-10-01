@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { artDataUrl, cityThumb, itemKind, themeKind } from '../../utils/placeArt';
+import { kindArtUrl, cityThumb, itemKind, themeKind } from '../../utils/placeArt';
 import { Bookmark, Plane, Plus, Route, Search, Shuffle, X } from 'lucide-react';
 import { Segment } from '../ui/Segment';
 import { Chip } from '../ui/Chip';
@@ -346,7 +346,7 @@ export function StepPreview({ d }: { d: NewTripDraft }) {
             {d.proposals.map(x => (
               <li key={x.id}>
                 <CardRow
-                  thumb={artDataUrl(themeKind(x.theme), x.id)}
+                  thumb={kindArtUrl(themeKind(x.theme), x.id)}
                   title={x.title}
                   meta={`${x.nightsDays} · ${x.themeLabel} · ${x.startDate.slice(5).replace('-', '.')}`}
                   current={p?.id === x.id}
@@ -365,7 +365,7 @@ export function StepPreview({ d }: { d: NewTripDraft }) {
                     <Card padding="sm" className="flex gap-3 items-start">
                       {/* The day's lead item as a flat picture (a landmark, a market, a cafe...) */}
                       <img
-                        src={artDataUrl(itemKind(day.items.find(it => it.type !== 'transit' && it.type !== 'stay' && it.type !== 'dining') || day.items[0] || {}), `${x0(p)}-${i}`)}
+                        src={kindArtUrl(itemKind(day.items.find(it => it.type !== 'transit' && it.type !== 'stay' && it.type !== 'dining') || day.items[0] || {}), `${x0(p)}-${i}`)}
                         alt=""
                         className="w-12 h-12 rounded-thumb shrink-0"
                       />

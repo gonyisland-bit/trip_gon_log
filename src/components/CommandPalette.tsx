@@ -76,7 +76,7 @@ export function CommandPalette({ trips, plans, onClose, onNavigate, onNewTrip, o
       cmd('night', '야간 모드 전환', 'dark light night theme 다크 라이트', Moon, onCycleNightMode, 'Ctrl+Shift+L'),
       cmd('home', '홈', 'home', Home, () => onNavigate('home')),
       cmd('archive', '아카이브', 'archive journeys trips 여정', Archive, () => onNavigate('archive')),
-      cmd('magazine', '매거진', 'magazine stories', BookOpen, () => onNavigate('magazine')),
+      cmd('published', '발행한 매거진', 'magazine stories 매거진 발행', BookOpen, () => { try { sessionStorage.setItem('archivePublishedOnly', '1'); } catch (_) {} onNavigate('archive'); }),
       cmd('map', '지도', 'map world', MapIcon, () => onNavigate('map')),
       cmd('calendar', '캘린더', 'calendar schedule 일정', CalendarDays, () => onNavigate('calendar')),
       cmd('pocket', '포켓', 'pocket places', Bookmark, () => onNavigate('pocket')),

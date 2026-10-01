@@ -117,13 +117,22 @@ const ticketsRef = (uid: string) => doc(db, 'users', uid, 'departure', 'tickets'
 
 export interface TicketStore {
   items: DepartureTicket[];
+  /** The one ticket at the counter; the rest are kept in storage. Without it the newest ticket is at the counter. */
+  activeId?: string;
 }
+
+/** The ticket at the counter: the chosen one, else the newest */
+export function activeTicketOf(store: TicketStore): DepartureTicket | null {
+  return store.items.find(t => t.id === store.activeId) ?? store.items[0] ?? null;
+}
+
+const idOf = (data: { activeId?: unknown }) => (typeof data.activeId === 'string' && data.activeId ? data.activeId : undefined);
 
 function parseStore(raw: string | null): TicketStore | null {
   if (!raw) return null;
   try {
     const data = JSON.parse(raw);
-    return { items: Array.isArray(data.items) ? data.items : [] };
+    return { items: Array.isArray(data.items) ? data.items : [], activeId: idOf(data) };
   } catch {
     return null;
   }
@@ -154,8 +163,8 @@ async function mergeLegacyCache(uid: string, cloud: TicketStore): Promise<Ticket
   const known = new Set(cloud.items.map(t => t.id));
   const extra = legacy.items.filter(t => t && t.id && !known.has(t.id));
   if (extra.length) {
-    const merged = { items: [...cloud.items, ...extra].sort((a, b) => (b.keptAt || 0) - (a.keptAt || 0)) };
-    await setDoc(ticketsRef(uid), { items: cleanForFirestore(merged.items), updatedAt: Date.now() });
+    const merged: TicketStore = { items: [...cloud.items, ...extra].sort((a, b) => (b.keptAt || 0) - (a.keptAt || 0)), activeId: cloud.activeId };
+    await setDoc(ticketsRef(uid), { items: cleanForFirestore(merged.items), ...(merged.activeId ? { activeId: merged.activeId } : {}), updatedAt: Date.now() });
     cloud = merged;
   }
   try { localStorage.removeItem(LEGACY_CACHE_KEY); } catch {}
@@ -166,7 +175,7 @@ async function mergeLegacyCache(uid: string, cloud: TicketStore): Promise<Ticket
 async function readCloud(uid: string): Promise<TicketStore> {
   const snap = await getDoc(ticketsRef(uid));
   const data = (snap.exists() ? snap.data() : { items: [] }) as TicketStore;
-  const store = await mergeLegacyCache(uid, { items: Array.isArray(data.items) ? data.items : [] });
+  const store = await mergeLegacyCache(uid, { items: Array.isArray(data.items) ? data.items : [], activeId: idOf(data) });
   writeCache(uid, store);
   return store;
 }
@@ -192,7 +201,7 @@ export function subscribeTickets(onChange: (store: TicketStore) => void): () => 
     if (!alive) return;
     stop = onSnapshot(ticketsRef(user.uid), snap => {
       const data = (snap.exists() ? snap.data() : { items: [] }) as TicketStore;
-      const store = { items: Array.isArray(data.items) ? data.items : [] };
+      const store: TicketStore = { items: Array.isArray(data.items) ? data.items : [], activeId: idOf(data) };
       writeCache(user.uid, store);
       onChange(store);
     }, () => {});
@@ -201,21 +210,32 @@ export function subscribeTickets(onChange: (store: TicketStore) => void): () => 
 }
 
 /** Read-modify-write against the cloud copy only */
-async function updateTickets(change: (items: DepartureTicket[]) => DepartureTicket[]): Promise<TicketStore> {
+async function updateTickets(change: (store: TicketStore) => TicketStore): Promise<TicketStore> {
   const user = await signedInUser();
   if (!user) throw new Error('not signed in');
   const current = await readCloud(user.uid);
-  const next = { items: change(current.items) };
+  const next = change(current);
   writeCache(user.uid, next);
-  await setDoc(ticketsRef(user.uid), { items: cleanForFirestore(next.items), updatedAt: Date.now() });
+  await setDoc(ticketsRef(user.uid), { items: cleanForFirestore(next.items), ...(next.activeId ? { activeId: next.activeId } : {}), updatedAt: Date.now() });
   return next;
 }
 
-/** Adds a ticket at the front, or replaces the one with `replaceId` (a ticket being re-planned) */
+/** Adds a ticket at the front, or replaces the one with `replaceId` (a ticket being re-planned). It goes to the counter; the one that was there goes to storage. */
 export async function putTicket(ticket: DepartureTicket, replaceId?: string): Promise<void> {
-  await updateTickets(items => [ticket, ...items.filter(t => t.id !== replaceId && t.id !== ticket.id)]);
+  await updateTickets(store => ({
+    items: [ticket, ...store.items.filter(t => t.id !== replaceId && t.id !== ticket.id)],
+    activeId: ticket.id,
+  }));
 }
 
 export async function removeTicket(id: string): Promise<TicketStore> {
-  return updateTickets(items => items.filter(t => t.id !== id));
+  return updateTickets(store => ({
+    items: store.items.filter(t => t.id !== id),
+    activeId: store.activeId === id ? undefined : store.activeId,
+  }));
+}
+
+/** Moves a ticket from storage to the counter */
+export async function setActiveTicket(id: string): Promise<TicketStore> {
+  return updateTickets(store => ({ items: store.items, activeId: store.items.some(t => t.id === id) ? id : store.activeId }));
 }

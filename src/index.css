@@ -114,27 +114,11 @@
   }
 }
 
-@keyframes cinematicWalkerTrack {
-  0% {
-    left: 4%;
-  }
-  100% {
-    left: 96%;
-  }
-}
-
 .animate-cinematic-progress {
   animation-name: cinematicProgressTrack;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
   will-change: width;
-}
-
-.animate-cinematic-walker {
-  animation-name: cinematicWalkerTrack;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
-  will-change: left;
 }
 
 /* Traveler vehicle and runner marker anti-ghosting GPU acceleration */
@@ -362,14 +346,13 @@
   margin-top: 6px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: rgba(249,248,246,0.96);
-  color: #111;
-  border: 1px solid rgba(0,0,0,0.12);
-  padding: 2px 6px;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  letter-spacing: -0.01em;
+  background: rgba(255,253,249,0.97);
+  color: #141412;
+  border: 0;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(20,20,18,0.16);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -380,15 +363,13 @@
   opacity: 1 !important;
   font-size: 11px !important;
   font-weight: 800 !important;
-  font-family: 'Inter', sans-serif !important;
-  letter-spacing: 0.02em !important;
-  text-transform: uppercase !important;
-  background: #FFFFFF !important;
-  color: #1A1A1A !important;
-  border: 1px solid rgba(0, 0, 0, 0.18) !important;
-  padding: 3.5px 8.5px !important;
-  border-radius: 6px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06) !important;
+  letter-spacing: -0.01em !important;
+  background: #141412 !important;
+  color: #FFFDF9 !important;
+  border: 0 !important;
+  padding: 4px 11px !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 12px rgba(20,20,18,0.22) !important;
   z-index: 100000 !important;
   pointer-events: auto !important; /* Allow clicking the active pin label */
   margin-top: 8px !important;
@@ -398,15 +379,13 @@
 .pin-label-hovered {
   opacity: 1 !important;
   font-weight: 800 !important;
-  color: #111111 !important;
-  border-color: #111111 !important;
+  box-shadow: 0 0 0 1.5px #141412, 0 4px 10px rgba(20,20,18,0.18) !important;
   transform: translateY(-2px);
   z-index: 100000 !important;
 }
 
 .dark .pin-label-hovered {
-  color: #FFFFFF !important;
-  border-color: #FFFFFF !important;
+  box-shadow: 0 0 0 1.5px #FFFDF9, 0 4px 10px rgba(0,0,0,0.4) !important;
 }
 
 .pin-wrapper:hover .pin-label {
@@ -415,16 +394,14 @@
 
 /* Dark mode pin labels */
 .dark .pin-label {
-  background: rgba(24,24,24,0.96);
-  color: #f9f8f6;
-  border-color: rgba(255,255,255,0.12);
+  background: rgba(26,26,23,0.97);
+  color: #F2F0EA;
 }
 
 .dark .pin-label-active {
-  background: #242424 !important;
-  color: #F3F3F3 !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3) !important;
+  background: #F2F0EA !important;
+  color: #141412 !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
 }
 
 /* Google Places Autocomplete dropdown overrides */
@@ -603,13 +580,13 @@
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-  padding: 2px 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 0;
+  border-radius: 9999px;
+  padding: 3px 10px 3px 3px;
+  box-shadow: 0 3px 10px rgba(20, 20, 18, 0.16);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   max-width: 140px;
   white-space: nowrap;
   pointer-events: auto;
@@ -617,21 +594,18 @@
 }
 
 .dark .poi-pin-label {
-  background: rgba(24, 24, 27, 0.96);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(26, 26, 23, 0.97);
 }
 
 .poi-type-tag {
-  font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   line-height: 1;
-  padding: 1px 3px;
-  border-radius: 2px;
+  padding: 4px 8px;
+  border-radius: 9999px;
   color: #ffffff;
-  text-transform: uppercase;
-  shrink: 0;
+  flex-shrink: 0;
 }
 
 .poi-name-text {
@@ -659,12 +633,11 @@
 .poi-marker-hovered .poi-pin-label {
   z-index: 10001 !important;
   transform: scale(1.08) translateY(-1px);
-  border-color: #000000;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 0 0 1.5px #141412, 0 8px 20px rgba(20, 20, 18, 0.26);
 }
 
 .dark .poi-marker-hovered .poi-pin-label {
-  border-color: #FFFFFF;
+  box-shadow: 0 0 0 1.5px #FFFDF9, 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 /* Premium Leaflet Scale Control styling */

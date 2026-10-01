@@ -5,7 +5,6 @@ import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 // v1.3.6 4-b: the magazine tab gathers published journeys; the hand-curated magazine hub is retired
-import { MagazineLibrary } from './pages/MagazineLibrary';
 import { ScrollToTop } from './components/ScrollToTop';
 import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './app/quickActions';
 import { TabBar } from './components/TabBar';
@@ -123,7 +122,7 @@ function App() {
   const [departureTicketId, setDepartureTicketId] = useState<string | undefined>(undefined);
   const issuedTicketRef = useRef<string | null>(null);
   // The terminal opens on its tickets, or on "탑승 예정" (the old booking wallet)
-  const [departureTab, setDepartureTab] = useState<'tickets' | 'upcoming'>('tickets');
+  const [departureTab, setDepartureTab] = useState<'counter' | 'storage'>('counter');
   // One journey's card menu (v1.3.6 4-a), opened from any journey card
   const [actionsTripId, setActionsTripId] = useState<number | null>(null);
   useEffect(() => {
@@ -184,8 +183,8 @@ function App() {
     if (isIntroOpen && uid) setDoc(doc(db, 'users', uid, 'settings', 'intro'), { seenAt: Date.now(), watched: true }, { merge: true }).catch(() => {});
   }, [isIntroOpen]);
   useEffect(() => {
-    const openDeparture = () => { setDepartureTicketId(undefined); setDepartureTab('tickets'); setIsDepartureOpen(true); };
-    const openWallet = () => { setDepartureTicketId(undefined); setDepartureTab('upcoming'); setIsDepartureOpen(true); };
+    const openDeparture = () => { setDepartureTicketId(undefined); setDepartureTab('counter'); setIsDepartureOpen(true); };
+    const openWallet = () => { setDepartureTicketId(undefined); setDepartureTab('storage'); setIsDepartureOpen(true); };
     const togglePalette = () => setIsPaletteOpen(v => !v);
     const openRemixSheet = (e: Event) => { const id = (e as CustomEvent<number>).detail; if (typeof id === 'number') setRemixSourceId(id); };
     window.addEventListener(OPEN_DEPARTURE_EVENT, openDeparture);
@@ -544,11 +543,6 @@ function App() {
                   />
                 </div>
               )}
-              {currentView === 'magazine' && (
-                <div className="w-full h-full animate-in fade-in duration-300">
-                  <MagazineLibrary trips={trips} onNavigate={navigateTo} />
-                </div>
-              )}
               {currentView === 'calendar' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
                   <CalendarHubPage
@@ -845,7 +839,7 @@ function App() {
         </Suspense>
 
         {/* Phone tab bar across hubs (v1.3.5). On the map it steps aside while a sheet is open; detail and manage keep their own bottom controls */}
-        {isLoggedIn && ['home', 'archive', 'magazine', 'calendar', 'pocket', 'map'].includes(currentView) && (
+        {isLoggedIn && ['home', 'archive', 'calendar', 'pocket', 'map'].includes(currentView) && (
           <>
             {/* Room under the page so the bar never sits on its last lines (the map fills the screen instead) */}
             {currentView !== 'map' && <div className="md:hidden shrink-0" style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }} aria-hidden />}
