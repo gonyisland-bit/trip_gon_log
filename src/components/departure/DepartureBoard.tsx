@@ -99,8 +99,8 @@ function FlapRow({ text, cells, rollKey, size = 'md', onFlip, tone = 'ink' }: {
   }, [rollKey, target.join('')]);
 
   const dims = size === 'lg'
-    ? 'w-[clamp(15px,min(4.6vw,4vh),40px)] h-[clamp(24px,min(7vw,5.8vh),54px)] text-[clamp(14px,min(4vw,3.3vh),32px)] md:w-[clamp(26px,min(4vw,4.4vh),48px)] md:h-[clamp(40px,min(7vw,6.4vh),72px)] md:text-[clamp(20px,min(4vw,4vh),38px)]'
-    : 'w-[clamp(14px,min(3.4vw,2.6vh),22px)] h-[clamp(21px,min(4.8vw,3.5vh),30px)] text-[clamp(12px,min(2.7vw,2.1vh),17px)] md:h-[clamp(30px,4.2vh,42px)] md:text-[clamp(14px,2.3vh,20px)]';
+    ? 'w-[clamp(15px,min(4.6vw,4vh),40px)] h-[clamp(24px,min(7vw,5.8vh),54px)] text-[clamp(14px,min(4vw,3.3vh),32px)] md:w-[clamp(26px,min(4vw,4.4vh),48px)] md:h-[clamp(40px,min(7vw,5.6vh),64px)] md:text-[clamp(20px,min(4vw,4vh),38px)]'
+    : 'w-[clamp(14px,min(3.4vw,2.6vh),22px)] h-[clamp(21px,min(4.8vw,3.5vh),30px)] text-[clamp(12px,min(2.7vw,2.1vh),17px)] md:h-[clamp(30px,3.8vh,38px)] md:text-[clamp(14px,2.3vh,20px)]';
   const color = tone === 'amber' ? 'text-amber-400' : tone === 'red' ? 'text-red-500' : 'text-[#F2F2EE]';
   return (
     <div className="flex gap-[3px]" aria-label={text}>
@@ -488,8 +488,8 @@ export function DepartureBoard({
         </div>
 
         {/* The lobby below: a third of the height on phones, taller on the web so the departure sign shows, in a rounded window with the page's side margins */}
-        <div className="flex-[1] min-h-[120px] md:flex-none md:h-[clamp(240px,32vh,440px)] w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
-        <div className="tgl-lobby-scene relative h-full rounded-card overflow-hidden">
+        <div className="flex-[1] min-h-[120px] md:flex-none md:h-[clamp(250px,30vh,400px)] md:flex md:justify-center w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="tgl-lobby-scene relative h-full rounded-card overflow-hidden md:aspect-[8/5] md:max-w-full md:shrink-0">
           <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
           {skyNote && (
             <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none">

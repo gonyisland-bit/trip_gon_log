@@ -20,7 +20,7 @@ export function TerminalScene({ isDarkMode, weatherType, intensity }: TerminalSc
         alt=""
         draggable={false}
         decoding="async"
-        className="absolute inset-0 w-full h-full object-cover object-[50%_76%] md:object-[50%_20%] select-none"
+        className="absolute inset-0 w-full h-full object-cover object-[50%_76%] md:object-[50%_50%] select-none"
       />
       <div className="absolute inset-0 pointer-events-none">
         <WeatherParticleCanvas type={weatherType} intensity={intensity} isDarkMode={isDarkMode} />
