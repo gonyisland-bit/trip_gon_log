@@ -1,748 +1,636 @@
-// Intro 2.0 stage: a Three.js scene plus a 2D type layer, both drawn from time alone.
-// render(t) is pure in t, so the player can seek and the exporter can render frame by frame.
-import * as THREE from 'three';
+// Intro 3.0 stage ("한 줄의 여정"): a 2D canvas film on paper. One red line is the logo's underline,
+// then a flight route on the map, the ground the traveler walks (terminal, city, beach), a line
+// that photos hang from, and the underline again. render(t) is pure in t (the traveler's hair is
+// the one bit of carried state), so the player can seek and the exporter can render frame by frame.
+// Every change eases over one or two beats: no shake, no punch, no bounce.
 import { BRAND_LOGO_PATHS, BRAND_LOGO_VIEWBOX } from '../components/brandLogoData';
-import { decodeWorldDots } from '../data/worldDots';
-import {
-  BEAT, LINES, SCENES, TOTAL_BEATS, clamp, ease, hash, kickPulse, lerp, sceneAt, seg,
-} from './timeline';
-import {
-  COL, FONT_MONO, FONT_SANS, dayCard, dayFace, dotSprite, flapLetter, photoTexture, stopCard, ticketTexture, weatherFace,
-  type WeatherKind,
-} from './textures';
+import { decodeWorldDots, type WorldDot } from '../data/worldDots';
+import { Traveler, poseTraveler, drawTraveler, TRAVELER_LIGHT, STRIDE_PER_RAD } from '../components/splash/travelerRig';
+import { BEAT, LINES, TOTAL_BEATS, clamp, ease, lerp, seg, span } from './timeline';
 
-const DEG = Math.PI / 180;
-const FOV = 32;
-const PAPER = new THREE.Color(COL.paper);
-const INK = new THREE.Color(COL.ink);
-const RED = new THREE.Color(COL.red);
-
-interface Layout { w: number; h: number; portrait: boolean; dist: number; offY: number; u: number }
-
-function std(color: string | THREE.Color, rough = 0.55) {
-  return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: 0.05, flatShading: true });
-}
-function basic(map: THREE.Texture, opts: THREE.MeshBasicMaterialParameters = {}) {
-  return new THREE.MeshBasicMaterial({ map, transparent: true, ...opts });
-}
+const PAPER = '#F6F4EF', SURFACE = '#FFFDF9', INK = '#141412', RED = '#DC2626', AMBER = '#E9A23B';
+const MUTED = '#6B6960', SKY = '#EFEBE2';
+const SOFT = 'rgba(20,20,18,0.14)', FAINT = 'rgba(20,20,18,0.07)';
+const SANS = '"Satoshi", "Noto Sans KR", -apple-system, sans-serif';
+const MONO = '"SF Mono", Consolas, "Noto Sans KR", monospace';
+const TAU = Math.PI * 2;
+const N = 120; // points along the line
 
 export interface StageOptions {
+  /** The canvas the film is drawn on (the name is kept from the 3D stage) */
   glCanvas: HTMLCanvasElement;
+  /** Kept for the player and exporter, which layer it on top; left empty */
   typeCanvas: HTMLCanvasElement;
-  /** Keep the WebGL buffer readable after a frame (exporter) */
   preserve?: boolean;
-  /** Reduced motion: no camera drift or punch */
+  /** Reduced motion: photos hang still */
   calm?: boolean;
-  /** Draw the closing call-to-action pill (the in-app player shows a real button instead) */
+  /** Draw the closing New trip pill (the in-app player shows a real button instead) */
   cta?: boolean;
 }
 
-export class IntroStage {
-  private renderer: THREE.WebGLRenderer;
-  private scene = new THREE.Scene();
-  private camera = new THREE.PerspectiveCamera(FOV, 16 / 9, 0.1, 200);
-  private g: CanvasRenderingContext2D;
-  private L: Layout = { w: 1, h: 1, portrait: false, dist: 10, offY: 0, u: 1 };
-  private dpr = 1;
-  private calm: boolean;
-  private cta: boolean;
-  private logoImg: HTMLImageElement | null = null;
-  private photoCanvases: HTMLCanvasElement[] = [];
-  private disposables: { dispose: () => void }[] = [];
+interface Pt { x: number; y: number }
 
-  // objects
-  private dots!: THREE.Points;
-  private dotPos!: Float32Array;
-  private layouts!: { sphere: Float32Array; flat: Float32Array; logo: Float32Array; h: Float32Array; lat: Float32Array; lng: Float32Array };
-  private logoW = 7;
-  private shapes: THREE.Mesh[] = [];
-  private pins: THREE.Group[] = [];
-  private arcs: THREE.Mesh[] = [];
-  private arcIndexCounts: number[] = [];
-  private cards: THREE.Mesh[] = [];
-  private flaps: THREE.Mesh[] = [];
-  private flapTex: Record<string, THREE.Texture> = {};
-  private ticket!: THREE.Mesh;
-  private stampRing!: THREE.Mesh;
-  private rail!: THREE.Group;
-  private stops: THREE.Mesh[] = [];
-  private stations: THREE.Mesh[] = [];
-  private nowLine!: THREE.Mesh;
-  private photos: THREE.Mesh[] = [];
-  private pages!: THREE.Group;
-  private flipSheet!: THREE.Group;
-  private cubes: THREE.Mesh[] = [];
-  private wall!: THREE.Group;
-  private outroShapes: THREE.Mesh[] = [];
+interface Layout {
+  w: number; h: number; u: number; portrait: boolean; cx: number;
+  barY: number; barHalf: number; gy: number; capX: number; capY: number; s: number;
+  logoW: number; walkX: number;
+  map: { x: number; y: number; k: number };
+}
+
+// Region of the map scene: Seoul and the places the film visits
+const VIEW = { lng0: 95, lng1: 150, lat0: 47, lat1: -12 };
+const SEOUL = { lng: 127, lat: 37.55 };
+const PINS = [
+  { lng: 139.7, lat: 35.7, code: 'TYO' }, { lng: 135.5, lat: 34.7, code: 'OSA' }, { lng: 108.2, lat: 16.05, code: 'DAD' },
+  { lng: 100.5, lat: 13.75, code: 'BKK' }, { lng: 115.2, lat: -8.65, code: 'DPS' },
+];
+
+export class IntroStage {
+  private ctx: CanvasRenderingContext2D;
+  private opts: StageOptions;
+  private L!: Layout;
+  private dpr = 1;
+  private dots: WorldDot[] = [];
+  private logo: Path2D[] = [];
+  private logoBox = { w: 489.16, h: 87.57 };
+  private walker = new Traveler();
 
   constructor(opts: StageOptions) {
-    this.calm = !!opts.calm;
-    this.cta = opts.cta !== false;
-    this.renderer = new THREE.WebGLRenderer({ canvas: opts.glCanvas, antialias: true, preserveDrawingBuffer: !!opts.preserve, powerPreference: 'high-performance' });
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.g = opts.typeCanvas.getContext('2d')!;
-    this.scene.background = PAPER.clone();
-
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x3a3a3a, 1.25);
-    const key = new THREE.DirectionalLight(0xffffff, 1.9);
-    key.position.set(4, 6, 5);
-    this.scene.add(hemi, key);
-    this.build();
+    this.opts = opts;
+    const ctx = opts.glCanvas.getContext('2d');
+    if (!ctx) throw new Error('2d canvas unavailable');
+    this.ctx = ctx;
+    const vb = BRAND_LOGO_VIEWBOX.split(/\s+/).map(Number);
+    this.logoBox = { w: vb[2], h: vb[3] };
+    this.logo = BRAND_LOGO_PATHS.map(d => new Path2D(d));
+    this.dots = decodeWorldDots().filter(d => d.lng >= VIEW.lng0 - 2 && d.lng <= VIEW.lng1 + 2 && d.lat <= VIEW.lat0 + 2 && d.lat >= VIEW.lat1 - 2);
+    this.resize(opts.glCanvas.clientWidth || 640, opts.glCanvas.clientHeight || 360, 1);
   }
 
-  /** Fonts and the logo image; call once before the first render */
   async load() {
-    try {
-      await Promise.all([
-        document.fonts.load(`800 80px ${FONT_SANS}`, '여행은 흩어지기 쉽다'),
-        document.fonts.load(`700 30px ${FONT_SANS}`, '계획 기록 회상'),
-      ]);
-    } catch { /* fall back to system fonts */ }
-    this.logoImg = await new Promise(res => {
-      const img = new Image();
-      img.onload = () => res(img);
-      img.onerror = () => res(null as unknown as HTMLImageElement);
-      img.src = '/tripgon-logotype.svg';
-    });
+    if (typeof document === 'undefined' || !document.fonts?.load) return;
+    await Promise.all([
+      document.fonts.load(`800 40px ${SANS}`, '도시로바다로 Tripgon'),
+      document.fonts.load(`600 12px ${MONO}`, 'ICN TYO 0123'),
+    ]).catch(() => {});
   }
 
   resize(w: number, h: number, dpr = 1) {
     this.dpr = dpr;
-    this.renderer.setPixelRatio(dpr);
-    this.renderer.setSize(w, h, false);
-    const c = this.g.canvas;
-    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
-    const aspect = w / h;
-    const portrait = aspect < 0.9;
-    const tan = Math.tan((FOV / 2) * DEG);
-    const boxW = portrait ? 6.3 : 10.4, boxH = portrait ? 7.2 : 6.4;
-    const dist = Math.max(boxH / (2 * tan), boxW / (2 * tan * aspect));
-    const visH = 2 * dist * tan;
-    this.L = { w, h, portrait, dist, offY: portrait ? -visH * 0.035 : -0.55, u: Math.min(w, h) / 1080 };
-    this.camera.aspect = aspect;
-    this.camera.updateProjectionMatrix();
-    // Logo width follows the frame
-    const lw = portrait ? 5.6 : 7;
-    if (lw !== this.logoW) { this.logoW = lw; this.buildLogoLayout(); }
-  }
-
-  dispose() {
-    this.disposables.forEach(d => d.dispose());
-    this.renderer.dispose();
-  }
-
-  private keep<T extends { dispose: () => void }>(x: T): T { this.disposables.push(x); return x; }
-
-  // ---------- build ----------
-  private build() {
-    const all = decodeWorldDots().filter(d => d.keep);
-    const n = all.length;
-    const sphere = new Float32Array(n * 3), flat = new Float32Array(n * 3);
-    const h = new Float32Array(n), lat = new Float32Array(n), lng = new Float32Array(n);
-    all.forEach((d, i) => {
-      h[i] = d.h; lat[i] = d.lat; lng[i] = d.lng;
-      flat[i * 3] = (d.lng / 180) * 4.6; flat[i * 3 + 1] = 0; flat[i * 3 + 2] = (-d.lat / 90) * 2.6 + 0.35;
-    });
-    this.layouts = { sphere, flat, logo: new Float32Array(n * 3), h, lat, lng };
-    this.buildLogoLayout();
-    this.dotPos = new Float32Array(n * 3);
-    const geo = this.keep(new THREE.BufferGeometry());
-    geo.setAttribute('position', new THREE.BufferAttribute(this.dotPos, 3));
-    const mat = this.keep(new THREE.PointsMaterial({ size: 0.075, map: this.keep(dotSprite()), transparent: true, alphaTest: 0.05, depthWrite: false, color: INK }));
-    this.dots = new THREE.Points(geo, mat);
-    this.dots.frustumCulled = false;
-    this.scene.add(this.dots);
-
-    // Hook shapes: sphere, cube, cylinder, ring, cone
-    const geos = [
-      new THREE.IcosahedronGeometry(0.55, 2),
-      new THREE.BoxGeometry(0.8, 0.8, 0.8),
-      new THREE.CylinderGeometry(0.32, 0.32, 1.2, 24),
-      new THREE.TorusGeometry(0.5, 0.12, 12, 40),
-      new THREE.ConeGeometry(0.42, 0.9, 4),
-      new THREE.IcosahedronGeometry(0.26, 1),
-    ].map(g => this.keep(g));
-    const mats = [std(COL.red), std(COL.ink), std(COL.ink), std(COL.red), std(COL.ink), std(COL.red)];
-    geos.forEach((g, i) => { const m = new THREE.Mesh(g, this.keep(mats[i])); this.shapes.push(m); this.scene.add(m); });
-
-    // Pins and arcs over the flat map
-    const pinCities: [number, number][] = [[37.5, 127], [35.7, 139.7], [48.8, 2.3], [40.7, -74], [13.7, 100.5]];
-    const headGeo = this.keep(new THREE.IcosahedronGeometry(0.14, 1));
-    const stemGeo = this.keep(new THREE.CylinderGeometry(0.02, 0.02, 0.55, 8));
-    const redMat = this.keep(std(COL.red)), paperMat = this.keep(std(COL.paper));
-    const flatPos = (la: number, ln: number) => new THREE.Vector3((ln / 180) * 4.6, 0, (-la / 90) * 2.6 + 0.35);
-    pinCities.forEach(([la, ln]) => {
-      const g = new THREE.Group();
-      const head = new THREE.Mesh(headGeo, redMat); head.position.y = 0.6;
-      const stem = new THREE.Mesh(stemGeo, paperMat); stem.position.y = 0.28;
-      g.add(head, stem); g.position.copy(flatPos(la, ln));
-      this.pins.push(g); this.scene.add(g);
-    });
-    [[0, 1], [0, 2], [1, 3], [0, 4]].forEach(([a, b]) => {
-      const p0 = this.pins[a].position.clone(), p2 = this.pins[b].position.clone();
-      const mid = p0.clone().add(p2).multiplyScalar(0.5); mid.y = 0.6 + p0.distanceTo(p2) * 0.28;
-      const curve = new THREE.QuadraticBezierCurve3(p0.clone().setY(0.02), mid, p2.clone().setY(0.02));
-      const tube = this.keep(new THREE.TubeGeometry(curve, 64, 0.022, 6, false));
-      const m = new THREE.Mesh(tube, redMat);
-      this.arcIndexCounts.push(tube.index ? tube.index.count : 0);
-      this.arcs.push(m); this.scene.add(m);
-    });
-    const cardData: [number, string, [string, string][]][] = [
-      [1, '도쿄', [['09:00', '츠키지 장외시장'], ['13:30', '센소지'], ['18:00', '시부야 스카이']]],
-      [2, '가마쿠라', [['10:00', '고토쿠인'], ['14:00', '에노시마'], ['17:30', '유이가하마']]],
-      [3, '하코네', [['11:00', '오와쿠다니'], ['15:00', '아시노코'], ['19:00', '료칸 체크인']]],
-    ];
-    const cardGeo = this.keep(new THREE.BoxGeometry(2.4, 1.5, 0.03));
-    cardData.forEach(([d, city, rows]) => {
-      const tex = this.keep(dayCard(d, city, rows));
-      const side = this.keep(new THREE.MeshBasicMaterial({ color: COL.paper }));
-      const m = new THREE.Mesh(cardGeo, [side, side, side, side, this.keep(basic(tex)), side]);
-      this.cards.push(m); this.scene.add(m);
-    });
-
-    // Split-flap board and ticket
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    chars.split('').forEach(c => { this.flapTex[c] = this.keep(flapLetter(c)); });
-    this.flapTex['→'] = this.keep(flapLetter('→', true));
-    const flapGeo = this.keep(new THREE.PlaneGeometry(1, 1.25));
-    for (let i = 0; i < 6; i++) {
-      const m = new THREE.Mesh(flapGeo, this.keep(new THREE.MeshBasicMaterial({ map: this.flapTex.A })));
-      this.flaps.push(m); this.scene.add(m);
-    }
-    this.ticket = new THREE.Mesh(this.keep(new THREE.PlaneGeometry(3.6, 1.575)), this.keep(basic(this.keep(ticketTexture()))));
-    this.scene.add(this.ticket);
-    this.stampRing = new THREE.Mesh(this.keep(new THREE.TorusGeometry(0.42, 0.06, 8, 48)), this.keep(new THREE.MeshBasicMaterial({ color: COL.red, transparent: true })));
-    this.scene.add(this.stampRing);
-
-    // Timeline rail
-    this.rail = new THREE.Group();
-    const railBar = new THREE.Mesh(this.keep(new THREE.CylinderGeometry(0.05, 0.05, 24, 12)), this.keep(std(COL.paper)));
-    railBar.rotation.z = Math.PI / 2; railBar.position.x = 8;
-    this.rail.add(railBar);
-    const stopsData: [string, string][] = [['08:30', '호텔 조식'], ['10:00', '메이지 신궁'], ['12:30', '오모테산도'], ['15:00', '시부야 스카이'], ['18:30', '이자카야'], ['21:00', '야경 산책']];
-    const stGeo = this.keep(new THREE.IcosahedronGeometry(0.16, 1));
-    const cardG = this.keep(new THREE.PlaneGeometry(2.1, 0.75));
-    stopsData.forEach(([time, place], i) => {
-      const x = i * 3;
-      const st = new THREE.Mesh(stGeo, i === 3 ? redMat : paperMat); st.position.x = x;
-      const card = new THREE.Mesh(cardG, this.keep(basic(this.keep(stopCard(time, place, i === 3)), { side: THREE.DoubleSide })));
-      card.position.set(x + 0.2, i % 2 ? -0.8 : 0.8, 0);
-      this.stations.push(st); this.stops.push(card); this.rail.add(st, card);
-    });
-    this.nowLine = new THREE.Mesh(this.keep(new THREE.BoxGeometry(0.03, 3.4, 0.03)), this.keep(new THREE.MeshBasicMaterial({ color: COL.red })));
-    this.rail.add(this.nowLine);
-    this.scene.add(this.rail);
-
-    // Photos, pages and the flip sheet
-    const phGeo = this.keep(new THREE.PlaneGeometry(0.9, 1.125));
-    for (let i = 0; i < 12; i++) {
-      const tex = this.keep(photoTexture(i));
-      this.photoCanvases.push(tex.image as HTMLCanvasElement);
-      const m = new THREE.Mesh(phGeo, this.keep(basic(tex, { side: THREE.DoubleSide })));
-      this.photos.push(m); this.scene.add(m);
-    }
-    this.pages = new THREE.Group();
-    const pageMat = this.keep(new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide }));
-    const pageGeo = this.keep(new THREE.PlaneGeometry(2.3, 3.9));
-    const lp = new THREE.Mesh(pageGeo, pageMat); lp.position.set(-1.18, 0, -0.02);
-    const rp = new THREE.Mesh(pageGeo, pageMat); rp.position.set(1.18, 0, -0.02);
-    const spine = new THREE.Mesh(this.keep(new THREE.BoxGeometry(0.02, 3.9, 0.02)), this.keep(new THREE.MeshBasicMaterial({ color: COL.ink })));
-    this.pages.add(lp, rp, spine);
-    this.scene.add(this.pages);
-    this.flipSheet = new THREE.Group();
-    const sheet = new THREE.Mesh(pageGeo, this.keep(basic(this.keep(photoTexture(4)), { side: THREE.DoubleSide, transparent: false })));
-    sheet.position.x = 1.15;
-    this.flipSheet.add(sheet);
-    this.scene.add(this.flipSheet);
-
-    // Calendar wall: 7 x 5 cubes; the front shows the day, the back the weather
-    this.wall = new THREE.Group();
-    const cubeGeo = this.keep(new THREE.BoxGeometry(0.62, 0.62, 0.62));
-    const side = this.keep(std('#1c1c1f'));
-    const kinds: WeatherKind[] = ['sun', 'sun', 'cloud', 'rain', 'sun', 'cloud', 'snow'];
-    const wTex: Record<string, THREE.Texture> = {};
-    for (let i = 0; i < 35; i++) {
-      const day = i - 2;
-      const trip = day >= 12 && day <= 16;
-      const kind = kinds[Math.floor(hash(i) * kinds.length)];
-      const temp = Math.round(12 + hash(i + 50) * 12);
-      const key = `${kind}${temp}`;
-      if (!wTex[key]) {
-        const t = this.keep(weatherFace(kind, temp));
-        t.center.set(0.5, 0.5); t.rotation = Math.PI;
-        wTex[key] = t;
-      }
-      const front = this.keep(basic(this.keep(dayFace(day > 0 && day <= 31 ? day : ((day + 30) % 30) + 1, trip)), { transparent: false }));
-      const back = this.keep(basic(wTex[key], { transparent: false }));
-      const m = new THREE.Mesh(cubeGeo, [side, side, side, side, front, back]);
-      const col = i % 7, row = Math.floor(i / 7);
-      m.position.set((col - 3) * 0.7, (2 - row) * 0.7, 0);
-      this.cubes.push(m); this.wall.add(m);
-    }
-    this.scene.add(this.wall);
-
-    // Outro: plan, log, relive
-    [this.keep(new THREE.IcosahedronGeometry(0.6, 2)), this.keep(new THREE.CylinderGeometry(0.42, 0.42, 1.2, 28)), this.keep(new THREE.BoxGeometry(1, 1, 1))]
-      .forEach((g, i) => { const m = new THREE.Mesh(g, i === 0 ? redMat : this.keep(std(i === 1 ? COL.log : COL.relive))); this.outroShapes.push(m); this.scene.add(m); });
-  }
-
-  private buildLogoLayout() {
-    const out = this.layouts.logo;
-    const n = out.length / 3;
-    const vbW = parseFloat(BRAND_LOGO_VIEWBOX.split(' ')[2]);
-    const vbH = parseFloat(BRAND_LOGO_VIEWBOX.split(' ')[3]);
-    const px = 700, scale = px / vbW, ph = Math.ceil(vbH * scale);
-    const oc = document.createElement('canvas');
-    oc.width = px; oc.height = ph;
-    const o = oc.getContext('2d');
-    if (!o) return;
-    o.scale(scale, scale);
-    BRAND_LOGO_PATHS.forEach(d => o.fill(new Path2D(d)));
-    const data = o.getImageData(0, 0, px, ph).data;
-    const pts: [number, number][] = [];
-    const step = 5;
-    for (let y = step / 2; y < ph; y += step) for (let x = step / 2; x < px; x += step) {
-      if (data[(Math.floor(y) * px + Math.floor(x)) * 4 + 3] > 128) pts.push([x, y]);
-    }
-    const w = this.logoW, k = w / px, cy = this.logoCenterY();
-    for (let i = 0; i < n; i++) {
-      const [x, y] = pts[Math.floor(hash(i) * pts.length)] || [px / 2, ph / 2];
-      out[i * 3] = x * k - w / 2;
-      out[i * 3 + 1] = cy - (y - ph / 2) * k;
-      out[i * 3 + 2] = 0;
-    }
-  }
-
-  private logoCenterY() { return this.L.portrait ? 0.9 : 0.4; }
-
-  // ---------- helpers ----------
-  private project(v: THREE.Vector3) {
-    const p = v.clone().project(this.camera);
-    return { x: (p.x * 0.5 + 0.5) * this.L.w, y: (-p.y * 0.5 + 0.5) * this.L.h };
-  }
-
-  /** Camera around a target: az/el in radians, zoom relative to the fit distance */
-  private aim(target: THREE.Vector3, az: number, el: number, zoom: number, b: number) {
-    let z = zoom;
-    const drums = b >= 8 && !(b >= 92 && b < 96) && b < 100;
-    if (!this.calm && drums) z *= 1 - 0.022 * kickPulse(b);
-    const d = this.L.dist * z;
-    const t = target.clone(); t.y += this.L.offY;
-    this.camera.position.set(t.x + d * Math.cos(el) * Math.sin(az), t.y + d * Math.sin(el), t.z + d * Math.cos(el) * Math.cos(az));
-    this.camera.lookAt(t);
-  }
-
-  private setDots(b: number) {
-    const { sphere, flat, logo, h, lat, lng } = this.layouts;
-    const n = h.length;
-    const p = this.dotPos;
-    const mat = this.dots.material as THREE.PointsMaterial;
-    this.dots.visible = b >= 5.5 && b < 36;
-    if (!this.dots.visible) return;
-    const rot = b * 0.06;
-    const tilt = 0.32;
-    const ct = Math.cos(tilt), st = Math.sin(tilt);
-    for (let i = 0; i < n; i++) {
-      const la = lat[i] * DEG, ln = lng[i] * DEG + rot;
-      const R = 2.05;
-      const x = R * Math.cos(la) * Math.sin(ln), y0 = R * Math.sin(la), z0 = R * Math.cos(la) * Math.cos(ln);
-      sphere[i * 3] = x; sphere[i * 3 + 1] = y0 * ct - z0 * st + 0.45; sphere[i * 3 + 2] = y0 * st + z0 * ct;
-    }
-    const mix = (a: Float32Array | null, bb: Float32Array, prog: number) => {
-      for (let i = 0; i < n; i++) {
-        const q = ease.io3(seg(prog * 1.35 - h[i] * 0.35, 0, 1));
-        for (let k = 0; k < 3; k++) {
-          const from = a ? a[i * 3 + k] : 0;
-          p[i * 3 + k] = lerp(from, bb[i * 3 + k], q);
-        }
-      }
+    const c = this.opts.glCanvas;
+    c.width = Math.max(1, Math.round(w * dpr));
+    c.height = Math.max(1, Math.round(h * dpr));
+    const t = this.opts.typeCanvas;
+    if (t.width !== 1) { t.width = 1; t.height = 1; }
+    const portrait = h > w * 1.05;
+    const u = portrait ? w / 360 : Math.min(w / 640, h / 360);
+    const gy = portrait ? h * 0.72 : h * 0.8;
+    // Map box: right of the captions when wide, in the middle band when tall
+    const box = portrait
+      ? { x0: 16 * u, x1: w - 16 * u, y0: h * 0.27, y1: h * 0.62 }
+      : { x0: w * 0.36, x1: w - 28 * u, y0: 28 * u, y1: h - 28 * u };
+    const k = Math.min((box.x1 - box.x0) / (VIEW.lng1 - VIEW.lng0), (box.y1 - box.y0) / (VIEW.lat0 - VIEW.lat1));
+    const map = {
+      x: box.x0 + ((box.x1 - box.x0) - k * (VIEW.lng1 - VIEW.lng0)) / 2,
+      y: box.y0 + ((box.y1 - box.y0) - k * (VIEW.lat0 - VIEW.lat1)) / 2,
+      k,
     };
-    if (b < 8) { mix(null, sphere, ease.out3(seg(b, 5.8, 8))); mat.size = 0.075; }
-    else if (b < 12) { p.set(sphere); mat.size = 0.075; }
-    else if (b < 20) { mix(sphere, logo, seg(b, 12, 16)); mat.size = lerp(0.075, 0.06, seg(b, 12, 16)); }
-    else { mix(logo, flat, seg(b, 20, 22.5)); mat.size = lerp(0.06, 0.05, seg(b, 20, 22)); }
-    (this.dots.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
-    const dark = b >= 20;
-    mat.color.copy(dark ? PAPER : INK);
-    mat.opacity = b >= 20 ? 0.7 : 1 - seg(b, 16.8, 17.8);
+    this.L = {
+      w, h, u, portrait, cx: w / 2,
+      barY: portrait ? h * 0.5 : h * 0.56,
+      barHalf: 130 * u,
+      gy,
+      capX: portrait ? 28 * u : 40 * u,
+      capY: portrait ? h * 0.15 : h * 0.22,
+      s: (portrait ? 0.78 : 0.62) * u,
+      logoW: (portrait ? 250 : 280) * u,
+      walkX: portrait ? w * 0.3 : w * 0.28,
+      map,
+    };
   }
 
-  // ---------- frame ----------
+  dispose() { /* nothing held */ }
+
   render(t: number) {
+    const ctx = this.ctx, L = this.L;
     const b = clamp(t / BEAT, 0, TOTAL_BEATS - 0.001);
-    const sc = sceneAt(b);
-    this.scene.background = (sc.dark ? INK : PAPER).clone();
-    [this.shapes, this.pins, this.arcs, this.cards, this.flaps, this.stops, this.photos, this.outroShapes].forEach(list => list.forEach(o => { o.visible = false; }));
-    this.ticket.visible = this.stampRing.visible = this.rail.visible = this.pages.visible = this.flipSheet.visible = this.wall.visible = false;
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = PAPER;
+    ctx.fillRect(0, 0, L.w, L.h);
 
-    this.setDots(b);
-    const T0 = new THREE.Vector3(0, 0, 0);
-    switch (sc.id) {
-      case 'hook': this.hook(b); break;
-      case 'logo': this.aim(new THREE.Vector3(0, 0.45, 0), lerp(0.5, 0, ease.io3(seg(b, 8, 17))), lerp(0.25, 0, ease.io3(seg(b, 9, 17))), lerp(0.95, 1.05, seg(b, 8, 20)), b); break;
-      case 'plan': this.plan(b - sc.start, b); break;
-      case 'pick': this.pick(b - sc.start, b); break;
-      case 'go': this.go(b - sc.start, b); break;
-      case 'log': this.log(b - sc.start, b); break;
-      case 'relive': this.relive(b - sc.start, b); break;
-      case 'outro': this.outro(b - sc.start, b); break;
+    // The traveler's gait runs on the clock: one step a beat
+    const w = this.walker;
+    w.phase = t * TAU * 0.75;
+    w.amp = 1;
+    const ground = w.phase * STRIDE_PER_RAD * L.s;
+
+    this.mapScene(b);
+    this.gateScene(b, t);
+    this.cityScene(b, ground);
+    this.seaScene(b, t, ground);
+    this.groundDashes(b, ground);
+    this.line(b);
+    this.logScene(b, t);
+    const walkA = span(b, 20.2, 44.8, 1.2);
+    if (walkA > 0) drawTraveler(ctx, poseTraveler(w, L.walkX, L.gy, L.s, TRAVELER_LIGHT), TRAVELER_LIGHT, walkA);
+    this.logoAndTagline(b);
+    this.captions(b);
+  }
+
+  // ── geometry ──────────────────────────────────────────────────────────
+  private P(lng: number, lat: number): Pt {
+    const m = this.L.map;
+    return { x: m.x + (lng - VIEW.lng0) * m.k, y: m.y + (VIEW.lat0 - lat) * m.k };
+  }
+
+  private routeAt(q: number): Pt {
+    const A = this.P(SEOUL.lng, SEOUL.lat), B = this.P(PINS[0].lng, PINS[0].lat);
+    const c = { x: (A.x + B.x) / 2, y: Math.min(A.y, B.y) - Math.max(40 * this.L.u, Math.abs(B.x - A.x) * 0.5) };
+    return { x: (1 - q) ** 2 * A.x + 2 * (1 - q) * q * c.x + q * q * B.x, y: (1 - q) ** 2 * A.y + 2 * (1 - q) * q * c.y + q * q * B.y };
+  }
+
+  private clothAt(q: number): Pt {
+    const L = this.L;
+    const y = L.portrait ? L.h * 0.3 : L.h * 0.31;
+    return { x: lerp(-30 * L.u, L.w + 30 * L.u, q), y: y + Math.sin(Math.PI * q) * 26 * L.u };
+  }
+
+  /** The red line at beat b: bar → route → ground → photo line → bar */
+  private lineAt(q: number, b: number): Pt {
+    const L = this.L;
+    const S = { x: L.cx - L.barHalf + 2 * L.barHalf * q, y: L.barY };
+    const G = { x: lerp(-30 * L.u, L.w + 30 * L.u, q), y: L.gy };
+    let p: Pt = S;
+    const m1 = ease.io3(seg(b, 8, 10)), m2 = ease.io3(seg(b, 19.4, 21.4)), m3 = ease.io3(seg(b, 44, 46)), m4 = ease.io3(seg(b, 52, 54));
+    if (m1 > 0) { const R = this.routeAt(q); p = { x: lerp(p.x, R.x, m1), y: lerp(p.y, R.y, m1) }; }
+    if (m2 > 0) p = { x: lerp(p.x, G.x, m2), y: lerp(p.y, G.y, m2) };
+    if (m3 > 0) { const C = this.clothAt(q); p = { x: lerp(p.x, C.x, m3), y: lerp(p.y, C.y, m3) }; }
+    if (m4 > 0) p = { x: lerp(p.x, S.x, m4), y: lerp(p.y, S.y, m4) };
+    return p;
+  }
+
+  private line(b: number) {
+    const ctx = this.ctx, L = this.L;
+    const draw = ease.io3(seg(b, 0.2, 2.2));
+    if (draw <= 0) return;
+    ctx.strokeStyle = RED; ctx.lineWidth = 3 * L.u; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    // The opening draws it left to right; afterwards it is always whole
+    for (let i = 0; i <= N; i++) {
+      const p = this.lineAt((i / N) * draw, b);
+      if (i) ctx.lineTo(p.x, p.y); else ctx.moveTo(p.x, p.y);
     }
-    this.renderer.render(this.scene, this.camera);
-    this.drawType(t, b);
+    ctx.stroke();
   }
 
-  private hook(b: number) {
-    const out = [[0, 0, 0], [-2.2, 1.1, 0.4], [2.3, 0.9, -0.3], [-1.6, -1.2, 0.6], [1.8, -1.3, 0.2], [0.2, 1.8, -0.8]];
-    this.shapes.forEach((m, i) => {
-      const a = seg(b, i, i + 0.6);
-      if (a <= 0) return;
-      m.visible = true;
-      const gather = ease.snap(seg(b, 5.6, 6.6));
-      const orbit = b * 0.18 + i;
-      const [x, y, z] = out[i];
-      const r = Math.hypot(x, y);
-      const ox = i ? Math.cos(orbit) * r : 0, oy = i ? Math.sin(orbit) * r * 0.55 + y * 0.3 : 0;
-      const s = ease.back(a) * (1 + (this.calm ? 0 : 0.12 * kickPulse(b))) * (1 - gather);
-      m.position.set(lerp(ox, 0, gather), lerp(oy, 0.3, gather), lerp(z, 0, gather));
-      m.scale.setScalar(Math.max(0.0001, s));
-      m.rotation.set(b * 0.7 + i, b * 0.9 + i * 2, 0);
-    });
-    this.aim(new THREE.Vector3(0, 0.45, 0), lerp(0.4, -0.2, seg(b, 0, 8)), 0.22, lerp(0.85, 1.05, seg(b, 0, 8)), b);
+  // ── open + outro ─────────────────────────────────────────────────────
+  private drawLogo(alpha: number, reveal: number, rise: number) {
+    if (alpha <= 0 || reveal <= 0) return;
+    const ctx = this.ctx, L = this.L;
+    const sc = L.logoW / this.logoBox.w;
+    const lh = this.logoBox.h * sc;
+    const x = L.cx - L.logoW / 2, y = L.barY - 18 * L.u - lh + rise;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath(); ctx.rect(x - 4, y - 8, (L.logoW + 8) * reveal, lh + 16); ctx.clip();
+    ctx.translate(x, y); ctx.scale(sc, sc);
+    ctx.fillStyle = INK;
+    this.logo.forEach(p => ctx.fill(p));
+    ctx.restore();
   }
 
-  private plan(lb: number, b: number) {
-    this.pins.forEach((g, i) => {
-      const a = seg(lb, 2 + i, 2.8 + i);
-      if (a <= 0) return;
-      g.visible = true;
-      g.position.y = (1 - ease.back(a)) * 2.4;
-      const s = 1 + (a >= 1 ? 0.25 * Math.exp(-(lb - 2.8 - i) * 5) : 0);
-      g.scale.set(1, s, 1);
-    });
-    this.arcs.forEach((m, i) => {
-      const a = ease.out3(seg(lb, 7 + i, 9 + i));
-      if (a <= 0) return;
-      m.visible = true;
-      m.geometry.setDrawRange(0, Math.floor(this.arcIndexCounts[i] * a / 6) * 6);
-    });
-    const portrait = this.L.portrait;
-    this.cards.forEach((m, i) => {
-      const a = ease.snap(seg(lb, 7 + i, 8.2 + i));
-      if (a <= 0) return;
-      m.visible = true;
-      const base = portrait ? new THREE.Vector3(-0.4, 2.3, 0.6) : new THREE.Vector3(2.3, 0.9, 1.3);
-      const tgt = base.clone().add(new THREE.Vector3(i * 0.22, -i * 0.2, i * 0.12));
-      m.position.set(tgt.x + (1 - a) * 6, tgt.y + (1 - a) * 1.5, tgt.z);
-      m.rotation.set(-0.25, -0.35 + (1 - a) * 1.2, 0.02);
-      m.scale.setScalar(portrait ? 0.9 : 0.82);
-    });
-    const push = ease.io3(seg(lb, 0, 16));
-    this.aim(new THREE.Vector3(portrait ? 0 : 0.4, 0, 0), lerp(-0.25, 0.22, push), lerp(0.72, 0.52, push), lerp(0.98, 0.84, push), b);
-  }
-
-  private pick(lb: number, b: number) {
-    const word = ['T', 'O', 'K', 'Y', 'O', '→'];
-    const w = this.L.portrait ? 0.92 : 1.1;
-    this.flaps.forEach((m, i) => {
-      const inA = ease.back(seg(lb, 0.2 + i * 0.1, 0.9 + i * 0.1));
-      if (inA <= 0) return;
-      m.visible = true;
-      const settle = 2 + i * 0.45;
-      const spinning = lb < settle;
-      const phase = spinning ? lb * 5 + i * 0.37 : 0;
-      const frac = phase % 1;
-      const letterIdx = Math.floor(phase + hash(i) * 26) % 26;
-      const tex = spinning ? this.flapTex['ABCDEFGHIJKLMNOPQRSTUVWXYZ'[letterIdx]] : this.flapTex[word[i]];
-      const mat = m.material as THREE.MeshBasicMaterial;
-      if (mat.map !== tex) { mat.map = tex; mat.needsUpdate = true; }
-      const squash = spinning ? Math.abs(Math.cos(frac * Math.PI)) : 1;
-      const land = spinning ? 0 : Math.exp(-(lb - settle) * 6);
-      m.scale.set(inA * w, Math.max(0.05, squash) * inA * (1 + land * 0.12), 1);
-      m.rotation.x = spinning ? Math.sin(frac * Math.PI) * 0.5 : 0;
-      m.position.set((i - 2.5) * (w + 0.1), 1.2 + (this.L.portrait ? 0.6 : 0), 0);
-    });
-    const tk = ease.snap(seg(lb, 6.3, 7.6));
-    if (tk > 0) {
-      this.ticket.visible = true;
-      const s = this.L.portrait ? 0.9 : 0.85;
-      const tx = this.L.portrait ? 0 : 1.3;
-      this.ticket.scale.setScalar(s);
-      this.ticket.position.set(tx, lerp(-5, -0.6 + (this.L.portrait ? 0.4 : 0), tk), 0.3);
-      this.ticket.rotation.set(-0.12, 0, lerp(0.3, -0.03, tk));
-      const st = seg(lb, 8.3, 8.8);
-      if (st > 0) {
-        this.stampRing.visible = true;
-        const m = this.stampRing.material as THREE.MeshBasicMaterial;
-        m.opacity = st;
-        this.stampRing.scale.setScalar(lerp(3.5, 1, ease.out5(st)) * s);
-        this.stampRing.position.set(tx + 1.28 * s, this.ticket.position.y - 0.05, 0.36);
-      }
-    }
-    const shake = !this.calm && lb > 8.5 && lb < 9.3 ? Math.sin(lb * 90) * 0.02 * (9.3 - lb) : 0;
-    this.aim(new THREE.Vector3(shake, 0.4, 0), lerp(0.35, -0.12, ease.io3(seg(lb, 0, 12))), 0.12, 1, b);
-  }
-
-  private go(lb: number, b: number) {
-    this.rail.visible = true;
-    this.stops.forEach(m => { m.visible = true; });
-    const travel = ease.io3(seg(lb, 0.5, 15));
-    const x = lerp(-0.5, 15.5, travel);
-    const nowX = lerp(-1, 16, seg(lb, 0.5, 15.5));
-    this.aim(new THREE.Vector3(x, 0, 0), -0.55 + Math.sin(lb * 0.2) * 0.08, 0.18, this.L.portrait ? 0.55 : 0.62, b);
-    this.nowLine.position.x = nowX;
-    this.stops.forEach((m, i) => {
-      const passed = nowX > i * 3 + 0.3 && i !== 3;
-      (m.material as THREE.MeshBasicMaterial).opacity = passed ? 0.35 : 1;
-      const pop = ease.back(seg(lb, i * 2 - 0.5, i * 2 + 0.3));
-      m.scale.setScalar(Math.max(0.001, pop) * (i === 3 ? 1.12 : 1));
-      m.lookAt(this.camera.position.clone().setY(m.position.y));
-    });
-    this.stations.forEach((m, i) => { m.scale.setScalar(i === 3 ? 1.4 + (this.calm ? 0 : 0.3 * kickPulse(b)) : 1); });
-  }
-
-  private log(lb: number, b: number) {
-    const snap = ease.snap(seg(lb, 7, 8.6));
-    const cellW = 0.98, cellH = 1.22;
-    this.photos.forEach((m, i) => {
-      const a = ease.back(seg(lb, 0.5 + i * 0.5, 1 + i * 0.5));
-      if (a <= 0) return;
-      m.visible = true;
-      const sx = (hash(i) - 0.5) * 8, sy = (hash(i + 20) - 0.5) * 4.4, sz = -2 + hash(i + 40) * 3;
-      const page = i < 6 ? -1 : 1;
-      const k = i % 6;
-      const gy = (1 - Math.floor(k / 2)) * cellH;
-      const tx = page < 0 ? -0.66 - (1 - (k % 2)) * cellW : 0.66 + (k % 2) * cellW;
-      m.position.set(lerp(sx, tx, snap), lerp(sy, gy, snap), lerp(sz, 0.02, snap));
-      m.rotation.set(lerp((hash(i + 60) - 0.5) * 1.2, 0, snap), lerp((hash(i + 80) - 0.5) * 1.6 + lb * 0.1, 0, snap), lerp((hash(i + 90) - 0.5) * 0.6, 0, snap));
-      m.scale.setScalar(a * 0.94);
-    });
-    if (snap > 0) {
-      this.pages.visible = true;
-      this.pages.scale.setScalar(snap);
-    }
-    [8, 10, 12].forEach(p => {
-      const f = seg(lb, p, p + 1.1);
-      if (f > 0 && f < 1) {
-        this.flipSheet.visible = true;
-        this.flipSheet.rotation.y = -Math.PI * ease.io3(f);
-        this.flipSheet.position.z = 0.05;
-      }
-    });
-    const s = this.L.portrait ? 0.84 : 1;
-    this.aim(new THREE.Vector3(0, 0, 0), lerp(0.45, 0, snap), lerp(0.3, 0.12, snap), lerp(1.05, 0.82 / s, snap), b);
-  }
-
-  private relive(lb: number, b: number) {
-    this.wall.visible = true;
-    this.wall.rotation.set(-0.22, 0.34 - lb * 0.012, 0);
-    const zoomCube = 17; // day 15, a trip day
-    this.cubes.forEach((m, i) => {
-      const col = i % 7, row = Math.floor(i / 7);
-      const wave = (col + row) * 0.12;
-      const pop = ease.back(seg(lb, 0.2 + wave, 0.9 + wave));
-      const flip = ease.snap(seg(lb, 3.6 + wave, 4.6 + wave));
-      m.scale.setScalar(Math.max(0.001, pop));
-      m.rotation.x = flip * Math.PI;
-      m.position.z = i === zoomCube ? ease.io3(seg(lb, 8, 10)) * 2.2 : 0;
-      if (i === zoomCube) m.scale.multiplyScalar(1 + ease.io3(seg(lb, 8, 10)) * 3);
-    });
-    this.wall.updateMatrixWorld(true);
-    const dive = ease.io3(seg(lb, 7.5, 10));
-    const tgt = this.cubes[zoomCube].getWorldPosition(new THREE.Vector3());
-    const center = new THREE.Vector3(0, this.L.portrait ? 0.5 : 0.2, 0).lerp(tgt, dive);
-    this.aim(center, lerp(0.2, 0, dive), lerp(0.1, 0, dive), lerp(0.9, 0.28, dive), b);
-  }
-
-  private outro(lb: number, b: number) {
-    const gap = this.L.portrait ? 2 : 2.8;
-    const collapse = ease.snap(seg(lb, 6, 7.2));
-    this.outroShapes.forEach((m, i) => {
-      const a = seg(lb, 1 + i * 1.5, 1.6 + i * 1.5);
-      if (a <= 0) return;
-      m.visible = collapse < 1;
-      const land = lb - (1.6 + i * 1.5);
-      const squash = land > 0 ? 1 - 0.18 * Math.exp(-land * 6) * Math.cos(land * 20) : 1;
-      m.position.set(lerp((i - 1) * gap, 0, collapse), lerp(lerp(3, 0.5, ease.out3(a)), 0.5, collapse), 0);
-      m.scale.set(1 / squash, squash, 1 / squash).multiplyScalar(ease.back(a) * (1 - collapse) + 0.0001);
-      m.rotation.set(0.35, lb * 0.5 + i, 0);
-    });
-    this.aim(new THREE.Vector3(0, 0.4, 0), lerp(0.18, 0, seg(lb, 0, 8)), 0.14, 1, b);
-  }
-
-  // ---------- type layer ----------
-  private drawType(t: number, b: number) {
-    const g = this.g;
-    const { w, h, portrait, u } = this.L;
-    g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    g.clearRect(0, 0, w, h);
-    const sc = sceneAt(b);
-    const fg = sc.dark ? COL.paper : COL.ink;
-    const mx = (portrait ? 64 : 96) * u;
-    const baseY = h - (portrait ? 330 : 190) * u;
-
-    // Reel: the cube opens onto a playing Memory Reel with the shared dock
-    if (sc.id === 'relive' && b >= 87.4) this.drawReel(b);
-    if (sc.id === 'outro') this.drawOutro(b);
-
-    // Scene label above the line
-    const idx = SCENES.indexOf(sc);
-    const line = LINES.find(([a, z]) => b >= a && b < z);
-    if (line && sc.id !== 'logo') {
-      const la = seg(b, line[0], line[0] + 0.5) * (1 - seg(b, line[1] - 0.4, line[1]));
-      g.globalAlpha = la;
-      g.fillStyle = COL.red;
-      g.fillRect(mx, baseY - (line[3] === 'xl' ? 118 : 84) * u, 28 * u, 3 * u);
-      g.font = `700 ${22 * u}px ${FONT_MONO}`;
-      g.fillStyle = fg;
-      g.textBaseline = 'alphabetic';
-      g.fillText(`${String(idx + 1).padStart(2, '0')}  ${sc.label.toUpperCase()}`, mx + 40 * u, baseY - (line[3] === 'xl' ? 110 : 76) * u);
-      g.globalAlpha = 1;
-    }
-    if (line) {
-      const size = (line[3] === 'xl' ? (portrait ? 86 : 96) : (portrait ? 58 : 62)) * u;
-      const center = sc.id === 'logo';
-      const y = center ? this.project(new THREE.Vector3(0, this.logoCenterY() - (this.logoW / 5.59) / 2, 0)).y + 110 * u : baseY;
-      this.kinetic(line[2], center ? w / 2 : mx, y, size, (b - line[0]) * BEAT, (line[1] - b) * BEAT, fg, center, w - mx * 2);
-    }
-
-    // Logo: the vector logotype takes over from the dots
-    if (this.logoImg && b >= 16.5 && b < 20) {
-      const a = seg(b, 16.5, 17.8) * (1 - seg(b, 19.4, 20));
-      this.drawLogo(this.logoCenterY(), a, this.logoW);
-    }
-
-
-    // Scene cuts: a red hairline sweeps across
-    for (const s of SCENES) {
-      if (!s.start) continue;
-      const d = (b - s.start) / 0.5;
-      if (d > -1 && d < 1) {
-        const p = (d + 1) / 2;
-        g.fillStyle = COL.red;
-        const bh = 10 * u;
-        g.fillRect(-w * 0.3 + p * w * 1.6 - w * 0.3, h * 0.5 - bh / 2, w * 0.3, bh);
+  private logoAndTagline(b: number) {
+    const L = this.L;
+    // Open: the logo wipes in over the drawn bar and leaves as the bar bends into a route
+    const openA = 1 - ease.smooth(seg(b, 7, 8.4));
+    this.drawLogo(openA, ease.io3(seg(b, 0.8, 2.6)), (1 - ease.out3(seg(b, 0.8, 2.6))) * 8 * L.u);
+    // Outro: back on the bar
+    this.drawLogo(1, ease.io3(seg(b, 53.4, 55.2)), (1 - ease.out3(seg(b, 53.4, 55.2))) * 8 * L.u);
+    if (this.opts.cta) {
+      const a = ease.smooth(seg(b, 56.5, 57.5));
+      if (a > 0) {
+        const ctx = this.ctx;
+        ctx.font = `800 ${16 * L.u}px ${SANS}`;
+        const tw = ctx.measureText('New trip').width + 36 * L.u, th = 40 * L.u;
+        const x = L.cx - tw / 2, y = L.barY + 70 * L.u + (1 - ease.out3(seg(b, 56.5, 57.5))) * 8 * L.u;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = RED; this.rr(x, y, tw, th, th / 2); ctx.fill();
+        ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('New trip', L.cx, y + th / 2 + 1);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = 1;
       }
     }
   }
 
-  private drawLogo(cy: number, alpha: number, worldW: number) {
-    if (!this.logoImg || alpha <= 0) return;
-    const a = this.project(new THREE.Vector3(-worldW / 2, cy + worldW / 5.59 / 2, 0));
-    const z = this.project(new THREE.Vector3(worldW / 2, cy - worldW / 5.59 / 2, 0));
-    this.drawLogoRect(a.x, a.y, z.x - a.x, z.y - a.y, alpha, false);
-  }
-
-  private drawLogoRect(x: number, y: number, w: number, h: number, alpha: number, light: boolean) {
-    if (!this.logoImg) return;
-    const g = this.g;
-    g.save();
-    g.globalAlpha = alpha;
-    if (light) g.filter = 'invert(1)';
-    g.drawImage(this.logoImg, x, y, w, h);
-    g.restore();
-  }
-
-  private kinetic(text: string, x: number, y: number, size: number, sIn: number, sOut: number, color: string, center: boolean, maxW: number) {
-    const g = this.g;
-    g.font = `800 ${size}px ${FONT_SANS}`;
-    let total = g.measureText(text).width;
-    let fs = size;
-    if (total > maxW) { fs = size * (maxW / total); g.font = `800 ${fs}px ${FONT_SANS}`; total = maxW; }
-    let cx = center ? x - total / 2 : x;
-    g.save();
-    g.beginPath();
-    g.rect(0, y - fs * 1.05, this.L.w, fs * 1.4);
-    g.clip();
-    g.fillStyle = color;
-    g.textBaseline = 'alphabetic';
-    const chars = Array.from(text);
-    chars.forEach((ch, i) => {
-      const inP = ease.expo(seg(sIn - i * 0.028, 0, 0.5));
-      const outP = ease.io3(seg(0.45 - sOut + i * 0.012, 0, 0.4));
-      const dy = (1 - inP) * fs * 1.1 - outP * fs * 1.2;
-      g.fillText(ch, cx, y + dy);
-      cx += g.measureText(ch).width;
-    });
-    g.restore();
-  }
-
-  private drawReel(b: number) {
-    const g = this.g;
-    const { w, h, u } = this.L;
-    const a = seg(b, 87.4, 88.2);
-    const img = this.photoCanvases[b < 89.8 ? 1 : 4];
-    const k = 1.04 + ((b - 87.4) % 2.4) / 2.4 * 0.08;
-    g.save();
-    g.globalAlpha = a;
-    g.fillStyle = COL.ink; g.fillRect(0, 0, w, h);
-    // Portrait fills the frame; landscape shows the shot as a 4:5 card
-    const fw = this.L.portrait ? w : h * 0.8 * 0.8, fh = this.L.portrait ? h : h * 0.8;
-    const fx = (w - fw) / 2, fy = this.L.portrait ? 0 : h * 0.07;
-    const scale = Math.max(fw / img.width, fh / img.height) * k;
-    g.save(); g.beginPath(); g.rect(fx, fy, fw, fh); g.clip();
-    g.drawImage(img, fx + (fw - img.width * scale) / 2, fy + (fh - img.height * scale) / 2, img.width * scale, img.height * scale);
-    g.restore();
-    const grd = g.createLinearGradient(0, h * 0.45, 0, h);
-    grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.72)');
-    g.fillStyle = grd; g.fillRect(0, 0, w, h);
-    // Top segments
-    const n = 6, gap = 6 * u, m = 48 * u, sw = (w - m * 2 - gap * (n - 1)) / n;
-    for (let i = 0; i < n; i++) {
-      g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(m + i * (sw + gap), 40 * u, sw, 3 * u);
-      const f = i < 1 ? 1 : i === 1 ? seg(b, 88, 92) : 0;
-      g.fillStyle = i === 1 ? COL.red : '#fff'; g.fillRect(m + i * (sw + gap), 40 * u, sw * f, 3 * u);
+  // ── map ──────────────────────────────────────────────────────────────
+  private mapScene(b: number) {
+    if (b < 8 || b > 21) return;
+    const ctx = this.ctx, L = this.L, u = L.u;
+    const r = Math.max(1, L.map.k * 0.55);
+    ctx.fillStyle = SOFT;
+    for (const d of this.dots) {
+      const a = ease.smooth(seg(b, 8.4 + d.h * 1.6, 9.2 + d.h * 1.6)) * (1 - ease.smooth(seg(b, 18.8 + d.h * 0.9, 19.8 + d.h * 0.9)));
+      if (a <= 0) continue;
+      const p = this.P(d.lng, d.lat);
+      ctx.globalAlpha = a;
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
     }
-    // Dock pill
-    const pw = 300 * u, ph = 76 * u, px = (w - pw) / 2, py = h - ph - 48 * u;
-    g.fillStyle = 'rgba(0,0,0,.6)'; g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1.5 * u;
-    g.beginPath(); g.roundRect(px, py, pw, ph, ph / 2); g.fill(); g.stroke();
-    const cy = py + ph / 2;
-    g.fillStyle = '#fff'; g.beginPath(); g.arc(w / 2, cy, 30 * u, 0, Math.PI * 2); g.fill();
-    g.fillStyle = COL.ink; g.fillRect(w / 2 - 9 * u, cy - 11 * u, 6 * u, 22 * u); g.fillRect(w / 2 + 3 * u, cy - 11 * u, 6 * u, 22 * u);
-    g.strokeStyle = '#fff'; g.lineWidth = 4 * u; g.lineCap = 'round';
-    [[-1, w / 2 - 80 * u], [1, w / 2 + 80 * u]].forEach(([dir, x]) => { g.beginPath(); g.moveTo(x - dir * 5 * u, cy - 10 * u); g.lineTo(x + dir * 5 * u, cy); g.lineTo(x - dir * 5 * u, cy + 10 * u); g.stroke(); });
-    g.restore();
+    ctx.globalAlpha = 1;
+    const out = 1 - ease.smooth(seg(b, 18.8, 19.8));
+    // Seoul
+    const A = this.P(SEOUL.lng, SEOUL.lat);
+    const sa = ease.smooth(seg(b, 9.5, 10.3)) * out;
+    if (sa > 0) {
+      ctx.globalAlpha = sa; ctx.fillStyle = RED;
+      ctx.beginPath(); ctx.arc(A.x, A.y, 5 * u, 0, TAU); ctx.fill();
+      this.chip('ICN', A.x - 18 * u, A.y + 10 * u, 9 * u, sa, INK, SURFACE);
+    }
+    // Pins settle one a half-beat apart
+    PINS.forEach((p, i) => {
+      const k = seg(b, 11 + i * 0.5, 12 + i * 0.5);
+      if (k <= 0) return;
+      const P = this.P(p.lng, p.lat);
+      ctx.globalAlpha = ease.smooth(k * 2) * out;
+      this.pin(P.x, P.y - (1 - ease.settle(k)) * 22 * u, 6 * u * (i === 0 ? 1.15 : 1), i === 0 ? RED : AMBER);
+      if (i === 0) this.chip('TYO', P.x + 10 * u, P.y - 28 * u, 9 * u, ease.smooth(seg(b, 12.5, 13.3)) * out, AMBER, INK);
+    });
+    ctx.globalAlpha = 1;
+    // The plane rides the route
+    const q = ease.io3(seg(b, 13.4, 17.6));
+    const pa = span(b, 13.2, 18.4, 0.6) * out;
+    if (pa > 0) {
+      const p = this.routeAt(q), p2 = this.routeAt(Math.min(1, q + 0.01)), p1 = this.routeAt(Math.max(0, q - 0.01));
+      ctx.globalAlpha = pa;
+      this.plane(p.x, p.y, Math.atan2(p2.y - p1.y, p2.x - p1.x), 11 * u, INK);
+      ctx.globalAlpha = 1;
+    }
+    // A three-day plan fills in under the caption
+    const days = [['DAY 1', '시부야 · 하라주쿠'], ['DAY 2', '츠키지 · 긴자'], ['DAY 3', '오다이바 · 온천']];
+    const cw = L.portrait ? L.w - 56 * u : 210 * u, ch = 34 * u;
+    const x0 = L.capX, y0 = L.portrait ? L.h * 0.66 : L.capY + 52 * u;
+    days.forEach(([d, place], i) => {
+      const k = ease.out3(seg(b, 15.4 + i * 0.5, 16.4 + i * 0.5));
+      const a = k * (1 - ease.smooth(seg(b, 18.8 + i * 0.15, 19.8 + i * 0.15)));
+      if (a <= 0) return;
+      const y = y0 + i * (ch + 8 * u) + (1 - k) * 12 * u;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = SURFACE; this.rr(x0, y, cw, ch, 12 * u); ctx.fill();
+      ctx.fillStyle = i === 0 ? RED : SOFT;
+      ctx.beginPath(); ctx.arc(x0 + 16 * u, y + ch / 2, 4 * u, 0, TAU); ctx.fill();
+      ctx.fillStyle = MUTED; ctx.font = `600 ${9 * u}px ${MONO}`; ctx.textBaseline = 'middle';
+      ctx.fillText(d, x0 + 28 * u, y + ch / 2 + 0.5);
+      ctx.fillStyle = INK; ctx.font = `700 ${12.5 * u}px ${SANS}`;
+      ctx.fillText(place, x0 + 74 * u, y + ch / 2 + 0.5);
+      ctx.textBaseline = 'alphabetic';
+    });
+    ctx.globalAlpha = 1;
   }
 
-  private drawOutro(b: number) {
-    const g = this.g;
-    const { w, h, u, portrait } = this.L;
-    // Labels under the three shapes
-    const words: [string, string][] = [['PLAN', '계획'], ['LOG', '기록'], ['RELIVE', '회상']];
-    const gap = portrait ? 2 : 2.8;
-    const fade = 1 - seg(b, 97.5, 98.4);
-    words.forEach(([en, ko], i) => {
-      const a = seg(b, 93.4 + i * 1.5, 94 + i * 1.5) * fade;
-      if (a <= 0) return;
-      const p = this.project(new THREE.Vector3((i - 1) * gap, -0.55, 0));
-      g.globalAlpha = a;
-      g.textAlign = 'center';
-      g.fillStyle = [COL.red, COL.log, COL.relive][i]; g.font = `700 ${22 * u}px ${FONT_MONO}`; g.fillText(en, p.x, p.y + 34 * u);
-      g.fillStyle = COL.ink; g.font = `800 ${(portrait ? 64 : 72) * u}px ${FONT_SANS}`; g.fillText(ko, p.x, p.y + (portrait ? 104 : 112) * u);
-      g.textAlign = 'start';
-      g.globalAlpha = 1;
+  // ── terminal ─────────────────────────────────────────────────────────
+  private gateScene(b: number, t: number) {
+    const a = span(b, 20.4, 28.8, 1.2);
+    if (a <= 0) return;
+    const ctx = this.ctx, L = this.L, u = L.u;
+    // A wall of glass with a plane taxiing past
+    const gx = L.portrait ? 18 * u : L.w * 0.42, gw = L.portrait ? L.w - 36 * u : L.w * 0.58 - 30 * u;
+    const gh = L.portrait ? L.h * 0.3 : L.gy - 70 * u;
+    const gyTop = L.gy - gh;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = SKY; this.rr(gx, gyTop, gw, gh, 22 * u); ctx.fill();
+    ctx.save(); this.rr(gx, gyTop, gw, gh, 22 * u); ctx.clip();
+    ctx.strokeStyle = SURFACE; ctx.lineWidth = 3 * u;
+    for (let i = 1; i < 4; i++) { const x = gx + (gw / 4) * i; ctx.beginPath(); ctx.moveTo(x, gyTop); ctx.lineTo(x, L.gy); ctx.stroke(); }
+    const px = lerp(gx + gw + 120 * u, gx - 160 * u, seg(b, 20.4, 28.8));
+    this.sidePlane(px, L.gy - 18 * u, 150 * u);
+    ctx.restore();
+    // Departures board: the destination turns over letter by letter, softly
+    const bw = L.portrait ? L.w - 56 * u : 236 * u, bh = 70 * u;
+    const bx = L.portrait ? 28 * u : gx + gw - bw - 18 * u, by = L.portrait ? L.capY + 40 * u : gyTop + 18 * u;
+    ctx.fillStyle = SURFACE; this.rr(bx, by, bw, bh, 14 * u); ctx.fill();
+    ctx.fillStyle = MUTED; ctx.font = `600 ${8.5 * u}px ${MONO}`; ctx.textBaseline = 'top';
+    ctx.fillText('DEPARTURES', bx + 14 * u, by + 12 * u);
+    ctx.font = `700 ${20 * u}px ${MONO}`;
+    const from = 'ICN  →  ---', to = 'ICN  →  TYO';
+    let cx = bx + 14 * u;
+    [...to].forEach((ch, i) => {
+      const k = ease.smooth(seg(b, 23 + i * 0.08, 23.6 + i * 0.08));
+      const before = from[i] || ' ';
+      ctx.fillStyle = i >= 8 ? AMBER : INK;
+      if (before !== ch && k < 1) { ctx.globalAlpha = a * (1 - k); ctx.fillText(before, cx, by + 27 * u - k * 6 * u); }
+      ctx.globalAlpha = a * (before === ch ? 1 : k);
+      ctx.fillText(ch, cx, by + 27 * u + (1 - k) * 6 * u);
+      cx += ctx.measureText(ch).width;
     });
-    // Logo, hairline and call to action
-    const la = seg(b, 98.4, 99.4);
-    if (la > 0 && this.logoImg) {
-      const lw = (portrait ? 720 : 760) * u, lh = lw / 5.586;
-      const lx = (w - lw) / 2, ly = h * (portrait ? 0.4 : 0.36) - lh / 2 + (1 - ease.out3(la)) * 30 * u;
-      this.drawLogoRect(lx, ly, lw, lh, la, false);
-      const line = ease.out3(seg(b, 99, 100.2));
-      g.fillStyle = COL.red; g.fillRect(w / 2 - (lw / 2) * line, ly + lh + 40 * u, lw * line, 3 * u);
-      const ca = ease.back(seg(b, 100, 100.8));
-      if (ca > 0 && this.cta) {
-        const bw = 360 * u * ca, bh = 88 * u, bx = w / 2 - bw / 2, by = ly + lh + 90 * u;
-        g.fillStyle = COL.ink; g.beginPath(); g.roundRect(bx, by, bw, bh, bh / 2); g.fill();
-        if (ca > 0.6) {
-          g.fillStyle = COL.paper; g.font = `800 ${34 * u}px ${FONT_SANS}`; g.textAlign = 'center';
-          g.fillText('지금 시작하기', w / 2, by + bh / 2 + 12 * u);
-          g.textAlign = 'start';
+    ctx.globalAlpha = a;
+    ctx.fillStyle = MUTED; ctx.font = `600 ${9 * u}px ${MONO}`;
+    ctx.fillText('10:30   GATE 24', bx + 14 * u, by + 52 * u);
+    // Boarding: a slow breathing amber, not a blink
+    ctx.globalAlpha = a * (0.65 + 0.35 * Math.sin(t * 2.2));
+    ctx.fillStyle = AMBER; ctx.textAlign = 'right';
+    ctx.fillText('BOARDING', bx + bw - 14 * u, by + 52 * u);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = 1;
+  }
+
+  // ── city ─────────────────────────────────────────────────────────────
+  private cityScene(b: number, ground: number) {
+    if (b < 28 || b > 37) return;
+    const ctx = this.ctx, L = this.L, u = L.u;
+    const scroll = ground * 0.35;
+    const spanX = 560 * u;
+    const blocks: [number, number, number][] = [
+      [0, 92, 30], [34, 150, 26], [64, 118, 34], [104, 70, 28], [140, 186, 22], [166, 128, 30], [204, 96, 36],
+      [250, 160, 28], [282, 110, 32], [320, 210, 18], [346, 140, 30], [384, 84, 34], [430, 170, 28], [462, 120, 32], [500, 76, 30],
+    ];
+    for (let rep = -1; rep < Math.ceil(L.w / spanX) + 1; rep++) {
+      blocks.forEach(([bx, bh, bw], i) => {
+        const grow = ease.io3(seg(b, 28.4 + (i % 8) * 0.14, 29.8 + (i % 8) * 0.14)) * (1 - ease.io3(seg(b, 35 + (i % 8) * 0.06, 36.4 + (i % 8) * 0.06)));
+        if (grow <= 0) return;
+        const x = rep * spanX + bx * u - (scroll % spanX);
+        if (x > L.w + 40 * u || x + bw * u < -40 * u) return;
+        const hh = bh * u * grow;
+        ctx.fillStyle = i % 4 === 1 ? 'rgba(20,20,18,0.17)' : 'rgba(20,20,18,0.1)';
+        this.rr(x, L.gy - hh, bw * u, hh + 1, 4 * u); ctx.fill();
+        // Lit windows, steady
+        if (grow > 0.6 && i % 3 !== 2) {
+          ctx.fillStyle = AMBER;
+          for (let r = 0; r < Math.floor(bh / 34); r++) if ((i + r) % 2 === 0) ctx.fillRect(x + bw * u * 0.35, L.gy - hh + 14 * u + r * 30 * u, 4 * u, 5 * u);
         }
-        g.fillStyle = 'rgba(11,11,12,.6)'; g.font = `600 ${22 * u}px ${FONT_MONO}`; g.textAlign = 'center';
-        g.fillText('PLAN · LOG · RELIVE', w / 2, by + bh + 70 * u);
-        g.textAlign = 'start';
-      }
+      });
     }
+    // Today on the trip: now and next
+    const cards: [string, string, string][] = [['NOW', '시부야 스카이', '14:00'], ['NEXT', '츠키지 시장', '17:30']];
+    const cw = 190 * u, ch = 44 * u;
+    const x0 = L.portrait ? L.w - cw - 22 * u : L.w - cw - 40 * u, y0 = L.portrait ? L.h * 0.3 : L.h * 0.16;
+    cards.forEach(([tag, place, time], i) => {
+      const k = ease.out3(seg(b, 31 + i, 32 + i));
+      const a = k * (1 - ease.smooth(seg(b, 34.8, 35.8)));
+      if (a <= 0) return;
+      const y = y0 + i * (ch + 10 * u) + (1 - k) * 14 * u;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = SURFACE; this.rr(x0, y, cw, ch, 14 * u); ctx.fill();
+      ctx.fillStyle = i === 0 ? RED : AMBER;
+      this.rr(x0 + 12 * u, y + 13 * u, 40 * u, 18 * u, 9 * u); ctx.fill();
+      ctx.fillStyle = i === 0 ? '#FFFFFF' : INK; ctx.font = `700 ${8.5 * u}px ${MONO}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+      ctx.fillText(tag, x0 + 32 * u, y + 22.5 * u); ctx.textAlign = 'left';
+      ctx.fillStyle = INK; ctx.font = `700 ${13 * u}px ${SANS}`; ctx.fillText(place, x0 + 60 * u, y + 22.5 * u);
+      ctx.fillStyle = MUTED; ctx.font = `600 ${9.5 * u}px ${MONO}`; ctx.textAlign = 'right'; ctx.fillText(time, x0 + cw - 14 * u, y + 22.5 * u);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  // ── sea ──────────────────────────────────────────────────────────────
+  private seaScene(b: number, t: number, ground: number) {
+    if (b < 36 || b > 45.5) return;
+    const ctx = this.ctx, L = this.L, u = L.u;
+    const rise = ease.io3(seg(b, 36.4, 39)) * (1 - ease.io3(seg(b, 43, 45.2)));
+    if (rise <= 0) return;
+    // Sun rises behind the horizon
+    const sx = L.portrait ? L.w * 0.66 : L.w * 0.7;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, L.w, L.gy); ctx.clip();
+    ctx.fillStyle = AMBER;
+    ctx.beginPath(); ctx.arc(sx, L.gy + 30 * u - rise * 120 * u, 42 * u, 0, TAU); ctx.fill();
+    ctx.restore();
+    // Sea below the line, waves drifting slowly
+    ctx.globalAlpha = rise;
+    ctx.fillStyle = FAINT; ctx.fillRect(0, L.gy, L.w, L.h - L.gy);
+    ctx.strokeStyle = SURFACE; ctx.lineWidth = 2 * u; ctx.lineCap = 'round';
+    for (let r = 0; r < 4; r++) {
+      ctx.beginPath();
+      for (let x = 0; x <= L.w; x += 6) {
+        const yy = L.gy + (16 + r * 18) * u + Math.sin(x / (46 * u) - t * 0.9 + r * 1.3) * 2.6 * u;
+        if (x) ctx.lineTo(x, yy); else ctx.moveTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // Palms grow along the shore and drift by
+    const spanX = 520 * u, scroll = ground * 0.35;
+    const palms: [number, number][] = [[60, 120], [104, 92], [250, 134], [300, 100], [420, 116], [470, 86]];
+    for (let rep = -1; rep < Math.ceil(L.w / spanX) + 1; rep++) {
+      palms.forEach(([px, ph], i) => {
+        const g = ease.io3(seg(b, 37 + i * 0.2, 38.6 + i * 0.2)) * (1 - ease.io3(seg(b, 42.8 + i * 0.08, 44.4 + i * 0.08)));
+        if (g <= 0) return;
+        const x = rep * spanX + px * u - (scroll % spanX);
+        if (x < -60 * u || x > L.w + 60 * u) return;
+        this.palm(x, L.gy, ph * u * g, u * 1.2, i % 2 ? 'rgba(20,20,18,0.26)' : 'rgba(20,20,18,0.36)');
+      });
+    }
+  }
+
+  private groundDashes(b: number, ground: number) {
+    const a = span(b, 20.2, 44.8, 1.2);
+    if (a <= 0) return;
+    const ctx = this.ctx, L = this.L, u = L.u;
+    const gap = 30 * u;
+    // The sea takes over below the line on the beach
+    ctx.globalAlpha = a * (1 - ease.smooth(seg(b, 36.4, 38)));
+    ctx.fillStyle = SOFT;
+    for (let x = -(ground % gap); x < L.w; x += gap) ctx.fillRect(x, L.gy + 8 * u, 12 * u, 1.6 * u);
+    ctx.globalAlpha = 1;
+  }
+
+  // ── photos into a magazine ───────────────────────────────────────────
+  private logScene(b: number, t: number) {
+    if (b < 44.5 || b > 53.5) return;
+    const ctx = this.ctx, L = this.L, u = L.u;
+    const kinds: ('sea' | 'city' | 'peak' | 'sea2' | 'city2')[] = ['sea', 'city', 'peak', 'sea2', 'city2'];
+    const qs = L.portrait ? [0.16, 0.33, 0.5, 0.67, 0.84] : [0.14, 0.32, 0.5, 0.68, 0.86];
+    const pw = (L.portrait ? 54 : 74) * u, ph = pw * 0.78;
+    // Spread: left page one big photo, right page four small
+    const sw = L.portrait ? L.w - 48 * u : 320 * u, sh = L.portrait ? sw * 0.62 : 170 * u;
+    const sx = L.cx - sw / 2, sy = L.portrait ? L.h * 0.5 : L.h * 0.44;
+    const pageA = ease.smooth(seg(b, 48.2, 49)) * (1 - ease.smooth(seg(b, 51.6, 52.8)));
+    if (pageA > 0) {
+      ctx.globalAlpha = pageA;
+      ctx.fillStyle = SURFACE; this.rr(sx, sy, sw, sh, 16 * u); ctx.fill();
+      ctx.strokeStyle = SOFT; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(sx + sw / 2, sy + 10 * u); ctx.lineTo(sx + sw / 2, sy + sh - 10 * u); ctx.stroke();
+      const ta = ease.smooth(seg(b, 50, 51)) * pageA;
+      ctx.globalAlpha = ta;
+      ctx.fillStyle = INK; ctx.font = `800 ${16 * u}px ${SANS}`;
+      ctx.fillText('여름, 다낭', sx + 14 * u, sy + sh - 16 * u);
+      ctx.fillStyle = MUTED; ctx.font = `600 ${8.5 * u}px ${MONO}`;
+      ctx.fillText('ISSUE 01', sx + 14 * u, sy + sh - 36 * u);
+      ctx.globalAlpha = 1;
+    }
+    const pad = 12 * u, half = sw / 2;
+    const slots = [
+      { x: sx + pad, y: sy + pad, w: half - pad * 2, h: sh - pad * 2 - 46 * u },
+      { x: sx + half + pad, y: sy + pad, w: (half - pad * 3) / 2, h: (sh - pad * 3) / 2 },
+      { x: sx + half + pad * 2 + (half - pad * 3) / 2, y: sy + pad, w: (half - pad * 3) / 2, h: (sh - pad * 3) / 2 },
+      { x: sx + half + pad, y: sy + pad * 2 + (sh - pad * 3) / 2, w: (half - pad * 3) / 2, h: (sh - pad * 3) / 2 },
+      { x: sx + half + pad * 2 + (half - pad * 3) / 2, y: sy + pad * 2 + (sh - pad * 3) / 2, w: (half - pad * 3) / 2, h: (sh - pad * 3) / 2 },
+    ];
+    const fadeAll = 1 - ease.smooth(seg(b, 51.6, 52.8));
+    kinds.forEach((kind, i) => {
+      const drop = seg(b, 45 + i * 0.5, 46 + i * 0.5);
+      if (drop <= 0 || fadeAll <= 0) return;
+      const peg = this.clothAt(qs[i]);
+      const swingT = Math.max(0, b - 46 - i * 0.5);
+      const swing = this.opts.calm ? 0 : 0.07 * Math.sin(swingT * 2.4) * Math.exp(-swingT * 1.1);
+      const hang = { x: peg.x, y: peg.y + 4 * u - (1 - ease.settle(drop)) * 70 * u };
+      const fly = ease.io3(seg(b, 48.6 + i * 0.16, 50 + i * 0.16));
+      const sl = slots[i];
+      const cx = lerp(hang.x, sl.x + sl.w / 2, fly), cy = lerp(hang.y + ph / 2, sl.y + sl.h / 2, fly);
+      const ww = lerp(pw, sl.w, fly), hh = lerp(ph, sl.h, fly);
+      const rot = lerp(swing + (i % 2 ? 0.04 : -0.04), 0, fly);
+      ctx.save();
+      ctx.globalAlpha = ease.smooth(drop * 2) * fadeAll;
+      ctx.translate(cx, cy - hh / 2); ctx.rotate(rot); ctx.translate(-cx, -(cy - hh / 2));
+      // Frame, then the picture
+      ctx.fillStyle = SURFACE; this.rr(cx - ww / 2, cy - hh / 2, ww, hh, lerp(6 * u, 10 * u, fly)); ctx.fill();
+      const inset = lerp(4 * u, 0, fly);
+      this.photo(kind, cx - ww / 2 + inset, cy - hh / 2 + inset, ww - inset * 2, hh - inset * 2, lerp(4 * u, 10 * u, fly));
+      // Peg while it hangs
+      if (fly < 0.5) {
+        ctx.globalAlpha *= 1 - fly * 2;
+        ctx.fillStyle = INK; this.rr(cx - 3 * u, cy - hh / 2 - 6 * u, 6 * u, 12 * u, 2 * u); ctx.fill();
+      }
+      ctx.restore();
+    });
+  }
+
+  // ── words ────────────────────────────────────────────────────────────
+  private captions(b: number) {
+    const L = this.L, u = L.u;
+    LINES.forEach(([a, z, text, size]) => {
+      if (b < a - 0.1 || b > z + 0.6) return;
+      const centered = a < 8 || a >= 52;
+      const px = size === 'xl' ? (L.portrait ? 40 : 46) * u : (L.portrait ? 19 : 21) * u;
+      // Follow-ups sit under the headline before them when both share a scene
+      const x = centered ? L.cx : L.capX;
+      const y = centered ? L.barY + 40 * u : (size === 'md' && a === 15 ? L.capY + 34 * u : L.capY);
+      this.kinetic(text, x, y, px, b, a, z, centered ? 'center' : 'left', size === 'xl' ? 800 : 600, size === 'xl' ? INK : centered ? MUTED : INK);
+    });
+    // Destination chips under the headlines
+    this.chip('TYO · 도쿄', L.capX, L.capY + 16 * u, 10 * u, span(b, 29.6, 35.4, 0.8), INK, SURFACE);
+    this.chip('DAD · 다낭', L.capX, L.capY + 16 * u, 10 * u, span(b, 37.6, 43.4, 0.8), AMBER, INK);
+    this.chip('31°  맑음', L.capX + 104 * u, L.capY + 16 * u, 10 * u, span(b, 38.4, 43.4, 0.8), SURFACE, INK);
+  }
+
+  /** Each character rises and fades in on a short stagger and leaves the same way */
+  private kinetic(text: string, x: number, y: number, size: number, b: number, a: number, z: number, align: 'left' | 'center', weight: number, color: string) {
+    const ctx = this.ctx;
+    ctx.font = `${weight} ${size}px ${SANS}`;
+    // Long lines shrink to fit the frame (portrait)
+    const maxW = this.L.w - this.L.capX * 2;
+    const full = ctx.measureText(text).width;
+    if (full > maxW) { size *= maxW / full; ctx.font = `${weight} ${size}px ${SANS}`; }
+    const chars = [...text];
+    const widths = chars.map(c => ctx.measureText(c).width);
+    const total = widths.reduce((s, v) => s + v, 0);
+    let cx = align === 'center' ? x - total / 2 : x;
+    ctx.fillStyle = color;
+    chars.forEach((c, i) => {
+      const inK = ease.out3(seg(b, a + i * 0.05, a + i * 0.05 + 0.7));
+      const outK = ease.smooth(seg(b, z - 0.6 + i * 0.02, z + i * 0.02));
+      const k = inK * (1 - outK);
+      if (k > 0.002) {
+        ctx.globalAlpha = k;
+        ctx.fillText(c, cx, y + (1 - inK) * size * 0.3 - outK * size * 0.15);
+      }
+      cx += widths[i];
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  // ── drawing helpers ──────────────────────────────────────────────────
+  private rr(x: number, y: number, w: number, h: number, r: number) {
+    const ctx = this.ctx, q = Math.max(0, Math.min(r, w / 2, h / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + q, y); ctx.arcTo(x + w, y, x + w, y + h, q); ctx.arcTo(x + w, y + h, x, y + h, q);
+    ctx.arcTo(x, y + h, x, y, q); ctx.arcTo(x, y, x + w, y, q); ctx.closePath();
+  }
+
+  private chip(text: string, x: number, y: number, size: number, alpha: number, fill: string, color: string) {
+    if (alpha <= 0) return;
+    const ctx = this.ctx;
+    ctx.font = `600 ${size}px ${MONO}`;
+    const tw = ctx.measureText(text).width + size * 1.6;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = fill; this.rr(x, y, tw, size * 2.1, size * 1.05); ctx.fill();
+    ctx.fillStyle = color; ctx.textBaseline = 'middle'; ctx.fillText(text, x + size * 0.8, y + size * 1.1);
+    ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = 1;
+  }
+
+  private pin(x: number, y: number, r: number, color: string) {
+    const ctx = this.ctx;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.bezierCurveTo(x - r * 0.4, y - r * 0.9, x - r, y - r * 1.25, x - r, y - r * 1.9);
+    ctx.arc(x, y - r * 1.9, r, Math.PI, 0);
+    ctx.bezierCurveTo(x + r, y - r * 1.25, x + r * 0.4, y - r * 0.9, x, y);
+    ctx.fill();
+    ctx.fillStyle = SURFACE;
+    ctx.beginPath(); ctx.arc(x, y - r * 1.9, r * 0.38, 0, TAU); ctx.fill();
+  }
+
+  private plane(x: number, y: number, ang: number, size: number, color: string) {
+    const ctx = this.ctx;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(size / 10, size / 10); ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(10, 0); ctx.bezierCurveTo(10, -1.3, 8, -1.6, 6, -1.6); ctx.lineTo(1.5, -1.6); ctx.lineTo(-3, -8.5); ctx.lineTo(-5, -8.5);
+    ctx.lineTo(-2.2, -1.6); ctx.lineTo(-7, -1.6); ctx.lineTo(-9, -4.2); ctx.lineTo(-10.4, -4.2); ctx.lineTo(-9.2, 0); ctx.lineTo(-10.4, 4.2);
+    ctx.lineTo(-9, 4.2); ctx.lineTo(-7, 1.6); ctx.lineTo(-2.2, 1.6); ctx.lineTo(-5, 8.5); ctx.lineTo(-3, 8.5); ctx.lineTo(1.5, 1.6);
+    ctx.lineTo(6, 1.6); ctx.bezierCurveTo(8, 1.6, 10, 1.3, 10, 0);
+    ctx.fill(); ctx.restore();
+  }
+
+  /** An airliner from the side, nose to the left, `len` long, wheels on y */
+  private sidePlane(x: number, y: number, len: number) {
+    const ctx = this.ctx, h = len * 0.13;
+    ctx.fillStyle = SURFACE;
+    // fuselage
+    this.rr(x, y - h * 1.6, len, h, h / 2); ctx.fill();
+    // tail
+    ctx.beginPath(); ctx.moveTo(x + len * 0.84, y - h * 1.5); ctx.lineTo(x + len * 0.94, y - h * 3.4); ctx.lineTo(x + len * 1.0, y - h * 3.4); ctx.lineTo(x + len * 0.98, y - h * 1.3); ctx.fill();
+    // wing
+    ctx.fillStyle = 'rgba(20,20,18,0.12)';
+    ctx.beginPath(); ctx.moveTo(x + len * 0.38, y - h * 0.95); ctx.lineTo(x + len * 0.62, y - h * 0.95); ctx.lineTo(x + len * 0.5, y - h * 0.2); ctx.lineTo(x + len * 0.42, y - h * 0.2); ctx.fill();
+    // windows and a red cheat line
+    ctx.fillStyle = 'rgba(20,20,18,0.25)';
+    for (let i = 0; i < 12; i++) ctx.fillRect(x + len * (0.16 + i * 0.055), y - h * 1.32, len * 0.018, h * 0.22);
+    ctx.fillStyle = RED; ctx.fillRect(x + len * 0.08, y - h * 0.95, len * 0.8, h * 0.08);
+    // gear
+    ctx.fillStyle = INK;
+    [0.2, 0.55, 0.6].forEach(f => { ctx.beginPath(); ctx.arc(x + len * f, y - h * 0.3, h * 0.28, 0, TAU); ctx.fill(); });
+  }
+
+  private palm(x: number, gy: number, hh: number, s: number, color: string) {
+    const ctx = this.ctx, top = { x: x + 10 * s, y: gy - hh };
+    ctx.strokeStyle = color; ctx.lineCap = 'round';
+    ctx.lineWidth = 3.6 * s;
+    ctx.beginPath(); ctx.moveTo(x, gy); ctx.quadraticCurveTo(x + 2 * s, gy - hh * 0.6, top.x, top.y); ctx.stroke();
+    ctx.lineWidth = 3 * s;
+    for (const a of [-2.7, -2.1, -1.3, -0.55, 0.15]) {
+      const len = 24 * s;
+      ctx.beginPath(); ctx.moveTo(top.x, top.y);
+      ctx.quadraticCurveTo(top.x + Math.cos(a) * len * 0.6, top.y + Math.sin(a) * len * 0.6 - 6 * s, top.x + Math.cos(a) * len, top.y + Math.sin(a) * len + 6 * s);
+      ctx.stroke();
+    }
+  }
+
+  private photo(kind: 'sea' | 'city' | 'peak' | 'sea2' | 'city2', x: number, y: number, w: number, h: number, r: number) {
+    const ctx = this.ctx;
+    ctx.save(); this.rr(x, y, w, h, r); ctx.clip();
+    ctx.fillStyle = SKY; ctx.fillRect(x, y, w, h);
+    const sunX = kind === 'sea2' ? 0.3 : 0.7;
+    ctx.fillStyle = AMBER; ctx.beginPath(); ctx.arc(x + w * sunX, y + h * 0.32, Math.min(w, h) * 0.13, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(20,20,18,0.16)';
+    if (kind === 'sea' || kind === 'sea2') {
+      ctx.fillRect(x, y + h * 0.66, w, h);
+      ctx.fillStyle = SURFACE; ctx.fillRect(x + w * 0.1, y + h * 0.76, w * 0.3, Math.max(1, h * 0.02)); ctx.fillRect(x + w * 0.5, y + h * 0.86, w * 0.34, Math.max(1, h * 0.02));
+    } else if (kind === 'city' || kind === 'city2') {
+      const set = kind === 'city' ? [[0.06, 0.45], [0.22, 0.3], [0.38, 0.55], [0.56, 0.38], [0.74, 0.5]] : [[0.04, 0.3], [0.2, 0.6], [0.4, 0.42], [0.6, 0.66], [0.8, 0.36]];
+      set.forEach(([bx, bh]) => ctx.fillRect(x + w * bx, y + h * (1 - bh), w * 0.14, h * bh));
+    } else {
+      ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x + w * 0.35, y + h * 0.42); ctx.lineTo(x + w * 0.55, y + h * 0.66); ctx.lineTo(x + w * 0.75, y + h * 0.5); ctx.lineTo(x + w, y + h); ctx.fill();
+    }
+    ctx.restore();
   }
 }
+
