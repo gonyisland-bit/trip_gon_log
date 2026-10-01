@@ -25,6 +25,8 @@ import { doc } from 'firebase/firestore';
 // Journey content writes carry owner / access fields (v1.3.6)
 import { setDoc, setLinkShare, currentUid } from '../../utils/ownership';
 import { openJourneyShare } from '../../components/share/ShareJourneySheet';
+import { useFriends } from '../../components/friends/useFriends';
+import { UserProfileAvatar } from '../../components/UserProfileAvatar';
 import { JourneyTitleInput } from './JourneyTitleInput';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import {
@@ -61,9 +63,13 @@ export interface JourneyDetailPageProps {
   allTrips?: Trip[];
   allPlans?: Plan[];
   isAdmin?: boolean;
+  /** The signed-in member's name, offered as the journey's first member */
+  myName?: string;
 }
 
 export function useJourneyDetailState(props: JourneyDetailPageProps) {
+  // Friends to pick as members on the journey page (v1.3.7); a picked friend sees the journey
+  const { friends: myFriends } = useFriends(currentUid());
   const {
   isLoggedIn,
   trip,
@@ -3521,9 +3527,12 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               </span>
               {isEditing && draftTrip ? (
                 <div className="flex flex-wrap gap-2 items-center">
-                  {(draftTrip.members || []).map(m => (
+                  {(draftTrip.members || []).map(m => {
+                    const link = (draftTrip.memberLinks || []).find(l => l.name === m);
+                    const friend = link && myFriends.find(f => f.uid === link.uid);
+                    return (
                     <span key={m} className="luggage-tag group/luggage cursor-default">
-                      <span className="luggage-tag-hole" />
+                      {link ? <UserProfileAvatar profile={friend || { uid: link.uid }} size="xs" fallbackName={m} /> : <span className="luggage-tag-hole" />}
                       <span className="font-mono font-bold tracking-tight">{m}</span>
                       <span className="luggage-barcode-strip ml-0.5">
                         <span className="luggage-barcode-bar w-[1px]" />
@@ -3534,7 +3543,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                         type="button"
                         onClick={() => {
                           const newMembers = (draftTrip.members || []).filter(x => x !== m);
-                          setDraftTrip({ ...draftTrip, members: newMembers });
+                          setDraftTrip({ ...draftTrip, members: newMembers, memberLinks: (draftTrip.memberLinks || []).filter(l => l.name !== m) });
                         }}
                         className="tap-target hover:text-red-500 text-red-600 font-bold text-meta ml-1 leading-none"
                         title="삭제"
@@ -3542,7 +3551,8 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                         <X className="w-2.5 h-2.5" />
                       </button>
                     </span>
-                  ))}
+                    );
+                  })}
                   <input
                     type="text"
                     placeholder="+ Member"
@@ -3559,6 +3569,37 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                     }}
                     className="text-meta font-bold border border-black/15 dark:border-white/15 h-[26px] px-3 rounded-full bg-surface dark:bg-surface-dark outline-none w-24 focus:w-32 transition-[width] text-black dark:text-white"
                   />
+                  {(() => {
+                    const members = draftTrip.members || [];
+                    const links = draftTrip.memberLinks || [];
+                    const me = props.myName && !members.includes(props.myName) ? props.myName : null;
+                    const free = myFriends.filter(f => !links.some(l => l.uid === f.uid));
+                    if (!me && !free.length) return null;
+                    const addFriend = (f: typeof free[0]) => {
+                      // A member typed with the same name becomes this friend; otherwise a new member
+                      setDraftTrip({
+                        ...draftTrip,
+                        members: members.includes(f.name) ? members : [...members, f.name],
+                        memberLinks: [...links.filter(l => l.name !== f.name), { name: f.name, uid: f.uid }],
+                      });
+                    };
+                    return (
+                      <div className="w-full flex flex-wrap items-center gap-1.5 pt-1">
+                        {me && (
+                          <button type="button" onClick={() => setDraftTrip({ ...draftTrip, members: [me, ...members] })} className="h-7 px-3 inline-flex items-center gap-1 rounded-full bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-meta font-bold">
+                            + 나 · {me}
+                          </button>
+                        )}
+                        {free.map(f => (
+                          <button key={f.uid} type="button" onClick={() => addFriend(f)} className="h-7 pl-0.5 pr-2.5 inline-flex items-center gap-1.5 rounded-full bg-lilac text-lilac-ink dark:bg-lilac-dark dark:text-lilac text-meta font-bold hover:brightness-95">
+                            <UserProfileAvatar profile={f} size="xs" fallbackName={f.name} />
+                            {f.name}
+                          </button>
+                        ))}
+                        {free.length > 0 && <span className="text-micro text-black/50 dark:text-white/50">친구를 넣으면 이 여정을 볼 수 있어요. 공유 범위는 공유 시트에서 바꿉니다.</span>}
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 flex-wrap">
@@ -3578,7 +3619,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                   ) : (
                     <span className="luggage-tag cursor-default" title="Solo Traveler">
                       <span className="luggage-tag-hole" />
-                      <span className="font-mono font-bold tracking-tight">SOLO (나)</span>
+                      <span className="font-mono font-bold tracking-tight">{props.myName || 'SOLO (나)'}</span>
                       <span className="luggage-barcode-strip ml-0.5">
                         <span className="luggage-barcode-bar w-[1px]" />
                         <span className="luggage-barcode-bar w-[2px]" />

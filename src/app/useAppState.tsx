@@ -2468,6 +2468,13 @@ export function useAppState() {
 
       await saveBatch.commit();
 
+      // Members picked from the friend list on the journey page see the journey (view; the share
+      // sheet raises it to edit or turns it off)
+      if (myCard && updatedTrip.memberLinks?.length) {
+        await shareWithMembers(tripId, isPlan, updatedTrip.memberLinks, myCard)
+          .catch(err => { console.warn('Sharing with linked members failed:', err); notify('친구에게 공유하지 못했습니다. 공유 시트에서 다시 시도해 주세요.', 'error'); });
+      }
+
       // ── 4. Auto-sync Magazine Moments and Sections with updated timeline items ──
       const previousTimelineDocs = timelineSnap.docs.map(d => d.data() as TimelineItem);
       const updatedTimelineMap = new Map<number, TimelineItem>();

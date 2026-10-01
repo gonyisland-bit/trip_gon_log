@@ -606,6 +606,7 @@ function App() {
                           transits={activeTransits}
                           onSave={handleSaveJourneyDetails}
                           onDelete={handleDeleteJourney}
+                          myName={personName(currentUserProfile, auth.currentUser?.displayName) || undefined}
                           isDarkMode={isDarkMode}
                           onNavigate={navigateTo}
                           searchFocusItemId={searchFocusItemId}
