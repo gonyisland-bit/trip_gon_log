@@ -17,6 +17,7 @@ import {
 import type { JourneyDetailState } from './useJourneyDetailState';
 import { formatCountdown } from './useTodayMode';
 import { useState } from 'react';
+import { mapSearchUrl } from '../../utils/mapLinks';
 
 // The red hairline that marks the current time between today's items
 function NowLine({ label }: { label: string }) {
@@ -852,8 +853,8 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
-                                    setMapConfirm({ placeName: item.location || '', url });
+                                    const url = mapSearchUrl(item.place, item.location, item.lat, item.lng);
+                                    if (url) setMapConfirm({ placeName: item.place || item.location || '', url });
                                   }}
                                   className="tap-target p-1 -m-1 text-black/60 hover:text-red-600 dark:text-white/60 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
                                   title="구글 지도에서 위치 확인 (새 창)"

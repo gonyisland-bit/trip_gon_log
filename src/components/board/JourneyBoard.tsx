@@ -9,6 +9,7 @@ import { IconButton } from '../ui/IconButton';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { notify } from '../../utils/feedback';
 import { kindArtUrl, placeKind } from '../../utils/placeArt';
+import { mapSearchUrl } from '../../utils/mapLinks';
 import { buildBoard, md, openJourneyBoard, type BoardEntry } from './boardData';
 
 // Journey board: a journey's flights, stays, transport and places on one screen, as long and
@@ -132,9 +133,9 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
   b.stays.forEach(s => singles.push(
     <Tile key={`s${s.id}`} className="bg-surface dark:bg-surface-dark" dim={dimPast && s.at.past} label={`숙소 ${s.title}`} onOpen={() => setDetail({ kind: 'stay', item: s })}>
       <span className={kicker}><BedDouble className="w-3.5 h-3.5" aria-hidden />숙소</span>
-      <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep line-clamp-2">{s.title}</span>
+      <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep [overflow-wrap:anywhere]">{s.title}</span>
       <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums break-keep">{s.dateRange}</span>
-      {s.address && <span className="text-meta text-black/50 dark:text-white/50 line-clamp-2 break-keep">{s.address}</span>}
+      {s.address && <span className="text-meta text-black/50 dark:text-white/50 break-keep [overflow-wrap:anywhere]">{s.address}</span>}
       {s.confNo && <span className="mt-auto pt-1"><CodeChip value={s.confNo} what="확인번호" /></span>}
     </Tile>,
   ));
@@ -165,11 +166,11 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
     singles.push(
       <Tile key={`t${t.id}`} className="bg-surface dark:bg-surface-dark" dim={dimPast && t.at.past} label={`교통 ${t.title}`} onOpen={() => setDetail({ kind: 'transit', item: t })}>
         <span className={kicker}><Icon className="w-3.5 h-3.5" aria-hidden />{t.ticketType || '교통'}</span>
-        <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep line-clamp-2">{t.title || t.route}</span>
+        <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep [overflow-wrap:anywhere]">{t.title || t.route}</span>
         {(from || to) && (
           <span className="flex flex-col text-meta font-semibold leading-snug">
-            {from && <span className="truncate">{from}</span>}
-            {to && <span className="truncate text-black/55 dark:text-white/55">→ {to}</span>}
+            {from && <span className="break-keep [overflow-wrap:anywhere]">{from}</span>}
+            {to && <span className="break-keep [overflow-wrap:anywhere] text-black/55 dark:text-white/55">→ {to}</span>}
           </span>
         )}
         <span className="mt-auto font-mono text-meta text-black/60 dark:text-white/60 tabular-nums truncate">{when(t.at, t.time)}</span>
@@ -261,8 +262,8 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
                 <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500 animate-live-pulse" />
                 {b.phase === 'live' ? '다음 일정' : '첫 일정'} · {when(b.next.at, b.next.time)}
               </span>
-              <span className="text-[20px] font-extrabold tracking-tight leading-tight break-keep line-clamp-2">{b.next.place}</span>
-              {b.next.memo && <span className="text-meta text-black/60 dark:text-white/60 line-clamp-1">{b.next.memo}</span>}
+              <span className="text-[20px] font-extrabold tracking-tight leading-tight break-keep [overflow-wrap:anywhere]">{b.next.place}</span>
+              {b.next.memo && <span className="text-meta text-black/60 dark:text-white/60 break-keep [overflow-wrap:anywhere]">{b.next.memo}</span>}
             </Tile>
           )}
 
@@ -307,7 +308,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
                   className={`flex items-center gap-3 min-h-[44px] px-2 rounded-thumb text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.05] ${dimPast && p.at.past ? 'opacity-55' : ''}`}
                 >
                   <span className={`w-12 shrink-0 font-mono text-meta font-semibold tabular-nums ${b.next?.id === p.id ? 'text-red-600 dark:text-red-400' : 'text-black/55 dark:text-white/55'}`}>{p.time ? p.time.replace(/\s?(AM|PM)$/i, '') : '—'}</span>
-                  <span className="flex-1 min-w-0 text-[14px] font-bold truncate">{p.place}</span>
+                  <span className="flex-1 min-w-0 py-2 text-[14px] font-bold break-keep [overflow-wrap:anywhere]">{p.place}</span>
                   <ArrowUpRight className="w-4 h-4 shrink-0 text-black/40 dark:text-white/40" aria-hidden />
                 </button>
               ))}
@@ -365,23 +366,17 @@ function Row({ label, value, copyAs, long }: { label: string; value?: string | n
     <div className="flex items-start justify-between gap-3 min-h-[44px] py-3 border-b border-black/[0.06] dark:border-white/[0.08] last:border-0">
       <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50 shrink-0">{label}</span>
       {copyAs ? (
-        <button type="button" onClick={() => copy(value, copyAs)} className={`inline-flex items-start gap-1.5 min-w-0 text-right hover:text-red-600 dark:hover:text-red-400 ${long ? 'text-[14px] font-semibold break-keep' : 'font-mono text-[15px] font-semibold tracking-[0.08em] tabular-nums'}`}>
+        <button type="button" onClick={() => copy(value, copyAs)} className={`inline-flex items-start gap-1.5 min-w-0 text-right hover:text-red-600 dark:hover:text-red-400 ${long ? 'text-[14px] font-semibold break-keep [overflow-wrap:anywhere]' : 'font-mono text-[15px] font-semibold tracking-[0.08em] tabular-nums'}`}>
           <span className={long ? 'min-w-0' : 'truncate'}>{value}</span><Copy className={`w-3.5 h-3.5 shrink-0 opacity-60 ${long ? 'mt-1' : ''}`} aria-hidden />
         </button>
       ) : (
-        <span className="min-w-0 text-[14px] font-semibold text-right break-keep">{value}</span>
+        <span className="min-w-0 text-[14px] font-semibold text-right break-keep [overflow-wrap:anywhere]">{value}</span>
       )}
     </div>
   );
 }
 
-// Opens the place by its name (and address), so the map shows the named place and not a bare pin;
-// coordinates are the fallback when a place has no name at all.
-function mapsUrl(name: string | undefined, address?: string, lat?: number, lng?: number) {
-  const q = [name, address && address !== name ? address : ''].filter(Boolean).join(' ').trim();
-  const query = q || (lat != null && lng != null ? `${lat},${lng}` : '');
-  return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : null;
-}
+function mapsUrl(name?: string, address?: string, lat?: number, lng?: number) { return mapSearchUrl(name, address, lat, lng); }
 
 function BoardDetail({ detail, onClose, onOpenItem }: { detail: Detail; onClose: () => void; onOpenItem: (tab: string, id: number | null) => void }) {
   const { kind, item } = detail;
