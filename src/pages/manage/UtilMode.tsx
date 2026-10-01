@@ -283,7 +283,7 @@ export function UtilMode({ s, only }: { s: ManageHubState; only?: 'ui' | 'map' |
                   className="flex gap-3 p-3 border border-black/15 dark:border-white/15 bg-black/[0.01] dark:bg-white/[0.01] hover:border-black/40 dark:hover:border-white/40 transition-colors group"
                 >
                   <img
-                    src={preset.coverImg}
+                    src={getEffectiveImageUrl(preset.coverImg)}
                     alt={preset.title}
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover grayscale group-hover:grayscale-0 transition shrink-0 border border-black/10 dark:border-white/10"
                   />

@@ -21,6 +21,34 @@ export function kindArtUrl(kind: ArtKind, seed = ''): string {
   return `/art/tile/${id}-${KIND_TINT[kind] || 'mist'}.svg`;
 }
 
+// Covers made before v1.3.8 were saved as little hand-drawn SVGs (data URLs). Their scenes are told
+// apart by a fingerprint of the drawing with its colours taken out, and shown as a tile of the same kind.
+const LEGACY_KIND: Record<number, ArtKind> = {
+  662126404: 'art', 760265166: 'stay', 830681197: 'temple', 1129417512: 'shopping', 1548111104: 'cafe',
+  2096621632: 'beach', 2415752025: 'mountain', 2621982939: 'landmark', 3035495996: 'meal', 3085530033: 'activity',
+  3290839348: 'city', 3661309681: 'night', 4034671260: 'market', 4268205846: 'transit',
+};
+const LEGACY_HEAD = /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="(#[0-9A-Fa-f]{6})"\/>/;
+const legacyCache = new Map<string, string | null>();
+
+/** The tile that stands in for a stored old drawing, or null when `url` is not one */
+export function legacyArtTile(url: string): string | null {
+  if (!url.startsWith('data:image/svg+xml')) return null;
+  if (legacyCache.has(url)) return legacyCache.get(url) ?? null;
+  let out: string | null = null;
+  try {
+    const svg = decodeURIComponent(url.slice(url.indexOf(',') + 1));
+    const head = svg.match(LEGACY_HEAD);
+    if (head) {
+      const body = svg.slice(head[0].length).replace(/<\/svg>$/, '').replace(/#[0-9A-Fa-f]{6}/g, '#');
+      const kind = LEGACY_KIND[hash(body)];
+      if (kind) out = kindArtUrl(kind, head[1]);
+    }
+  } catch { /* not ours */ }
+  legacyCache.set(url, out);
+  return out;
+}
+
 /** What a city is like, from its tags; several fit most cities, and `seed` picks one so cities differ */
 export function placeKind(tags: string[] = [], seed = ''): ArtKind {
   const t = tags.join(' ').toLowerCase();

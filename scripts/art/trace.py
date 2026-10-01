@@ -22,7 +22,7 @@ def refine_faces(ink, hair):
     shapes = []
     for k in range(1, hn):
         x, y, w, h, a = hst[k]
-        if a < 140 * S * S:
+        if a < 45 * S * S:
             continue
         comp = hl == k
         top = comp[y:y + max(1, int(h * 0.45))]
@@ -39,7 +39,7 @@ def refine_faces(ink, hair):
         white = zone.astype(bool) & ~ink[r0:r1]
         # the face is the highest white patch inside the hair (below it the neck and the clothes join in)
         wn, wl, wst, _ = cv2.connectedComponentsWithStats(white.astype(np.uint8), connectivity=4)
-        cand = [c for c in range(1, wn) if wst[c, cv2.CC_STAT_AREA] >= 40 * S * S and wst[c, cv2.CC_STAT_WIDTH] >= 7 * S]
+        cand = [c for c in range(1, wn) if wst[c, cv2.CC_STAT_AREA] >= 12 * S * S and wst[c, cv2.CC_STAT_WIDTH] >= 4 * S]
         if not cand:
             continue
         best = min(cand, key=lambda c: (wst[c, cv2.CC_STAT_TOP], -wst[c, cv2.CC_STAT_AREA]))
@@ -58,7 +58,7 @@ def refine_faces(ink, hair):
             if not (fx - S <= cx <= fx + fw + S and fy - S <= iy <= fy + fh + S):
                 continue
             # inside the face: white on the sides at its row, hair or edge beyond
-            if face[max(0, iy - 3 * S):iy + 3 * S, max(0, int(cx) - 6 * S):int(cx) + 6 * S].sum() < 20 * S * S:
+            if face[max(0, iy - 3 * S):iy + 3 * S, max(0, int(cx) - 6 * S):int(cx) + 6 * S].sum() < 6 * S * S:
                 continue
             isl.append(dict(j=j, cx=float(cx), cy=float(iy), w=ww, h=hh, a=aa))
         if not isl:
@@ -101,20 +101,27 @@ def refine_faces(ink, hair):
             rest = isl[1:]
         eye_y = sum(e[1] for e in eyes) / len(eyes)
         fl_, fr_ = run(eye_y, eyes[0][0])
-        fw_row = max(fr_ - fl_, 6 * S)
-        r_e = min(max(0.075 * fw_row, 1.3 * S), 3.6 * S)
+        fw_row = max(fr_ - fl_, 4 * S)
+        r_e = min(max(0.085 * fw_row, 0.85 * S), 3.6 * S)
         fw = fw_row
         below = [d for d in rest if d['cy'] > eye_y + 0.1 * fh]
         below.sort(key=lambda d: d['cy'])
         nose = mouth = None
         if len(below) == 1:
             d = below[0]
-            if d['w'] >= 1.5 * d['h'] or d['w'] > 0.26 * fw or d['cy'] > eye_y + 0.5 * (fy + fh - eye_y):
+            if d['w'] >= 1.5 * d['h'] or d['w'] > 0.26 * fw or d['cy'] > eye_y + 0.27 * fw_row:
                 mouth = d
             else:
                 nose = d
         elif len(below) >= 2:
             nose, mouth = below[0], below[-1]
+        # every face gets a mouth: the traced one, else a small smile under the eyes (when the face is open there)
+        if mouth is None and len(eyes) == 2 and fw_row >= 6 * S:
+            mx0 = (eyes[0][0] + eyes[1][0]) / 2
+            my0 = eye_y + 0.34 * fw_row
+            yi, xi = int(my0), int(mx0)
+            if 0 <= yi < face.shape[0] and 0 <= xi < face.shape[1] and face[yi, xi] and face[yi, max(0, xi - int(0.16 * fw_row)):xi + int(0.16 * fw_row)].all():
+                mouth = dict(cx=mx0, cy=my0, w=0.0, h=0.0)
         for d in isl:
             ink[lab == d['j']] = False
         for ex, ey in eyes:
@@ -127,9 +134,8 @@ def refine_faces(ink, hair):
             shapes.append(f'<path class="ks" style="stroke-width:{max(1.0 * S * 0.7, r_e * 0.75):.1f}" d="M{mx_ - mw / 2:.0f},{my_:.0f}Q{mx_:.0f},{my_ + mw * 0.45:.0f} {mx_ + mw / 2:.0f},{my_:.0f}"/>')
     return ink, ''.join(shapes)
 
-def layers(i):
-    cell = crop(i)
-    ink = drop_bottom_specks(black_mask(cell, thr=134, blur=1.1))
+def layers_from(ink, yb):
+    """The picture's layers from its black mask and accent mask (both at S x)"""
     # solid areas (hair, awning stripes, lenses): wider than any line, kept a little inside so a light ring remains in the dark
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (27, 27))
     hair_open = cv2.morphologyEx(ink.astype(np.uint8), cv2.MORPH_OPEN, k)
@@ -139,15 +145,45 @@ def layers(i):
     closed = cv2.morphologyEx(ink.astype(np.uint8), cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (21, 21)))
     paper = ndi.binary_fill_holes(closed > 0)
     paper = cv2.erode(paper.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))) > 0
+    return ink, thick, paper, yb, face_svg
+
+def layers(i):
+    cell = crop(i)
+    ink = drop_bottom_specks(black_mask(cell, thr=134, blur=1.1))
     # accent
     ym = yellow_mask(cell)
     yb = cv2.resize(ym.astype(np.float32), (CW*S, CH*S), interpolation=cv2.INTER_CUBIC)
     yb = cv2.GaussianBlur(yb, (0,0), 2.0) > 0.45
     yb = cv2.dilate(yb.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))) > 0
-    return ink, thick, paper, yb, face_svg
+    return layers_from(ink, yb)
+
+def layers_image(path):
+    """A replacement cut from a hi-res picture (dark lines on white, accent in yellow): cropped to its ink,
+    brought to the size a sheet cell is traced at, then run through the same steps"""
+    from PIL import Image
+    rgb = np.array(Image.open(path).convert('RGB'))
+    g = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    ys, xs = np.where(g < 200)
+    pad = int(0.04 * max(g.shape))
+    y0, y1 = max(0, ys.min() - pad), min(g.shape[0], ys.max() + pad)
+    x0, x1 = max(0, xs.min() - pad), min(g.shape[1], xs.max() + pad)
+    rgb, g = rgb[y0:y1, x0:x1], g[y0:y1, x0:x1]
+    f = 520.0 / max(g.shape)           # an art area of a traced cell is about 520 px across
+    size = (max(1, int(g.shape[1] * f)), max(1, int(g.shape[0] * f)))
+    big = cv2.GaussianBlur(cv2.resize(g, size, interpolation=cv2.INTER_AREA).astype(np.float32), (0, 0), 1.1)
+    ink = drop_bottom_specks(big < 134) if False else (big < 134)
+    hsv = cv2.cvtColor(cv2.resize(rgb, size, interpolation=cv2.INTER_AREA), cv2.COLOR_RGB2HSV)
+    ym = ((hsv[..., 0] >= 12) & (hsv[..., 0] <= 32) & (hsv[..., 1] > 90) & (hsv[..., 2] > 150)).astype(np.uint8)
+    yb = cv2.dilate((cv2.GaussianBlur(ym.astype(np.float32), (0, 0), 2.0) > 0.45).astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))) > 0
+    return layers_from(ink, yb)
 
 def svg_for(i):
-    ink, thick, paper, yb, face_svg = layers(i)
+    return _svg(*layers(i))
+
+def svg_for_image(path):
+    return _svg(*layers_image(path))
+
+def _svg(ink, thick, paper, yb, face_svg):
     ys, xs = np.where(ink)
     if len(xs) == 0: return None
     x0,x1,y0,y1 = xs.min(), xs.max(), ys.min(), ys.max()

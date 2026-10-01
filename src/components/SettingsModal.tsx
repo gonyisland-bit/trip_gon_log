@@ -40,6 +40,7 @@ import {
 } from '../utils/audioHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { notify } from '../utils/feedback';
+import { getEffectiveImageUrl } from '../utils/storageHelper';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -453,7 +454,7 @@ export function SettingsModal({
                           {/* Thumbnail */}
                           <div className="w-10 h-10 shrink-0 overflow-hidden border border-black/10 dark:border-white/10 relative">
                             <img
-                              src={journey.img}
+                              src={getEffectiveImageUrl(journey.img)}
                               alt={journey.title}
                               className={`w-full h-full object-cover transition-all duration-300 ${
                                 isSelected ? 'opacity-100' : 'opacity-60 group-hover:opacity-80'
@@ -980,7 +981,7 @@ export function SettingsModal({
                         {/* Thumbnail */}
                         <div className="w-12 h-12 shrink-0 overflow-hidden border border-black/10 dark:border-white/10 bg-black/5">
                           <img
-                            src={journey.img}
+                            src={getEffectiveImageUrl(journey.img)}
                             alt={journey.title}
                             className="w-full h-full object-cover grayscale opacity-60"
                           />

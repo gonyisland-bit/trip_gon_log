@@ -10,12 +10,13 @@ fl line, fh solid ink; the same classes as the old hand-drawn kit.
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from trace import svg_for  # noqa: E402
+from trace import svg_for, svg_for_image  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 OUT = ROOT / 'public' / 'art'
 
-# Cell index on the sheet -> scene id. Cells left out are duplicates of a cleaner one.
+# Every cut of the sheet that is worth having: cell index -> scene id. Only the ones in USED are built, so
+# the app ships what it shows; to use another cut, add its id to EXTRA_USED (or to a KIND_ART list) and rebuild.
 NAMES = {
     0: 'restaurant-exterior', 1: 'outdoor-bistro', 2: 'beer-break', 3: 'coffee-break', 4: 'snack-break', 5: 'dining-plate',
     6: 'table-rest', 7: 'cafe-table', 8: 'beer-standing', 9: 'snack-bite', 10: 'coffee-cup', 11: 'wine-tasting',
@@ -31,6 +32,10 @@ NAMES = {
     66: 'sofa-rest', 67: 'sleeping', 68: 'cafe-cat', 69: 'window-cat', 70: 'cat-petting-street', 71: 'cat-petting-street-2',
     72: 'cat-petting', 73: 'cat-sofa', 74: 'window-cat-2',
 }
+
+# Replace a cut with a hi-res picture: put assets/art-override/<id>.png (dark lines on white, accent in yellow)
+# next to the sheet and rebuild. It is traced like a sheet cell, so nothing else changes.
+OVERRIDES = ROOT / 'assets' / 'art-override'
 
 TINTS = {'peach': '#F6CDB6', 'butter': '#F7DB6A', 'sage': '#C9D8BC', 'mist': '#DCE3E8', 'lilac': '#E7D7F3'}
 LIGHT = dict(line='#141412', paper='#FFFDF9', hair='#141412', accent='#F2B33D')
@@ -69,13 +74,32 @@ def svg(m, c, bg=None):
     rect = f'<rect x="{vx}" y="{vy}" width="{s}" height="{s}" fill="{bg}"/>' if bg else ''
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{m["vb"]}" width="{s}" height="{s}"><style>{css(c)}</style>{rect}{m["body"]}</svg>'
 
+# Scenes used outside the kind lists: empty states, the first-trip hero, the terminal, the intro, the map marker
+EXTRA_USED = [
+    'itinerary-empty', 'pocket-empty', 'no-results', 'departure-board', 'waiting-gate', 'window-waiting', 'train-station',
+    'luggage-travel', 'backpacking', 'beach-drink', 'landmark-paris', 'city-walk', 'beach-surfing', 'beach-relaxation',
+    'landmark-japan', 'poolside-cocktail',
+]
+USED = {i for ids in KIND_ART.values() for i in ids} | set(EXTRA_USED)
+
+
+def traced(idx, name):
+    for ext in ('png', 'webp', 'jpg'):
+        f = OVERRIDES / f'{name}.{ext}'
+        if f.exists():
+            return svg_for_image(str(f))
+    return svg_for(idx)
+
+
 def main():
     for d in (OUT, OUT / 'dark', OUT / 'tile'):
         d.mkdir(parents=True, exist_ok=True)
         for f in d.glob('*.svg'): f.unlink()
     ids = []
     for idx, name in NAMES.items():
-        m = svg_for(idx)
+        if name not in USED:
+            continue
+        m = traced(idx, name)
         (OUT / f'{name}.svg').write_text(svg(m, LIGHT))
         (OUT / 'dark' / f'{name}.svg').write_text(svg(m, DARK))
         for tid, tint in TILES:
