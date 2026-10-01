@@ -29,8 +29,12 @@ export function normalizePem(raw: string): string {
     try { v = String(JSON.parse(v).private_key || v); } catch {}
   }
   v = v.replace(/^['"]+|['"]+$/g, '').replace(/\\r/g, '').replace(/\\n/g, '\n');
-  const m = v.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
-  const body = (m ? m[1] : v).replace(/[^A-Za-z0-9+/=]/g, '');
+  // The markers themselves may be cut short or have odd dashes; only the base64 between them counts
+  const begin = v.match(/-*\s*BEGIN [A-Z ]*KEY\s*-*/);
+  let rest = begin ? v.slice((begin.index || 0) + begin[0].length) : v;
+  const end = rest.search(/-*\s*END [A-Z ]*KEY|-{3,}/);
+  if (end >= 0) rest = rest.slice(0, end);
+  const body = rest.replace(/[^A-Za-z0-9+/=]/g, '');
   const lines = body.match(/.{1,64}/g) || [];
   return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----\n`;
 }
