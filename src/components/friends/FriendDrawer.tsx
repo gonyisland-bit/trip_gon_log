@@ -6,7 +6,7 @@ import { Segment } from '../ui/Segment';
 import { UserProfileAvatar } from '../UserProfileAvatar';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { setJourneyPeople } from '../../utils/ownership';
-import { friendPockets, removeFriend, setPocketShared, subscribePocketSharing, type Friend, type PersonCard } from '../../utils/friends';
+import { friendLabel, friendPockets, removeFriend, saveFriendNote, setPocketShared, subscribePocketSharing, type Friend, type PersonCard } from '../../utils/friends';
 import { confirmDialog, notify } from '../../utils/feedback';
 
 // One friend's drawer (v1.3.6 5-d): which of my journeys they see or edit, whether they see my
@@ -25,7 +25,7 @@ interface Props {
 
 export function FriendDrawer(props: Props) {
   return (
-    <Sheet label={`${props.friend.name}님`} onClose={props.onClose} tone="paper" zIndex={196} panelClassName="sm:max-w-md max-h-[88dvh]">
+    <Sheet label={`${friendLabel(props.friend)}님`} onClose={props.onClose} tone="paper" zIndex={196} panelClassName="sm:max-w-md max-h-[88dvh]">
       <Body {...props} />
     </Sheet>
   );
@@ -109,7 +109,8 @@ function Body({ friend, me, journeys, onOpenJourney, onOpenPocket }: Props) {
       <div className="flex items-center gap-3 px-1">
         <UserProfileAvatar profile={friend} size="lg" fallbackName={friend.name} />
         <span className="flex-1 min-w-0 flex flex-col">
-          <span className="text-[20px] font-extrabold tracking-tight truncate">{friend.name}</span>
+          <span className="text-[20px] font-extrabold tracking-tight truncate">{friendLabel(friend)}</span>
+          {friend.alias && <span className="text-meta text-black/55 dark:text-white/55 truncate">{friend.name}</span>}
           {friend.since > 0 && (
             <span className="font-mono text-micro text-black/55 dark:text-white/55 tabular-nums">
               {new Date(friend.since).toLocaleDateString('ko-KR')}부터 친구
@@ -117,6 +118,9 @@ function Body({ friend, me, journeys, onOpenJourney, onOpenPocket }: Props) {
           )}
         </span>
       </div>
+
+      {/* What I call them and who they are to me: only on my friend list (v1.3.7) */}
+      <FriendNote friend={friend} />
 
       <section className={card}>
         <div className="flex items-baseline justify-between">
@@ -216,5 +220,44 @@ function Body({ friend, me, journeys, onOpenJourney, onOpenPocket }: Props) {
         친구 끊기
       </button>
     </div>
+  );
+}
+
+function FriendNote({ friend }: { friend: Friend }) {
+  const [alias, setAlias] = useState(friend.alias || '');
+  const [memo, setMemo] = useState(friend.memo || '');
+  const save = (patch: { alias?: string; memo?: string }) => {
+    saveFriendNote(friend.uid, patch).catch(() => notify('메모를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error'));
+  };
+  return (
+    <section className={card}>
+      <span className={label}>My note</span>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[14px] font-bold">내가 부르는 이름</span>
+        <input
+          id={`friend-alias-${friend.uid}`}
+          value={alias}
+          maxLength={30}
+          onChange={(e) => setAlias(e.target.value)}
+          onBlur={() => { if (alias.trim() !== (friend.alias || '')) save({ alias }); }}
+          placeholder={`${friend.name} (예: 대학 동기 지민)`}
+          className="h-11 px-4 rounded-full border border-black/15 dark:border-white/15 bg-transparent text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+        />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[14px] font-bold">메모</span>
+        <textarea
+          id={`friend-memo-${friend.uid}`}
+          value={memo}
+          maxLength={300}
+          rows={3}
+          onChange={(e) => setMemo(e.target.value)}
+          onBlur={() => { if (memo.trim() !== (friend.memo || '')) save({ memo }); }}
+          placeholder="어떻게 아는 사이인지, 함께 가고 싶은 곳 같은 메모"
+          className="px-4 py-3 rounded-card border border-black/15 dark:border-white/15 bg-transparent text-[14px] outline-none resize-none focus-visible:ring-2 focus-visible:ring-red-600"
+        />
+      </label>
+      <span className={muted}>나만 볼 수 있습니다. 친구에게는 보이지 않아요.</span>
+    </section>
   );
 }

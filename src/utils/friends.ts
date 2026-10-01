@@ -1,7 +1,6 @@
 import {
   arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, onSnapshot, query, serverTimestamp, where,
-  setDoc as fsSetDoc, writeBatch as fsWriteBatch, type DocumentReference,
-} from 'firebase/firestore';
+  setDoc as fsSetDoc, writeBatch as fsWriteBatch, type DocumentReference, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { SpotPocketItem, UserProfile } from '../types';
 import { CONTENT_COLLECTIONS, currentUid } from './ownership';
@@ -32,6 +31,24 @@ export interface PersonCard {
 export interface Friend extends PersonCard {
   since: number;
   via: string;
+  /** What I call this friend, and my note about them (v1.3.7): only on my copy, only I see them */
+  alias?: string;
+  memo?: string;
+}
+
+/** The name I see for a friend: my alias for them, else their own name */
+export function friendLabel(f: Pick<Friend, 'name' | 'alias'>): string {
+  return (f.alias || '').trim() || f.name;
+}
+
+/** Saves my alias and note for a friend on my friend list (nobody else reads it) */
+export async function saveFriendNote(friendUid: string, note: { alias?: string; memo?: string }): Promise<void> {
+  const uid = currentUid();
+  if (!uid) return;
+  const patch: Record<string, string> = {};
+  if (note.alias !== undefined) patch.alias = note.alias.trim().slice(0, 30);
+  if (note.memo !== undefined) patch.memo = note.memo.trim().slice(0, 300);
+  await updateDoc(doc(db, 'users', uid, 'friends', friendUid), patch);
 }
 
 export interface Invite extends PersonCard {
@@ -101,9 +118,9 @@ export function subscribeFriends(onChange: (list: Friend[]) => void): () => void
     const list: Friend[] = [];
     snap.forEach(d => {
       const data = d.data();
-      list.push({ ...cardFrom(data, d.id), since: Number(data.since) || 0, via: String(data.via || '') });
+      list.push({ ...cardFrom(data, d.id), since: Number(data.since) || 0, via: String(data.via || ''), alias: data.alias ? String(data.alias) : undefined, memo: data.memo ? String(data.memo) : undefined });
     });
-    onChange(list.sort((a, b) => a.name.localeCompare(b.name, 'ko')));
+    onChange(list.sort((a, b) => friendLabel(a).localeCompare(friendLabel(b), 'ko')));
   }, err => {
     console.warn('Friends subscription notice:', err);
     onChange([]);

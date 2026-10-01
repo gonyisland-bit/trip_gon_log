@@ -7,8 +7,7 @@ import { IconButton } from '../ui/IconButton';
 import { notify } from '../../utils/feedback';
 import {
   activeInvite, createInvite, inviteLink, normalizeCode, promptAcceptInvite,
-  type Invite, type PersonCard,
-} from '../../utils/friends';
+  type Invite, type PersonCard, friendLabel } from '../../utils/friends';
 import { useFriends } from './useFriends';
 
 // Settings → Friends (v1.3.6 5-a): the friend list, an invite to hand out (link or 6-letter
@@ -115,7 +114,7 @@ export function FriendsSection({ me, canWrite, cardClass, labelClass, journeys, 
               >
                 <UserProfileAvatar profile={f} size="md" fallbackName={f.name} />
                 <span className="flex-1 min-w-0 flex flex-col">
-                  <span className="text-[14px] font-bold truncate">{f.name}</span>
+                  <span className="text-[14px] font-bold truncate">{friendLabel(f)}{f.alias && <span className="font-normal text-black/50 dark:text-white/50"> · {f.name}</span>}</span>
                   {(() => {
                     const mine = journeys.filter(j => j.ownerId === me.uid && j.access?.includes(f.uid)).length;
                     const theirs = journeys.filter(j => j.ownerId === f.uid).length;

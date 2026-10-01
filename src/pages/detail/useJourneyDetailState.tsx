@@ -26,6 +26,7 @@ import { doc } from 'firebase/firestore';
 import { setDoc, setLinkShare, currentUid } from '../../utils/ownership';
 import { openJourneyShare } from '../../components/share/ShareJourneySheet';
 import { useFriends } from '../../components/friends/useFriends';
+import { friendLabel } from '../../utils/friends';
 import { UserProfileAvatar } from '../../components/UserProfileAvatar';
 import { JourneyTitleInput } from './JourneyTitleInput';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
@@ -3593,7 +3594,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                         {free.map(f => (
                           <button key={f.uid} type="button" onClick={() => addFriend(f)} className="h-7 pl-0.5 pr-2.5 inline-flex items-center gap-1.5 rounded-full bg-lilac text-lilac-ink dark:bg-lilac-dark dark:text-lilac text-meta font-bold hover:brightness-95">
                             <UserProfileAvatar profile={f} size="xs" fallbackName={f.name} />
-                            {f.name}
+                            {friendLabel(f)}
                           </button>
                         ))}
                         {free.length > 0 && <span className="text-micro text-black/50 dark:text-white/50">친구를 넣으면 이 여정을 볼 수 있어요. 공유 범위는 공유 시트에서 바꿉니다.</span>}
