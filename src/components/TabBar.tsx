@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { Bookmark, CalendarRange, House, Map as MapIcon, Plus } from 'lucide-react';
+import { Bookmark, CalendarDays, Luggage, Map as MapIcon, Plus } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { preloadPocketPage } from '../utils/prefetchHelper';
 
 // Phone tab bar (v1.3.5, spec 4.12): one floating ink pill for moving around on phones.
-// Home · Trips · New trip (red) · Map · Pocket. Always visible; steps aside for overlays
+// Trips · Map · New trip (red) · Calendar · Pocket; home is the logo. Always visible; steps aside for overlays
 // like the other floating chrome (html[data-overlay] / [data-peek], see index.css).
 // While it is up, html[data-tabbar] lifts TOP, the intro tip and pocket's selection bar above it.
 
@@ -15,9 +15,9 @@ interface TabBarProps {
 }
 
 const TABS: { view: string; label: string; icon: LucideIcon }[] = [
-  { view: 'home', label: 'Home', icon: House },
-  { view: 'archive', label: 'Trips', icon: CalendarRange },
+  { view: 'archive', label: 'Trips', icon: Luggage },
   { view: 'map', label: 'Map', icon: MapIcon },
+  { view: 'calendar', label: 'Calendar', icon: CalendarDays },
   { view: 'pocket', label: 'Pocket', icon: Bookmark },
 ];
 
@@ -45,15 +45,15 @@ export function TabBar({ currentView, onNavigate, onNewTrip }: TabBarProps) {
     return () => root.removeAttribute('data-tabbar');
   }, []);
 
-  const [home, trips, map, pocket] = TABS;
+  const [trips, map, calendar, pocket] = TABS;
   return (
     <nav
       aria-label="주요 이동"
       className="tgl-tabbar md:hidden fixed inset-x-3 z-float h-16 grid grid-cols-5 items-center px-1 rounded-full bg-ink dark:bg-ink-dark shadow-[0_10px_30px_rgba(0,0,0,0.22)] transition-opacity duration-base"
       style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
     >
-      <Tab {...home} active={currentView === home.view} onNavigate={onNavigate} />
-      <Tab {...trips} active={currentView === trips.view} onNavigate={onNavigate} />
+      <Tab {...trips} active={currentView === trips.view || currentView === 'detail'} onNavigate={onNavigate} />
+      <Tab {...map} active={currentView === map.view} onNavigate={onNavigate} />
       <button
         type="button"
         onClick={onNewTrip}
@@ -63,7 +63,7 @@ export function TabBar({ currentView, onNavigate, onNewTrip }: TabBarProps) {
       >
         <Plus className="w-6 h-6" strokeWidth={2.4} aria-hidden />
       </button>
-      <Tab {...map} active={currentView === map.view} onNavigate={onNavigate} />
+      <Tab {...calendar} active={currentView === calendar.view} onNavigate={onNavigate} />
       <Tab {...pocket} active={currentView === pocket.view} onNavigate={onNavigate} />
     </nav>
   );

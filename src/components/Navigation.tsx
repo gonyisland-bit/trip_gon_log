@@ -20,6 +20,7 @@ import { NewTripButton } from './NewTripButton';
 import { Segment } from './ui/Segment';
 import { personName } from '../utils/personName';
 import { shortcutMod } from '../utils/shortcut';
+import { goHomeFromLogo } from '../utils/logoSplash';
 
 const HUBS = [
   { view: 'home', label: 'Home' },
@@ -182,12 +183,9 @@ export function Navigation({
         {/* Left: Brand Logo & Links */}
         <div className="flex items-center gap-6 md:gap-10 min-w-0">
           <button 
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('triggerSplashScreen'));
-              navigateTo('home');
-            }} 
+            onClick={() => goHomeFromLogo(navigateTo)}
             className="flex items-center cursor-pointer group shrink-0"
-            title="Tripgon log 홈으로 이동 (스플래시 실행)"
+            title="홈으로"
           >
             <img 
               src="/tripgon-logotype.svg"
@@ -374,11 +372,10 @@ export function Navigation({
             type="button"
             onClick={() => {
               setShowSettings(false);
-              window.dispatchEvent(new CustomEvent('triggerSplashScreen'));
-              navigateTo('home');
+              goHomeFromLogo(navigateTo);
             }}
             className="h-11 flex items-center cursor-pointer group"
-            title="Tripgon log 홈으로 이동 (스플래시 실행)"
+            title="홈으로"
           >
             <img src="/tripgon-logotype.svg" alt="Tripgon log" className="h-5 sm:h-6 w-auto object-contain dark:invert transition-opacity group-hover:opacity-80 select-none" />
           </button>

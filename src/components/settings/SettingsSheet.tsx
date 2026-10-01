@@ -22,6 +22,7 @@ import type { PersonCard } from '../../utils/friends';
 // Journeys are managed from their cards; the operator's tools live in the manage hub.
 
 import { OPEN_PROFILE_EDIT } from '../../app/quickActions';
+import { logoSplashOn, setLogoSplash } from '../../utils/logoSplash';
 type NightMode = 'auto' | 'light' | 'dark';
 export type SettingsTab = 'me' | 'cities' | 'display' | 'data';
 const TABS: { value: SettingsTab; label: string }[] = [
@@ -54,6 +55,23 @@ interface Props {
 const card = 'rounded-card bg-surface dark:bg-surface-dark p-4 flex flex-col gap-3';
 const label = 'font-mono text-micro font-bold uppercase tracking-[0.16em] text-black/55 dark:text-white/55';
 const rowLabel = 'text-[14px] font-bold';
+
+/** Whether the logo plays the splash on its way home (the first launch always does) */
+function LogoSplashRow() {
+  const [on, setOn] = useState(logoSplashOn);
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className={rowLabel}>로고를 누르면 스플래시</span>
+      <Segment<'on' | 'off'>
+        size="sm"
+        ariaLabel="로고를 누르면 스플래시"
+        value={on ? 'on' : 'off'}
+        onChange={(v) => { setOn(v === 'on'); setLogoSplash(v === 'on'); }}
+        options={[{ value: 'on', label: '켜기' }, { value: 'off', label: '끄기' }]}
+      />
+    </div>
+  );
+}
 
 function formatBytes(n: number): string {
   if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(2)} GB`;
@@ -145,6 +163,7 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
               ]}
             />
           </div>
+          <LogoSplashRow />
         </section>
 
         <BackdropPicker cardClass={card} labelClass={label} />

@@ -30,6 +30,8 @@ export interface UserPrefs {
   homeWidgets?: import('./homeWidgetPrefs').HomeWidgetPrefs;
   /** The welcome notice version this member closed (see notice.ts) */
   welcomeSeen?: number;
+  /** Tapping the logo plays the splash (see logoSplash.ts) */
+  logoSplash?: boolean;
 }
 
 export type JourneyOpen = 'magazine' | 'record';

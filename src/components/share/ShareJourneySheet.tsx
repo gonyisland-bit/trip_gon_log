@@ -127,8 +127,21 @@ function Body({ trip, me, onLeft }: Props) {
     }
   };
 
-  // People who can see it but are not in my friends list (connected before friends existed)
-  const others = access.filter(u => u !== uid && !friends.some(f => f.uid === u));
+  // Only friends are sharing partners. Members who are not friends (left over from before friends
+  // existed, or unfriended) are not listed; the owner can take them all off in one step.
+  const others = loaded ? access.filter(u => u !== uid && !friends.some(f => f.uid === u)) : [];
+  const removeOthers = async () => {
+    if (!me) return;
+    setBusy('others');
+    try {
+      await setJourneyPeople(trip.id, access.filter(u => !others.includes(u)), editors.filter(u => !others.includes(u)), me);
+      notify('친구가 아닌 회원을 내보냈습니다.', 'success');
+    } catch {
+      notify('내보내지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const header = (
     <div className="flex flex-col gap-0.5 px-1">
@@ -220,13 +233,18 @@ function Body({ trip, me, onLeft }: Props) {
         <span className={label}>Friends</span>
         {!loaded ? (
           <span className={muted}>친구 목록을 불러오는 중</span>
-        ) : friends.length === 0 && others.length === 0 ? (
+        ) : friends.length === 0 ? (
           <span className={muted}>아직 친구가 없습니다. 설정 → Friends에서 초대 링크나 코드로 친구를 맺으면 여기서 공유할 수 있습니다.</span>
         ) : (
           <ul className="flex flex-col">
             {friends.map(f => personRow(f.uid, f.name, f))}
-            {others.map(u => personRow(u, '친구 목록에 없는 회원', { uid: u }))}
           </ul>
+        )}
+        {others.length > 0 && (
+          <div className="flex items-center justify-between gap-3 rounded-thumb bg-black/[0.04] dark:bg-white/[0.06] px-3 py-2">
+            <span className="text-meta break-keep">친구가 아닌 회원 {others.length}명이 아직 볼 수 있습니다.</span>
+            <button type="button" className="btn btn-ghost btn-sm shrink-0" onClick={removeOthers} disabled={busy !== null}>내보내기</button>
+          </div>
         )}
         <span className={muted}>함께 편집하는 친구는 일정 · 사진 · 예약을 고칠 수 있고, 삭제와 공유 설정은 주인만 합니다.</span>
       </section>

@@ -113,15 +113,6 @@ export function JourneyCard({
           </button>
         )}
 
-        {(() => {
-          const owner = sharedOwner(trip);
-          return owner ? (
-            <div className={`absolute top-2 sm:top-3 pointer-events-none ${onMenu ? 'right-12 sm:right-[3.25rem]' : 'right-2 sm:right-3'}`}>
-              <SharedMark owner={owner} tone="photo" compact />
-            </div>
-          ) : null;
-        })()}
-
         <div className="absolute left-3 top-2 sm:left-4 sm:top-3 text-white pointer-events-none">
           <div className={`font-sans font-extrabold leading-none tracking-[-0.05em] tabular-nums ${isWide ? 'text-5xl sm:text-6xl' : 'text-4xl sm:text-5xl'}`}>
             {year}
@@ -148,21 +139,16 @@ export function JourneyCard({
       </div>
 
       {/* Period */}
-      {isPlan ? (
-        // A plan reads from its butter band: dates and the days left, no outline on the photo
-        <div className="flex items-center justify-between gap-2 h-8 px-3 rounded-full bg-butter text-butter-ink dark:bg-butter-dark dark:text-butter font-mono text-meta tabular-nums">
-          <span className="font-semibold truncate">{dateRange || trip.date}</span>
-          <span className="shrink-0 inline-flex items-center gap-1 font-bold">
-            <CalendarClock className="w-3.5 h-3.5" aria-hidden />
+      {/* Same height for every card; a plan only adds the butter D-day pill on the right */}
+      <div className="flex items-center justify-between gap-2 h-6 font-mono text-meta tabular-nums">
+        <span className="font-semibold text-black dark:text-white truncate">{dateRange || trip.date}</span>
+        {isPlan ? (
+          <span className="shrink-0 inline-flex items-center gap-1 h-6 px-2 rounded-full bg-butter text-butter-ink dark:bg-butter-dark dark:text-butter font-bold">
+            <CalendarClock className="w-3 h-3" aria-hidden />
             {planInfo.dDayLabel !== 'PLAN' ? planInfo.dDayLabel : '계획'}
           </span>
-        </div>
-      ) : (
-        <div className="flex items-baseline justify-between gap-2 font-mono text-meta tabular-nums">
-          <span className="font-semibold text-black dark:text-white truncate">{dateRange || trip.date}</span>
-          {rightMeta && <span className="shrink-0 text-black/60 dark:text-white/60">{rightMeta}</span>}
-        </div>
-      )}
+        ) : rightMeta && <span className="shrink-0 text-black/60 dark:text-white/60">{rightMeta}</span>}
+      </div>
 
       {/* Title and ment */}
       <div className="flex flex-col gap-1 -mt-1">
@@ -181,7 +167,8 @@ export function JourneyCard({
       {/* Place */}
       <div className="mt-auto pt-2.5 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-2 font-mono text-micro sm:text-meta uppercase tracking-wider">
         <span className="truncate text-black/80 dark:text-white/80">{display.line3CountryCity || 'JOURNEY'}</span>
-        <ArrowUpRight className="w-4 h-4 shrink-0 text-black dark:text-white transition-transform duration-base ease-emphasized group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-red-600 dark:group-hover:text-red-500" />
+        {/* A friend's journey: whose it is, where the arrow would be */}
+        {sharedOwner(trip) ? <SharedMark owner={sharedOwner(trip)!} tone="row" /> : <ArrowUpRight className="w-4 h-4 shrink-0 text-black dark:text-white transition-transform duration-base ease-emphasized group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-red-600 dark:group-hover:text-red-500" />}
       </div>
     </article>
   );

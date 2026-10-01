@@ -56,12 +56,12 @@ export function FriendPockets({ keptKeys, onKeep }: Props) {
       </div>
 
       {open && (
-        <ul className="flex gap-3 overflow-x-auto hide-scrollbar pb-1 -mx-1 px-1">
+        <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-4">
           {open.items.map(spot => {
             const kept = keptKeys.has(spotKey(spot));
             const thumb = getCardThumbUrl(spot);
             return (
-              <li key={spot.id} className="w-40 sm:w-48 shrink-0 rounded-card overflow-hidden bg-surface dark:bg-surface-dark flex flex-col">
+              <li key={spot.id} className="min-w-0 rounded-card overflow-hidden bg-surface dark:bg-surface-dark flex flex-col">
                 <div className="aspect-[4/3] bg-black/[0.05] dark:bg-white/10">
                   {thumb && <img src={thumb} alt="" loading="lazy" className="w-full h-full object-cover" />}
                 </div>

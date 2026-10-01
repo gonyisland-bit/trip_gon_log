@@ -44,6 +44,7 @@ import { noteRecentJourney } from '../utils/recentJourneys';
 import { orderWithNewFirst } from '../utils/journeyOrderHelper';
 import { applyFavoritePrefs, findCity, readMainCity } from '../utils/myCities';
 import { setHomeWidgets } from '../utils/homeWidgetPrefs';
+import { setLogoSplash } from '../utils/logoSplash';
 
 export function useAppState() {
   const [initialNavState] = useState(() => getInitialNavigationState());
@@ -258,6 +259,7 @@ export function useAppState() {
         return;
       }
       if (prefs.nightMode) setNightModeSetting(prefs.nightMode);
+      if (typeof prefs.logoSplash === 'boolean') setLogoSplash(prefs.logoSplash, false);
       if (isMapStyle(prefs.mapStyle)) applyMapStyle(prefs.mapStyle, false);
       if (isHubMapStyle(prefs.hubMapStyle)) applyHubMapStyle(prefs.hubMapStyle, false);
       if (prefs.journeyOpen === 'record' || prefs.journeyOpen === 'magazine') applyJourneyOpen(prefs.journeyOpen, false);

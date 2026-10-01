@@ -14,15 +14,7 @@ export function sharedOwner(trip: Pick<Trip, 'ownerId' | 'ownerCard'>): SharedOw
   return trip.ownerCard || { name: '친구' };
 }
 
-export function SharedMark({ owner, tone, compact }: { owner: SharedOwner; tone: 'photo' | 'row'; compact?: boolean }) {
-  // On a photo corner only the picture shows, so it never meets the badges along the bottom
-  if (compact) {
-    return (
-      <span className="grid place-items-center w-9 h-9 rounded-full bg-black/35" title={`${owner.name}님이 공유한 여정`} aria-label={`${owner.name}님이 공유한 여정`}>
-        <UserProfileAvatar profile={owner} size="sm" fallbackName={owner.name} />
-      </span>
-    );
-  }
+export function SharedMark({ owner, tone }: { owner: SharedOwner; tone: 'photo' | 'row' }) {
   const cls = tone === 'photo'
     ? 'bg-black/35 text-white'
     : 'bg-black/[0.06] dark:bg-white/10 text-black/75 dark:text-white/80';
