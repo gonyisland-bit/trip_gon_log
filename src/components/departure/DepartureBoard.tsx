@@ -364,7 +364,9 @@ export function DepartureBoard({
         </div>
 
         {/* The counter's ticket and its actions, or storage: two thirds of the height (scrolls inside when short) */}
-        <div className={`flex-[2] md:flex-1 min-h-0 overflow-y-auto overscroll-contain hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
+        {/* Phones: ticket area two thirds, lobby one third. Web: one scrolling column, the lobby as wide as the board above */}
+        <div className="flex-1 min-h-0 flex flex-col md:overflow-y-auto md:overscroll-contain md:hide-scrollbar">
+        <div className={`flex-[2] md:flex-none min-h-0 overflow-y-auto md:overflow-visible overscroll-contain hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
           <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-2 min-h-full flex flex-col gap-3">
             {tab === 'storage' ? (
               <div className="flex flex-col gap-5">
@@ -488,8 +490,8 @@ export function DepartureBoard({
         </div>
 
         {/* The lobby below: a third of the height on phones, taller on the web so the departure sign shows, in a rounded window with the page's side margins */}
-        <div className="flex-[1] min-h-[120px] md:flex-none md:h-[clamp(250px,30vh,400px)] md:flex md:justify-center w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
-        <div className="tgl-lobby-scene relative h-full rounded-card overflow-hidden md:aspect-[8/5] md:max-w-full md:shrink-0">
+        <div className="flex-[1] min-h-[120px] md:flex-none md:min-h-0 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="tgl-lobby-scene relative h-full rounded-card overflow-hidden md:h-auto md:w-full md:aspect-[7/3]">
           <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
           {skyNote && (
             <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none">
@@ -497,6 +499,7 @@ export function DepartureBoard({
               {skyNote}
             </div>
           )}
+        </div>
         </div>
         </div>
       </div>
