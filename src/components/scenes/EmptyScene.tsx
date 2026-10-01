@@ -6,7 +6,7 @@ export type EmptySceneKind =
   | 'trip' | 'pocket' | 'search'
   | 'ticket' | 'storage' | 'upcoming'
   | 'flights' | 'stays' | 'transit' | 'timeline'
-  | 'spend' | 'settled' | 'calendar' | 'friends' | 'trash' | 'error';
+  | 'spend' | 'settled' | 'calendar' | 'friends' | 'trash' | 'error' | 'notice';
 
 interface EmptySceneProps {
   kind: EmptySceneKind;
@@ -44,11 +44,12 @@ const SCENE: Record<EmptySceneKind, { art: ArtId; tint: keyof typeof TINT }> = {
   transit: { art: 'train-station', tint: 'mist' },
   timeline: { art: 'map-looking', tint: 'peach' },
   spend: { art: 'paying-bill', tint: 'peach' },
-  settled: { art: 'beer-break', tint: 'sage' },
-  calendar: { art: 'photo-memory', tint: 'mist' },
-  friends: { art: 'outdoor-bistro', tint: 'lilac' },
-  trash: { art: 'sofa-rest', tint: 'butter' },
-  error: { art: 'pocket-empty', tint: 'mist' },
+  settled: { art: 'settlement-done', tint: 'sage' },
+  calendar: { art: 'calendar-empty', tint: 'mist' },
+  friends: { art: 'friends-pair', tint: 'lilac' },
+  trash: { art: 'trash-empty', tint: 'butter' },
+  error: { art: 'error-oops', tint: 'mist' },
+  notice: { art: 'notice-bell', tint: 'mist' },
 };
 
 export function EmptyScene({ kind, title, copy, action, compact, mini, bare, className = '' }: EmptySceneProps) {

@@ -32,6 +32,14 @@ FILES = {
     'map-looking': 'map-looking.jpg', 'backpacking': 'backpacking.jpg', 'luggage-travel': 'luggage-travel.jpg',
     'photo-memory': 'photo-memory.jpg', 'train-journey': 'train-journey.jpg', 'train-station': 'train-station.jpg',
     'departure-board': 'departure-board.jpg', 'waiting-gate': 'waiting-gate.jpg', 'window-waiting': 'window-waiting.jpg',
+    'friends-pair': 'Two_bears_high_fiving_20261001235729.jpg', 'trash-empty': 'Teal_bear_holding_broom_20261001235729.jpg',
+    'error-oops': 'Teal_bear_holding_snapped_cable_20261001235729.jpg', 'offline': 'Teal_bear_holding_umbrella_20261001235729.jpg',
+    'boarding-done': 'Teal_bear_waving_boarding_pass_20261001235729.jpg', 'settlement-done': 'Teal_bear_giving_thumbs_up_20261001235729.jpg',
+    'calendar-empty': 'Bear_hugging_blank_calendar_20261001235729.jpg', 'notice-bell': 'Teal_bear_dozing_near_bell_20261001235729.jpg',
+    'welcome-passport': 'Bear_holding_passport_and_suitcase_20261001235729.jpg', 'magazine-cover': 'Bear_holding_open_magazine_20261001235729.jpg',
+    'season-spring': 'Teal_bear_holding_cherry_branch_20261001235729.jpg', 'season-summer': 'Teal_bear_holding_popsicle_20261001235729.jpg',
+    'season-autumn': 'Teal_bear_wearing_autumn_scarf_20261001235729.jpg', 'season-winter': 'Teal_bear_wearing_winter_gear_20261001235729.jpg',
+    'weather-rain': 'Teal_bear_holding_yellow_umbrella_20261001235729.jpg', 'weather-snow': 'Bear_catching_snowflakes_20261001235729.jpg',
     'backpacking-2': 'backpacking-2.jpg',
     'luggage-travel-2': 'luggage-travel-2.jpg', 'photo-memory-2': 'photo-memory-2.jpg', 'bike-ride': 'bike-ride.jpg',
     'city-walk': 'city-walk.jpg', 'tourist-guide': 'tourist-guide.jpg',
@@ -46,6 +54,7 @@ CAPTION_FROM = {
     'backpacking-2': 1100, 'beach-drink': 1260, 'beer-break': 1000, 'luggage-travel-2': 970, 'map-looking': 1100,
     'photo-memory-2': 1000, 'public-transport': 990, 'resort-hammock': 1030, 'restaurant-menu': 960, 'sleeping': 1020,
     'snack-bite': 1130, 'sofa-rest': 910, 'window-waiting': 1060, 'wine-tasting': 1030,
+    'friends-pair': 1030, 'error-oops': 1060, 'season-spring': 1050, 'season-summer': 1100, 'season-autumn': 1130, 'season-winter': 1160,
 }
 
 # Pictures that fill their frame: the window (x0, y0, x1, y1) kept around the bear; they become a rounded card
@@ -53,11 +62,14 @@ CARDS = {
     'coffee-cup': (0, 300, 768, 1260), 'departure-board': (0, 60, 768, 1290), 'waiting-gate': (42, 252, 768, 960), 'landmark-japan': (0, 250, 768, 1250), 'landmark-egypt': (0, 300, 768, 1260),
     'poolside-cocktail': (0, 200, 768, 1160), 'restaurant-exterior': (0, 200, 768, 1160), 'swimming': (0, 300, 768, 1180),
     'train-journey': (0, 250, 768, 1250), 'public-transport-2': (0, 130, 768, 1075),
-    'landmark-paris': (0, 140, 768, 1300), 'museum-visit-2': (0, 300, 768, 1180),
+    'boarding-done': (40, 240, 768, 1215), 'landmark-paris': (0, 140, 768, 1300), 'museum-visit-2': (0, 300, 768, 1180),
 }
 
 # Pictures with a white pocket the ground cannot reach (between a staff and an arm): enclosed pure white above this size is dropped too
-HOLES = {'backpacking-2': 1500}
+HOLES = {'backpacking-2': 1500, 'friends-pair': 1500}
+
+# A caption printed beside the art, not under it: boxes (x0, y0, x1, y1) painted white before the ground is cut
+ERASE = {'offline': [(330, 860, 768, 1040)]}
 
 # A wide picture used whole (the terminal's window): no cut, no corners
 WIDE = {'terminal-airport'}
@@ -162,6 +174,8 @@ def scene_for(name):
         sq = card.crop(((w - s) // 2, (h - s) // 2, (w - s) // 2 + s, (h - s) // 2 + s))
         return rounded(fit(card, SCENE_MAX)), fit(sq, 480), True
     rgb = load(name)
+    for x0, y0, x1, y1 in ERASE.get(name, []):
+        rgb[y0:y1, x0:x1] = 255
     if name in CAPTION_FROM:
         rgb = rgb[:CAPTION_FROM[name]]
     art = cut_ground(rgb, HOLES.get(name, 0))

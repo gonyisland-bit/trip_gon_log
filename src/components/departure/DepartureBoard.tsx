@@ -18,6 +18,7 @@ import { TicketCard, TicketFace } from './TicketCard';
 import { TicketSheet } from './TicketSheet';
 import { EmptyScene } from '../scenes/EmptyScene';
 import { DepartureTicket, TicketStore, activeTicketOf, formatHours, readCachedTickets, removeTicket, setActiveTicket, subscribeTickets, ticketCity, ticketStatus } from './departureData';
+import { Art } from '../../art/Art';
 
 // Airport terminal (spec 3.2): where a planned trip waits before it becomes a journey.
 // Tickets are issued from the New trip sheet. The counter holds one ticket at a time, shown on the
@@ -500,6 +501,13 @@ export function DepartureBoard({
         </div>
       </div>
 
+      {boarding && (
+        <div role="status" className="absolute inset-0 z-10 bg-paper/90 dark:bg-paper-dark/90 flex flex-col items-center justify-center gap-3 tgl-rise">
+          <Art id="boarding-done" className="h-[200px] w-auto" />
+          <span className="text-[17px] font-extrabold tracking-tight">탑승 중</span>
+          <span className={`${label} ${muted}`}>여정을 만들고 있어요</span>
+        </div>
+      )}
       {sheetTicket && (
         <TicketSheet
           ticket={sheetTicket}

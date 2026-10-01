@@ -436,7 +436,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, o
                   : '여정 편집 및 관리를 위해 등록된 계정으로 로그인하세요.'}
               </p>
               </div>
-              <Art id={isSignUp ? 'backpacking-2' : 'tourist-guide'} className="h-[84px] w-auto shrink-0" />
+              <Art id={isSignUp ? 'welcome-passport' : 'tourist-guide'} className="h-[84px] w-auto shrink-0" />
             </div>
 
             {/* Error message */}

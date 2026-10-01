@@ -23,6 +23,7 @@ import { StaysTab } from './detail/StaysTab';
 import { TransitTab } from './detail/TransitTab';
 import { DetailOverlays } from './detail/DetailOverlays';
 import { DetailSkeleton } from '../components/EditorialSkeleton';
+import { Art } from '../art/Art';
 
 const DETAIL_TABS: { id: TabType; label: string; icon: LucideIcon }[] = [
   // The board replaces the old summary (it keeps the 'summary' id, so links and the map overlay still work)
@@ -201,6 +202,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           {/* A journey that is over: tidy the record, then publish it as a magazine */}
           {canPublish && !published && activeTab === 'summary' && (
             <div className="mx-3 sm:mx-4 mb-2 p-3.5 rounded-card bg-amber-500/10 flex flex-wrap items-center justify-between gap-2.5">
+              <Art id="magazine-cover" className="h-14 w-auto shrink-0" />
               <p className="text-[13px] leading-snug text-black/75 dark:text-white/80 min-w-0 flex-1 basis-56 break-keep">
                 다녀온 여행이에요. 실제 시간에 맞춰 일정과 사진을 정리했다면 매거진으로 발행하세요.
               </p>

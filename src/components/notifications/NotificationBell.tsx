@@ -5,6 +5,7 @@ import { UserProfileAvatar } from '../UserProfileAvatar';
 import {
   markRead, notificationText, pruneOld, subscribeNotifications, type AppNotification,
 } from '../../utils/notifications';
+import { EmptyScene } from '../scenes/EmptyScene';
 
 // The header bell (v1.3.6 6-a): unread count, and a sheet with friends' news. Opening a
 // notification goes to what it is about and marks it read.
@@ -84,9 +85,8 @@ function List({ list, onOpenJourney, onOpenPocket, onOpenFriends }: Omit<Props, 
         )}
       </div>
       {list.length === 0 ? (
-        <div className="rounded-card bg-surface dark:bg-surface-dark p-6 flex flex-col items-center gap-2 text-center">
-          <Bell className="w-6 h-6 text-black/40 dark:text-white/40" aria-hidden />
-          <span className="text-meta text-black/55 dark:text-white/55 break-keep">친구가 여정을 공유하거나 함께 쓰는 여정을 고치면 여기에 알려 드립니다.</span>
+        <div className="rounded-card bg-surface dark:bg-surface-dark">
+          <EmptyScene kind="notice" mini bare title="새 알림이 없어요" copy="친구가 여정을 공유하거나 함께 쓰는 여정을 고치면 여기에 알려 드립니다." />
         </div>
       ) : (
         <ul className="flex flex-col gap-1.5">
