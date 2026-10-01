@@ -122,7 +122,7 @@ function App() {
   const [departureTicketId, setDepartureTicketId] = useState<string | undefined>(undefined);
   const issuedTicketRef = useRef<string | null>(null);
   // The terminal opens on its tickets, or on "탑승 예정" (the old booking wallet)
-  const [departureTab, setDepartureTab] = useState<'tickets' | 'upcoming'>('tickets');
+  const [departureTab, setDepartureTab] = useState<'counter' | 'storage'>('counter');
   // One journey's card menu (v1.3.6 4-a), opened from any journey card
   const [actionsTripId, setActionsTripId] = useState<number | null>(null);
   useEffect(() => {
@@ -183,8 +183,8 @@ function App() {
     if (isIntroOpen && uid) setDoc(doc(db, 'users', uid, 'settings', 'intro'), { seenAt: Date.now(), watched: true }, { merge: true }).catch(() => {});
   }, [isIntroOpen]);
   useEffect(() => {
-    const openDeparture = () => { setDepartureTicketId(undefined); setDepartureTab('tickets'); setIsDepartureOpen(true); };
-    const openWallet = () => { setDepartureTicketId(undefined); setDepartureTab('upcoming'); setIsDepartureOpen(true); };
+    const openDeparture = () => { setDepartureTicketId(undefined); setDepartureTab('counter'); setIsDepartureOpen(true); };
+    const openWallet = () => { setDepartureTicketId(undefined); setDepartureTab('storage'); setIsDepartureOpen(true); };
     const togglePalette = () => setIsPaletteOpen(v => !v);
     const openRemixSheet = (e: Event) => { const id = (e as CustomEvent<number>).detail; if (typeof id === 'number') setRemixSourceId(id); };
     window.addEventListener(OPEN_DEPARTURE_EVENT, openDeparture);
