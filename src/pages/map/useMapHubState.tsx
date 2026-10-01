@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { HubMapStyle, hubTileFor, isHubMapStyle, readHubMapStyle } from '../../utils/mapTiles';
 import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Moon, Droplets, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
@@ -477,15 +478,13 @@ export function useMapHubState({
     return () => clearInterval(timer);
   }, [selectedCountry]);
 
-  // Map tile style state (esri or google)
-  const [mapTileStyle, setMapTileStyle] = useState<'esri' | 'google'>(() => {
-    return (localStorage.getItem('mapTileStyle') as any) || 'esri';
-  });
+  // World map style, this member's own (v1.3.7): picked from the map's style button
+  const [mapTileStyle, setMapTileStyle] = useState<HubMapStyle>(readHubMapStyle);
 
   useEffect(() => {
     const handleTileChange = (e: any) => {
-      const newStyle = e?.detail || localStorage.getItem('mapTileStyle') || 'esri';
-      setMapTileStyle(newStyle);
+      const next = e?.detail;
+      if (isHubMapStyle(next)) setMapTileStyle(next);
     };
     window.addEventListener('mapTileStyleChanged', handleTileChange);
     return () => window.removeEventListener('mapTileStyleChanged', handleTileChange);
@@ -1490,7 +1489,20 @@ export function useMapHubState({
 
     mapRef.current = map;
 
+    // Leaflet keeps the size it measured when the map was made; when the hub opens mid-transition
+    // that is a fraction of the screen and only a corner fills with tiles. Re-measure on every change.
+    let frame = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => { try { map.invalidateSize({ animate: false }); } catch (_) {} });
+    });
+    ro.observe(mapContainerRef.current);
+    const settle = window.setTimeout(() => { try { map.invalidateSize({ animate: false }); } catch (_) {} }, 400);
+
     return () => {
+      ro.disconnect();
+      cancelAnimationFrame(frame);
+      window.clearTimeout(settle);
       map.remove();
       mapRef.current = null;
     };
@@ -1511,85 +1523,20 @@ export function useMapHubState({
       nightTileLayerRef.current = null;
     }
 
+    const common = { updateWhenIdle: false, updateWhenZooming: false, crossOrigin: true };
     if (isDayNightEnabled) {
-      // DUAL TILE MODE: Base Day Tile + Clipped Night Tile on nightTilePane
-      if (mapTileStyle === 'google') {
-        // 1. Google Base Day Tile (Normal Light)
-        tileLayerRef.current = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', {
-          attribution: '&copy; Google Maps',
-          maxZoom: 20,
-          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-          className: '',
-          updateWhenIdle: false,
-          updateWhenZooming: false,
-          crossOrigin: true,
-        }).addTo(map);
-
-        // 2. Google Clipped Night Tile (Night Mode with Dark CSS Filter)
-        nightTileLayerRef.current = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', {
-          attribution: '&copy; Google Maps',
-          maxZoom: 20,
-          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-          className: 'map-tiles-dark',
-          pane: 'nightTilePane',
-          updateWhenIdle: false,
-          updateWhenZooming: false,
-          crossOrigin: true,
-        }).addTo(map);
-      } else {
-        // 1. Esri Base Day Tile (World_Light_Gray_Base)
-        tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-          attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-          maxZoom: 18,
-          keepBuffer: 16,
-          updateWhenIdle: false,
-          updateWhenZooming: false,
-          crossOrigin: true,
-        }).addTo(map);
-
-        // 2. Esri Clipped Night Tile (World_Dark_Gray_Base)
-        nightTileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-          attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-          maxZoom: 18,
-          keepBuffer: 16,
-          pane: 'nightTilePane',
-          updateWhenIdle: false,
-          updateWhenZooming: false,
-          crossOrigin: true,
-        }).addTo(map);
-      }
+      // Day tiles everywhere, night tiles of the same style clipped to the dark side
+      const day = hubTileFor(mapTileStyle, false), night = hubTileFor(mapTileStyle, true);
+      tileLayerRef.current = L.tileLayer(day.url, { ...day.options, ...common }).addTo(map);
+      nightTileLayerRef.current = L.tileLayer(night.url, { ...night.options, ...common, pane: 'nightTilePane' }).addTo(map);
     } else {
-      // SINGLE TILE MODE: When Day/Night is disabled, reset clip and respect isDarkMode
       const nightPane = map.getPane('nightTilePane');
       if (nightPane) {
         nightPane.style.clipPath = 'none';
         nightPane.style.webkitClipPath = 'none';
       }
-
-      if (mapTileStyle === 'google') {
-        tileLayerRef.current = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', {
-          attribution: '&copy; Google Maps',
-          maxZoom: 20,
-          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-          className: isDarkMode ? 'map-tiles-dark' : '',
-          updateWhenIdle: false,
-          updateWhenZooming: false,
-          crossOrigin: true,
-        }).addTo(map);
-      } else {
-        const tileUrl = isDarkMode
-          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-          : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
-
-        tileLayerRef.current = L.tileLayer(tileUrl, {
-          attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-          maxZoom: 18,
-          keepBuffer: 16,
-          updateWhenIdle: false,
-          updateWhenZooming: false,
-          crossOrigin: true,
-        }).addTo(map);
-      }
+      const t = hubTileFor(mapTileStyle, isDarkMode);
+      tileLayerRef.current = L.tileLayer(t.url, { ...t.options, ...common }).addTo(map);
     }
     // Re-align the night mask with the freshly added night tile layer
     updateNightClipRef.current?.();

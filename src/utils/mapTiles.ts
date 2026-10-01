@@ -98,3 +98,44 @@ export function mapTileFor(style: MapStyle, isDark: boolean): { url: string; opt
     },
   };
 }
+
+// World map (map hub) styles (v1.3.7): the light grey world plus the journey map's three.
+// Picked on the map itself and saved per account (prefs.hubMapStyle).
+export type HubMapStyle = 'gray' | MapStyle;
+export const HUB_MAP_STYLES: HubMapStyle[] = ['gray', 'normal', 'terrain', 'simple'];
+export const HUB_MAP_STYLE_LABEL: Record<HubMapStyle, string> = { gray: '라이트', ...MAP_STYLE_LABEL };
+const HUB_KEY = 'tgl_hub_map_style';
+
+export function isHubMapStyle(v: unknown): v is HubMapStyle {
+  return v === 'gray' || isMapStyle(v);
+}
+
+export function readHubMapStyle(): HubMapStyle {
+  try {
+    const v = localStorage.getItem(HUB_KEY);
+    if (isHubMapStyle(v)) return v;
+    // Before v1.3.7 the operator chose 'esri' (grey) or 'google' (road map) for everyone
+    if (localStorage.getItem('mapTileStyle') === 'google') return 'normal';
+  } catch { /* cache only */ }
+  return 'gray';
+}
+
+export function applyHubMapStyle(style: HubMapStyle, save = true) {
+  try { localStorage.setItem(HUB_KEY, style); } catch { /* cache only */ }
+  window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: style }));
+  if (save) saveUserPref({ hubMapStyle: style });
+}
+
+/** Tile URL and options for the world map in a style, light or dark */
+export function hubTileFor(style: HubMapStyle, isDark: boolean): { url: string; options: Record<string, unknown> } {
+  if (style === 'gray') {
+    return {
+      url: isDark
+        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+        : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      options: { attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ', maxZoom: 18, keepBuffer: 16 },
+    };
+  }
+  const t = mapTileFor(style, isDark);
+  return { url: t.url, options: { ...t.options, attribution: '&copy; Google Maps', maxZoom: 20, zIndex: undefined } };
+}

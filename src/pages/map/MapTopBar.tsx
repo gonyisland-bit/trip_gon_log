@@ -15,6 +15,50 @@ import { COUNTRIES_DATA, KNOWN_CITY_COORDS, CITY_KO_MAP, findCountryForGroup, CO
 import type { CountryInfo } from './mapData';
 import { MapLayerPanel } from './MapLayerPanel';
 import type { MapHubState } from './useMapHubState';
+import { HUB_MAP_STYLES, HUB_MAP_STYLE_LABEL, applyHubMapStyle, type HubMapStyle } from '../../utils/mapTiles';
+import { Layers } from 'lucide-react';
+
+function MapStylePicker({ value, onChange }: { value: HubMapStyle; onChange: (v: HubMapStyle) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', off);
+    return () => document.removeEventListener('pointerdown', off);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative shrink-0 z-10">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-label="지도 스타일"
+        title="지도 스타일"
+        className={`h-8 sm:h-9 px-3 rounded-full shadow-2xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${open ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'bg-surface/95 dark:bg-surface-dark/95 border border-black/20 dark:border-white/20 text-black dark:text-white'}`}
+      >
+        <Layers className="w-3.5 h-3.5" aria-hidden />
+        <span className="hidden sm:inline">{HUB_MAP_STYLE_LABEL[value]}</span>
+      </button>
+      {open && (
+        <div role="radiogroup" aria-label="지도 스타일" className="absolute left-0 top-full mt-1.5 flex items-center gap-0.5 p-1 rounded-full bg-surface/95 dark:bg-surface-dark/95 shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
+          {HUB_MAP_STYLES.map(st => (
+            <button
+              key={st}
+              type="button"
+              role="radio"
+              aria-checked={value === st}
+              onClick={() => { onChange(st); setOpen(false); }}
+              className={`h-8 px-3.5 rounded-full text-meta whitespace-nowrap transition-colors ${value === st ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-bold' : 'text-black/65 dark:text-white/65 font-medium hover:text-black dark:hover:text-white'}`}
+            >
+              {HUB_MAP_STYLE_LABEL[st]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Map hub top bar: search, wishlist, layers, trip builder and the clock.
 export function MapTopBar({ s }: { s: MapHubState }) {
@@ -336,6 +380,9 @@ export function MapTopBar({ s }: { s: MapHubState }) {
           onResetView={handleResetToDefaultView}
           onOpenPlaces={() => setIsPlaceListModalOpen(true)}
         />
+
+        {/* Map style, as on the journey map (v1.3.7): saved per account */}
+        <MapStylePicker value={mapTileStyle} onChange={(v) => { setMapTileStyle(v); applyHubMapStyle(v); }} />
 
         {/* New trip: the same sheet as everywhere, starting with the country and cities picked here */}
         <button

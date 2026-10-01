@@ -18,6 +18,8 @@ export interface UserPrefs {
   journeyOpen?: JourneyOpen;
   /** Up to four more cities next to weatherCity (see myCities.ts), by English name */
   favoriteCities?: string[];
+  /** World map style on the map hub (see mapTiles.ts) */
+  hubMapStyle?: 'gray' | 'normal' | 'terrain' | 'simple';
   /** Which home widgets show (see homeWidgetPrefs.ts) */
   homeWidgets?: import('./homeWidgetPrefs').HomeWidgetPrefs;
 }
