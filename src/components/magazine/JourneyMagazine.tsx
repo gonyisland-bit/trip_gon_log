@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { lazyWithRetry } from '../../app/appUtils';
 import { createPortal } from 'react-dom';
-import { BookCheck, Clock, ImagePlus, Loader2, Play, Trash2, X } from 'lucide-react';
+import { ArrowUpRight, BookCheck, Clock, ImagePlus, Loader2, Play, Trash2, X } from 'lucide-react';
 import type { Trip } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { useBackToClose } from '../../utils/overlayHistory';
@@ -23,6 +23,8 @@ export interface MagazinePhoto {
   title?: string;
   /** Where it was: the entry's place name, or the nearest earlier one (same rule as the old magazine) */
   place?: string;
+  /** The timeline entry the photo belongs to, so the record can open at it */
+  itemId?: number;
   /** Added straight to the journey (not on a timeline entry), so it can be removed here */
   removable?: boolean;
 }
@@ -46,6 +48,8 @@ interface Props {
   fileInputRef?: React.RefObject<HTMLInputElement | null>;
   onAddPhotos?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemovePhoto?: (url: string, e: React.MouseEvent) => void;
+  /** Opens the record at the entry a photo belongs to */
+  onJumpToItem?: (itemId: number, date?: string) => void;
 }
 
 const WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -58,7 +62,7 @@ function dayLabel(d: string): string {
   return `${String(day).padStart(2, '0')} ${MON[m - 1]} · ${WEEK[w]}`;
 }
 
-export function JourneyMagazine({ trip, photos, days, canPublish, published, onPublish, onUnpublish, onClose, onShowRecord, onOpenPhoto, canAddPhotos, uploading, fileInputRef, onAddPhotos, onRemovePhoto }: Props) {
+export function JourneyMagazine({ trip, photos, days, canPublish, published, onPublish, onUnpublish, onClose, onShowRecord, onOpenPhoto, canAddPhotos, uploading, fileInputRef, onAddPhotos, onRemovePhoto, onJumpToItem }: Props) {
   useBackToClose(true, onClose);
   const [reel, setReel] = useState(false);
 
@@ -93,7 +97,7 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
     e.stopPropagation();
     if (await confirmDialog('이 사진을 여정에서 지울까요?', { title: 'DELETE', confirmLabel: '삭제' })) onRemovePhoto?.(url, e);
   };
-  const photoProps = { onOpen: onOpenPhoto, onRemove: canAddPhotos ? removePhoto : undefined };
+  const photoProps = { onOpen: onOpenPhoto, onRemove: canAddPhotos ? removePhoto : undefined, onJump: onJumpToItem };
 
   const unpublish = async () => {
     if (await confirmDialog('매거진 발행을 취소할까요? 카드는 다시 기록으로 열립니다.', { title: 'UNPUBLISH', confirmLabel: '발행 취소' })) onUnpublish();
@@ -214,7 +218,7 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
 }
 
 /** A day's photos: a wide lead, then pairs, a rhythm that repeats every three */
-function Spread({ photos, onOpen, onRemove }: { photos: MagazinePhoto[]; onOpen?: (url: string) => void; onRemove?: (url: string, e: React.MouseEvent) => void }) {
+function Spread({ photos, onOpen, onRemove, onJump }: { photos: MagazinePhoto[]; onOpen?: (url: string) => void; onRemove?: (url: string, e: React.MouseEvent) => void; onJump?: (itemId: number, date?: string) => void }) {
   return (
     <div className="grid grid-cols-2 gap-x-3 sm:gap-x-5 gap-y-8 sm:gap-y-10">
       {photos.map((p, i) => {
@@ -248,9 +252,14 @@ function Spread({ photos, onOpen, onRemove }: { photos: MagazinePhoto[]; onOpen?
                   <span className={`${lead ? 'text-lg sm:text-2xl' : 'text-[15px] sm:text-lg'} font-extrabold tracking-tight leading-snug break-keep`}>{p.title}</span>
                 )}
                 {(p.place || p.time) && (
-                  <span className="font-mono text-micro sm:text-meta uppercase tracking-wider text-black/55 dark:text-white/55 truncate">
+                  <span className="font-mono text-micro sm:text-meta uppercase tracking-wider text-black/55 dark:text-white/55 break-keep [overflow-wrap:anywhere]">
                     {[p.place, p.time].filter(Boolean).join(' · ')}
                   </span>
+                )}
+                {p.itemId !== undefined && onJump && (
+                  <button type="button" onClick={() => onJump(p.itemId as number, p.date)} className="self-start mt-1 inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-black/[0.06] dark:bg-white/10 text-meta font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-colors">
+                    <ArrowUpRight className="w-3.5 h-3.5" aria-hidden />일정에서 보기
+                  </button>
                 )}
               </figcaption>
             )}

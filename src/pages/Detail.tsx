@@ -84,6 +84,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
         url: p.url,
         date: p.date,
         time: p.time,
+        itemId: p.itemId,
         removable: p.type === 'gallery',
         title: (item?.place || p.place || '').trim() || undefined,
         place: item ? resolveTimelinePlaceName(item, items, trip || undefined) || undefined : undefined,
@@ -429,6 +430,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           fileInputRef={s.fileInputRef as React.RefObject<HTMLInputElement>}
           onAddPhotos={s.handleGalleryUpload}
           onRemovePhoto={(url, e) => { s.handleRemoveGalleryImage(url, e); }}
+          onJumpToItem={(itemId, date) => { setMagazineOnly(false); setMagazineOpen(false); s.handleJumpToTimelineItem(itemId, date || ''); }}
         />
       )}
     </main>
