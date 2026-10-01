@@ -340,7 +340,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
 
             {/* 2.5 Live Weather & 7-Day Forecast Widget Card */}
             <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10 select-none">
-              <div className="bg-paper dark:bg-paper-dark rounded-card p-2 sm:p-3 shadow-xs border border-black/5 dark:border-white/10">
+              <div className="bg-paper dark:bg-paper-dark rounded-card p-2 sm:p-3">
                 <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -421,7 +421,7 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                           return (
                             <div 
                               key={`country-f-${item.date}`}
-                              className={`p-1 sm:p-1.5 rounded-lg flex flex-col items-center justify-between text-center gap-0.5 sm:gap-1 ${
+                              className={`p-1 sm:p-1.5 rounded-thumb flex flex-col items-center justify-between text-center gap-0.5 sm:gap-1 ${
                                 isToday 
                                   ? 'bg-selected dark:bg-white/[0.18] font-bold border border-black/10 dark:border-white/20' 
                                   : 'bg-white/40 dark:bg-black/20'
@@ -487,10 +487,10 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                       key={city}
                       type="button"
                       onClick={() => toggleDestCity(city)}
-                      className={`px-2 py-0.5 sm:px-2.5 sm:py-1 text-meta sm:text-meta font-mono font-bold uppercase transition-all border cursor-pointer select-none ${
+                      className={`px-2.5 py-1 rounded-full text-meta font-sans font-bold transition-colors cursor-pointer select-none ${
                         isCitySelected
-                          ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
-                          : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
+                          ? 'bg-amber-500 text-black'
+                          : 'bg-black/5 dark:bg-white/5 text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10'
                       }`}
                       title={`${city} 선택 (하단 트립 생성 연동)`}
                     >
@@ -514,10 +514,10 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
                     }
                   });
                 }}
-                className={`w-full py-1.5 sm:py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-extrabold uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                className={`w-full h-10 px-3 rounded-full text-[13px] font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   isCurrentCountryFavorite
-                    ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
-                    : 'bg-surface dark:bg-surface-dark text-black dark:text-white border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
+                    ? 'bg-amber-500 text-black'
+                    : 'bg-black/[0.06] dark:bg-white/10 text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/15'
                 }`}
               >
                 <Star className={`w-3.5 h-3.5 ${isCurrentCountryFavorite ? 'fill-black text-black' : ''}`} />
