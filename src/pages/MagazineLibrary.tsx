@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { BookOpen } from 'lucide-react';
 import type { Trip } from '../types';
 import { Segment } from '../components/ui/Segment';
 import { cardCoverUrl } from '../utils/journeyThumbs';
 import { getLiveTripStatus, getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { setDetailIntent } from '../utils/detailIntent';
 import { Footer } from '../components/Footer';
+import { EmptyScene } from '../components/scenes/EmptyScene';
 
 // Magazine (v1.3.6 4-b): every published journey is an issue, gathered here on its own by year,
 // country or season. Nothing is curated by hand: publishing a journey adds it, unpublishing removes it.
@@ -85,13 +85,12 @@ export function MagazineLibrary({ trips, onNavigate }: Props) {
         </header>
 
         {issues.length === 0 && (
-          <div className="rounded-card bg-surface dark:bg-surface-dark p-8 sm:p-12 flex flex-col items-center text-center gap-3">
-            <span className="w-12 h-12 rounded-full bg-black/[0.05] dark:bg-white/10 grid place-items-center"><BookOpen className="w-5 h-5" aria-hidden /></span>
-            <h2 className="text-xl font-extrabold">아직 발행한 매거진이 없어요</h2>
-            <p className="text-[14px] text-black/60 dark:text-white/60 max-w-md break-keep">
-              다녀온 여정의 일정과 사진을 실제 시간에 맞춰 정리한 뒤, 여정 안에서 매거진으로 발행하면 여기에 모입니다.
-            </p>
-          </div>
+          <EmptyScene
+            kind="magazine"
+            title="아직 발행한 매거진이 없어요"
+            copy="다녀온 여정의 일정과 사진을 정리해 여정 안에서 매거진으로 발행하면 여기에 모입니다."
+            action={trips.length > 0 ? { label: '여정 보기', onClick: () => onNavigate('archive') } : undefined}
+          />
         )}
 
         {groups.map(([label, list]) => (

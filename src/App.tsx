@@ -351,7 +351,7 @@ function App() {
                     homeTitle={homeTitle}
                     homeSubtitle={homeSubtitle}
                     heroJourneyIds={heroJourneyIds}
-                    onNewTrip={() => handleCreateTripForCountry('', '')}
+                    onNewTrip={(pick) => handleCreateTripForCountry('', pick?.city || '')}
                     dataReady={tripsLoaded && plansLoaded}
                     heroAutoSlide={heroAutoSlide}
                     heroMediaType={heroMediaType}
@@ -399,6 +399,7 @@ function App() {
                     plans={plans} 
                     onNavigate={navigateTo} 
                     onAddArchive={() => handleCreateTripForCountry('')}
+                    dataReady={tripsLoaded && plansLoaded}
                     isLoggedIn={isLoggedIn}
                     onDeleteTrip={handleDeleteJourney}
                     onEditTrip={(id) => setEditingTripId(id)}

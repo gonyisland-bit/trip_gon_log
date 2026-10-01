@@ -14,6 +14,7 @@ import { JourneyCard } from '../components/cards/JourneyCard';
 import { openJourneyActions } from '../components/cards/JourneyActionsSheet';
 import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
 import { NewTripButton } from '../components/NewTripButton';
+import { EmptyScene } from '../components/scenes/EmptyScene';
 
 
 interface ArchiveHubPageProps {
@@ -22,6 +23,8 @@ interface ArchiveHubPageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
   onAddArchive: () => void;
   isLoggedIn: boolean;
+  /** True once the journey lists have loaded, so the empty scene never flashes while loading */
+  dataReady?: boolean;
   onDeleteTrip: (id: number) => Promise<void>;
   onEditTrip?: (id: number) => void;
   onCloneTrip?: (id: number) => void;
@@ -349,6 +352,7 @@ export function ArchiveHubPage({
   onNavigate,
   onAddArchive,
   isLoggedIn,
+  dataReady,
   onDeleteTrip,
   onEditTrip,
   onCloneTrip,
@@ -896,6 +900,17 @@ export function ArchiveHubPage({
       
       {/* Journeys Container: Flat list/grid for USER, or Accordion Sections for TIME / PLACE */}
       <div className="flex flex-col w-full">
+        {dataReady && trips.length === 0 && (plans?.length ?? 0) === 0 && (
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10">
+            <EmptyScene
+              kind="trip"
+              title="아직 여정이 없어요"
+              copy="여행을 계획하면 여기에 카드로 모이고, 다녀온 뒤에는 사진과 함께 기록으로 남습니다."
+              action={isLoggedIn ? { label: 'New trip', onClick: onAddArchive } : undefined}
+            />
+          </div>
+        )}
+
         {groupedTrips.map(group => {
           const isCollapsed = collapsedSections.has(group.key);
           const showGroupHeader = sortBy !== 'user';

@@ -9,6 +9,7 @@ import {
   Tag, Link2, ScanText, Clipboard
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
+import { EmptyScene } from '../components/scenes/EmptyScene';
 import { FriendPockets, spotKey } from '../components/friends/FriendPockets';
 import { keepFriendSpot } from '../utils/friends';
 import { getSavedPockets, savePockets,detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike, getCardThumbUrl, needsCardThumb, buildCardThumb } from '../utils/pocketStorage';
@@ -1558,15 +1559,13 @@ export function PocketHubPage({
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10 flex-grow flex flex-col">
         {/* Gallery — Grouped by country·city or flat drag mode */}
         {sortedSpots.length === 0 ? (
-          <div className="flex-grow flex flex-col items-center justify-center py-24 rounded-card bg-surface dark:bg-surface-dark text-center">
-            <Bookmark className="w-8 h-8 text-black/60 dark:text-white/60 mb-3" />
-            <p className="text-sm font-mono text-black/60 dark:text-white/60 uppercase tracking-widest">
-              보관된 스팟이 없습니다
-            </p>
-            <p className="text-xs text-black/60 dark:text-white/60 mt-1">
-              상단의 'KEEP SPOT' 버튼을 눌러 인스타, 유튜브 등의 핫플과 꿀팁을 킵해보세요.
-            </p>
-          </div>
+          <EmptyScene
+            kind="pocket"
+            className="flex-grow justify-center"
+            title="포켓이 비어 있어요"
+            copy="인스타그램 · 유튜브에서 본 핫플과 꿀팁을 Keep spot으로 담아 두면 여행 일정에 바로 넣을 수 있습니다."
+            action={isLoggedIn ? { label: 'Keep spot', onClick: handleOpenBlankScrapModal } : undefined}
+          />
         ) : (
           <>
             {/* Helper to render a single card */}
