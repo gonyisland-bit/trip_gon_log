@@ -18,6 +18,12 @@ export interface UserPrefs {
   journeyOpen?: JourneyOpen;
   /** Up to four more cities next to weatherCity (see myCities.ts), by English name */
   favoriteCities?: string[];
+  /** Page backdrop template id (see backdrop.ts) */
+  backdrop?: string;
+  /** Slideshow music: plays on its own, shuffled, volume 0–100, track ids switched off */
+  bgm?: { autoplay?: boolean; shuffle?: boolean; volume?: number; off?: string[] };
+  /** Slideshow pacing and photo fit */
+  slideshow?: { interval?: number; fit?: 'fit' | 'fill' };
   /** World map style on the map hub (see mapTiles.ts) */
   hubMapStyle?: 'gray' | 'normal' | 'terrain' | 'simple';
   /** Which home widgets show (see homeWidgetPrefs.ts) */

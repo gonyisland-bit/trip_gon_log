@@ -21,19 +21,33 @@ const STORAGE_KEY_BGM_DEFAULT_VOLUME = 'tripgon_bgm_default_volume';
 const STORAGE_KEY_BGM_SHUFFLE = 'tripgon_bgm_shuffle';
 const STORAGE_KEY_SLIDESHOW_INTERVAL = 'tripgon_slideshow_interval';
 
+// Tracks this member switched off (v1.3.7). The track list itself is the app's; which of them
+// play is each member's choice (prefs.bgm.off), applied on top of the list here.
+const STORAGE_KEY_BGM_OFF = 'tgl_bgm_off';
+
+export function getBgmOff(): string[] {
+  try { const v = JSON.parse(localStorage.getItem(STORAGE_KEY_BGM_OFF) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+
+export function setBgmOff(ids: string[]) {
+  try { localStorage.setItem(STORAGE_KEY_BGM_OFF, JSON.stringify(ids)); } catch {}
+  window.dispatchEvent(new CustomEvent('bgmTracksChanged', { detail: getStoredBgmTracks() }));
+}
+
+/** The app's track list with this member's on / off applied */
 export function getStoredBgmTracks(): BgmTrack[] {
+  let list: BgmTrack[] = DEFAULT_BGM_TRACKS;
   try {
     const raw = localStorage.getItem(STORAGE_KEY_BGM_TRACKS);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
+      if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
     }
   } catch (e) {
     console.warn('Failed to load BGM tracks from localStorage:', e);
   }
-  return DEFAULT_BGM_TRACKS;
+  const off = new Set(getBgmOff());
+  return off.size ? list.map(t => (off.has(t.id) ? { ...t, enabled: false } : t)) : list;
 }
 
 export function saveStoredBgmTracks(tracks: BgmTrack[]) {

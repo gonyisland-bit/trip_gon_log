@@ -5,8 +5,10 @@ import { fetchCoordinates } from '../utils/googleMapsHelper';
 import { resolveTimelinePlaceName, buildDefaultMagazineSections, syncSectionItemsWithTimeline } from '../utils/magazineHelper';
 import {
   BgmTrack, saveStoredBgmTracks, saveStoredBgmAutoplay, saveStoredBgmDefaultVolume,
-  saveStoredBgmShuffle, saveStoredSlideshowInterval
+  saveStoredBgmShuffle, saveStoredSlideshowInterval,
+  setBgmOff,
 } from '../utils/audioHelper';
+import { BACKDROP_EVENT, applyBackdrop, readBackdrop, type Backdrop } from '../utils/backdrop';
 import {
   initialTrips, initialPlans, timelineDataByDate, initialFlightsByTrip, initialStaysByTrip,
   initialTransitByTrip
@@ -280,6 +282,15 @@ export function useAppState() {
       }
       applyFavoritePrefs(prefs.favoriteCities);
       if (prefs.homeWidgets) setHomeWidgets(prefs.homeWidgets, false);
+      if (prefs.backdrop) applyBackdrop(prefs.backdrop, false);
+      if (prefs.bgm) {
+        if (prefs.bgm.autoplay !== undefined) saveStoredBgmAutoplay(prefs.bgm.autoplay);
+        if (prefs.bgm.shuffle !== undefined) saveStoredBgmShuffle(prefs.bgm.shuffle);
+        if (prefs.bgm.volume !== undefined) saveStoredBgmDefaultVolume(prefs.bgm.volume);
+        if (Array.isArray(prefs.bgm.off)) setBgmOff(prefs.bgm.off);
+      }
+      if (prefs.slideshow?.interval) saveStoredSlideshowInterval(prefs.slideshow.interval);
+      if (prefs.slideshow?.fit) { try { localStorage.setItem('tgl_reel_fit', prefs.slideshow.fit); } catch (_) {} }
     });
   };
 
@@ -384,9 +395,20 @@ export function useAppState() {
   });
   const [marqueeMessage, setMarqueeMessage] = useState<string>("WELCOME TO TRIPGON LOG — PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS.");
   const [marqueeSpeed, setMarqueeSpeed] = useState<number>(30);
-  const [homeGradientEnabled, setHomeGradientEnabled] = useState<boolean>(() => localStorage.getItem('home_gradient_enabled') === 'true');
-  const [homeGradientFrom, setHomeGradientFrom] = useState<string>(() => localStorage.getItem('home_gradient_from') || '#F7F2EB');
-  const [homeGradientTo, setHomeGradientTo] = useState<string>(() => localStorage.getItem('home_gradient_to') || '#E7DEC8');
+  // Page backdrop: this member's template (backdrop.ts); plain paper until they pick one
+  const [homeGradientEnabled, setHomeGradientEnabled] = useState<boolean>(() => Boolean(readBackdrop().from));
+  const [homeGradientFrom, setHomeGradientFrom] = useState<string>(() => readBackdrop().from || '#F7F2EB');
+  const [homeGradientTo, setHomeGradientTo] = useState<string>(() => readBackdrop().to || '#E7DEC8');
+  useEffect(() => {
+    const on = (e: Event) => {
+      const b = (e as CustomEvent<Backdrop>).detail;
+      if (!b) return;
+      setHomeGradientEnabled(Boolean(b.from));
+      if (b.from) { setHomeGradientFrom(b.from); setHomeGradientTo(b.to || b.from); }
+    };
+    window.addEventListener(BACKDROP_EVENT, on);
+    return () => window.removeEventListener(BACKDROP_EVENT, on);
+  }, []);
   const [landingHeroImage, setLandingHeroImage] = useState<string>(() => localStorage.getItem('landing_hero_image') || '');
   const [landingHeroMedia, setLandingHeroMedia] = useState<LandingHeroMediaItem[]>(() => {
     try {
@@ -1010,32 +1032,10 @@ export function useAppState() {
             localStorage.setItem('cached_magazine_moments', JSON.stringify(data.magazineMoments));
           } catch (_) {}
         }
-        if (data.homeGradientEnabled !== undefined) {
-          setHomeGradientEnabled(data.homeGradientEnabled);
-          localStorage.setItem('home_gradient_enabled', String(data.homeGradientEnabled));
-        }
-        if (data.homeGradientFrom) {
-          setHomeGradientFrom(data.homeGradientFrom);
-          localStorage.setItem('home_gradient_from', data.homeGradientFrom);
-        }
-        if (data.homeGradientTo) {
-          setHomeGradientTo(data.homeGradientTo);
-          localStorage.setItem('home_gradient_to', data.homeGradientTo);
-        }
+        // The track list is the app's; the backdrop and how music and slideshows play are each
+        // member's own settings since v1.3.7 (prefs.backdrop, prefs.bgm, prefs.slideshow)
         if (Array.isArray(data.bgmPlaylist) && data.bgmPlaylist.length > 0) {
           saveStoredBgmTracks(data.bgmPlaylist);
-        }
-        if (data.bgmAutoplay !== undefined) {
-          saveStoredBgmAutoplay(data.bgmAutoplay);
-        }
-        if (data.bgmDefaultVolume !== undefined) {
-          saveStoredBgmDefaultVolume(data.bgmDefaultVolume);
-        }
-        if (data.bgmShuffle !== undefined) {
-          saveStoredBgmShuffle(data.bgmShuffle);
-        }
-        if (data.slideshowInterval !== undefined) {
-          saveStoredSlideshowInterval(data.slideshowInterval);
         }
       }
     };

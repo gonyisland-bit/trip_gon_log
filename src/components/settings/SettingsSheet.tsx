@@ -5,7 +5,6 @@ import { Sheet } from '../Sheet';
 import { Segment } from '../ui/Segment';
 import { UserProfileAvatar } from '../UserProfileAvatar';
 import { applyJourneyOpen, readJourneyOpen, type JourneyOpen } from '../../utils/userPrefs';
-import { getStoredBgmDefaultVolume, getStoredSlideshowInterval, saveStoredBgmDefaultVolume, saveStoredSlideshowInterval } from '../../utils/audioHelper';
 import { getMyStorageUsage } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { confirmDialog } from '../../utils/feedback';
@@ -14,24 +13,24 @@ import { NotificationSettings } from '../notifications/NotificationSettings';
 import { IosShortcutGuide } from '../pocket/IosShortcutGuide';
 import { MyCitiesEditor, WeatherBgSwitch } from './MyCitiesEditor';
 import { HomeWidgetPrefs } from './HomeWidgetPrefs';
+import { BackdropPicker, SlideshowPrefs } from './PlayPrefs';
 import type { PersonCard } from '../../utils/friends';
 
-// Settings for every member (v1.3.6), in five tabs so no tab scrolls long:
-//   프로필 account · 친구 friends · 도시 my cities and weather · 화면 display, home widgets, slideshow,
-//   notifications · 데이터 storage, trash, terms. The last tab opened is remembered on this device.
+// Settings for every member (v1.3.7), in four tabs so no tab scrolls long:
+//   나 account and friends · 도시 my cities and weather · 화면 display, backdrop, home widgets,
+//   slideshow and its music, notifications · 데이터 storage, trash, terms.
+// The last tab opened is remembered on this device.
 // Journeys are managed from their cards; the operator's tools live in the manage hub.
 
 import { OPEN_PROFILE_EDIT } from '../../app/quickActions';
 type NightMode = 'auto' | 'light' | 'dark';
-type ReelFit = 'fit' | 'fill';
-export type SettingsTab = 'profile' | 'friends' | 'cities' | 'display' | 'data';
+export type SettingsTab = 'me' | 'cities' | 'display' | 'data';
 const TABS: { value: SettingsTab; label: string }[] = [
-  { value: 'profile', label: '프로필' }, { value: 'friends', label: '친구' }, { value: 'cities', label: '도시' },
-  { value: 'display', label: '화면' }, { value: 'data', label: '데이터' },
+  { value: 'me', label: '나' }, { value: 'cities', label: '도시' }, { value: 'display', label: '화면' }, { value: 'data', label: '데이터' },
 ];
 const TAB_KEY = 'tgl_settings_tab';
 function readTab(): SettingsTab {
-  try { const v = localStorage.getItem(TAB_KEY); return TABS.some(t => t.value === v) ? (v as SettingsTab) : 'profile'; } catch { return 'profile'; }
+  try { const v = localStorage.getItem(TAB_KEY); return TABS.some(t => t.value === v) ? (v as SettingsTab) : 'me'; } catch { return 'me'; }
 }
 
 interface Props {
@@ -72,9 +71,6 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
     return () => window.removeEventListener('weatherBgToggled', on);
   }, []);
   const [journeyOpen, setJourneyOpen] = useState<JourneyOpen>(readJourneyOpen);
-  const [fit, setFit] = useState<ReelFit>(() => { try { return localStorage.getItem('tgl_reel_fit') === 'fill' ? 'fill' : 'fit'; } catch { return 'fit'; } });
-  const [interval, setIntervalMs] = useState(() => getStoredSlideshowInterval());
-  const [volume, setVolume] = useState(() => getStoredBgmDefaultVolume());
   const [usage, setUsage] = useState<{ used: number; quota: number | null } | null>(null);
   const [usageError, setUsageError] = useState(false);
 
@@ -90,7 +86,7 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
         <h2 className="text-[20px] font-extrabold tracking-tight px-1">설정</h2>
         <Segment<SettingsTab> block size="sm" ariaLabel="설정 분류" value={tab} onChange={setTab} options={TABS} />
 
-        {tab === 'profile' && (<>
+        {tab === 'me' && (<>
 
         {/* Account */}
         <section className={card}>
@@ -109,9 +105,8 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
             <ChevronRight className="w-4 h-4 shrink-0 text-black/40 dark:text-white/40" aria-hidden />
           </button>
         </section>
-        </>)}
 
-        {tab === 'friends' && (me ? (
+        {me ? (
           <FriendsSection
             me={me}
             canWrite={canWrite}
@@ -123,7 +118,8 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
           />
         ) : (
           <section className={card}><span className="text-meta text-black/55 dark:text-white/55">로그인하면 친구를 맺고 여정을 함께 볼 수 있습니다.</span></section>
-        ))}
+        )}
+        </>)}
 
         {tab === 'cities' && (<>
           <MyCitiesEditor cardClass={card} labelClass={label} />
@@ -163,46 +159,11 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
           </div>
         </section>
 
-        {/* Slideshow */}
-        <section className={card}>
-          <span className={label}>Slideshow</span>
-          <div className="flex flex-col gap-2">
-            <span className={rowLabel}>사진 보기</span>
-            <Segment<ReelFit>
-              block
-              ariaLabel="슬라이드쇼 사진 보기"
-              value={fit}
-              onChange={(v) => { setFit(v); try { localStorage.setItem('tgl_reel_fit', v); } catch { /* per device */ } }}
-              options={[{ value: 'fit', label: '사진 전체' }, { value: 'fill', label: '화면 채우기' }]}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className={rowLabel}>넘기는 간격</span>
-            <Segment<string>
-              block
-              ariaLabel="넘기는 간격"
-              value={String(interval)}
-              onChange={(v) => { const ms = Number(v); setIntervalMs(ms); saveStoredSlideshowInterval(ms); }}
-              options={[3000, 4000, 6000, 8000].map(ms => ({ value: String(ms), label: `${ms / 1000}초` }))}
-            />
-          </div>
-          <label className="flex items-center gap-3">
-            <span className={`${rowLabel} shrink-0`}>음량</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={volume}
-              onChange={(e) => { const v = Number(e.target.value); setVolume(v); saveStoredBgmDefaultVolume(v); }}
-              className="flex-1 accent-red-600"
-              aria-label="슬라이드쇼 음량"
-            />
-            <span className="w-10 text-right font-mono text-meta tabular-nums">{volume}%</span>
-          </label>
-        </section>
+        <BackdropPicker cardClass={card} labelClass={label} />
 
         <HomeWidgetPrefs cardClass={card} labelClass={label} />
+
+        <SlideshowPrefs cardClass={card} labelClass={label} />
 
         {me && <NotificationSettings cardClass={card} labelClass={label} />}
 
