@@ -717,9 +717,9 @@ export function useManageHubState(props: ManageHubPageProps) {
   };
 
   // A member stuck behind the verification mail: the operator marks the address verified
-  const handleVerifyUser = async (user: UserProfile) => {
+  const handleVerifyUser = async (user: UserProfile, confirmed = false) => {
     const fullName = `${user.lastName} ${user.firstName}`.trim() || user.username || user.email;
-    if (!await confirmDialog(`[${fullName} (${user.email})] 님의 메일 인증을 운영자가 대신 처리할까요? 본인 주소가 맞는지 확인한 뒤 눌러 주세요.`, { title: 'VERIFY', confirmLabel: '인증 처리' })) return;
+    if (!confirmed && !await confirmDialog(`[${fullName} (${user.email})] 님의 메일 인증을 운영자가 대신 처리할까요? 본인 주소가 맞는지 확인한 뒤 눌러 주세요.`, { title: 'VERIFY', confirmLabel: '인증 처리' })) return;
     const result = await verifyAuthAccount(user.uid);
     if (result !== 'verified') {
       notify(VERIFY_PROBLEM[result], 'error');
@@ -734,8 +734,8 @@ export function useManageHubState(props: ManageHubPageProps) {
     setTimeout(() => setUserActionToast(null), 3000);
   };
 
-  const handleRejectUser = async (user: UserProfile) => {
-    if (!await confirmDialog(`[${user.lastName} ${user.firstName}] 님의 이용을 제한할까요? 로그인하면 바로 로그아웃됩니다.`, { title: 'RESTRICT', confirmLabel: '이용 제한' })) return;
+  const handleRejectUser = async (user: UserProfile, confirmed = false) => {
+    if (!confirmed && !await confirmDialog(`[${user.lastName} ${user.firstName}] 님의 이용을 제한할까요? 로그인하면 바로 로그아웃됩니다.`, { title: 'RESTRICT', confirmLabel: '이용 제한' })) return;
     try {
       await Promise.allSettled([
         updateDoc(doc(db, 'users', user.uid), { status: 'rejected', rejectedAt: Date.now() }),
@@ -751,13 +751,13 @@ export function useManageHubState(props: ManageHubPageProps) {
     }
   };
 
-  const handleDeleteUserByAdmin = async (user: UserProfile) => {
+  const handleDeleteUserByAdmin = async (user: UserProfile, confirmed = false) => {
     if (isTargetAdminAccount(user.email, user.role)) {
       notify("관리자 계정은 삭제할 수 없습니다.");
       return;
     }
     const fullName = `${user.lastName} ${user.firstName}`.trim() || user.username || user.email;
-    if (!await confirmDialog(`정말로 회원 [${fullName} (${user.email})] 계정을 영구 삭제하시겠습니까?\n모든 프로필 데이터가 완전히 제거됩니다.`)) return;
+    if (!confirmed && !await confirmDialog(`정말로 회원 [${fullName} (${user.email})] 계정을 영구 삭제하시겠습니까?\n모든 프로필 데이터가 완전히 제거됩니다.`)) return;
 
     try {
       await Promise.allSettled([
