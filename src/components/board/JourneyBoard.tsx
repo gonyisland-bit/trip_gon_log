@@ -134,7 +134,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
       <span className={kicker}><BedDouble className="w-3.5 h-3.5" aria-hidden />숙소</span>
       <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep line-clamp-2">{s.title}</span>
       <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums break-keep">{s.dateRange}</span>
-      {s.address && <span className="text-meta text-black/50 dark:text-white/50 line-clamp-1 break-all">{s.address}</span>}
+      {s.address && <span className="text-meta text-black/50 dark:text-white/50 line-clamp-2 break-keep">{s.address}</span>}
       {s.confNo && <span className="mt-auto pt-1"><CodeChip value={s.confNo} what="확인번호" /></span>}
     </Tile>,
   ));
@@ -358,14 +358,15 @@ export function JourneyBoard({ onClose, ...data }: Props) {
 
 // ── Detail sheet: every field of one tile, with copy and map actions ──
 
-function Row({ label, value, copyAs }: { label: string; value?: string | null; copyAs?: string }) {
+// `long` values (an address) wrap in full; codes (booking numbers) stay on one mono line
+function Row({ label, value, copyAs, long }: { label: string; value?: string | null; copyAs?: string; long?: boolean }) {
   if (!value) return null;
   return (
-    <div className="flex items-center justify-between gap-3 min-h-[44px] border-b border-black/[0.06] dark:border-white/[0.08] last:border-0">
+    <div className="flex items-start justify-between gap-3 min-h-[44px] py-3 border-b border-black/[0.06] dark:border-white/[0.08] last:border-0">
       <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50 shrink-0">{label}</span>
       {copyAs ? (
-        <button type="button" onClick={() => copy(value, copyAs)} className="inline-flex items-center gap-1.5 min-w-0 font-mono text-[15px] font-semibold tracking-[0.08em] tabular-nums text-right hover:text-red-600 dark:hover:text-red-400">
-          <span className="truncate">{value}</span><Copy className="w-3.5 h-3.5 shrink-0 opacity-60" aria-hidden />
+        <button type="button" onClick={() => copy(value, copyAs)} className={`inline-flex items-start gap-1.5 min-w-0 text-right hover:text-red-600 dark:hover:text-red-400 ${long ? 'text-[14px] font-semibold break-keep' : 'font-mono text-[15px] font-semibold tracking-[0.08em] tabular-nums'}`}>
+          <span className={long ? 'min-w-0' : 'truncate'}>{value}</span><Copy className={`w-3.5 h-3.5 shrink-0 opacity-60 ${long ? 'mt-1' : ''}`} aria-hidden />
         </button>
       ) : (
         <span className="min-w-0 text-[14px] font-semibold text-right break-keep">{value}</span>
@@ -374,9 +375,12 @@ function Row({ label, value, copyAs }: { label: string; value?: string | null; c
   );
 }
 
-function mapsUrl(q: string | undefined, lat?: number, lng?: number) {
-  if (lat != null && lng != null) return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-  return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
+// Opens the place by its name (and address), so the map shows the named place and not a bare pin;
+// coordinates are the fallback when a place has no name at all.
+function mapsUrl(name: string | undefined, address?: string, lat?: number, lng?: number) {
+  const q = [name, address && address !== name ? address : ''].filter(Boolean).join(' ').trim();
+  const query = q || (lat != null && lng != null ? `${lat},${lng}` : '');
+  return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : null;
 }
 
 function BoardDetail({ detail, onClose, onOpenItem }: { detail: Detail; onClose: () => void; onOpenItem: (tab: string, id: number | null) => void }) {
@@ -404,10 +408,10 @@ function BoardDetail({ detail, onClose, onOpenItem }: { detail: Detail; onClose:
     rows = <>
       <Row label="확인번호" value={item.confNo} copyAs="확인번호" />
       <Row label="기간" value={item.dateRange} />
-      <Row label="주소" value={item.address} copyAs="주소" />
+      <Row label="주소" value={item.address} copyAs="주소" long />
       <Row label="메모" value={item.memo} />
     </>;
-    map = mapsUrl(item.address || item.title, item.lat, item.lng);
+    map = mapsUrl(item.title, item.address, item.lat, item.lng);
   } else if (kind === 'transit') {
     title = item.title || item.route;
     kickerText = item.ticketType || '교통';
@@ -420,17 +424,17 @@ function BoardDetail({ detail, onClose, onOpenItem }: { detail: Detail; onClose:
       <Row label="탑승" value={item.boardingPlace || item.departPlace} />
       <Row label="메모" value={item.memo} />
     </>;
-    map = mapsUrl(item.boardingPlace || item.departPlace, item.boardingLat ?? item.departLat, item.boardingLng ?? item.departLng);
+    map = mapsUrl(item.boardingPlace || item.departPlace, undefined, item.boardingLat ?? item.departLat, item.boardingLng ?? item.departLng);
   } else {
     title = item.place;
     kickerText = [item.dayKey, item.time].filter(Boolean).join(' · ');
     rows = <>
-      <Row label="주소" value={item.location} copyAs="주소" />
+      <Row label="주소" value={item.location} copyAs="주소" long />
       <Row label="영업" value={item.hours} />
       <Row label="비용" value={item.cost && item.cost !== '-' ? item.cost : ''} />
       <Row label="메모" value={item.memo} />
     </>;
-    map = mapsUrl(item.location || item.place, item.lat, item.lng);
+    map = mapsUrl(item.place, item.location, item.lat, item.lng);
   }
 
   return (
