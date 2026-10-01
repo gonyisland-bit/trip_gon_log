@@ -1,11 +1,10 @@
 import React, { useRef, useState } from 'react';
-import { BookOpen, Check, Clock, ImagePlus, LayoutGrid, Loader2, Share2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
+import { BookOpen, Check, Clapperboard, Clock, ImagePlus, LayoutGrid, Loader2, Share2, PencilLine, Pin, PinOff, Trash2 } from 'lucide-react';
 import { openJourneyBoard } from '../board/boardData';
 import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Trip } from '../../types';
 import { Sheet, useSheetClose } from '../Sheet';
-import { Segment } from '../ui/Segment';
 import { compressImage } from '../../utils/imageHelper';
 import { getEffectiveImageUrl, uploadFileToR2 } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
@@ -49,10 +48,11 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
   const close = useSheetClose();
   const isOwner = !trip.ownerId || trip.ownerId === currentUid();
   const canEdit = isOwner || Boolean(trip.editors?.includes(currentUid() || ''));
-  const [coverOpen, setCoverOpen] = useState(false);
+  // Which cover panel is open: the card's, or the home hero's own photo or video
+  const [coverOpen, setCoverOpen] = useState<null | 'card' | 'hero'>(null);
   // Which cover: the card's (img / videoUrl) or the home hero's own (heroImg / heroVideoUrl).
   // A journey without hero media shows its card cover in the hero.
-  const [target, setTarget] = useState<'card' | 'hero'>('card');
+  const target = coverOpen || 'card';
   const [busy, setBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const ref = doc(db, 'users', 'public', isPlan ? 'plans' : 'trips', String(trip.id));
@@ -121,8 +121,13 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
           </button>
         ))}
         {canEdit && (
-          <button type="button" className={row} onClick={() => setCoverOpen(v => !v)} aria-expanded={coverOpen}>
-            <ImagePlus className="w-[18px] h-[18px] shrink-0" aria-hidden />커버 바꾸기
+          <button type="button" className={row} onClick={() => setCoverOpen(v => v === 'card' ? null : 'card')} aria-expanded={coverOpen === 'card'}>
+            <ImagePlus className="w-[18px] h-[18px] shrink-0" aria-hidden />카드 커버
+          </button>
+        )}
+        {canEdit && (
+          <button type="button" className={row} onClick={() => setCoverOpen(v => v === 'hero' ? null : 'hero')} aria-expanded={coverOpen === 'hero'}>
+            <Clapperboard className="w-[18px] h-[18px] shrink-0" aria-hidden />홈 히어로 이미지 · 영상
           </button>
         )}
         {coverOpen && (
@@ -134,20 +139,25 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f); }}
             />
-            <Segment<'card' | 'hero'>
-              block
-              size="sm"
-              ariaLabel="바꿀 커버"
-              value={target}
-              onChange={setTarget}
-              options={[{ value: 'card', label: '카드 커버' }, { value: 'hero', label: '홈 히어로' }]}
-            />
             {target === 'hero' && (
-              <p className="text-meta text-black/55 dark:text-white/55 break-keep">
-                {hasHeroMedia
-                  ? '홈 히어로에는 이 여정만의 사진 · 영상이 쓰입니다.'
-                  : '따로 정하지 않으면 홈 히어로에도 카드 커버가 쓰입니다.'}
-              </p>
+              <>
+                {/* What the hero shows now */}
+                <div className="relative w-full aspect-[16/9] rounded-thumb overflow-hidden bg-black/5 dark:bg-white/10">
+                  {trip.heroVideoUrl
+                    ? <video src={getEffectiveImageUrl(trip.heroVideoUrl)} muted loop playsInline autoPlay className="w-full h-full object-cover" />
+                    : <img src={getEffectiveImageUrl(trip.heroImg || trip.img)} alt="" className="w-full h-full object-cover" />}
+                  <span className="absolute left-2 top-2 px-2 py-0.5 rounded-full bg-black/45 text-white font-mono text-micro font-bold tracking-wider">
+                    {trip.heroVideoUrl ? 'VIDEO' : hasHeroMedia ? 'HERO' : 'CARD COVER'}
+                  </span>
+                </div>
+                <p className="text-meta text-black/55 dark:text-white/55 break-keep">
+                  {hasHeroMedia ? '홈 히어로에는 이 여정만의 사진 · 영상이 쓰입니다.' : '따로 정하지 않으면 홈 히어로에도 카드 커버가 쓰입니다.'}
+                </p>
+                <button type="button" className={pinned ? 'btn btn-ghost btn-sm self-start' : 'btn btn-primary btn-sm self-start'} onClick={onTogglePin}>
+                  {pinned ? <PinOff className="w-3.5 h-3.5" aria-hidden /> : <Pin className="w-3.5 h-3.5" aria-hidden />}
+                  {pinned ? '홈 히어로에서 빼기' : '홈 히어로에 띄우기'}
+                </button>
+              </>
             )}
             <button type="button" className="btn btn-secondary w-full" onClick={() => fileRef.current?.click()} disabled={!!busy}>
               {busy === 'upload' ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <ImagePlus className="w-4 h-4" aria-hidden />}
@@ -197,7 +207,7 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin, 
         </button>
         <button type="button" className={row} onClick={() => { onTogglePin(); close(); }}>
           {pinned ? <PinOff className="w-[18px] h-[18px] shrink-0" aria-hidden /> : <Pin className="w-[18px] h-[18px] shrink-0" aria-hidden />}
-          {pinned ? '홈 고정 해제' : '홈에 고정'}
+          {pinned ? '홈 히어로에서 빼기' : '홈 히어로에 띄우기'}
         </button>
         {isOwner && (
           <button type="button" className={`${row} text-red-600 dark:text-red-400`} onClick={() => { close(); onDelete(); }}>

@@ -23,6 +23,7 @@ import type { PersonCard } from '../../utils/friends';
 
 import { OPEN_PROFILE_EDIT } from '../../app/quickActions';
 import { logoSplashOn, setLogoSplash } from '../../utils/logoSplash';
+import { HeroPrefs, type HeroPatch, type HeroSettings } from './HeroPrefs';
 type NightMode = 'auto' | 'light' | 'dark';
 export type SettingsTab = 'me' | 'cities' | 'display' | 'data';
 const TABS: { value: SettingsTab; label: string }[] = [
@@ -50,6 +51,9 @@ interface Props {
   onOpenPocket: () => void;
   /** Open on this tab (a "도시 편집" link, for example); otherwise the last one used */
   initialTab?: SettingsTab;
+  /** The member's home hero (journeys, slide, video first) */
+  hero?: HeroSettings;
+  onHero?: (patch: HeroPatch) => void;
 }
 
 const card = 'rounded-card bg-surface dark:bg-surface-dark p-4 flex flex-col gap-3';
@@ -78,7 +82,7 @@ function formatBytes(n: number): string {
   return `${Math.round(n / 1024 ** 2)} MB`;
 }
 
-export function SettingsSheet({ onClose, profile, displayName, email, nightMode, onNightMode, trashed, onRestore, onPermanentDelete, me, canWrite, journeys, onOpenJourney, onOpenPocket, initialTab }: Props){
+export function SettingsSheet({ onClose, profile, displayName, email, nightMode, onNightMode, trashed, onRestore, onPermanentDelete, me, canWrite, journeys, onOpenJourney, onOpenPocket, initialTab, hero, onHero }: Props){
   const [tab, setTabState] = useState<SettingsTab>(() => initialTab || readTab());
   const setTab = (t: SettingsTab) => { setTabState(t); try { localStorage.setItem(TAB_KEY, t); } catch { /* per device */ } };
   const [weatherBg, setWeatherBg] = useState(() => { try { return localStorage.getItem('calendar_weather_bg_enabled') !== 'false'; } catch { return true; } });
@@ -165,6 +169,8 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
           </div>
           <LogoSplashRow />
         </section>
+
+        {me && hero && onHero && <HeroPrefs cardClass={card} labelClass={label} journeys={journeys} hero={hero} onChange={onHero} />}
 
         <BackdropPicker cardClass={card} labelClass={label} />
 

@@ -102,7 +102,7 @@ function App() {
     handleSaveAndNavigate, handleDiscardAndNavigate, handleCancelUnsavedModal, isSuperAdmin, isAdmin,
     canEditTrip, canDeleteTrip, activeTrip, displayMarqueeText, marqueeTrips, navigateTo,
     handleFlightHalfway, handleFlightComplete, handleSearchResultClick, handleMoveToArchive,
-    handleMoveToPlans, handleCloneJourney, handleSaveSettings, handleSaveMagazineMoments,
+    handleMoveToPlans, handleCloneJourney, handleSaveSettings, saveHeroPrefs, handleSaveMagazineMoments,
     handleSaveMagazineHubConfig, handleSaveArchiveHubConfig, handleSaveMagazineSections,
     handleUpdateMagazineSections, handleSaveBgmSettings, handleEditTripSave,
     handleCreateTripForCountry, newTripPrefill, setNewTripPrefill, handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney,
@@ -703,6 +703,8 @@ function App() {
               journeys={[...plans, ...trips]}
               onOpenJourney={(id) => navigateTo('detail', id)}
               onOpenPocket={() => navigateTo('pocket')}
+              hero={{ ids: heroJourneyIds, autoSlide: heroAutoSlide, duration: heroSlideDuration, mediaType: heroMediaType }}
+              onHero={saveHeroPrefs}
             />
           )}
 

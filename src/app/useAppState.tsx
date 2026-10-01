@@ -1841,6 +1841,22 @@ export function useAppState() {
     }
   };
 
+  // The member's own home hero (settings → 화면): which journeys, auto slide, seconds, video first.
+  // These keys live in users/{uid}/settings/home (setDoc routes them there), the same for everyone.
+  const saveHeroPrefs = async (patch: { heroJourneyIds?: number[]; heroAutoSlide?: boolean; heroSlideDuration?: number; heroMediaType?: 'image' | 'video' }) => {
+    if (!isLoggedIn) return;
+    if (patch.heroJourneyIds) { setHeroJourneyIds(patch.heroJourneyIds); localStorage.setItem('heroJourneyIds', JSON.stringify(patch.heroJourneyIds)); }
+    if (patch.heroAutoSlide !== undefined) setHeroAutoSlide(patch.heroAutoSlide);
+    if (patch.heroMediaType) setHeroMediaType(patch.heroMediaType);
+    if (patch.heroSlideDuration) { setHeroSlideDuration(patch.heroSlideDuration); localStorage.setItem('hero_slide_duration', String(patch.heroSlideDuration)); }
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore(patch), { merge: true });
+    } catch (err) {
+      console.error('Hero prefs save failed:', err);
+      notify('히어로 설정을 저장하지 못했습니다.', 'error');
+    }
+  };
+
   const handleSaveSettings = async (
     title: string,
     subtitle: string,
@@ -2990,7 +3006,7 @@ export function useAppState() {
     handleCancelUnsavedModal, currentUserEmail, isSuperAdmin, isGuest, isAdmin, canEditTrip,
     canDeleteTrip, activeTrip, displayMarqueeText, marqueeTrips, seedUserData, navigateTo,
     handleFlightHalfway, handleFlightComplete, handleSearchResultClick, handleUpdateTrip,
-    handleMoveToArchive, handleMoveToPlans, handleCloneJourney, handleRemixJourney, handleSaveSettings,
+    handleMoveToArchive, handleMoveToPlans, handleCloneJourney, handleRemixJourney, handleSaveSettings, saveHeroPrefs,
     handleSaveMagazineMoments, handleSaveMagazineHubConfig, handleSaveArchiveHubConfig,
     handleSaveMagazineSections, handleUpdateMagazineSections, handleSaveBgmSettings,
     generateDateList, handleEditTripSave, handleCreateTripForCountry, newTripPrefill, setNewTripPrefill,
