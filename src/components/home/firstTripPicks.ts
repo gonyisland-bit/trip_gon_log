@@ -7,7 +7,7 @@ export const FIRST_TRIP_DESTINATIONS: FirstTripPick[] = [
   { name: '다낭', code: 'DAD', art: 'beach-relaxation' },
   { name: '파리', code: 'PAR', art: 'landmark-paris' },
   { name: '발리', code: 'DPS', art: 'beach-surfing' },
-  { name: '도쿄', code: 'TYO', art: 'landmark-japan-torii' },
+  { name: '도쿄', code: 'TYO', art: 'landmark-japan' },
   { name: '시드니', code: 'SYD', art: 'poolside-cocktail' },
   { name: '방콕', code: 'BKK', art: 'city-walk' },
 ];

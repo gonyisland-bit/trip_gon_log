@@ -489,7 +489,7 @@ export function DepartureBoard({
         {/* The lobby below, one third of the height, in a rounded window with the page's side margins */}
         <div className="flex-[1] min-h-[120px] w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="tgl-lobby-scene relative h-full rounded-card overflow-hidden">
-          <TerminalScene ticketId={ticket?.id} isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
+          <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
           {skyNote && (
             <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500" />

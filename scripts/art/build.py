@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 SRC = ROOT / 'assets' / 'illust'
 OUT = ROOT / 'public' / 'art'
 
-# scene id -> source file. Ids without a picture (landmark-london, landmark-japan) are not part of the catalog.
+# scene id -> source file
 FILES = {
     'restaurant-exterior': 'restaurant-exterior.jpg', 'outdoor-bistro': 'Teal_bear_sitting_at_cafe_20261001215430.jpg',
     'beer-break': 'beer-break.jpg', 'coffee-break': 'coffee-break1.jpg', 'snack-break': 'Teal_bear_eating_snack_20261001215430_2.jpg',
@@ -27,12 +27,13 @@ FILES = {
     'snack-bite': 'snack-bite.jpg', 'coffee-cup': 'coffee-cup.jpg', 'wine-tasting': 'wine-tasting.jpg',
     'restaurant-menu': 'restaurant-menu.jpg', 'paying-bill': 'paying-bill.jpg', 'landmark-paris': 'landmark-paris.jpg',
     'landmark-newyork': 'landmark-newyork.jpg', 'landmark-egypt': 'landmark-egypt.jpg', 'landmark-japan-torii': 'landmark-japan-torii.jpg',
+    'landmark-london': 'landmark-london.jpg', 'landmark-japan': 'landmark-japan.jpg', 'terminal-airport': 'terminal-airport.jpg',
     'itinerary-empty': 'itinerary-empty.jpg', 'pocket-empty': 'pocket-empty.jpg', 'no-results': 'no-results.jpg',
     'map-looking': 'map-looking.jpg', 'backpacking': 'backpacking.jpg', 'luggage-travel': 'luggage-travel.jpg',
     'photo-memory': 'photo-memory.jpg', 'train-journey': 'train-journey.jpg', 'train-station': 'train-station.jpg',
-    'departure-board': 'departure-board.jpg', 'waiting-gate': 'waiting-gate.jpg', 'backpacking-2': 'backpacking-2.jpg',
+    'backpacking-2': 'backpacking-2.jpg',
     'luggage-travel-2': 'luggage-travel-2.jpg', 'photo-memory-2': 'photo-memory-2.jpg', 'bike-ride': 'bike-ride.jpg',
-    'window-waiting': 'window-waiting.jpg', 'city-walk': 'city-walk.jpg', 'tourist-guide': 'tourist-guide.jpg',
+    'city-walk': 'city-walk.jpg', 'tourist-guide': 'tourist-guide.jpg',
     'public-transport': 'public-transport1.jpg', 'public-transport-2': 'public-transport2.jpg', 'museum-visit': 'museum-visit.jpg',
     'museum-visit-2': 'museum-visit-2.jpg', 'resort-hammock': 'resort-hammock.jpg', 'beach-relaxation': 'beach-relaxation.jpg',
     'beach-relaxation-2': 'beach-relaxation-2.jpg', 'beach-surfing': 'beach-surfing.jpg', 'swimming': 'swimming.jpg',
@@ -48,14 +49,17 @@ CAPTION_FROM = {
 
 # Pictures that fill their frame: the window (x0, y0, x1, y1) kept around the bear; they become a rounded card
 CARDS = {
-    'coffee-cup': (0, 300, 768, 1260), 'departure-board': (0, 60, 768, 1290), 'landmark-egypt': (0, 300, 768, 1260),
+    'coffee-cup': (0, 300, 768, 1260), 'landmark-japan': (0, 250, 768, 1250), 'landmark-egypt': (0, 300, 768, 1260),
     'poolside-cocktail': (0, 200, 768, 1160), 'restaurant-exterior': (0, 200, 768, 1160), 'swimming': (0, 300, 768, 1180),
-    'train-journey': (0, 250, 768, 1250), 'waiting-gate': (42, 252, 768, 960), 'public-transport-2': (0, 130, 768, 1075),
+    'train-journey': (0, 250, 768, 1250), 'public-transport-2': (0, 130, 768, 1075),
     'landmark-paris': (0, 140, 768, 1300), 'museum-visit-2': (0, 300, 768, 1180),
 }
 
 # Pictures with a white pocket the ground cannot reach (between a staff and an arm): enclosed pure white above this size is dropped too
 HOLES = {'backpacking-2': 1500}
+
+# A wide picture used whole (the terminal's window): no cut, no corners
+WIDE = {'terminal-airport'}
 
 TINTS = {'peach': '#F6CDB6', 'butter': '#F7DB6A', 'sage': '#C9D8BC', 'mist': '#DCE3E8', 'lilac': '#E7D7F3'}
 
@@ -65,10 +69,10 @@ KIND_ART = {
     'beach': ['beach-relaxation', 'beach-relaxation-2', 'beach-surfing', 'swimming', 'resort-hammock', 'poolside-cocktail'],
     'mountain': ['backpacking', 'backpacking-2', 'map-looking'],
     'city': ['city-walk', 'tourist-guide', 'public-transport-2'],
-    'temple': ['landmark-japan-torii', 'museum-visit-2'],
+    'temple': ['landmark-japan', 'landmark-japan-torii', 'museum-visit-2'],
     'meal': ['restaurant-exterior', 'outdoor-bistro', 'dining-plate', 'restaurant-menu'],
     'cafe': ['coffee-break', 'coffee-cup', 'cafe-table'],
-    'landmark': ['landmark-paris', 'landmark-newyork', 'landmark-egypt', 'landmark-japan-torii'],
+    'landmark': ['landmark-paris', 'landmark-newyork', 'landmark-london', 'landmark-egypt', 'landmark-japan'],
     'stay': ['resort-hammock', 'sofa-rest', 'sleeping'],
     'transit': ['train-journey', 'public-transport', 'train-station', 'bike-ride'],
     'shopping': ['luggage-travel', 'luggage-travel-2', 'paying-bill'],
@@ -81,9 +85,6 @@ KIND_TINT = {
     'beach': 'mist', 'mountain': 'sage', 'city': 'lilac', 'temple': 'peach', 'meal': 'butter', 'cafe': 'peach', 'landmark': 'mist',
     'stay': 'sage', 'transit': 'mist', 'shopping': 'lilac', 'night': 'lilac', 'art': 'peach', 'market': 'butter', 'activity': 'sage',
 }
-# Covers saved before these scenes were dropped still point at their tiles; the same files now show the nearest scene
-ALIAS_TILES = [('landmark-japan', 'landmark-japan-torii', 'mist'), ('landmark-japan', 'landmark-japan-torii', 'peach'),
-               ('landmark-london', 'landmark-newyork', 'mist')]
 TILES = sorted({(i, KIND_TINT[k]) for k, ids in KIND_ART.items() for i in ids})
 
 SCENE_MAX = 640      # longest side of a scene, px
@@ -150,6 +151,8 @@ def webp_b64(im, q=82, alpha=True):
 
 def scene_for(name):
     """(scene image, tile image, tile art is a full square picture)"""
+    if name in WIDE:
+        return fit(Image.fromarray(np.array(Image.open(SRC / FILES[name]).convert('RGB'))), 1200), None, False
     if name in CARDS:
         x0, y0, x1, y1 = CARDS[name]
         card = Image.fromarray(load(name)[y0:y1, x0:x1])
@@ -198,9 +201,6 @@ def main():
     for name, tint in TILES:
         tile, full = made[name]
         (OUT / 'tile' / f'{name}-{tint}.svg').write_text(tile_svg(tile, full, tint))
-    for old, new, tint in ALIAS_TILES:
-        tile, full = made[new]
-        (OUT / 'tile' / f'{old}-{tint}.svg').write_text(tile_svg(tile, full, tint))
     lines = ["// Generated by scripts/art/build.py from assets/illust. Do not edit by hand.", "",
              "export const ART_IDS = ["] + [f"  '{i}'," for i in ids] + ["] as const;", "",
              "export type ArtId = typeof ART_IDS[number];", "",

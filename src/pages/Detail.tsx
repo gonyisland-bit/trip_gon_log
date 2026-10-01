@@ -420,8 +420,14 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           onPublish={() => setPublished(true)}
           onUnpublish={() => setPublished(false)}
           onClose={() => {
+            if (magazineOnly) {
+              // Opened as a reader of its own: keep it covering the journey page and just step back, so the page
+              // never shows through; it leaves with the page. If nothing happens (no page to go back to), close it.
+              window.history.back();
+              window.setTimeout(() => { setMagazineOnly(false); setMagazineOpen(false); }, 800);
+              return;
+            }
             setMagazineOpen(false);
-            if (magazineOnly) { setMagazineOnly(false); window.history.back(); }
           }}
           onShowRecord={() => { setMagazineOnly(false); setMagazineOpen(false); setActiveTab('timeline' as TabType); }}
           onOpenPhoto={(url) => { s.setLightboxIndex(s.galleryUrlIndexMap.get(url) ?? 0); s.setIsLightboxOpen(true); }}
