@@ -5,7 +5,6 @@ import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 // v1.3.6 4-b: the magazine tab gathers published journeys; the hand-curated magazine hub is retired
-import { MagazineLibrary } from './pages/MagazineLibrary';
 import { ScrollToTop } from './components/ScrollToTop';
 import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './app/quickActions';
 import { TabBar } from './components/TabBar';
@@ -544,11 +543,6 @@ function App() {
                   />
                 </div>
               )}
-              {currentView === 'magazine' && (
-                <div className="w-full h-full animate-in fade-in duration-300">
-                  <MagazineLibrary trips={trips} onNavigate={navigateTo} />
-                </div>
-              )}
               {currentView === 'calendar' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
                   <CalendarHubPage
@@ -845,7 +839,7 @@ function App() {
         </Suspense>
 
         {/* Phone tab bar across hubs (v1.3.5). On the map it steps aside while a sheet is open; detail and manage keep their own bottom controls */}
-        {isLoggedIn && ['home', 'archive', 'magazine', 'calendar', 'pocket', 'map'].includes(currentView) && (
+        {isLoggedIn && ['home', 'archive', 'calendar', 'pocket', 'map'].includes(currentView) && (
           <>
             {/* Room under the page so the bar never sits on its last lines (the map fills the screen instead) */}
             {currentView !== 'map' && <div className="md:hidden shrink-0" style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }} aria-hidden />}

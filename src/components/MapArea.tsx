@@ -839,10 +839,9 @@ export function MapArea({
       !isNaN(Number(p.lat)) && !isNaN(Number(p.lng))
     );
 
-    const isGalleryTab = activeTab === 'gallery';
     const isSummaryMode = activeTab === 'summary';
     if (valid.length === 0) {
-      if (!hasFitRef.current || isGalleryTab) {
+      if (!hasFitRef.current) {
         const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
         const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
         map.setView([lat, lng], 13);
@@ -1250,7 +1249,7 @@ export function MapArea({
         try { sessionStorage.removeItem(`trip_map_view_${trip.id}`); } catch (_) {}
       }
 
-      const shouldFitAll = explicitNavigation || (!userMovedMapRef.current && (!isInteractive || !hasFitRef.current || isGalleryTab || (itemIdChanged && expandedItemId === null)));
+      const shouldFitAll = explicitNavigation || (!userMovedMapRef.current && (!isInteractive || !hasFitRef.current || (itemIdChanged && expandedItemId === null)));
       if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && shouldFitAll) {
         const bounds = L.latLngBounds(coords);
         if (coords.length === 1 || bounds.getNorthEast().equals(bounds.getSouthWest())) {

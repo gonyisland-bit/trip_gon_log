@@ -25,7 +25,6 @@ import { goHomeFromLogo } from '../utils/logoSplash';
 const HUBS = [
   { view: 'home', label: 'Home' },
   { view: 'archive', label: 'Trip' },
-  { view: 'magazine', label: 'Magazine' },
   { view: 'map', label: 'Map' },
   { view: 'calendar', label: 'Calendar' },
   { view: 'pocket', label: 'Pocket' },
@@ -141,12 +140,6 @@ export function Navigation({
         navigateTo('manage');
       }
     } else {
-      if (view === 'magazine') {
-        try {
-          sessionStorage.setItem('magazineViewMode', 'hub');
-        } catch (_) {}
-        window.dispatchEvent(new CustomEvent('resetMagazineHub'));
-      }
       navigateTo(view);
     }
   };
@@ -216,22 +209,6 @@ export function Navigation({
               }`}
             >
               TRIP
-            </button>
-            <button 
-              onClick={() => {
-                try {
-                  sessionStorage.setItem('magazineViewMode', 'hub');
-                } catch (_) {}
-                window.dispatchEvent(new CustomEvent('resetMagazineHub'));
-                navigateTo('magazine');
-              }} 
-              className={`text-xs md:text-sm font-extrabold tracking-widest uppercase transition-colors cursor-pointer py-1 border-b-2 ${
-                currentView === 'magazine' 
-                  ? 'text-black dark:text-white border-black dark:border-white' 
-                  : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-              }`}
-            >
-              MAGAZINE
             </button>
             <button 
               onClick={() => navigateTo('map')} 

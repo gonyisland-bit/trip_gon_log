@@ -4071,14 +4071,14 @@ export function useManageHubState(props: ManageHubPageProps) {
   const getReturnView = () => {
     try {
       const savedLast = sessionStorage.getItem('lastNonManageView');
-      if (savedLast && ['home', 'archive', 'magazine', 'calendar', 'map', 'pocket', 'detail'].includes(savedLast)) {
+      if (savedLast && ['home', 'archive', 'calendar', 'map', 'pocket', 'detail'].includes(savedLast)) {
         return savedLast;
       }
     } catch (_) {}
 
     switch (activeMode) {
       case 'MAGAZINE':
-        return 'magazine';
+        return 'archive';
       case 'ARCHIVE':
         return 'archive';
       case 'UTIL':

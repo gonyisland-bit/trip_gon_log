@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { lazyWithRetry } from '../../app/appUtils';
 import { createPortal } from 'react-dom';
-import { BookCheck, Clock, Play, X } from 'lucide-react';
+import { BookCheck, Clock, ImagePlus, Loader2, Play, Trash2, X } from 'lucide-react';
 import type { Trip } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { useBackToClose } from '../../utils/overlayHistory';
@@ -23,6 +23,8 @@ export interface MagazinePhoto {
   title?: string;
   /** Where it was: the entry's place name, or the nearest earlier one (same rule as the old magazine) */
   place?: string;
+  /** Added straight to the journey (not on a timeline entry), so it can be removed here */
+  removable?: boolean;
 }
 
 interface Props {
@@ -36,6 +38,14 @@ interface Props {
   onUnpublish: () => void;
   onClose: () => void;
   onShowRecord: () => void;
+  /** A photo opens full screen */
+  onOpenPhoto?: (url: string) => void;
+  /** Photos are added here, now that the record has no photo tab */
+  canAddPhotos?: boolean;
+  uploading?: boolean;
+  fileInputRef?: React.RefObject<HTMLInputElement | null>;
+  onAddPhotos?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemovePhoto?: (url: string, e: React.MouseEvent) => void;
 }
 
 const WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -48,7 +58,7 @@ function dayLabel(d: string): string {
   return `${String(day).padStart(2, '0')} ${MON[m - 1]} · ${WEEK[w]}`;
 }
 
-export function JourneyMagazine({ trip, photos, days, canPublish, published, onPublish, onUnpublish, onClose, onShowRecord }: Props) {
+export function JourneyMagazine({ trip, photos, days, canPublish, published, onPublish, onUnpublish, onClose, onShowRecord, onOpenPhoto, canAddPhotos, uploading, fileInputRef, onAddPhotos, onRemovePhoto }: Props) {
   useBackToClose(true, onClose);
   const [reel, setReel] = useState(false);
 
@@ -77,6 +87,14 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
   const [y, m] = (days[0] || '').split('.').map(Number);
   const kicker = [y, m ? MON[m - 1] : '', (trip.locationStr || '').split(',')[0]].filter(Boolean).join(' · ');
 
+  const addable = Boolean(canAddPhotos && onAddPhotos);
+  const pickPhotos = () => fileInputRef?.current?.click();
+  const removePhoto = async (url: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (await confirmDialog('이 사진을 여정에서 지울까요?', { title: 'DELETE', confirmLabel: '삭제' })) onRemovePhoto?.(url, e);
+  };
+  const photoProps = { onOpen: onOpenPhoto, onRemove: canAddPhotos ? removePhoto : undefined };
+
   const unpublish = async () => {
     if (await confirmDialog('매거진 발행을 취소할까요? 카드는 다시 기록으로 열립니다.', { title: 'UNPUBLISH', confirmLabel: '발행 취소' })) onUnpublish();
   };
@@ -89,6 +107,9 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
         <IconButton icon={X} label="매거진 닫기" size="sm" onClick={onClose} />
         <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-black/55 dark:text-white/55 truncate">Magazine · {photos.length} photos</span>
         <div className="flex items-center gap-1.5">
+          {addable && (
+            <IconButton icon={uploading ? Loader2 : ImagePlus} label="사진 추가" size="sm" onClick={pickPhotos} disabled={uploading} />
+          )}
           {photos.length > 0 && <IconButton icon={Play} label="음악과 함께 넘겨 보기" size="sm" onClick={() => setReel(true)} />}
           <button type="button" className="btn btn-secondary btn-sm" onClick={onShowRecord}>
             <Clock className="w-3.5 h-3.5" aria-hidden />기록
@@ -132,7 +153,13 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
           <div className="py-16 flex flex-col items-center text-center gap-3">
             <span className="font-mono text-meta font-bold uppercase tracking-wider text-black/50 dark:text-white/50">No photos yet</span>
             <p className="text-[15px] text-black/65 dark:text-white/65 max-w-sm">일정에 사진을 넣으면 날짜와 장소에 맞춰 이 매거진이 채워집니다.</p>
-            <button type="button" className="btn btn-primary" onClick={onShowRecord}>기록에서 사진 넣기</button>
+            {addable ? (
+              <button type="button" className="btn btn-primary" onClick={pickPhotos} disabled={uploading}>
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <ImagePlus className="w-4 h-4" aria-hidden />}사진 올리기
+              </button>
+            ) : (
+              <button type="button" className="btn btn-primary" onClick={onShowRecord}>기록 보기</button>
+            )}
           </div>
         )}
         {byDay.days.map(([day, list]) => (
@@ -144,13 +171,13 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
                 <span className="font-mono text-micro uppercase tracking-wider text-black/55 dark:text-white/55">{dayLabel(day)}</span>
               </div>
             </div>
-            <Spread photos={list} />
+            <Spread photos={list} {...photoProps} />
           </section>
         ))}
         {byDay.loose.length > 0 && (
           <section className="flex flex-col gap-6">
             <span className="font-mono text-meta font-bold uppercase tracking-[0.16em] border-b border-black/10 dark:border-white/10 pb-3">More moments</span>
-            <Spread photos={byDay.loose} />
+            <Spread photos={byDay.loose} {...photoProps} />
           </section>
         )}
 
@@ -164,6 +191,10 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
           </button>
         </footer>
       </main>
+
+      {addable && (
+        <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={onAddPhotos} />
+      )}
 
       {reel && (
         <Suspense fallback={null}>
@@ -183,15 +214,33 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
 }
 
 /** A day's photos: a wide lead, then pairs, a rhythm that repeats every three */
-function Spread({ photos }: { photos: MagazinePhoto[] }) {
+function Spread({ photos, onOpen, onRemove }: { photos: MagazinePhoto[]; onOpen?: (url: string) => void; onRemove?: (url: string, e: React.MouseEvent) => void }) {
   return (
     <div className="grid grid-cols-2 gap-x-3 sm:gap-x-5 gap-y-8 sm:gap-y-10">
       {photos.map((p, i) => {
         const lead = i % 3 === 0;
         return (
           <figure key={`${p.url}-${i}`} className={`${lead ? 'col-span-2' : 'col-span-1'} flex flex-col gap-2.5 min-w-0`}>
-            <div className={`w-full overflow-hidden rounded-card bg-black/5 dark:bg-white/5 ${lead ? 'aspect-[3/2]' : 'aspect-[4/5]'}`}>
-              <img src={getEffectiveImageUrl(p.url)} alt={p.place || ''} loading="lazy" className="w-full h-full object-cover" />
+            <div className={`relative w-full overflow-hidden rounded-card bg-black/5 dark:bg-white/5 ${lead ? 'aspect-[3/2]' : 'aspect-[4/5]'}`}>
+              <button
+                type="button"
+                onClick={() => onOpen?.(p.url)}
+                disabled={!onOpen}
+                aria-label={`${p.title || p.place || '사진'} 크게 보기`}
+                className="block w-full h-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+              >
+                <img src={getEffectiveImageUrl(p.url)} alt={p.place || ''} loading="lazy" className="w-full h-full object-cover" />
+              </button>
+              {p.removable && onRemove && (
+                <button
+                  type="button"
+                  onClick={(e) => onRemove(p.url, e)}
+                  aria-label="사진 삭제"
+                  className="absolute right-2 top-2 w-8 h-8 rounded-full bg-black/45 text-white grid place-items-center backdrop-blur-sm hover:bg-black/65 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                </button>
+              )}
             </div>
             {(p.title || p.place || p.time) && (
               <figcaption className="flex flex-col gap-1 min-w-0">

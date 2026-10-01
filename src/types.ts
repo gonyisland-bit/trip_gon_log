@@ -187,7 +187,7 @@ export interface TransitItem {
   attachments?: string[];
 }
 
-export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement' | 'pocket';
+export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' | 'settlement' | 'pocket';
 
 export type PocketCategory = 'food' | 'cafe' | 'spot' | 'shopping' | 'tip';
 export type SpotPocketPlatform = 'instagram' | 'threads' | 'x' | 'youtube' | 'blog' | 'maps' | 'web';

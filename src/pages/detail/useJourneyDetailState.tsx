@@ -643,7 +643,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
   // Turn off cinematic mode when user edits or changes tab away from timeline or gallery
   useEffect(() => {
-    if (activeTab !== 'timeline' && activeTab !== 'gallery' && isCinematicMode) {
+    if (activeTab !== 'timeline' && isCinematicMode) {
       setIsCinematicMode(false);
     }
   }, [activeTab, isCinematicMode]);
@@ -889,7 +889,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   // Deep-linking search focus effect
   useEffect(() => {
     if (searchFocusTab) {
-      setActiveTab(searchFocusTab as TabType);
+      setActiveTab((searchFocusTab === 'gallery' ? 'timeline' : searchFocusTab) as TabType);
       
       if (searchFocusTab === 'timeline' && searchFocusItemId) {
         const rawTimeline = Object.entries(timelineData || {}).flatMap(([d, list]) => 
@@ -1963,9 +1963,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const handleStartPlaylog = () => {
     const items = cinematicItemsRef.current;
     if (items.length === 0) return;
-    if (activeTabRef.current !== 'gallery') {
-      setActiveTab('timeline');
-    }
+    setActiveTab('timeline');
     const startIndex = getPlaylogStartIndex();
     setCinematicIndex(startIndex);
     setIsCinematicMode(true);
@@ -2191,37 +2189,6 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
         return a.id - b.id;
       });
       return combined;
-    } else if (activeTab === 'gallery') {
-      // Use the outer timelinePhotoPoints (which contains all photo points unfiltered)
-      const allPhotoPoints = [...photoPoints, ...timelinePhotoPoints];
-      // 플레이로그(시네마틱 모드) 진행 중일 때는 타임라인 스팟도 지도에 포함하여 여행자 마커 및 경로 완벽 지원
-      if (isCinematicMode) {
-        const timelinePoints = currentTimeline
-          .filter(item => !item.excludeFromMap && item.lat !== undefined && item.lat !== null && item.lng !== undefined && item.lng !== null)
-          .map(item => ({
-            ...item,
-            lat: Number(item.lat),
-            lng: Number(item.lng),
-            dayIndex: item.date ? allTripDates.indexOf(item.date) + 1 : 0
-          }));
-        const existingIds = new Set(allPhotoPoints.map(p => p.id));
-        timelinePoints.forEach(p => {
-          if (!existingIds.has(p.id)) {
-            allPhotoPoints.push(p);
-          }
-        });
-      }
-      // Sort photos by date first, then by time to construct chronological photo paths
-      allPhotoPoints.sort((a, b) => {
-        const dateA = a.date || '';
-        const dateB = b.date || '';
-        if (dateA !== dateB) return dateA.localeCompare(dateB);
-        const timeA = parseTimeToMinutes(a.time);
-        const timeB = parseTimeToMinutes(b.time);
-        if (timeA !== timeB) return timeA - timeB;
-        return a.id - b.id;
-      });
-      return allPhotoPoints;
     } else if (activeTab === 'flights') {
       const flightsToUse = isEditing ? draftFlights : flights;
       const flightPoints: any[] = [];
@@ -2342,13 +2309,6 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     let targetId = id;
     if (activeTab === 'flights' || activeTab === 'transit') {
       targetId = Math.floor(id / 10);
-    }
-
-    // Check if it's a gallery photo click or timeline photo click from the map
-    if (targetId >= 500000 && targetId < 600000) {
-      setActiveTab('gallery');
-    } else if (targetId >= 600000000 && targetId < 700000000) {
-      setActiveTab('gallery');
     }
 
     setExpandedItemId(prevId => prevId === targetId ? null : targetId);

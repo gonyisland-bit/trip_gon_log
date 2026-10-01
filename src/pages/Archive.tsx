@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HubHeader } from '../components/ui/HubHeader';
-import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown, Compass } from 'lucide-react';
+import { BookCheck, Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown, Compass } from 'lucide-react';
 import { Trip, Plan, ArchiveHubConfig } from '../types';
 import { JourneyCardMenu, getEnglishCityName } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
@@ -364,6 +364,10 @@ export function ArchiveHubPage({
   hubConfig,
 }: ArchiveHubPageProps) {
   const [activeFilter, setActiveFilter] = useState(initialTagFilter || 'All');
+  // Published journeys only: the magazine hub is gone, so its issues are found here (the command palette sets it)
+  const [publishedOnly, setPublishedOnly] = useState(() => {
+    try { const on = sessionStorage.getItem('archivePublishedOnly') === '1'; sessionStorage.removeItem('archivePublishedOnly'); return on; } catch { return false; }
+  });
   const [activeYearFilter, setActiveYearFilter] = useState('All');
   const [activeLocationFilter, setActiveLocationFilter] = useState('All');
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
@@ -478,6 +482,7 @@ export function ArchiveHubPage({
         const matchTag = t.tags && t.tags.some(tag => tag.toLowerCase().includes(q));
         if (!matchTitle && !matchLoc && !matchCountry && !matchDate && !matchTag) return false;
       }
+      if (publishedOnly && !t.publishedAt) return false;
       if (activeFilter !== 'All' && (!t.tags || !t.tags.includes(activeFilter))) return false;
       if (activeYearFilter !== 'All') {
         const { year } = getYearAndMonth(t.date);
@@ -490,7 +495,7 @@ export function ArchiveHubPage({
       }
       return true;
     });
-  }, [sortedTrips, activeFilter, activeYearFilter, activeLocationFilter, hubSearchQuery]);
+  }, [sortedTrips, publishedOnly, activeFilter, activeYearFilter, activeLocationFilter, hubSearchQuery]);
 
   // Collapsed sections for Time (Year) / Place (City) accordion
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -654,6 +659,20 @@ export function ArchiveHubPage({
               {/* Tag / Multi-Filter Dropdown Button */}
               <div className="relative inline-block text-left">
                   <div className="flex items-center gap-1.5 sm:gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPublishedOnly(v => !v)}
+                    aria-pressed={publishedOnly}
+                    className={`h-9 px-3.5 rounded-full text-[13px] font-bold border transition-colors flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
+                      publishedOnly
+                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
+                        : 'border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black dark:text-white'
+                    }`}
+                    title="매거진으로 발행한 여정만 보기"
+                  >
+                    <BookCheck className="w-3.5 h-3.5" aria-hidden />
+                    <span>발행됨</span>
+                  </button>
                   <button 
                     type="button"
                     onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}

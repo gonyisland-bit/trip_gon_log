@@ -75,8 +75,9 @@ export function getInitialNavigationState(): { view: string; tripId: number | nu
     if (path === '/manage' || window.location.hash === '#manage') {
       return { view: 'manage', tripId: null, isShare: false };
     }
+    // The magazine hub is gone; its old address opens the trips, published ones a tap away
     if (path === '/magazine' || window.location.hash === '#magazine') {
-      return { view: 'magazine', tripId: null, isShare: false };
+      return { view: 'archive', tripId: null, isShare: false };
     }
     if (path === '/calendar' || window.location.hash === '#calendar') {
       return { view: 'calendar', tripId: null, isShare: false };
@@ -92,7 +93,7 @@ export function getInitialNavigationState(): { view: string; tripId: number | nu
     if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'calendar', 'detail', 'pocket'].includes(lastView)) {
       const lastTripId = sessionStorage.getItem('lastTripId') || localStorage.getItem('lastTripId');
       return {
-        view: lastView,
+        view: lastView === 'magazine' ? 'archive' : lastView,
         tripId: lastTripId ? Number(lastTripId) : null,
         isShare: false,
       };

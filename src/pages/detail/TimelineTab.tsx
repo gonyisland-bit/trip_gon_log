@@ -42,7 +42,8 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
     handleDropTimelineItem, handleGenerateDefaultTemplate, allTripDates, dynamicDates,
     currentTimeline, handleAddTimelineItemRelativeTo, updateTimelineItem, updateTimelineItemFields,
     toggleFrequentPlace, isFrequent, handleSelectFrequent, handleToggleExcludeFromMap,
-    handleAddTimelineItem, handleDeleteTimelineItem, handleWeatherChange, todayMode, handleStartEditing
+    handleAddTimelineItem, handleDeleteTimelineItem, handleWeatherChange, todayMode, handleStartEditing,
+    setLightboxIndex, setIsLightboxOpen, galleryUrlIndexMap
   } = s;
 
   // Today mode shows on today's page and on ALL, never while editing
@@ -898,14 +899,9 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                             onClick={(e) => {
                               if (!isEditing) {
                                 e.stopPropagation();
-                                setActiveTab('gallery');
-                                setExpandedItemId(600000000 + item.id);
-                                setTimeout(() => {
-                                  const el = itemRefs.current[600000000 + item.id];
-                                  if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                  }
-                                }, 300);
+                                // The photo opens full screen, at its place in the journey's photos
+                                setLightboxIndex(galleryUrlIndexMap.get(getEffectiveImageUrl(item.img as string)) ?? 0);
+                                setIsLightboxOpen(true);
                               }
                             }}
                           >

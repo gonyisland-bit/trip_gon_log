@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronUp, ChevronDown, Map as MapIcon, LayoutGrid, Clock, Plane, BedDouble, TrainFront, Image as ImageIcon, type LucideIcon } from 'lucide-react';
+import { ChevronUp, ChevronDown, Map as MapIcon, LayoutGrid, Clock, Plane, BedDouble, TrainFront, type LucideIcon } from 'lucide-react';
 import { SettlementView } from '../components/SettlementView';
 import { BoardView } from '../components/board/JourneyBoard';
 import { Lightbox } from '../components/Lightbox';
@@ -21,7 +21,6 @@ import { TimelineTab } from './detail/TimelineTab';
 import { FlightsTab } from './detail/FlightsTab';
 import { StaysTab } from './detail/StaysTab';
 import { TransitTab } from './detail/TransitTab';
-import { GalleryTab } from './detail/GalleryTab';
 import { DetailOverlays } from './detail/DetailOverlays';
 import { DetailSkeleton } from '../components/EditorialSkeleton';
 
@@ -32,8 +31,7 @@ const DETAIL_TABS: { id: TabType; label: string; icon: LucideIcon }[] = [
   { id: 'flights', label: 'FLIGHT', icon: Plane },
   { id: 'stays', label: 'STAY', icon: BedDouble },
   { id: 'transit', label: 'TRANS', icon: TrainFront },
-  // The tabs are the record; the magazine has its own button in the journey header
-  { id: 'gallery', label: 'PHOTO', icon: ImageIcon },
+  // The tabs are the record; photos live in the magazine (its own button in the journey header)
 ];
 
 export function JourneyDetailPage(props: JourneyDetailPageProps) {
@@ -86,6 +84,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
         url: p.url,
         date: p.date,
         time: p.time,
+        removable: p.type === 'gallery',
         title: (item?.place || p.place || '').trim() || undefined,
         place: item ? resolveTimelinePlaceName(item, items, trip || undefined) || undefined : undefined,
       };
@@ -99,7 +98,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
       const id = String(trip.id);
       const col = (await getDoc(doc(db, 'users', 'public', 'plans', id)).catch(() => null))?.exists() ? 'plans' : 'trips';
       await setDoc(doc(db, 'users', 'public', col, id), { publishedAt: on ? Date.now() : null }, { merge: true });
-      notify(on ? '매거진으로 발행했습니다. 매거진 허브와 홈 매거진에서 볼 수 있습니다.' : '발행을 취소했습니다.', 'success');
+      notify(on ? '매거진으로 발행했습니다. 여정 허브의 발행됨과 홈 매거진에서 볼 수 있습니다.' : '발행을 취소했습니다.', 'success');
     } catch (err) {
       console.error('Publish failed:', err);
       notify('저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
@@ -155,7 +154,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           )}
         </div>
         
-        {/* Tab Headers - Unified Single-line Sleek Design (BOARD, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
+        {/* Tab Headers - Unified Single-line Sleek Design (BOARD, TIME, FLIGHT, STAY, TRANS) */}
         <div role="tablist" className="relative flex overflow-x-hidden flex-nowrap shrink-0 mx-3 sm:mx-4 mt-1 md:mt-3 mb-2 p-1 rounded-full bg-black/[0.06] dark:bg-white/10 h-12 sm:h-11 md:h-12 xl:h-11">
           {/* Active tab block slides between tabs */}
           {DETAIL_TABS.some(t => t.id === activeTab) && (
@@ -177,7 +176,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
               }}
-              // From md the list is half the window: icon over label until xl, so all six tabs fit
+              // From md the list is half the window: icon over label until xl, so all five tabs fit
               title={tab.label}
               className={`relative z-[1] flex-1 min-w-0 h-full px-0.5 sm:px-2 flex flex-col sm:flex-row md:flex-col xl:flex-row items-center justify-center gap-0.5 sm:gap-1.5 md:gap-0.5 xl:gap-1.5 text-micro sm:text-meta md:text-micro xl:text-xs font-bold uppercase tracking-wider rounded-full transition-colors duration-base active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
                 tab.id === 'summary'
@@ -241,9 +240,6 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           {/* TRANSIT TAB */}
           <TransitTab s={s} />
 
-          {/* GALLERY TAB */}
-          <GalleryTab s={s} />
-
         {/* SETTLEMENT TAB */}
         <div className={activeTab === 'settlement' ? 'contents' : 'hidden'}>
           {visitedTabs.has('settlement') && (
@@ -289,7 +285,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
         </div>
 
           {/* Footer inside Detail scroll container */}
-          {activeTab !== 'settlement' && activeTab !== 'gallery' && (
+          {activeTab !== 'settlement' && (
             <div className="w-full shrink-0">
               <Footer className="mt-12" />
             </div>
@@ -427,6 +423,12 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
             if (magazineOnly) { setMagazineOnly(false); window.history.back(); }
           }}
           onShowRecord={() => { setMagazineOnly(false); setMagazineOpen(false); setActiveTab('timeline' as TabType); }}
+          onOpenPhoto={(url) => { s.setLightboxIndex(s.galleryUrlIndexMap.get(url) ?? 0); s.setIsLightboxOpen(true); }}
+          canAddPhotos={canEdit}
+          uploading={s.uploadingImage}
+          fileInputRef={s.fileInputRef as React.RefObject<HTMLInputElement>}
+          onAddPhotos={s.handleGalleryUpload}
+          onRemovePhoto={(url, e) => { s.handleRemoveGalleryImage(url, e); }}
         />
       )}
     </main>

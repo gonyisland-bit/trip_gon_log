@@ -24,7 +24,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
   } = s;
 
   // 모바일: 레이더 알약은 Playlog 바와 겹치지 않게 한 칸 위로
-  const hasPlaylog = cinematicItems.length > 0 && (activeTab === 'timeline' || activeTab === 'gallery');
+  const hasPlaylog = cinematicItems.length > 0 && activeTab === 'timeline';
 
   return (
     <>
@@ -103,7 +103,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
               mapPoints={mapPoints}
               expandedItemId={expandedItemId}
               handleItemToggle={handleItemToggle}
-              selectedDate={activeTab === 'gallery' ? 'ALL' : selectedDate}
+              selectedDate={selectedDate}
               isDarkMode={isDarkMode}
               activeTab={activeTab}
               transitFocusType={transitFocusType}
@@ -247,7 +247,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
           })()}
 
           {/* Floating Morphing Player (Swiss Minimal Floating Widget <-> Expanded Editorial Bar) */}
-          {cinematicItems.length > 0 && (activeTab === 'timeline' || activeTab === 'gallery') && (
+          {cinematicItems.length > 0 && activeTab === 'timeline' && (
             <div
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}

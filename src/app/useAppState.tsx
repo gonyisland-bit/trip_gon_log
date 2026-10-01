@@ -464,7 +464,7 @@ export function useAppState() {
 
         // 2. Ensure currentView is valid; fallback to home if corrupted or empty
         setCurrentView(prev => {
-          const validViews = ['home', 'archive', 'magazine', 'calendar', 'map', 'manage', 'detail', 'pocket'];
+          const validViews = ['home', 'archive', 'calendar', 'map', 'manage', 'detail', 'pocket'];
           return validViews.includes(prev) ? prev : 'home';
         });
 
@@ -1429,11 +1429,11 @@ export function useAppState() {
         if (state.tripId) {
           setActiveTripId(state.tripId);
         }
-        setCurrentView(state.view);
+        setCurrentView(state.view === 'magazine' ? 'archive' : state.view);
       } else {
         const path = window.location.pathname;
         if (path === '/magazine' || window.location.hash === '#magazine') {
-          setCurrentView('magazine');
+          setCurrentView('archive');
         } else if (path === '/archive' || window.location.hash === '#archive') {
           setCurrentView('archive');
         } else if (path === '/map' || window.location.hash === '#map') {
@@ -1503,13 +1503,8 @@ export function useAppState() {
       setIsShareMode(false);
     }
 
-    const effectiveView = view === 'plan' ? 'archive' : view;
+    const effectiveView = view === 'plan' || view === 'magazine' ? 'archive' : view;
     if (tripId) setActiveTripId(tripId);
-    if (effectiveView === 'magazine' && (!tagFilter || tagFilter === null)) {
-      try {
-        sessionStorage.setItem('magazineViewMode', 'hub');
-      } catch (_) {}
-    }
 
     setIsNavigating(true);
     const applyView = () => {
@@ -1541,7 +1536,6 @@ export function useAppState() {
     if (pushHistory) {
       let path = '/';
       if (effectiveView === 'archive') path = '/archive';
-      else if (effectiveView === 'magazine') path = '/magazine';
       else if (effectiveView === 'map') path = '/map';
       else if (effectiveView === 'manage') path = '/manage';
       else if (effectiveView === 'calendar') path = '/calendar';
@@ -1558,13 +1552,11 @@ export function useAppState() {
       if (currentPath === path || fromLayer) {
         window.history.replaceState({ 
           view: effectiveView, 
-          mode: effectiveView === 'magazine' ? 'hub' : undefined, 
           tripId: tripId || activeTripId 
         }, '', path);
       } else {
         window.history.pushState({ 
           view: effectiveView, 
-          mode: effectiveView === 'magazine' ? 'hub' : undefined, 
           tripId: tripId || activeTripId 
         }, '', path);
       }
@@ -2965,7 +2957,7 @@ export function useAppState() {
     new Set([...trips, ...plans].flatMap(t => t.tags || []))
   ).filter(t => t !== 'Plan' && t !== 'Personal');
 
-  const isGlobalGradientActive = (currentView === 'home' || currentView === 'archive' || currentView === 'magazine' || currentView === 'calendar' || currentView === 'pocket' || currentView === 'detail') && homeGradientEnabled && !isDarkMode;
+  const isGlobalGradientActive = (currentView === 'home' || currentView === 'archive' || currentView === 'calendar' || currentView === 'pocket' || currentView === 'detail') && homeGradientEnabled && !isDarkMode;
   const isHomeGradientActive = isGlobalGradientActive;
   const appGradientStyle = isGlobalGradientActive
     ? { background: `linear-gradient(135deg, ${homeGradientFrom} 0%, ${homeGradientTo} 100%)` }
