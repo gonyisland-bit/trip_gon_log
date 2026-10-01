@@ -330,7 +330,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
 
           {/* Today mode: what is next, and how long until it starts */}
           {live && (
-            <div className="tgl-rise flex items-center gap-3 px-4 md:px-6 py-2.5 border-b border-black/15 dark:border-white/15 shrink-0 w-full">
+            <div className="tgl-rise flex items-center gap-3 mx-3 sm:mx-4 mt-3 mb-1 px-4 py-3 rounded-card bg-peach text-peach-ink dark:bg-peach-dark dark:text-peach shrink-0">
               <span className="flex items-center gap-1.5 font-mono text-micro font-bold uppercase tracking-widest text-red-600 dark:text-red-500 shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500 animate-live-pulse" />
                 Today · Day {todayMode.dayIndex}
@@ -338,7 +338,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
               <span className="flex-1 min-w-0 text-sm truncate">
                 {todayMode.next ? (
                   <>
-                    <span className="text-black/60 dark:text-white/60">다음 </span>
+                    <span className="opacity-70">다음 </span>
                     <button
                       type="button"
                       onClick={() => {
@@ -350,16 +350,16 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                     >
                       {todayMode.next.place || '다음 일정'}
                     </button>
-                    <span className="font-mono text-meta text-black/70 dark:text-white/70 tabular-nums"> · {formatCountdown(todayMode.minutesToNext ?? 0)}</span>
+                    <span className="font-mono text-meta opacity-80 tabular-nums"> · {formatCountdown(todayMode.minutesToNext ?? 0)}</span>
                   </>
                 ) : (
-                  <span className="text-black/60 dark:text-white/60">{todayMode.lastPassedId !== null ? '오늘 일정을 모두 지났습니다.' : '오늘은 시간이 정해진 일정이 없습니다.'}</span>
+                  <span className="opacity-70">{todayMode.lastPassedId !== null ? '오늘 일정을 모두 지났습니다.' : '오늘은 시간이 정해진 일정이 없습니다.'}</span>
                 )}
               </span>
               <span className="font-mono text-meta font-bold tabular-nums shrink-0" title={todayMode.offsetLabel ? '여행지 현지 시각' : undefined}>
-                {todayMode.offsetLabel && <span className="font-normal text-black/55 dark:text-white/55">현지 </span>}
+                {todayMode.offsetLabel && <span className="font-normal opacity-70">현지 </span>}
                 {todayMode.nowLabel}
-                {todayMode.offsetLabel && <span className="ml-1 font-normal text-black/55 dark:text-white/55">{todayMode.offsetLabel}</span>}
+                {todayMode.offsetLabel && <span className="ml-1 font-normal opacity-70">{todayMode.offsetLabel}</span>}
               </span>
             </div>
           )}
@@ -492,7 +492,10 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                         isActive
                           ? 'bg-selected dark:bg-selected-dark ring-[1.5px] ring-inset ring-black/40 dark:ring-white/70 shadow-sm'
                           : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.015] dark:hover:bg-white/[0.03]'
-                      } ${dayFolded ? 'hidden' : ''} ${live && todayMode.pastIds.has(item.id) && !isActive ? 'opacity-60' : ''}`}
+                      } ${dayFolded ? 'hidden' : ''} ${live && todayMode.pastIds.has(item.id) && !isActive ? 'opacity-60' : ''} ${
+                        // The next stop today: the one card with a red edge
+                        live && !isActive && todayMode.next?.id === item.id ? 'ring-2 ring-inset ring-red-600 dark:ring-red-500' : ''
+                      }`}
                       draggable={isEditing}
                       onDragStart={(e) => {
                         const target = e.target as HTMLElement;

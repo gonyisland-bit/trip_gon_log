@@ -55,7 +55,7 @@ export function CalendarHeader({ s }: { s: CalendarHubState }) {
         {/* Top Metadata Bar & Pure Typography Year */}
         <div className="flex items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-3 mb-4 sm:mb-6">
           <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
-            <span className="shrink-0 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold px-2 py-0.5 text-meta tracking-widest font-mono">
+            <span className="shrink-0 rounded-full bg-mist text-mist-ink dark:bg-mist-dark dark:text-mist font-bold px-3 py-1 text-meta tracking-widest font-mono">
               CALENDAR
             </span>
 

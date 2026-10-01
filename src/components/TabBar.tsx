@@ -28,8 +28,8 @@ function Tab({ view, label, icon: Icon, active, onNavigate }: { view: string; la
       onClick={() => onNavigate(view)}
       onPointerDown={view === 'pocket' ? () => { preloadPocketPage().catch(() => {}); } : undefined}
       aria-current={active ? 'page' : undefined}
-      className={`tgl-press h-full flex flex-col items-center justify-center gap-0.5 rounded-full transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500 ${
-        active ? 'text-surface dark:text-paper-dark' : 'text-surface/55 dark:text-paper-dark/55 hover:text-surface dark:hover:text-paper-dark'
+      className={`tgl-press h-12 my-auto flex flex-col items-center justify-center gap-0.5 rounded-full transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500 ${
+        active ? 'text-surface dark:text-paper-dark bg-surface/[0.12] dark:bg-paper-dark/[0.12]' : 'text-surface/55 dark:text-paper-dark/55 hover:text-surface dark:hover:text-paper-dark'
       }`}
     >
       <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.8} aria-hidden />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { HubHeader } from '../components/ui/HubHeader';
 import { 
   Bookmark, MapPin, Plus, ExternalLink, Trash2, Edit3, Compass, 
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
@@ -1226,34 +1227,14 @@ export function PocketHubPage({
         </div>
       )}
 
-      {/* 1. Header - Editorial Masthead (Matching Trip & Magazine Style) */}
-      <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
-        {/* Top Metadata Barcode & Category Tag */}
-        <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold px-2 py-0.5 text-meta">
-              POCKET
-            </span>
-            <span className="font-bold text-red-600 dark:text-red-400">
-              SPOT INSPIRATION
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:inline">VOL. 01</span>
-            <span>{spots.length} SPOTS SAVED</span>
-          </div>
-        </div>
-
-        {/* Large Editorial Title & Description */}
-        <div className="flex flex-col gap-2 sm:gap-4 max-w-5xl">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-extrabold uppercase tracking-tight leading-[0.98] text-black dark:text-white">
-            POCKET
-          </h1>
-          <p className="hidden sm:block text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
-            SNS 스크랩 & 숨은 핫플 꿀팁을 지역별 갤러리로 보관하고, 여정 작성 시 즉시 꺼내어 활용하세요.
-          </p>
-        </div>
-      </section>
+      {/* Masthead: the pocket hub in its sage face colour (v1.3.7) */}
+      <HubHeader
+        tint="sage"
+        eyebrow={<>Pocket · {spots.length} spots</>}
+        title="저장한 곳"
+        sub="여정에 바로 꺼내 쓰기"
+        className="pb-4"
+      />
 
 
       {/* Friends' pockets they show me (v1.3.6 5-d) */}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, Coins, Clock, Sliders } from 'lucide-react';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig, FlightItem, StayItem, TransitItem } from '../types';
 import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { JourneyListRow, type JourneyRowBadge } from '../components/cards/JourneyListRow';
@@ -56,6 +56,9 @@ interface HomePageProps {
   homeMagazineSectionId?: string;
   homeMagazineLimit?: number;
   timelineData?: TimelineData;
+  flightsByTrip?: Record<number, FlightItem[]>;
+  staysByTrip?: Record<number, StayItem[]>;
+  transitByTrip?: Record<number, TransitItem[]>;
   landingHeroImage?: string;
   canEditTrip?: (trip?: Trip) => boolean;
   canDeleteTrip?: (trip?: Trip) => boolean;
@@ -822,6 +825,9 @@ export function HomePage({
   homeMagazineSectionId = 'main',
   homeMagazineLimit = 6,
   timelineData,
+  flightsByTrip,
+  staysByTrip,
+  transitByTrip,
   landingHeroImage = '',
   canEditTrip,
   canDeleteTrip,
@@ -1377,7 +1383,7 @@ export function HomePage({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* NOW STRIP: live day / countdown / memory (v1.3 Journey Phase Home) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <JourneyPhaseStrip trips={trips} plans={plans} onNavigate={onNavigate} />
+      <JourneyPhaseStrip trips={trips} plans={plans} onNavigate={onNavigate} timelineData={timelineData} flightsByTrip={flightsByTrip} staysByTrip={staysByTrip} transitByTrip={transitByTrip} />
       {isLoggedIn && <DepartureTeaser />}
 
       {/* ─────────────────────────────────────────────────────────────────── */}

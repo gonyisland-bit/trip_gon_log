@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { HubHeader } from '../components/ui/HubHeader';
 import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown, Compass } from 'lucide-react';
 import { Trip, Plan, ArchiveHubConfig } from '../types';
 import { JourneyCardMenu, getEnglishCityName } from './Home';
@@ -372,10 +373,6 @@ export function ArchiveHubPage({
   const [sortBy, setSortBy] = useState<'user' | 'date' | 'place'>('user');
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
 
-  const headerBadge = hubConfig?.badgeText || 'JOURNEY ARCHIVE';
-  const headerVolume = hubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`;
-  const headerMainTitle = hubConfig?.mainTitle || 'A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES';
-  const headerSubtitle = hubConfig?.subtitle || '발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다.';
 
   const combinedTrips = useMemo(() => {
     const list: Trip[] = [...trips];
@@ -632,35 +629,14 @@ export function ArchiveHubPage({
   return (
     <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full flex flex-col justify-between">
       <div>
-        {/* 1. Editorial Large Headline & Journey Masthead (Matching Magazine Hub Style) */}
-        <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
-          {/* Top Barcode & Category Tag */}
-          <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <span className="bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-extrabold px-2 py-0.5 text-meta">
-                JOURNEY DIRECTORY
-              </span>
-              <span className="hidden sm:inline font-bold text-red-600 dark:text-red-400">
-                {headerBadge}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden sm:inline">{headerVolume}</span>
-              <span className="hidden sm:inline">{tripStats.totalTrips} JOURNEYS RECORDED</span>
-              <span className="sm:hidden tabular-nums">{tripStats.totalTrips} TRIPS</span>
-            </div>
-          </div>
-
-          {/* Large Editorial Typography Title */}
-          <div className="flex flex-col gap-2 sm:gap-4 max-w-5xl">
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-extrabold uppercase tracking-tight leading-[0.98] text-black dark:text-white">
-              {headerMainTitle}
-            </h1>
-            <p className="hidden sm:block text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
-              {headerSubtitle}
-            </p>
-          </div>
-        </section>
+        {/* Masthead: the trip hub in its peach face colour (v1.3.7) */}
+        <HubHeader
+          tint="peach"
+          eyebrow={<>Trip · {tripStats.totalTrips} journeys</>}
+          title="모든 여정"
+          sub={<span className="tabular-nums">{tripStats.totalCountries}개 나라 · {tripStats.totalDays}일</span>}
+          className="pb-4"
+        />
 
         {/* Filter & Controls Bar */}
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">

@@ -66,13 +66,14 @@ export function MagazineLibrary({ trips, onNavigate }: Props) {
 
   return (
     <div className="w-full min-h-full flex flex-col">
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-6 sm:pt-10 pb-16 flex flex-col gap-8 sm:gap-10">
-        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-4 sm:pt-6 pb-16 flex flex-col gap-8 sm:gap-10">
+        {/* Masthead in the magazine's coral face colour (v1.3.7) */}
+        <header className="tgl-rise rounded-card bg-coral text-coral-ink dark:bg-coral-dark dark:text-coral px-5 sm:px-8 py-6 sm:py-9 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <span className="font-mono text-micro sm:text-meta font-bold uppercase tracking-[0.18em] text-black/55 dark:text-white/55">
+            <span className="font-mono text-micro sm:text-meta font-bold uppercase tracking-[0.16em] opacity-75">
               Magazine · {issues.length} issues
             </span>
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-[-0.04em] leading-[0.98]">다녀온 여행<br /><span className="text-black/30 dark:text-white/35">다시 꺼내 보기</span></h1>
+            <h1 className="text-[34px] sm:text-6xl font-extrabold tracking-[-0.04em] leading-[0.98]">다녀온 여행<br /><span className="opacity-60">다시 꺼내 보기</span></h1>
           </div>
           {issues.length > 0 && (
             <Segment<GroupBy>

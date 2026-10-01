@@ -416,6 +416,9 @@ function App() {
                     homeMagazineSectionId={homeMagazineSectionId}
                     homeMagazineLimit={homeMagazineLimit}
                     timelineData={timelineData}
+                    flightsByTrip={flightsByTrip}
+                    staysByTrip={staysByTrip}
+                    transitByTrip={transitByTrip}
                     isAdmin={isAdmin}
                   />
                 </div>
