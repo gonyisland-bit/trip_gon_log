@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import { ArrowUpRight, BookCheck, Clock, ImagePlus, Loader2, Play, Trash2, X } from 'lucide-react';
 import type { Trip } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
+import { cardCoverUrl } from '../../utils/journeyThumbs';
+import { ProgressiveImage } from '../ProgressiveImage';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { lockBodyScroll } from '../../utils/scrollLock';
 import { confirmDialog } from '../../utils/feedback';
@@ -145,7 +147,7 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
         {trip.videoUrl ? (
           <video src={getEffectiveImageUrl(trip.videoUrl)} poster={cover} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
         ) : cover ? (
-          <img src={cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <ProgressiveImage low={cardCoverUrl(trip)} src={cover} className="absolute inset-0 w-full h-full object-cover" />
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/30" />
         <div className="relative w-full max-w-5xl mx-auto px-5 sm:px-8 pb-10 sm:pb-14 flex flex-col gap-3 text-white">

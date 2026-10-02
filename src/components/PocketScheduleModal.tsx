@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { X, Calendar, Clock, Check, Plane, Utensils, Coffee, Moon, Sparkles } from 'lucide-react';
+import { Check, Plane, Utensils, Coffee, Moon } from 'lucide-react';
 import { SpotPocketItem, Trip } from '../types';
+import { Sheet, useSheetClose } from './Sheet';
+import { Chip } from './ui/Chip';
 
 export interface TimeSlotOption {
   id: string;
@@ -28,168 +30,85 @@ interface PocketScheduleModalProps {
   onConfirm: (date: string, time: string) => void;
 }
 
-export function PocketScheduleModal({
-  isOpen,
-  spot,
-  trip,
-  availableDates,
-  onClose,
-  onConfirm,
-}: PocketScheduleModalProps) {
-  // Extract or fallback dates
+// Which day and time a saved place goes to on a journey (v1.3.8: the shared Sheet, day and time as pills)
+export function PocketScheduleModal(props: PocketScheduleModalProps) {
+  if (!props.isOpen || !props.spot) return null;
+  return (
+    <Sheet label="일정에 넣기" onClose={props.onClose} tone="paper" zIndex={196} panelClassName="sm:max-w-md max-h-[88dvh]">
+      <Picker {...props} spot={props.spot} />
+    </Sheet>
+  );
+}
+
+function Picker({ spot, trip, availableDates, onConfirm }: PocketScheduleModalProps & { spot: SpotPocketItem }) {
+  const close = useSheetClose();
   const dates = useMemo(() => {
     if (availableDates && availableDates.length > 0) return availableDates;
     if (trip?.date) {
       // e.g. "2025.04.12 - 2025.04.16" or "2025.04.12 ~ 2025.04.16"
       const parts = trip.date.replace(/~/g, '-').split('-').map(s => s.trim().replace(/\//g, '.'));
-      if (parts[0] && parts[0].match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) {
-        return [parts[0]];
-      }
+      if (parts[0] && parts[0].match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) return [parts[0]];
     }
     return ['2025.04.12'];
   }, [availableDates, trip]);
 
   const [selectedDate, setSelectedDate] = useState<string>(() => dates[0] || '2025.04.12');
   const [selectedSlotId, setSelectedSlotId] = useState<string>('afternoon');
-
-  // Global ESC key listener to safely close modal
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen || !spot) return null;
-
   const currentSlot = QUICK_TIME_SLOTS.find(s => s.id === selectedSlotId) || QUICK_TIME_SLOTS[2];
 
-
-  const handleApply = () => {
-    onConfirm(selectedDate, currentSlot.time);
-    onClose();
-  };
-
   return (
-    <div 
-      className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
-      onClick={onClose}
-    >
-      <div 
-        className="bg-surface dark:bg-surface-dark border border-black dark:border-white w-full max-w-md p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 font-sans my-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-4">
-          <div>
-            <div className="flex items-center gap-1.5 text-meta font-mono tracking-widest text-red-500 uppercase font-bold">
-              <Clock className="w-3 h-3" />
-              <span>SCHEDULE SLOT PICKER</span>
-            </div>
-            <h3 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-black dark:text-white truncate max-w-[280px]">
-              {spot.title}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="flex flex-col gap-4 p-4 pt-2 min-h-0 overflow-y-auto overscroll-contain">
+      <div className="flex flex-col gap-0.5 px-1">
+        <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">일정에 넣기</span>
+        <h2 className="text-[20px] font-extrabold tracking-tight leading-tight break-keep truncate">{spot.title}</h2>
+      </div>
 
-        {/* 1. Date Selection (DAY 1, DAY 2 ...) */}
-        <div className="mb-4">
-          <label className="block text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1.5 font-bold">
-            1. Date
-          </label>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {dates.map((d, idx) => {
-              const isSelected = selectedDate === d;
-              return (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setSelectedDate(d)}
-                  className={`px-3 py-1.5 text-xs font-mono border transition-colors whitespace-nowrap flex flex-col items-center cursor-pointer ${
-                    isSelected
-                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold shadow-xs'
-                      : 'border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:border-black dark:hover:border-white'
-                  }`}
-                >
-                  <span className="text-micro uppercase tracking-wider opacity-70">DAY {idx + 1}</span>
-                  <span className="font-bold">{d.split('.').slice(1).join('/')}</span>
-                </button>
-              );
-            })}
-          </div>
+      <div className="flex flex-col gap-2">
+        <span className="px-1 font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">날짜</span>
+        <div className="flex gap-1.5 overflow-x-auto hide-scrollbar -mx-4 px-4">
+          {dates.map((d, idx) => (
+            <Chip key={d} selected={selectedDate === d} onClick={() => setSelectedDate(d)}>
+              <span className="font-mono text-micro opacity-70">D{idx + 1}</span>
+              <span className="font-mono tabular-nums">{d.split('.').slice(1).join('/')}</span>
+            </Chip>
+          ))}
         </div>
+      </div>
 
-        {/* 2. Realistic 6-Time-Slot Selection */}
-        <div className="mb-5">
-          <label className="block text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1.5 font-bold">
-            2. Time slot
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {QUICK_TIME_SLOTS.map((slot) => {
-              const isSelected = selectedSlotId === slot.id;
-              const Icon = slot.icon;
-              return (
-                <button
-                  key={slot.id}
-                  type="button"
-                  onClick={() => setSelectedSlotId(slot.id)}
-                  className={`p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
-                      : 'border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/[0.02] dark:bg-white/[0.02]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-bold font-mono tracking-tight flex items-center gap-1">
-                      <Icon className="w-3 h-3 text-red-500" />
-                      <span>{slot.label}</span>
-                    </span>
-                    <span className="text-meta font-mono opacity-60">{slot.time}</span>
-                  </div>
-                  <span className="text-micro font-mono opacity-50 truncate">{slot.sub}</span>
-                </button>
-              );
-            })}
-          </div>
+      <div className="flex flex-col gap-2">
+        <span className="px-1 font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">시간대</span>
+        <div className="grid grid-cols-2 gap-2">
+          {QUICK_TIME_SLOTS.map((slot) => {
+            const on = selectedSlotId === slot.id;
+            const Icon = slot.icon;
+            return (
+              <button
+                key={slot.id}
+                type="button"
+                onClick={() => setSelectedSlotId(slot.id)}
+                aria-pressed={on}
+                className={`p-3 text-left rounded-thumb flex flex-col gap-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
+                  on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface dark:bg-surface-dark hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                }`}
+              >
+                <span className="flex items-center justify-between gap-2 text-[13px] font-bold">
+                  <span className="flex items-center gap-1.5 min-w-0"><Icon className="w-3.5 h-3.5 shrink-0" aria-hidden /><span className="truncate">{slot.label}</span></span>
+                </span>
+                <span className="font-mono text-meta tabular-nums opacity-70">{slot.time}</span>
+                <span className="text-meta opacity-55 truncate">{slot.sub}</span>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Selected Summary Info */}
-        <div className="p-2.5 bg-black/[0.03] dark:bg-white/[0.03] border-l-2 border-red-500 text-xs font-mono mb-4 flex items-center justify-between">
-          <span className="text-black/60 dark:text-white/60">배치 예정:</span>
-          <span className="font-bold text-black dark:text-white">
-            {selectedDate} · {currentSlot.time} ({currentSlot.label})
-          </span>
-        </div>
+      <p className="px-1 font-mono text-meta tabular-nums text-black/65 dark:text-white/65">{selectedDate} · {currentSlot.time}</p>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2 border-t border-black/10 dark:border-white/10 pt-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-secondary btn-sm"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleApply}
-            className="btn btn-primary btn-sm flex"
-          >
-            <Check className="w-3.5 h-3.5" />
-            <span>ADD TO TIMELINE</span>
-          </button>
-        </div>
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={close} className="btn btn-secondary flex-1">취소</button>
+        <button type="button" onClick={() => { onConfirm(selectedDate, currentSlot.time); close(); }} className="btn btn-primary flex-1">
+          <Check className="w-4 h-4" aria-hidden />일정에 넣기
+        </button>
       </div>
     </div>
   );

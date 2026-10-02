@@ -1,18 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Edit2, Loader2, Upload, Tag, MapPin, ClipboardPaste, Copy, UserPlus } from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { ArrowRightLeft, ClipboardPaste, ImagePlus, Loader2, MapPin, Plus, Trash2, UserPlus, X } from 'lucide-react';
 import { Trip } from '../types';
-import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../utils/storageHelper';
+import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
+import { cardCoverUrl } from '../utils/journeyThumbs';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
-import { ImageEditOverlay } from './ImageEditOverlay';
 import { ConfirmModal } from './ConfirmModal';
+import { Sheet } from './Sheet';
+import { Segment } from './ui/Segment';
+import { Chip } from './ui/Chip';
 import { notify, confirmDialog } from '../utils/feedback';
 import { currentUid } from '../utils/ownership';
+import { useBackToClose } from '../utils/overlayHistory';
 import { useFriends } from './friends/useFriends';
 import { UserProfileAvatar } from './UserProfileAvatar';
 import type { MemberLink } from '../utils/memberLinks';
 
+// Journey edit sheet (v1.3.8): the same rounded sheet as every other panel. Four short tabs keep each one on a
+// single screen (basics, places and tags, people, covers); the footer with 취소 and 저장 stays in place.
 
 interface EditTripModalProps {
   isOpen: boolean;
@@ -29,7 +35,7 @@ interface EditTripModalProps {
 function extractCountry(address: string): string {
   if (!address) return '';
   const clean = address.trim().toLowerCase();
-  
+
   const countries = [
     { name: 'JAPAN', keys: ['japan', '일본', 'nihon', 'nippon', '日本', 'jp'] },
     { name: 'SOUTH KOREA', keys: ['korea', '대한민국', '한국', 'south korea', 'kr', 'seoul'] },
@@ -54,14 +60,12 @@ function extractCountry(address: string): string {
     { name: 'SWITZERLAND', keys: ['switzerland', '스위스', 'ch'] },
     { name: 'AUSTRIA', keys: ['austria', '오스트리아', 'at'] },
     { name: 'CZECHIA', keys: ['czechia', 'czech', '체코', 'cz'] },
-    { name: 'HUNGARY', keys: ['hungary', '헝가리', 'hu'] }
+    { name: 'HUNGARY', keys: ['hungary', '헝가리', 'hu'] },
   ];
 
   for (const c of countries) {
     for (const key of c.keys) {
-      if (clean.includes(key)) {
-        return c.name;
-      }
+      if (clean.includes(key)) return c.name;
     }
   }
 
@@ -70,1416 +74,602 @@ function extractCountry(address: string): string {
     const lastPart = parts[parts.length - 1].trim().toUpperCase();
     for (const c of countries) {
       for (const key of c.keys) {
-        if (lastPart.toLowerCase() === key) {
-          return c.name;
-        }
+        if (lastPart.toLowerCase() === key) return c.name;
       }
     }
     return lastPart;
   }
-  
+
   return address.trim().toUpperCase();
 }
 
-export function EditTripModal({
-  isOpen,
-  onClose,
-  trip,
-  onSave,
-  isLoggedIn,
-  existingTags,
-  onMoveToPlans,
-  onMoveToArchive,
-}: EditTripModalProps) {
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState('');
-  const [locationStr, setLocationStr] = useState('');
-  const [lat, setLat] = useState<number | undefined>(undefined);
-  const [lng, setLng] = useState<number | undefined>(undefined);
-  const [locations, setLocations] = useState<{ name: string; lat?: number; lng?: number; country?: string }[]>([]);
+const parseDateRange = (dateStr: string) => {
+  if (!dateStr || !dateStr.includes('-')) return { start: '', end: '' };
+  const parts = dateStr.split('-').map(p => p.trim());
+  if (parts.length < 2) return { start: '', end: '' };
+  const toInput = (d: string, yearFallback?: string) => {
+    let normalized = d.replace(/\./g, '-');
+    if (normalized.length === 5 && yearFallback) normalized = `${yearFallback}-${normalized}`;
+    return normalized;
+  };
+  const startRaw = parts[0];
+  return { start: toInput(startRaw), end: toInput(parts[1], startRaw.slice(0, 4)) };
+};
+
+const isVideoUrl = (v: string) => /\.(mp4|webm|mov)(\?.*)?$/i.test(v);
+
+type EditTab = 'basic' | 'places' | 'people' | 'cover';
+type Media = { img: string; video: string };
+
+// Shared looks: inputs are the only bordered pills; labels are small meta lines
+const field = 'h-11 w-full min-w-0 rounded-full px-4 bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 text-[14px] font-bold text-ink dark:text-ink-dark outline-none placeholder:font-medium placeholder:text-black/35 dark:placeholder:text-white/35 focus:border-red-600 dark:focus:border-red-400 transition-colors';
+const lbl = 'font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55';
+const pillBox = 'flex flex-wrap gap-1.5';
+
+/** A removable pill (place, tag, person) */
+function Tag({ children, onRemove, removeLabel, lead }: { children: React.ReactNode; onRemove?: () => void; removeLabel: string; lead?: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 h-8 pl-3 pr-1 rounded-full bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 text-meta font-bold max-w-full">
+      {lead}
+      <span className="truncate">{children}</span>
+      {onRemove && (
+        <button type="button" onClick={onRemove} aria-label={removeLabel} className="tap-target w-6 h-6 rounded-full grid place-items-center text-black/50 dark:text-white/50 hover:bg-black/[0.06] dark:hover:bg-white/10 hover:text-red-600 transition-colors">
+          <X className="w-3.5 h-3.5" aria-hidden />
+        </button>
+      )}
+    </span>
+  );
+}
+
+export function EditTripModal(props: EditTripModalProps) {
+  if (!props.isOpen || !props.trip) return null;
+  // Keyed by journey: the form starts from that journey's values each time it opens
+  return <EditSheet key={props.trip.id} {...props} trip={props.trip} />;
+}
+
+function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPlans, onMoveToArchive }: EditTripModalProps & { trip: Trip }) {
+  const isPlanJourney = Boolean((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title?.includes('(Plan)'));
+  const initialBadge: 'NEW' | 'EDITING' | '' = trip.statusBadge === 'NEW' || trip.statusBadge === 'EDITING' ? trip.statusBadge : '';
+
+  const [tab, setTab] = useState<EditTab>('basic');
+  const [title, setTitle] = useState(trip.title);
+  const [date, setDate] = useState(trip.date);
+  const [kind, setKind] = useState<'log' | 'plan'>(isPlanJourney ? 'plan' : 'log');
+  const [badge, setBadge] = useState<'NEW' | 'EDITING' | ''>(initialBadge);
+  const [country, setCountry] = useState(trip.country || '');
+  const [locations, setLocations] = useState<{ name: string; lat?: number; lng?: number; country?: string }[]>(
+    trip.locations && Array.isArray(trip.locations) ? trip.locations : trip.locationStr ? [{ name: trip.locationStr, lat: trip.lat, lng: trip.lng }] : []
+  );
   const [locationInput, setLocationInput] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoUploading, setVideoUploading] = useState(false);
-  const [imgUrl, setImgUrl] = useState('');
-  const [heroImgUrl, setHeroImgUrl] = useState('');
-  const [heroVideoUrl, setHeroVideoUrl] = useState('');
-  const [heroUploading, setHeroUploading] = useState(false);
-  const [heroVideoUploading, setHeroVideoUploading] = useState(false);
-  const [isHeroVideoDragActive, setIsHeroVideoDragActive] = useState(false);
-  const [coverTab, setCoverTab] = useState<'main' | 'hero'>('main');
-  const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(trip.tags || []);
   const [tagInput, setTagInput] = useState('');
-  const [members, setMembers] = useState<string[]>([]);
+  const [members, setMembers] = useState<string[]>(trip.members || []);
   const [memberInput, setMemberInput] = useState('');
   // Members linked to friend accounts (v1.3.6 5-c); only the owner links, since linking shares
-  const [memberLinks, setMemberLinks] = useState<MemberLink[]>([]);
+  const [memberLinks, setMemberLinks] = useState<MemberLink[]>(trip.memberLinks || []);
   const [renames, setRenames] = useState<Record<string, string>>({});
   const [linkTarget, setLinkTarget] = useState<string | null>(null);
-  const uid = currentUid();
-  const isOwner = Boolean(trip && uid && (!trip.ownerId || trip.ownerId === uid));
-  const { friends } = useFriends(isOwner && isOpen ? uid : null);
-const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | 'PLAN' | ''>('');
-  const [country, setCountry] = useState('');
-  const [isVideoDragActive, setIsVideoDragActive] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [card, setCard] = useState<Media>({ img: trip.img, video: trip.videoUrl || '' });
+  const [hero, setHero] = useState<Media>({ img: trip.heroImg || '', video: trip.heroVideoUrl || '' });
+  const [coverTab, setCoverTab] = useState<'card' | 'hero'>('card');
   const [uploading, setUploading] = useState(false);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoFileInputRef = useRef<HTMLInputElement>(null);
-  const heroFileInputRef = useRef<HTMLInputElement>(null);
-  const heroVideoFileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showUnsaved, setShowUnsaved] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (isOpen && trip) {
-      setTitle(trip.title);
-      setDate(trip.date);
-      setLocationStr(trip.locationStr);
-      setCountry(trip.country || '');
-      setLat(trip.lat);
-      setLng(trip.lng);
-      if (trip.locations && Array.isArray(trip.locations)) {
-        setLocations(trip.locations);
-      } else {
-        setLocations(trip.locationStr ? [{ name: trip.locationStr, lat: trip.lat, lng: trip.lng }] : []);
-      }
-      setLocationInput('');
-      setVideoUrl(trip.videoUrl || '');
-      setImgUrl(trip.img);
-      setHeroImgUrl(trip.heroImg || '');
-      setHeroVideoUrl(trip.heroVideoUrl || '');
-      setTags(trip.tags || []);
-      setTagInput('');
-      setMembers(trip.members || []);
-      setMemberLinks(trip.memberLinks || []);
-      setRenames({});
-      setLinkTarget(null);
-const isPlan = (trip as any).isPlan || trip.tags?.includes('Plan') || trip.title?.includes('(Plan)');
-      setStatusBadge(trip.statusBadge || (isPlan ? 'PLAN' : ''));
-      setShowUnsavedConfirm(false);
-      setCoverTab('main');
-    }
-  }, [isOpen, trip]);
+  const uid = currentUid();
+  const isOwner = Boolean(uid && (!trip.ownerId || trip.ownerId === uid));
+  const { friends } = useFriends(isOwner ? uid : null);
 
-  const isPlanJourney = Boolean(
-    trip && (
-      (trip as any).isPlan ||
-      trip.tags?.includes('Plan') ||
-      trip.title?.includes('(Plan)')
-    )
-  );
+  const cur = coverTab === 'card' ? card : hero;
+  const setCur = coverTab === 'card' ? setCard : setHero;
 
-  const isDirty = Boolean(
-    trip && (
-      title !== trip.title ||
-      date !== trip.date ||
-      locationStr !== trip.locationStr ||
-      country !== (trip.country || '') ||
-      imgUrl !== trip.img ||
-      videoUrl !== (trip.videoUrl || '') ||
-      heroImgUrl !== (trip.heroImg || '') ||
-      heroVideoUrl !== (trip.heroVideoUrl || '') ||
-      statusBadge !== (trip.statusBadge || '') ||
-      JSON.stringify(tags) !== JSON.stringify(trip.tags || []) ||
-      JSON.stringify(members) !== JSON.stringify(trip.members || []) ||
-      JSON.stringify(memberLinks) !== JSON.stringify(trip.memberLinks || [])
-)
-  );
+  const isDirty =
+    title !== trip.title ||
+    date !== trip.date ||
+    kind !== (isPlanJourney ? 'plan' : 'log') ||
+    badge !== initialBadge ||
+    country !== (trip.country || '') ||
+    card.img !== trip.img || card.video !== (trip.videoUrl || '') ||
+    hero.img !== (trip.heroImg || '') || hero.video !== (trip.heroVideoUrl || '') ||
+    JSON.stringify(locations) !== JSON.stringify(trip.locations && Array.isArray(trip.locations) ? trip.locations : trip.locationStr ? [{ name: trip.locationStr, lat: trip.lat, lng: trip.lng }] : []) ||
+    JSON.stringify(tags) !== JSON.stringify(trip.tags || []) ||
+    JSON.stringify(members) !== JSON.stringify(trip.members || []) ||
+    JSON.stringify(memberLinks) !== JSON.stringify(trip.memberLinks || []);
 
-  const handleAttemptClose = () => {
-    if (isDirty) {
-      setShowUnsavedConfirm(true);
-    } else {
-      onClose();
-    }
+  // Closing with edits asks first; the back gesture asks too instead of dropping them
+  useBackToClose(true, () => { if (isDirty) setShowUnsaved(true); else onClose(); });
+  const confirmClose = () => {
+    if (!isDirty) return true;
+    setShowUnsaved(true);
+    return false;
   };
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        e.preventDefault();
-        if (showUnsavedConfirm) {
-          setShowUnsavedConfirm(false);
-        } else if (isDirty) {
-          setShowUnsavedConfirm(true);
-        } else {
-          onClose();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown, { capture: true });
-    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
-  }, [isOpen, isDirty, showUnsavedConfirm, onClose]);
-
-  if (!isOpen || !trip) return null;
-
-  const parseDateRange = (dateStr: string) => {
-    if (!dateStr || !dateStr.includes('-')) return { start: '', end: '' };
-    const parts = dateStr.split('-').map(p => p.trim());
-    if (parts.length < 2) return { start: '', end: '' };
-    
-    const formatToInputDate = (d: string, yearFallback?: string) => {
-      let normalized = d.replace(/\./g, '-');
-      if (normalized.length === 5 && yearFallback) {
-        normalized = `${yearFallback}-${normalized}`;
-      }
-      return normalized;
-    };
-
-    const startRaw = parts[0];
-    const startYear = startRaw.slice(0, 4);
-    const start = formatToInputDate(startRaw);
-    const end = formatToInputDate(parts[1], startYear);
-    return { start, end };
-  };
-
+  // ── Basics ──
   const handleDateChange = (type: 'start' | 'end', val: string) => {
     const { start, end } = parseDateRange(date);
-    
     const newStart = type === 'start' ? val : start;
     const newEnd = type === 'end' ? val : end;
-    
-    const formatFromInputDate = (d: string) => d.replace(/-/g, '.');
-    
     if (newStart && newEnd) {
-      const formattedStart = formatFromInputDate(newStart);
-      let formattedEnd = formatFromInputDate(newEnd);
-      
-      const startYear = newStart.slice(0, 4);
-      const endYear = newEnd.slice(0, 4);
-      if (startYear === endYear && formattedEnd.startsWith(startYear + '.')) {
-        formattedEnd = formattedEnd.slice(5); // removes "YYYY."
-      }
-      
+      const formattedStart = newStart.replace(/-/g, '.');
+      let formattedEnd = newEnd.replace(/-/g, '.');
+      // Same year: the end shows only month and day
+      if (newStart.slice(0, 4) === newEnd.slice(0, 4) && formattedEnd.startsWith(newStart.slice(0, 4) + '.')) formattedEnd = formattedEnd.slice(5);
       setDate(`${formattedStart} - ${formattedEnd}`);
     }
   };
 
-  const handleAddTag = (tagText: string) => {
-    const cleanTag = tagText.trim().replace(/,/g, '');
-    if (cleanTag && !tags.includes(cleanTag)) {
-      setTags(prev => [...prev, cleanTag]);
-    }
+  // ── Tags ──
+  const addTag = (text: string) => {
+    const clean = text.trim().replace(/,/g, '');
+    if (clean && !tags.includes(clean)) setTags(prev => [...prev, clean]);
     setTagInput('');
   };
+  const suggestions = useMemo(
+    () => (tagInput.trim() ? existingTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(t)).slice(0, 6) : []),
+    [tagInput, existingTags, tags]
+  );
 
-  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === ',' || e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag(tagInput);
-    }
+  // ── People ──
+  const addMember = () => {
+    const name = memberInput.trim();
+    if (!name) return;
+    if (members.includes(name)) { notify('이미 등록된 인원입니다.'); return; }
+    setMembers(prev => [...prev, name]);
+    setMemberInput('');
   };
-
-  const handleTagInputChange = (val: string) => {
-    if (val.endsWith(',')) {
-      handleAddTag(val);
+  const removeMember = async (m: string) => {
+    if (!(await confirmDialog(`'${m}' 인원을 뺄까요?`))) return;
+    setMembers(prev => prev.filter(x => x !== m));
+    setMemberLinks(prev => prev.filter(l => l.name !== m));
+    if (linkTarget === m) setLinkTarget(null);
+  };
+  const freeFriends = friends.filter(f => !memberLinks.some(l => l.uid === f.uid));
+  const pickFriend = (f: typeof friends[0]) => {
+    if (linkTarget) {
+      const old = linkTarget;
+      if (old !== f.name && members.includes(f.name)) { notify('같은 이름의 인원이 이미 있습니다.'); return; }
+      setMembers(prev => prev.map(x => (x === old ? f.name : x)));
+      // Chain renames so an item's "paid by" follows to the final name
+      setRenames(prev => {
+        const next: Record<string, string> = {};
+        Object.entries(prev).forEach(([from, to]) => { next[from] = to === old ? f.name : to; });
+        if (!Object.values(prev).includes(old) && old !== f.name) next[old] = f.name;
+        return next;
+      });
+      setMemberLinks(prev => [...prev.filter(l => l.name !== old), { name: f.name, uid: f.uid }]);
+      setLinkTarget(null);
     } else {
-      setTagInput(val);
+      if (members.includes(f.name)) { notify('같은 이름의 인원이 이미 있습니다. 그 이름 옆 연결 버튼을 눌러 주세요.'); return; }
+      setMembers(prev => [...prev, f.name]);
+      setMemberLinks(prev => [...prev, { name: f.name, uid: f.uid }]);
     }
   };
 
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(prev => prev.filter(t => t !== tagToRemove));
+  // ── Covers: one set of controls for the card's and the hero's media ──
+  const setMedia = (which: 'card' | 'hero', url: string, video: boolean) => {
+    const set = which === 'card' ? setCard : setHero;
+    set(video ? { img: '', video: url } : { img: url, video: '' });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isLoggedIn) return;
+  const uploadMedia = async (file: File, which: 'card' | 'hero') => {
+    const isVideo = file.type.startsWith('video/');
+    if (isVideo && file.size > 30 * 1024 * 1024) {
+      notify('모바일에서 끊기지 않도록 30MB 이하의 동영상만 올릴 수 있습니다.');
+      return;
+    }
+    if (!isVideo && !file.type.startsWith('image/')) {
+      notify('사진이나 동영상 파일만 올릴 수 있습니다.');
+      return;
+    }
+    setUploading(true);
+    try {
+      if (isVideo) {
+        const inspection = await inspectAndPrepareVideo(file);
+        if (!inspection.isCompatible) notify('이 동영상은 아이폰에서 재생되지 않는 형식일 수 있습니다. H.264 MP4를 권장합니다.');
+      }
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const body = isVideo ? file : await compressImage(file, 2560, 2560, 0.82);
+      const url = await uploadFileToR2(body, `users/public/covers/${which === 'hero' ? 'hero_' : ''}${Date.now()}_${safeName}`);
+      setMedia(which, url, isVideo);
+    } catch (err) {
+      console.error('Cover upload failed:', err);
+      notify('올리지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const pasteMedia = async () => {
+    try {
+      if (navigator.clipboard?.read) {
+        for (const item of await navigator.clipboard.read()) {
+          const type = item.types.find(t => t.startsWith('image/'));
+          if (type) {
+            const blob = await item.getType(type);
+            await uploadMedia(new File([blob], `pasted_${Date.now()}.${type.split('/')[1] || 'png'}`, { type }), coverTab);
+            return;
+          }
+        }
+      }
+      const text = (await navigator.clipboard?.readText?.())?.trim();
+      if (text) { setMedia(coverTab, text, isVideoUrl(text)); return; }
+      notify('클립보드에 사진이나 주소가 없습니다.');
+    } catch {
+      notify('붙여넣기를 쓸 수 없습니다. 키보드의 Ctrl+V를 눌러 주세요.');
+    }
+  };
+
+  // Ctrl+V anywhere on the sheet (outside a text field) pastes a picture into the open cover
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const t = e.target as HTMLElement;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    const file = e.clipboardData?.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      e.preventDefault();
+      setTab('cover');
+      await uploadMedia(file, coverTab);
+    }
+  };
+
+  const copyToOther = () => {
+    if (!cur.img && !cur.video) { notify('옮길 커버가 없습니다.'); return; }
+    const other = coverTab === 'card' ? 'hero' : 'card';
+    setMedia(other, cur.video || cur.img, !!cur.video);
+    notify(other === 'hero' ? '히어로에도 같은 커버를 넣었습니다.' : '카드에도 같은 커버를 넣었습니다.', 'success');
+  };
+
+  // ── Save ──
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!isLoggedIn || saving) return;
+    const { start, end } = parseDateRange(date);
+    if (!title.trim()) { setTab('basic'); notify('제목을 입력해 주세요.'); return; }
+    if (!start || !end) { setTab('basic'); notify('기간을 정해 주세요.'); return; }
+    const wantPlan = kind === 'plan';
+    if (wantPlan !== isPlanJourney && !(await confirmDialog(wantPlan ? '이 여정을 계획으로 바꿀까요?' : '이 계획을 기록으로 바꿀까요?', { title: wantPlan ? 'TO PLAN' : 'TO LOG', confirmLabel: '바꾸기' }))) return;
     setSaving(true);
 
     const combinedLocationStr = locations.map(loc => loc.name).join(', ');
-    const firstLat = locations[0]?.lat ?? lat ?? trip.lat;
-    const firstLng = locations[0]?.lng ?? lng ?? trip.lng;
-
-    const finalTags = statusBadge === 'PLAN'
-      ? (tags.includes('Plan') ? tags : [...tags, 'Plan'])
-      : tags.filter(t => t !== 'Plan');
+    const finalTags = wantPlan ? (tags.includes('Plan') ? tags : [...tags, 'Plan']) : tags.filter(t => t !== 'Plan');
 
     try {
-      if (statusBadge === 'PLAN' && !isPlanJourney && onMoveToPlans) {
-        await onMoveToPlans(trip as any);
-      } else if (statusBadge !== 'PLAN' && isPlanJourney && onMoveToArchive) {
-        await onMoveToArchive(trip as any);
-      }
+      if (wantPlan && !isPlanJourney && onMoveToPlans) await onMoveToPlans(trip);
+      else if (!wantPlan && isPlanJourney && onMoveToArchive) await onMoveToArchive(trip as any);
 
       await onSave(trip.id, {
-        title,
+        title: title.trim(),
         date,
         locationStr: combinedLocationStr,
-        lat: firstLat,
-        lng: firstLng,
+        lat: locations[0]?.lat ?? trip.lat,
+        lng: locations[0]?.lng ?? trip.lng,
         locations,
         country: country.trim(),
-        videoUrl,
-        img: imgUrl,
-        heroImg: heroImgUrl,
-        heroVideoUrl,
+        videoUrl: card.video,
+        img: card.img,
+        heroImg: hero.img,
+        heroVideoUrl: hero.video,
         tags: finalTags,
         members,
         memberLinks: memberLinks.filter(l => members.includes(l.name)),
-        statusBadge,
+        statusBadge: wantPlan ? 'PLAN' : badge,
       }, { renames });
       onClose();
     } catch (err) {
       console.error(err);
-      notify('여정 정보 저장에 실패했습니다.');
+      notify('여정 정보를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const uploadVideoFile = async (file: File) => {
-    if (file.size > 30 * 1024 * 1024) {
-      notify("모바일 로딩 지연을 방지하기 위해, 30MB 이하의 동영상 파일만 업로드할 수 있습니다.");
-      return;
-    }
-
-    setVideoUploading(true);
-    try {
-      const inspection = await inspectAndPrepareVideo(file);
-      if (!inspection.isCompatible) {
-        notify("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
-      }
-
-      const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
-      const downloadUrl = await uploadFileToR2(file, storagePath);
-      setVideoUrl(downloadUrl);
-      setImgUrl(''); // 1개 미디어 전용: 기존 이미지 초기화
-    } catch (error) {
-      console.error("Cover video upload failed:", error);
-      notify("커버 영상 업로드에 실패했습니다.");
-    } finally {
-      setVideoUploading(false);
-      if (videoFileInputRef.current) videoFileInputRef.current.value = '';
-    }
-  };
-
-  const uploadHeroVideoFile = async (file: File) => {
-    if (file.size > 30 * 1024 * 1024) {
-      notify("모바일 로딩 지연을 방지하기 위해, 30MB 이하의 동영상 파일만 업로드할 수 있습니다.");
-      return;
-    }
-
-    setHeroVideoUploading(true);
-    try {
-      const inspection = await inspectAndPrepareVideo(file);
-      if (!inspection.isCompatible) {
-        notify("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
-      }
-
-      const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
-      const downloadUrl = await uploadFileToR2(file, storagePath);
-      setHeroVideoUrl(downloadUrl);
-      setHeroImgUrl(''); // 1개 미디어 전용: 기존 히어로 이미지 초기화
-    } catch (error) {
-      console.error("Hero cover video upload failed:", error);
-      notify("히어로 동영상 업로드에 실패했습니다.");
-    } finally {
-      setHeroVideoUploading(false);
-      if (heroVideoFileInputRef.current) heroVideoFileInputRef.current.value = '';
-    }
-  };
-
-  const handleHeroVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadHeroVideoFile(file);
-  };
-
-  const handleHeroVideoDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setIsHeroVideoDragActive(true);
-    } else if (e.type === "dragleave") {
-      setIsHeroVideoDragActive(false);
-    }
-  };
-
-  const handleHeroVideoDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsHeroVideoDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type.startsWith('video/')) {
-        await uploadHeroVideoFile(file);
-      } else {
-        notify("동영상 파일만 업로드할 수 있습니다.");
-      }
-    }
-  };
-
-  const handleHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setHeroUploading(true);
-    try {
-      const compressedBlob = await compressImage(file, 2048, 2048, 0.85);
-      const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
-      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
-      setHeroImgUrl(downloadUrl);
-      setHeroVideoUrl(''); // 1개 미디어 전용: 기존 히어로 비디오 초기화
-    } catch (error) {
-      console.error("Hero cover image upload failed:", error);
-      notify("히어로 커버 이미지 업로드에 실패했습니다.");
-    } finally {
-      setHeroUploading(false);
-      if (heroFileInputRef.current) heroFileInputRef.current.value = '';
-    }
-  };
-
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadVideoFile(file);
-  };
-
-  const handleVideoDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setIsVideoDragActive(true);
-    } else if (e.type === "dragleave") {
-      setIsVideoDragActive(false);
-    }
-  };
-
-  const handleVideoDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsVideoDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type.startsWith('video/')) {
-        await uploadVideoFile(file);
-      } else {
-        notify("동영상 파일만 업로드할 수 있습니다.");
-      }
-    }
-  };
-
-  const uploadCoverImageFile = async (file: File) => {
-    setUploading(true);
-    try {
-      const compressedBlob = await compressImage(file, 3840, 3840, 0.75);
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const storagePath = `users/public/covers/${Date.now()}_${safeName}`;
-      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
-      setImgUrl(downloadUrl);
-      setVideoUrl(''); // 1개 미디어 전용: 기존 비디오 초기화
-    } catch (error) {
-      console.error("Cover image upload failed:", error);
-      notify("커버 이미지 업로드에 실패했습니다.");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const uploadHeroImageFile = async (file: File) => {
-    setHeroUploading(true);
-    try {
-      const compressedBlob = await compressImage(file, 3840, 3840, 0.75);
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const storagePath = `users/public/covers/${Date.now()}_hero_${safeName}`;
-      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
-      setHeroImgUrl(downloadUrl);
-      setHeroVideoUrl('');
-    } catch (error) {
-      console.error("Hero image upload failed:", error);
-      notify("히어로 이미지 업로드에 실패했습니다.");
-    } finally {
-      setHeroUploading(false);
-      if (heroFileInputRef.current) heroFileInputRef.current.value = '';
-    }
-  };
-
-  const handleCopyMedia = async (url: string, label: string) => {
-    if (!url) return notify(`복사할 ${label} 미디어가 없습니다.`);
-    try {
-      await navigator.clipboard.writeText(url);
-      notify(`${label} 미디어 URL이 클립보드에 복사되었습니다.`);
-    } catch (err) {
-      console.error(err);
-      notify('클립보드 복사에 실패했습니다.');
-    }
-  };
-
-  const handlePasteImage = async (target: 'main' | 'hero' = coverTab) => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.read) {
-        const clipboardItems = await navigator.clipboard.read();
-        for (const item of clipboardItems) {
-          const imageType = item.types.find(t => t.startsWith('image/'));
-          if (imageType) {
-            const blob = await item.getType(imageType);
-            const ext = imageType.split('/')[1] || 'png';
-            const file = new File([blob], `pasted_${Date.now()}.${ext}`, { type: imageType });
-            if (target === 'hero') {
-              await uploadHeroImageFile(file);
-            } else {
-              await uploadCoverImageFile(file);
-            }
-            return;
-          }
-        }
-      }
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
-        if (text && text.trim()) {
-          const val = text.trim();
-          if (target === 'hero') {
-            if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
-              setHeroVideoUrl(val);
-              setHeroImgUrl('');
-            } else {
-              setHeroImgUrl(val);
-              setHeroVideoUrl('');
-            }
-          } else {
-            if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
-              setVideoUrl(val);
-              setImgUrl('');
-            } else {
-              setImgUrl(val);
-              setVideoUrl('');
-            }
-          }
-          return;
-        }
-      }
-      notify("클립보드에 복사된 이미지 또는 URL이 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
-    } catch (err) {
-      console.warn("Clipboard read error:", err);
-      notify("클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.");
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadCoverImageFile(file);
-  };
-
-  // Global onPaste listener for modal container
-  const handleModalPaste = async (e: React.ClipboardEvent) => {
-    const target = e.target as HTMLElement;
-    // If typing in input or textarea, let default paste proceed
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
-      return;
-    }
-
-    if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
-      const file = e.clipboardData.files[0];
-      if (file.type.startsWith('image/')) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (coverTab === 'hero') {
-          await uploadHeroImageFile(file);
-        } else {
-          await uploadCoverImageFile(file);
-        }
-      }
-    }
-  };
-
-  const filteredSuggestions = tagInput.trim()
-    ? existingTags.filter(
-        tag =>
-          tag.toLowerCase().includes(tagInput.toLowerCase()) &&
-          !tags.includes(tag)
-      )
-    : [];
+  const range = parseDateRange(date);
+  const coverFilled = (m: Media) => !!(m.img || m.video);
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
-      onClick={handleAttemptClose}
-    >
-      <div
-        onPaste={handleModalPaste}
-        className="bg-[#F9F8F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 w-full max-w-md relative transition-colors duration-300 shadow-2xl rounded-none flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/10 dark:border-white/10 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <Edit2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-            <h2 className="text-sm font-extrabold uppercase tracking-widest text-black dark:text-white">
-              Edit Journey Cover Info
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={handleAttemptClose}
-            className="tap-target p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60 cursor-pointer"
-            aria-label="Close edit modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
-          
-          {/* Journey Type (LOG vs PLAN) */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-                Type (여정 유형 구분)
-              </label>
-              <span className="text-micro font-mono font-bold text-black/60 dark:text-white/60">
-                {isPlanJourney ? 'CURRENT: PLAN' : 'CURRENT: LOG'}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  if (isPlanJourney && onMoveToArchive && trip) {
-                    if (await confirmDialog('이 계획을 [LOG (여정)]으로 전환하시겠습니까?')) {
-                      await onMoveToArchive(trip);
-                      onClose();
-                    }
-                  }
-                }}
-                disabled={!isPlanJourney || !onMoveToArchive}
-                className={`py-2 px-3 border text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  !isPlanJourney
-                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
-                    : 'bg-transparent text-black/60 dark:text-white/60 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${!isPlanJourney ? 'bg-red-500' : 'bg-transparent'}`} />
-                <span>LOG (기록)</span>
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!isPlanJourney && onMoveToPlans && trip) {
-                    if (await confirmDialog('이 여정을 [PLAN (계획)]으로 전환하시겠습니까?')) {
-                      await onMoveToPlans(trip);
-                      onClose();
-                    }
-                  }
-                }}
-                disabled={isPlanJourney || !onMoveToPlans}
-                className={`py-2 px-3 border text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  isPlanJourney
-                    ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
-                    : 'bg-transparent text-black/60 dark:text-white/60 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${isPlanJourney ? 'bg-amber-500' : 'bg-transparent'}`} />
-                <span>PLAN (계획)</span>
-              </button>
+    <>
+      <Sheet label="여정 편집" onClose={onClose} tone="paper" locked={saving} backToClose={false} confirmClose={confirmClose} panelClassName="sm:max-w-md h-[min(84dvh,620px)]">
+        <form onSubmit={handleSubmit} onPaste={handlePaste} className="flex-1 min-h-0 flex flex-col">
+          {/* Head: the cover, what this is, and which journey */}
+          <div className="shrink-0 px-4 pt-1 pb-3 flex items-center gap-3">
+            <img src={cardCoverUrl({ img: card.img || trip.img, imgSmall: trip.imgSmall, imgSmallSrc: trip.imgSmallSrc })} alt="" decoding="async" className="w-11 h-11 rounded-thumb object-cover bg-black/5 dark:bg-white/10 shrink-0" />
+            <div className="min-w-0 flex flex-col">
+              <span className="text-[17px] font-extrabold tracking-tight leading-tight">여정 편집</span>
+              <span className="font-mono text-meta text-black/55 dark:text-white/55 truncate">{trip.title}</span>
             </div>
           </div>
 
-          {/* Title */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-              Journey Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
-              placeholder="e.g. TOKYO, JAPAN"
-              required
+          <div className="shrink-0 px-4 pb-3">
+            <Segment<EditTab>
+              block
+              size="sm"
+              ariaLabel="편집 구역"
+              value={tab}
+              onChange={setTab}
+              options={[
+                { value: 'basic', label: '기본' },
+                { value: 'places', label: '장소·태그' },
+                { value: 'people', label: <span className="inline-flex items-center gap-1">인원{members.length > 0 && <span className="font-mono text-micro opacity-60 tabular-nums">{members.length}</span>}</span> },
+                { value: 'cover', label: '커버' },
+              ]}
             />
           </div>
 
-          {/* Country */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-              Country
-            </label>
-            <input
-              type="text"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
-              placeholder="e.g. JAPAN, ITALY (여정 서머리 지도 오버레이에 영문 대문자로 노출)"
-            />
-          </div>
-
-          {/* Date */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-              Journey Dates
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={parseDateRange(date).start}
-                onChange={(e) => handleDateChange('start', e.target.value)}
-                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-1 focus:border-red-600 dark:focus:border-red-400 transition-colors"
-                required
-              />
-              <span className="text-xs font-bold text-black/60 dark:text-white/60">—</span>
-              <input
-                type="date"
-                value={parseDateRange(date).end}
-                onChange={(e) => handleDateChange('end', e.target.value)}
-                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-1 focus:border-red-600 dark:focus:border-red-400 transition-colors"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Location Name (복수 장소 등록 및 수정) */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-              Locations (방문 장소 복수 지정 가능)
-            </label>
-
-            {/* Location Pill Display */}
-            {locations.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-1.5 max-h-24 overflow-y-auto p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                {locations.map((loc, idx) => (
-                  <span 
-                    key={idx} 
-                    className="flex items-center gap-1.5 bg-surface dark:bg-surface-dark text-micro font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
-                  >
-                    {loc.name}
-                    <button 
-                      type="button" 
-                      onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))} 
-                      className="text-black/60 dark:text-white/60 hover:text-red-500 transition-colors text-xs leading-none"
-                    >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-              </div>
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 flex flex-col gap-4">
+            {tab === 'basic' && (
+              <>
+                <label className="flex flex-col gap-1.5">
+                  <span className={lbl}>제목</span>
+                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={field} placeholder="예) 도쿄 디즈니 여행" />
+                </label>
+                <div className="flex flex-col gap-1.5">
+                  <span className={lbl}>기간</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="date" aria-label="출발일" value={range.start} onChange={(e) => handleDateChange('start', e.target.value)} className={field} />
+                    <input type="date" aria-label="도착일" value={range.end} min={range.start || undefined} onChange={(e) => handleDateChange('end', e.target.value)} className={field} />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className={lbl}>유형</span>
+                  <Segment<'log' | 'plan'>
+                    block
+                    ariaLabel="여정 유형"
+                    value={kind}
+                    onChange={setKind}
+                    options={[{ value: 'log', label: '기록' }, { value: 'plan', label: '계획' }]}
+                  />
+                </div>
+                {kind === 'log' && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className={lbl}>카드 뱃지</span>
+                    <div className="flex gap-2">
+                      <Chip selected={badge === 'NEW'} onClick={() => setBadge(b => (b === 'NEW' ? '' : 'NEW'))}>NEW</Chip>
+                      <Chip selected={badge === 'EDITING'} onClick={() => setBadge(b => (b === 'EDITING' ? '' : 'EDITING'))}>EDITING</Chip>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
-            <div className="relative flex items-center gap-2">
-              <div className="relative flex-grow">
-                <MapPin className="absolute left-3 w-4 h-4 text-black/60 dark:text-white/60 z-10 pointer-events-none top-1/2 -translate-y-1/2" />
-                <PlaceAutocompleteInput
-                  value={locationInput}
-                  onChange={(val) => setLocationInput(val)}
-                  onSelectPlace={(name, coords, address, countryName) => {
-                    if (name.trim()) {
-                      setLocations(prev => {
-                        if (prev.some(loc => loc.name === name.trim())) return prev;
-                        // Prefer API-provided country name (English, from address_components)
-                        const resolvedCountry = countryName
-                          ? extractCountry(countryName) || countryName.toUpperCase()
-                          : extractCountry(address);
-                        return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng, country: resolvedCountry }];
-                      });
-                      setLocationInput('');
-                    }
-                  }}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 focus:border-red-600 dark:focus:border-red-400 outline-none transition-colors rounded-none text-black dark:text-white"
-                  placeholder="도시 검색..."
+            {tab === 'places' && (
+              <>
+                <label className="flex flex-col gap-1.5">
+                  <span className={lbl}>국가</span>
+                  <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} className={field} placeholder="JAPAN" />
+                </label>
+                <div className="flex flex-col gap-2">
+                  <span className={lbl}>장소</span>
+                  {locations.length > 0 && (
+                    <div className={pillBox}>
+                      {locations.map((loc, idx) => (
+                        <Tag key={`${loc.name}-${idx}`} removeLabel={`${loc.name} 빼기`} onRemove={() => setLocations(prev => prev.filter((_, i) => i !== idx))}>{loc.name}</Tag>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1 min-w-0">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black/45 dark:text-white/45 z-10 pointer-events-none" aria-hidden />
+                      <PlaceAutocompleteInput
+                        value={locationInput}
+                        onChange={setLocationInput}
+                        onSelectPlace={(name, coords, address, countryName) => {
+                          if (!name.trim()) return;
+                          setLocations(prev => {
+                            if (prev.some(loc => loc.name === name.trim())) return prev;
+                            const resolved = countryName ? extractCountry(countryName) || countryName.toUpperCase() : extractCountry(address);
+                            return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng, country: resolved }];
+                          });
+                          setLocationInput('');
+                        }}
+                        className={`${field} pl-10`}
+                        placeholder="도시 검색"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-secondary shrink-0"
+                      onClick={() => {
+                        const clean = locationInput.trim();
+                        if (!clean) return;
+                        setLocations(prev => (prev.some(loc => loc.name === clean) ? prev : [...prev, { name: clean }]));
+                        setLocationInput('');
+                      }}
+                    >
+                      <Plus className="w-4 h-4" aria-hidden />추가
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className={lbl}>태그</span>
+                  {tags.length > 0 && (
+                    <div className={pillBox}>
+                      {tags.map(tag => (
+                        <Tag key={tag} removeLabel={`${tag} 빼기`} onRemove={() => setTags(prev => prev.filter(t => t !== tag))}>{tag}</Tag>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => (e.target.value.endsWith(',') ? addTag(e.target.value) : setTagInput(e.target.value))}
+                    onKeyDown={(e) => {
+                      if (e.nativeEvent.isComposing) return;
+                      if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); }
+                    }}
+                    className={field}
+                    placeholder="쉼표나 Enter로 구분"
+                  />
+                  {suggestions.length > 0 && (
+                    <div className={pillBox}>
+                      {suggestions.map(sug => <Chip key={sug} size="sm" onClick={() => addTag(sug)}>{sug}</Chip>)}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {tab === 'people' && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <span className={lbl}>함께한 사람</span>
+                  {members.length === 0 ? (
+                    <p className="text-meta text-black/55 dark:text-white/55">아직 없습니다. 이름을 넣거나 친구를 골라 주세요.</p>
+                  ) : (
+                    <div className={pillBox}>
+                      {members.map(m => {
+                        const link = memberLinks.find(l => l.name === m);
+                        const friend = link && friends.find(f => f.uid === link.uid);
+                        return (
+                          <span key={m} className={`inline-flex items-center gap-1 ${linkTarget === m ? 'rounded-full ring-2 ring-red-600' : ''}`}>
+                            <Tag
+                              removeLabel={`${m} 빼기`}
+                              onRemove={() => { void removeMember(m); }}
+                              lead={link ? <UserProfileAvatar profile={friend || { uid: link.uid }} size="xs" fallbackName={m} className="-ml-1.5" /> : undefined}
+                            >{m}</Tag>
+                            {isOwner && !link && friends.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setLinkTarget(prev => (prev === m ? null : m))}
+                                aria-label={`${m}을(를) 친구 계정과 연결`}
+                                aria-pressed={linkTarget === m}
+                                className={`tap-target w-8 h-8 rounded-full grid place-items-center border transition-colors ${linkTarget === m ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark border-transparent' : 'border-black/10 dark:border-white/10 text-black/55 dark:text-white/55 hover:bg-black/[0.05] dark:hover:bg-white/10'}`}
+                              >
+                                <UserPlus className="w-3.5 h-3.5" aria-hidden />
+                              </button>
+                            )}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={memberInput}
+                      onChange={(e) => setMemberInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.nativeEvent.isComposing) return;
+                        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); addMember(); }
+                      }}
+                      className={field}
+                      placeholder="이름을 쓰고 Enter"
+                    />
+                    <button type="button" className="btn btn-secondary shrink-0" onClick={addMember}><Plus className="w-4 h-4" aria-hidden />추가</button>
+                  </div>
+                </div>
+                {isOwner && freeFriends.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <span className={lbl}>친구</span>
+                    <p className="text-meta text-black/55 dark:text-white/55 break-keep">
+                      {linkTarget ? `'${linkTarget}'을(를) 연결할 친구를 골라 주세요. 이름이 친구 이름으로 바뀌고 친구가 이 여정을 볼 수 있습니다.` : '친구를 넣으면 그 친구가 이 여정을 볼 수 있습니다.'}
+                    </p>
+                    <div className={pillBox}>
+                      {freeFriends.map(f => (
+                        <button
+                          key={f.uid}
+                          type="button"
+                          onClick={() => pickFriend(f)}
+                          className="h-9 pl-1.5 pr-3.5 inline-flex items-center gap-1.5 rounded-full border border-black/15 dark:border-white/15 text-meta font-bold hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                        >
+                          <UserProfileAvatar profile={f} size="sm" fallbackName={f.name} />
+                          {f.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {tab === 'cover' && (
+              <>
+                <Segment<'card' | 'hero'>
+                  block
+                  ariaLabel="커버 종류"
+                  value={coverTab}
+                  onChange={setCoverTab}
+                  options={[
+                    { value: 'card', label: <span className="inline-flex items-center gap-1.5">카드{coverFilled(card) && <span className="w-1.5 h-1.5 rounded-full bg-red-600" aria-hidden />}</span> },
+                    { value: 'hero', label: <span className="inline-flex items-center gap-1.5">히어로{coverFilled(hero) && <span className="w-1.5 h-1.5 rounded-full bg-red-600" aria-hidden />}</span> },
+                  ]}
                 />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const clean = locationInput.trim();
-                  if (clean) {
-                    setLocations(prev => {
-                      if (prev.some(loc => loc.name === clean)) return prev;
-                      return [...prev, { name: clean }];
-                    });
-                    setLocationInput('');
-                  }
-                }}
-                className="btn btn-primary shrink-0"
-              >
-                추가
-              </button>
-            </div>
-          </div>
-
-          {/* Tags Pill Input */}
-          <div className="flex flex-col gap-1.5 relative">
-            <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-              Tags (comma or enter to separate)
-            </label>
-            
-            {/* Pill Display */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-1.5 max-h-24 overflow-y-auto p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                {tags.map(tag => (
-                  <span 
-                    key={tag} 
-                    className="flex items-center gap-1.5 bg-surface dark:bg-surface-dark text-micro font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
-                  >
-                    {tag}
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveTag(tag)} 
-                      className="text-black/60 dark:text-white/60 hover:text-red-500 transition-colors text-xs leading-none"
-                    >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="relative">
-              <input 
-                type="text"
-                value={tagInput}
-                onChange={(e) => handleTagInputChange(e.target.value)}
-                onKeyDown={handleTagInputKeyDown}
-                placeholder="e.g. Tokyo, 2026, Summer"
-                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
-              />
-            </div>
-
-            {/* Suggestions dropdown */}
-            {filteredSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 shadow-xl max-h-36 overflow-y-auto z-50 flex flex-col divide-y divide-black/5 dark:divide-white/5">
-                {filteredSuggestions.map(suggestion => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => handleAddTag(suggestion)}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors uppercase font-bold tracking-wider text-black dark:text-white"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Members (참석 인원) */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-              Trip Members (참석 인원)
-            </label>
-            <div className="flex flex-wrap gap-1.5 mb-1.5">
-              {members.length === 0 ? (
-                <span className="text-meta text-black/60 dark:text-white/60 italic">설정된 인원이 없습니다.</span>
-              ) : (
-                members.map(m => {
-                  const link = memberLinks.find(l => l.name === m);
-                  const friend = link && friends.find(f => f.uid === link.uid);
-                  return (
-                  <span
-                    key={m}
-                    className={`luggage-tag group/luggage cursor-default ${linkTarget === m ? 'ring-2 ring-red-600' : ''}`}
-                  >
-                    {link ? <UserProfileAvatar profile={friend || { uid: link.uid }} size="xs" fallbackName={m} /> : <span className="luggage-tag-hole" />}
-                    <span>{m}</span>
-                    <span className="luggage-barcode-strip">
-                      <span className="luggage-barcode-bar w-[1px]" />
-                      <span className="luggage-barcode-bar w-[2px]" />
-                      <span className="luggage-barcode-bar w-[1px]" />
-                    </span>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (await confirmDialog(`정말 '${m}' 인원을 삭제하시겠습니까?`)) {
-                          setMembers(prev => prev.filter(x => x !== m));
-                          setMemberLinks(prev => prev.filter(l => l.name !== m));
-                          if (linkTarget === m) setLinkTarget(null);
-                        }
-                      }}
-                      className="tap-target text-red-500 hover:text-red-700 transition-colors font-bold text-meta ml-0.5 leading-none p-0.5"
-                      title="인원 삭제"
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                    {isOwner && !link && friends.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setLinkTarget(prev => prev === m ? null : m)}
-                        className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors ml-0.5 leading-none p-0.5"
-                        title={`${m}을(를) 친구 계정과 연결`}
-                        aria-label={`${m}을(를) 친구 계정과 연결`}
-                        aria-pressed={linkTarget === m}
-                      >
-                        <UserPlus className="w-3 h-3" />
-                      </button>
-                    )}
-                  </span>
-                  );
-                })
-              )}
-            </div>
-            {isOwner && friends.length > 0 && (() => {
-              const free = friends.filter(f => !memberLinks.some(l => l.uid === f.uid));
-              if (!free.length) return null;
-              const pick = (f: typeof free[0]) => {
-                if (linkTarget) {
-                  const old = linkTarget;
-                  if (old !== f.name && members.includes(f.name)) { notify('같은 이름의 인원이 이미 있습니다.'); return; }
-                  setMembers(prev => prev.map(x => (x === old ? f.name : x)));
-                  // Chain renames so an item's "paid by" follows to the final name
-                  setRenames(prev => {
-                    const next: Record<string, string> = {};
-                    Object.entries(prev).forEach(([from, to]) => { next[from] = to === old ? f.name : to; });
-                    if (!Object.values(prev).includes(old) && old !== f.name) next[old] = f.name;
-                    return next;
-                  });
-                  setMemberLinks(prev => [...prev.filter(l => l.name !== old), { name: f.name, uid: f.uid }]);
-                  setLinkTarget(null);
-                } else {
-                  if (members.includes(f.name)) { notify('같은 이름의 인원이 이미 있습니다. 그 이름 옆 연결 버튼을 눌러 주세요.'); return; }
-                  setMembers(prev => [...prev, f.name]);
-                  setMemberLinks(prev => [...prev, { name: f.name, uid: f.uid }]);
-                }
-              };
-              return (
-                <div className="flex flex-col gap-1.5 mb-1.5">
-                  <span className="text-meta text-black/60 dark:text-white/60 break-keep">
-                    {linkTarget ? `'${linkTarget}'을(를) 어떤 친구와 연결할까요? 이름이 친구 이름으로 바뀌고 친구가 이 여정을 볼 수 있습니다.` : '친구를 넣으면 그 친구가 이 여정을 볼 수 있습니다.'}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {free.map(f => (
-                      <button
-                        key={f.uid}
-                        type="button"
-                        onClick={() => pick(f)}
-                        className="h-8 pl-1 pr-3 inline-flex items-center gap-1.5 rounded-full border border-black/15 dark:border-white/15 text-meta font-bold hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
-                      >
-                        <UserProfileAvatar profile={f} size="sm" fallbackName={f.name} />
-                        {f.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={memberInput}
-                onChange={(e) => setMemberInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.nativeEvent.isComposing) return;
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const cleanName = memberInput.trim();
-                    if (cleanName) {
-                      if (members.includes(cleanName)) {
-                        notify("이미 등록된 인원입니다.");
-                      } else {
-                        setMembers(prev => [...prev, cleanName]);
-                        setMemberInput('');
-                      }
-                    }
-                  }
-                }}
-                placeholder="참석자 이름 입력 후 Enter..."
-                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const cleanName = memberInput.trim();
-                  if (cleanName) {
-                    if (members.includes(cleanName)) {
-                      notify("이미 등록된 인원입니다.");
-                    } else {
-                      setMembers(prev => [...prev, cleanName]);
-                      setMemberInput('');
-                    }
-                  }
-                }}
-                className="btn btn-primary shrink-0"
-              >
-                추가
-              </button>
-            </div>
-          </div>
-          {/* Cover Media Section with Swiss Minimal Tabs (MAIN / HERO) */}
-          <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
-            <div className="flex border-b border-black/15 dark:border-white/15 mb-2">
-              <button
-                type="button"
-                onClick={() => setCoverTab('main')}
-                className={`flex-1 py-2 text-xs font-extrabold uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
-                  coverTab === 'main'
-                    ? 'border-black dark:border-white text-black dark:text-white'
-                    : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                <span>MAIN</span>
-                {(imgUrl || videoUrl) && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCoverTab('hero')}
-                className={`flex-1 py-2 text-xs font-extrabold uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
-                  coverTab === 'hero'
-                    ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400'
-                    : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                <span>HERO</span>
-                {(heroImgUrl || heroVideoUrl) && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400" />
-                )}
-              </button>
-            </div>
-
-            {coverTab === 'main' ? (
-              <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-                {/* Unified Media URL Input */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white font-sans">
-                      Main Media (Image or Video)
-                    </label>
-                    {(uploading || videoUploading) && (
-                      <span className="text-micro font-mono font-bold text-red-600 flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" /> 업로드 중...
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={videoUrl || imgUrl}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (!val) {
-                          setVideoUrl('');
-                          setImgUrl('');
-                        } else if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
-                          setVideoUrl(val);
-                          setImgUrl('');
-                        } else {
-                          setImgUrl(val);
-                          setVideoUrl('');
-                        }
-                      }}
-                      className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-mono font-bold text-black dark:text-white outline-none flex-grow focus:border-black dark:focus:border-white transition-colors"
-                      placeholder="이미지 또는 영상 URL 입력 / 파일 드롭"
-                    />
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.type.startsWith('video/')) {
-                          await uploadVideoFile(file);
-                        } else {
-                          await handleImageUpload(e);
-                        }
-                      }}
-                      accept="image/*,video/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading || videoUploading}
-                      className="btn btn-primary flex shrink-0"
-                    >
-                      {uploading || videoUploading ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Upload className="w-3 h-3" />
-                      )}
-                      UPLOAD
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyMedia(videoUrl || imgUrl, 'MAIN')}
-                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
-                      title="현재 MAIN 미디어 URL 복사"
-                    >
-                      <Copy className="w-3 h-3" />
-                      <span>COPY</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePasteImage('main')}
-                      disabled={uploading || videoUploading}
-                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
-                      title="클립보드에 복사된 이미지 또는 URL 붙여넣기 (Ctrl+V)"
-                    >
-                      <ClipboardPaste className="w-3 h-3" />
-                      <span>PASTE</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!videoUrl && !imgUrl) return notify('복사할 MAIN 미디어가 없습니다.');
-                        if (videoUrl) {
-                          setHeroVideoUrl(videoUrl);
-                          setHeroImgUrl('');
-                        } else {
-                          setHeroImgUrl(imgUrl);
-                          setHeroVideoUrl('');
-                        }
-                        notify('MAIN 미디어가 HERO로 복사되었습니다.');
-                      }}
-                      className="btn btn-primary flex shrink-0"
-                      title="MAIN 미디어를 HERO로 복사"
-                    >
-                      <span>TO HERO</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Unified Dropzone & Preview */}
-                <div 
-                  onDragEnter={handleVideoDrag}
-                  onDragOver={handleVideoDrag}
-                  onDragLeave={handleVideoDrag}
+                <div
+                  onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
                   onDrop={async (e) => {
                     e.preventDefault();
-                    e.stopPropagation();
-                    setIsVideoDragActive(false);
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      const file = e.dataTransfer.files[0];
-                      if (file.type.startsWith('video/')) {
-                        await uploadVideoFile(file);
-                      } else if (file.type.startsWith('image/')) {
-                        setUploading(true);
-                        try {
-                          const compressedBlob = await compressImage(file, 3840, 3840, 0.75);
-                          const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
-                          const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
-                          setImgUrl(downloadUrl);
-                          setVideoUrl(''); // 1개 미디어 전용
-                        } catch (err) {
-                          console.error(err);
-                          notify("이미지 업로드에 실패했습니다.");
-                        } finally {
-                          setUploading(false);
-                        }
-                      }
-                    }
+                    setDragOver(false);
+                    const f = e.dataTransfer.files?.[0];
+                    if (f) await uploadMedia(f, coverTab);
                   }}
-                  className={`border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center transition-all ${
-                    isVideoDragActive ? 'border-dashed border-red-600 bg-red-500/10 scale-[1.01]' : ''
-                  }`}
+                  className={`relative w-full aspect-[16/9] rounded-card overflow-hidden bg-black/[0.05] dark:bg-white/[0.08] grid place-items-center transition-shadow ${dragOver ? 'ring-2 ring-red-600' : ''}`}
                 >
-                  {videoUrl ? (
-                    <div className="relative w-full h-full">
-                      <video src={getEffectiveImageUrl(videoUrl)} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setVideoUrl('');
-                          setImgUrl('');
-                        }}
-                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-micro font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
-                      >
-                        Delete Video
-                      </button>
-                    </div>
-                  ) : imgUrl ? (
-                    <div className="relative w-full h-full">
-                      <img src={getEffectiveImageUrl(imgUrl)} alt="Cover Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setImgUrl('');
-                          setVideoUrl('');
-                        }}
-                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-micro font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
-                      >
-                        Delete Image
-                      </button>
-                    </div>
+                  {cur.video ? (
+                    <video src={getEffectiveImageUrl(cur.video)} muted loop playsInline autoPlay className="w-full h-full object-cover" />
+                  ) : cur.img ? (
+                    <img src={getEffectiveImageUrl(cur.img)} alt="" decoding="async" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="text-black/60 dark:text-white/60 text-meta font-bold uppercase tracking-wider text-center flex flex-col items-center justify-center p-4">
-                      {uploading || videoUploading ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>미디어를 업로드 중입니다...</span>
-                        </div>
-                      ) : (
-                        <span>이미지 또는 동영상을 드래그 앤 드롭하거나<br />위의 UPLOAD 버튼을 눌러주세요</span>
-                      )}
-                    </div>
+                    <button type="button" onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-1.5 text-meta font-bold text-black/55 dark:text-white/55">
+                      <ImagePlus className="w-6 h-6" aria-hidden />
+                      {coverTab === 'hero' ? '비워 두면 카드 커버가 쓰입니다' : '사진이나 영상을 올려 주세요'}
+                    </button>
+                  )}
+                  {uploading && (
+                    <span className="absolute inset-0 grid place-items-center bg-black/40"><Loader2 className="w-6 h-6 text-white animate-spin" aria-label="올리는 중" /></span>
                   )}
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-                <p className="text-meta text-black/60 dark:text-white/60 font-medium leading-relaxed bg-black/[0.03] dark:bg-white/[0.03] p-2 border border-black/10 dark:border-white/10">
-                  홈 화면 상단 히어로 슬라이더에 우선 노출할 미디어입니다. (미등록 시 MAIN 미디어가 표시됩니다)
-                </p>
-
-                {/* Unified Hero Media URL Input */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white font-sans">
-                      Hero Media (Image or Video)
-                    </label>
-                    {(heroUploading || heroVideoUploading) && (
-                      <span className="text-micro font-mono font-bold text-red-600 flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" /> 업로드 중...
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={heroVideoUrl || heroImgUrl}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (!val) {
-                          setHeroVideoUrl('');
-                          setHeroImgUrl('');
-                        } else if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
-                          setHeroVideoUrl(val);
-                          setHeroImgUrl('');
-                        } else {
-                          setHeroImgUrl(val);
-                          setHeroVideoUrl('');
-                        }
-                      }}
-                      className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-mono font-bold text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
-                      placeholder="히어로 이미지 또는 영상 URL 입력 / 파일 드롭"
-                    />
-                    <input
-                      type="file"
-                      ref={heroFileInputRef}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.type.startsWith('video/')) {
-                          await uploadHeroVideoFile(file);
-                        } else {
-                          await handleHeroImageUpload(e);
-                        }
-                      }}
-                      accept="image/*,video/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => heroFileInputRef.current?.click()}
-                      disabled={heroUploading || heroVideoUploading}
-                      className="btn btn-primary flex shrink-0"
-                    >
-                      {heroUploading || heroVideoUploading ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Upload className="w-3 h-3" />
-                      )}
-                      UPLOAD
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyMedia(heroVideoUrl || heroImgUrl, 'HERO')}
-                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
-                      title="현재 HERO 미디어 URL 복사"
-                    >
-                      <Copy className="w-3 h-3" />
-                      <span>COPY</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePasteImage('hero')}
-                      disabled={heroUploading || heroVideoUploading}
-                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
-                      title="클립보드에 복사된 이미지 또는 URL 붙여넣기 (Ctrl+V)"
-                    >
-                      <ClipboardPaste className="w-3 h-3" />
-                      <span>PASTE</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!heroVideoUrl && !heroImgUrl) return notify('복사할 HERO 미디어가 없습니다.');
-                        if (heroVideoUrl) {
-                          setVideoUrl(heroVideoUrl);
-                          setImgUrl('');
-                        } else {
-                          setImgUrl(heroImgUrl);
-                          setVideoUrl('');
-                        }
-                        notify('HERO 미디어가 MAIN으로 복사되었습니다.');
-                      }}
-                      className="btn btn-primary flex shrink-0"
-                      title="HERO 미디어를 MAIN으로 복사"
-                    >
-                      <span>TO MAIN</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Unified Hero Dropzone & Preview */}
-                <div 
-                  onDragEnter={handleHeroVideoDrag}
-                  onDragOver={handleHeroVideoDrag}
-                  onDragLeave={handleHeroVideoDrag}
-                  onDrop={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsHeroVideoDragActive(false);
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      const file = e.dataTransfer.files[0];
-                      if (file.type.startsWith('video/')) {
-                        await uploadHeroVideoFile(file);
-                      } else if (file.type.startsWith('image/')) {
-                        setHeroUploading(true);
-                        try {
-                          const compressedBlob = await compressImage(file, 2048, 2048, 0.85);
-                          const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
-                          const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
-                          setHeroImgUrl(downloadUrl);
-                          setHeroVideoUrl(''); // 1개 미디어 전용
-                        } catch (err) {
-                          console.error(err);
-                          notify("히어로 이미지 업로드에 실패했습니다.");
-                        } finally {
-                          setHeroUploading(false);
-                        }
-                      }
-                    }
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (f) await uploadMedia(f, coverTab);
                   }}
-                  className={`border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center transition-all ${
-                    isHeroVideoDragActive ? 'border-dashed border-red-600 bg-red-500/10 scale-[1.01]' : ''
-                  }`}
-                >
-                  {heroVideoUrl ? (
-                    <div className="relative w-full h-full">
-                      <video src={getEffectiveImageUrl(heroVideoUrl)} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setHeroVideoUrl('');
-                          setHeroImgUrl('');
-                        }}
-                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-micro font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
-                      >
-                        Delete Video
-                      </button>
-                    </div>
-                  ) : heroImgUrl ? (
-                    <div className="relative w-full h-full">
-                      <img src={getEffectiveImageUrl(heroImgUrl)} alt="Hero Cover Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setHeroImgUrl('');
-                          setHeroVideoUrl('');
-                        }}
-                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-micro font-extrabold uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
-                      >
-                        Delete Image
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-black/60 dark:text-white/60 text-meta font-bold uppercase tracking-wider text-center flex flex-col items-center justify-center p-4">
-                      {heroUploading || heroVideoUploading ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>히어로 미디어를 업로드 중입니다...</span>
-                        </div>
-                      ) : (
-                        <span>히어로 이미지 또는 동영상을 드래그 앤 드롭하거나<br />위의 UPLOAD 버튼을 눌러주세요</span>
-                      )}
-                    </div>
-                  )}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()} disabled={uploading}><ImagePlus className="w-3.5 h-3.5" aria-hidden />올리기</button>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => { void pasteMedia(); }} disabled={uploading}><ClipboardPaste className="w-3.5 h-3.5" aria-hidden />붙여넣기</button>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={copyToOther} disabled={!coverFilled(cur)}><ArrowRightLeft className="w-3.5 h-3.5" aria-hidden />{coverTab === 'card' ? '히어로에도' : '카드에도'}</button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCur({ img: '', video: '' })} disabled={!coverFilled(cur) || uploading}><Trash2 className="w-3.5 h-3.5" aria-hidden />비우기</button>
                 </div>
-              </div>
+                <input
+                  type="text"
+                  aria-label="사진이나 영상 주소"
+                  value={cur.video || cur.img}
+                  onChange={(e) => { const v = e.target.value; setCur(!v ? { img: '', video: '' } : isVideoUrl(v) ? { img: '', video: v } : { img: v, video: '' }); }}
+                  className={`${field} h-10 font-mono text-meta`}
+                  placeholder="주소로 넣기"
+                />
+              </>
             )}
           </div>
 
-          {/* Status Badge Option */}
-          <div className="flex flex-col gap-1.5 mt-4">
-            <div className="flex items-center justify-between">
-              <label className="text-micro uppercase font-extrabold tracking-widest opacity-60 text-black dark:text-white">
-                Status Badge (상태 뱃지: NEW · EDITING · PLAN)
-              </label>
-              <span className="text-micro font-mono text-black/60 dark:text-white/60">
-                {statusBadge ? '클릭 시 해제(일반 상태)' : '지정 시 뱃지 노출'}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {([
-                { id: 'NEW', label: 'NEW', activeBg: 'bg-red-600 text-white border-red-600' },
-                { id: 'EDITING', label: 'EDITING', activeBg: 'bg-amber-600 text-white border-amber-600' },
-                { id: 'PLAN', label: 'PLAN', activeBg: 'bg-amber-600 text-white border-amber-600' },
-              ] as const).map((badgeOpt) => {
-                const isActive = statusBadge === badgeOpt.id;
-                return (
-                  <button
-                    key={badgeOpt.id}
-                    type="button"
-                    onClick={() => setStatusBadge(isActive ? '' : badgeOpt.id)}
-                    className={`py-2 text-micro font-extrabold uppercase tracking-widest border transition-all ${
-                      isActive
-                        ? `${badgeOpt.activeBg} shadow-xs font-extrabold`
-                        : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/30 dark:hover:border-white/30'
-                    }`}
-                  >
-                    {badgeOpt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Action buttons: Cancel & Save */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10 shrink-0">
-            <button
-              type="button"
-              onClick={handleAttemptClose}
-              disabled={saving}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving || !title.trim() || uploading || videoUploading || heroUploading || heroVideoUploading}
-              className="btn btn-primary flex"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-3.5 h-3.5" />
-                  Save
-                </>
-              )}
+          <div className="shrink-0 px-4 py-3 flex items-center gap-2 border-t border-black/[0.06] dark:border-white/[0.08]">
+            <button type="button" className="btn btn-secondary flex-1" onClick={() => { if (confirmClose()) onClose(); }} disabled={saving}>취소</button>
+            <button type="submit" className="btn btn-primary flex-1" disabled={saving || uploading || !title.trim()}>
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden />저장 중</> : '저장'}
             </button>
           </div>
-
         </form>
-      </div>
+      </Sheet>
 
-      {/* Unsaved changes confirmation modal with shortcuts (SAVE[Y/S], DISCARD[N/D], SKIP[ESC]) */}
+      {/* Edits are open: save, throw them away, or keep editing */}
       <ConfirmModal
-        isOpen={showUnsavedConfirm}
+        isOpen={showUnsaved}
         title="UNSAVED CHANGES"
-        message="Are you sure?"
+        message="저장하지 않은 변경이 있습니다."
         confirmLabel="Save (Y)"
         discardLabel="Discard (N)"
         cancelLabel="Skip (Esc)"
-        onConfirm={async () => {
-          setShowUnsavedConfirm(false);
-          await handleSubmit({ preventDefault: () => {} } as any);
-        }}
-        onDiscard={() => {
-          setShowUnsavedConfirm(false);
-          onClose();
-        }}
-        onCancel={() => setShowUnsavedConfirm(false)}
+        onConfirm={async () => { setShowUnsaved(false); await handleSubmit(); }}
+        onDiscard={() => { setShowUnsaved(false); onClose(); }}
+        onCancel={() => setShowUnsaved(false)}
       />
-    </div>
+    </>
   );
 }

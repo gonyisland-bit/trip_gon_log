@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Lock, Loader2, KeyRound } from 'lucide-react';
+import { KeyRound, Loader2 } from 'lucide-react';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { Sheet, useSheetClose } from './Sheet';
 
 interface PasswordVerifyModalProps {
   isOpen: boolean;
@@ -11,17 +11,21 @@ interface PasswordVerifyModalProps {
   email: string;
 }
 
-export function PasswordVerifyModal({
-  isOpen,
-  onClose,
-  onSuccess,
-  email,
-}: PasswordVerifyModalProps) {
+// Asks for the account password again before something private opens (v1.3.8: the shared Sheet)
+export function PasswordVerifyModal({ isOpen, onClose, onSuccess, email }: PasswordVerifyModalProps) {
+  if (!isOpen) return null;
+  return (
+    <Sheet label="비밀번호 확인" onClose={onClose} placement="center" tone="paper" panelClassName="sm:max-w-sm">
+      <VerifyForm onSuccess={onSuccess} email={email} />
+    </Sheet>
+  );
+}
+
+function VerifyForm({ onSuccess, email }: { onSuccess: () => void; email: string }) {
+  const close = useSheetClose();
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,12 +33,9 @@ export function PasswordVerifyModal({
       setError('비밀번호를 입력해 주세요.');
       return;
     }
-
     setLoading(true);
     setError('');
-
     try {
-      // Re-verify credentials
       await signInWithEmailAndPassword(auth, email, password);
       setPassword('');
       onSuccess();
@@ -43,91 +44,41 @@ export function PasswordVerifyModal({
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('비밀번호가 일치하지 않습니다.');
       } else {
-        setError('인증 중 오류가 발생했습니다. 다시 시도해 주세요.');
+        setError('확인하지 못했습니다. 잠시 후 다시 시도해 주세요.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  return createPortal(
-    <div 
-      className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-      onClick={onClose}
-    >
-      <div 
-        className="w-full max-w-sm bg-surface dark:bg-surface-dark border border-black dark:border-white shadow-2xl p-6 flex flex-col gap-4"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
-          <div className="flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-black dark:text-white" />
-            <h3 className="text-xs font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
-              VERIFY PASSWORD
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4 pt-2">
+      <div className="flex items-center gap-3">
+        <span className="w-11 h-11 rounded-full bg-surface dark:bg-surface-dark grid place-items-center shrink-0"><KeyRound className="w-5 h-5" aria-hidden /></span>
+        <div className="min-w-0 flex flex-col">
+          <h2 className="text-[17px] font-extrabold tracking-tight leading-tight">비밀번호 확인</h2>
+          <p className="text-meta text-black/55 dark:text-white/55 break-keep">개인정보를 지키려고 비밀번호를 한 번 더 확인합니다.</p>
         </div>
-
-        <div className="text-xs text-black/70 dark:text-white/70 font-mono">
-          개인정보 보호를 위해 계정 비밀번호를 입력해 주세요.
-        </div>
-
-        {error && (
-          <div className="p-2 text-xs font-mono bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-meta font-mono font-bold uppercase tracking-wider opacity-60">
-              Password
-            </label>
-            <div className="relative flex items-center">
-              <input
-                type="password"
-                autoFocus
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full h-9 px-3 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none text-xs font-mono text-black dark:text-white"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 pt-2 border-t border-black/10 dark:border-white/10">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-secondary flex-1"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary flex-1 flex"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>확인 중...</span>
-                </>
-              ) : (
-                <span>CONFIRM</span>
-              )}
-            </button>
-          </div>
-        </form>
       </div>
-    </div>,
-    document.body
+      <div className="flex flex-col gap-1.5">
+        <input
+          type="password"
+          autoFocus
+          autoComplete="current-password"
+          aria-label="비밀번호"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          placeholder="비밀번호"
+          className="h-11 w-full rounded-full px-4 bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 text-[14px] font-bold outline-none focus:border-red-600 dark:focus:border-red-400 transition-colors"
+        />
+        {error && <p role="alert" className="px-2 text-meta font-bold text-red-600 dark:text-red-400">{error}</p>}
+      </div>
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={close} className="btn btn-secondary flex-1">취소</button>
+        <button type="submit" disabled={loading} className="btn btn-primary flex-1">
+          {loading ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden />확인 중</> : '확인'}
+        </button>
+      </div>
+    </form>
   );
 }

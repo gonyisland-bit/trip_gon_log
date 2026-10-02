@@ -1418,3 +1418,7 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 /* Volume gauge (components/reel/VolumeGauge): a tall pill that fills from the bottom under the finger */
 .tgl-vgauge-in { animation: tglVGaugeIn 200ms var(--ease-sheet-in) both; }
 @keyframes tglVGaugeIn { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+
+/* A photo arriving over its small copy (components/ProgressiveImage) */
+.tgl-fade-in { animation: tglFadeIn 320ms var(--ease-cross) both; }
+@media (prefers-reduced-motion: reduce) { .tgl-fade-in { animation: none; } }

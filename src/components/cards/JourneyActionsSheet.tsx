@@ -9,7 +9,7 @@ import { Sheet, useSheetClose } from '../Sheet';
 import { Segment } from '../ui/Segment';
 import { compressImage } from '../../utils/imageHelper';
 import { getEffectiveImageUrl, uploadFileToR2 } from '../../utils/storageHelper';
-import { cardCoverUrl } from '../../utils/journeyThumbs';
+import { cardCoverUrl, galleryThumbMap } from '../../utils/journeyThumbs';
 import { currentUid, setDoc } from '../../utils/ownership';
 import { openJourneyShare } from '../share/ShareJourneySheet';
 import { notify } from '../../utils/feedback';
@@ -98,6 +98,9 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin }
   };
 
   const cover = getEffectiveImageUrl(target === 'hero' ? trip.heroImg : trip.img);
+  // A journey can hold hundreds of photos: the picker draws small copies, a page at a time
+  const thumbs = React.useMemo(() => galleryThumbMap(trip), [trip]);
+  const [shownCount, setShownCount] = useState(24);
   const hasHeroMedia = Boolean(trip.heroImg || trip.heroVideoUrl);
   return (
     <div className="flex flex-col gap-3 p-4 pt-2 min-h-0 overflow-y-auto overscroll-contain">
@@ -183,7 +186,7 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin }
               <>
                 <span className="font-mono text-micro font-bold uppercase tracking-wider text-black/55 dark:text-white/55">이 여정의 사진</span>
                 <ul className="grid grid-cols-4 gap-1.5 max-h-56 overflow-y-auto overscroll-contain">
-                  {photos.map(url => {
+                  {photos.slice(0, shownCount).map(url => {
                     const on = getEffectiveImageUrl(url) === cover;
                     return (
                       <li key={url}>
@@ -194,7 +197,7 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin }
                           aria-pressed={on}
                           className={`relative w-full aspect-square rounded-thumb overflow-hidden ${on ? 'ring-2 ring-red-600 ring-offset-2 ring-offset-surface dark:ring-offset-surface-dark' : ''}`}
                         >
-                          <img src={getEffectiveImageUrl(url)} alt="" loading="lazy" className="w-full h-full object-cover" />
+                          <img src={thumbs.get(getEffectiveImageUrl(url)) || getEffectiveImageUrl(url)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                           {busy === url && <span className="absolute inset-0 grid place-items-center bg-black/40"><Loader2 className="w-4 h-4 text-white animate-spin" /></span>}
                           {on && <span className="absolute right-1 top-1 w-5 h-5 rounded-full bg-red-600 text-white grid place-items-center"><Check className="w-3 h-3" /></span>}
                         </button>
@@ -202,6 +205,11 @@ function Actions({ trip, isPlan, photos, pinned, onEdit, onDelete, onTogglePin }
                     );
                   })}
                 </ul>
+                {photos.length > shownCount && (
+                  <button type="button" className="btn btn-ghost btn-sm self-center" onClick={() => setShownCount(n => n + 24)}>
+                    더 보기 · {photos.length - shownCount}
+                  </button>
+                )}
               </>
             ) : (
               <p className="text-meta text-black/55 dark:text-white/55">여정에 사진을 넣으면 여기서 골라 커버로 쓸 수 있습니다.</p>

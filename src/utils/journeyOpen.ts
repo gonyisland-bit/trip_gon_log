@@ -5,7 +5,6 @@
 import { saveUserPref, type UserPrefs } from './userPrefs';
 import { setDetailIntent } from './detailIntent';
 import { preloadDetailPage } from './prefetchHelper';
-import { getEffectiveImageUrl } from './storageHelper';
 
 export type JourneyOpenMode = 'board' | 'magazine';
 
@@ -61,20 +60,13 @@ export function openJourneyFromCard(
 
 export const JOURNEY_OPEN_CHANGED = CHANGED;
 
-const warmed = new Set<number>();
-
 /**
- * Touch or hover on a journey card: start everything its opening needs, so the press itself is the loading time.
- * The page chunk, the reel's chunk (a magazine photo opens it) and the cover photo; each at most once per journey.
+ * Touch or hover on a journey card: start what its opening needs, so the press itself is the loading time.
+ * The page chunk and the reel's chunk (a magazine photo opens it). The cover is not fetched here: the card shows
+ * its small copy already, the opened journey draws that copy first (ProgressiveImage), and the full-size original
+ * is only worth a download once the journey is actually opening.
  */
-export function warmJourney(trip: { id: number; img?: string }) {
+export function warmJourney(_trip?: { id: number }) {
   preloadDetailPage().catch(() => {});
   import('../components/reel/MemoryReel').catch(() => {});
-  if (warmed.has(trip.id)) return;
-  warmed.add(trip.id);
-  if (trip.img) {
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = getEffectiveImageUrl(trip.img);
-  }
 }
