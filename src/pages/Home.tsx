@@ -27,6 +27,7 @@ import { useMyCities } from '../utils/myCities';
 import { useHomeWidgets } from '../utils/homeWidgetPrefs';
 import { setDetailIntent } from '../utils/detailIntent';
 import { openJourneyFromCard, warmJourney } from '../utils/journeyOpen';
+import { ExchangeWidget } from '../components/home/ExchangeWidget';
 import { CURRENT_LOCATION_EN } from '../utils/userPrefs';
 
 interface HomePageProps {
@@ -2072,51 +2073,8 @@ export function HomePage({
             );
           })()}
 
-          {/* Optional Extended Modules: Live Exchange Rates Compact 1-Row Round Box Widget */}
-          {widgetConfig.showExchangeRates && (
-            <section className="w-full max-w-[1920px] mx-auto mt-6 sm:mt-8 px-4 sm:px-8 md:px-12 select-none font-mono">
-              <div className="w-full py-2 sm:py-2.5 px-3.5 sm:px-5 rounded-full bg-surface dark:bg-surface-dark flex items-center justify-between gap-2 sm:gap-4">
-                {/* Left: Swiss Minimal Icon & Label */}
-                <div className="flex items-center gap-1.5 shrink-0 pr-2 sm:pr-3 border-r border-black/10 dark:border-white/10">
-                  <Coins className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-                  <span className="font-extrabold text-meta uppercase tracking-wider text-black/70 dark:text-white/70 hidden xs:inline">
-                    EXCHANGE
-                  </span>
-                </div>
-
-                {/* Center: 3 Major Currencies (USD, JPY, EUR) in 1 Row */}
-                <div className="flex-1 flex items-center justify-around gap-1.5 sm:gap-3 text-xs sm:text-[13px]">
-                  {[
-                    { code: 'USD', rate: '1,388.50', diff: '+2.5', isUp: true },
-                    { code: 'JPY', rate: '918.40', diff: '-1.2', isUp: false },
-                    { code: 'EUR', rate: '1,512.20', diff: '+3.0', isUp: true },
-                  ].map((cur, idx) => (
-                    <div key={cur.code} className="flex items-center gap-1 sm:gap-1.5">
-                      <span className="font-extrabold text-meta sm:text-xs text-black/60 dark:text-white/60 tracking-wider">
-                        {cur.code}
-                      </span>
-                      <span className="font-extrabold text-xs sm:text-sm text-black dark:text-white tracking-tight">
-                        {cur.rate}
-                      </span>
-                      <span className={`text-micro sm:text-micro font-bold hidden sm:inline ${
-                        cur.isUp ? 'text-red-500' : 'text-blue-500'
-                      }`}>
-                        {cur.isUp ? '▲' : '▼'}{cur.diff.replace('-', '')}
-                      </span>
-                      {idx < 2 && (
-                        <span className="text-black/60 dark:text-white/60 ml-1.5 sm:ml-3 hidden xs:inline">/</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Right: Currency Base */}
-                <span className="text-micro sm:text-meta text-black/60 dark:text-white/60 shrink-0 pl-2 sm:pr-1 border-l border-black/10 dark:border-white/10 hidden sm:inline font-bold">
-                  KRW
-                </span>
-              </div>
-            </section>
-          )}
+          {/* Optional: exchange rates, daily (components/home/ExchangeWidget) */}
+          {widgetConfig.showExchangeRates && <ExchangeWidget />}
 
           {/* Bottom Widgets */}
           {widgetConfig.widgetOrder === 'weather-first' ? (

@@ -12,6 +12,7 @@ import { getNightTerminatorPolygon, shiftPolygonCoordinates, getContinuousNightP
 import { notify } from '../utils/feedback';
 
 import { COUNTRIES_DATA, KNOWN_CITY_COORDS, CITY_KO_MAP, findCountryForGroup, COUNTRY_TIMEZONE_MAP, getCountryLiveTime, getOptimalCurrencyUnit, shiftGeoJsonCoordinates } from './map/mapData';
+import { useHubVisible } from '../app/hubVisible';
 import type { CountryInfo } from './map/mapData';
 import { MapLayerPanel } from './map/MapLayerPanel';
 import { useMapHubState, MapHubPageProps } from './map/useMapHubState';
@@ -149,10 +150,12 @@ export function MapHubPage(props: MapHubPageProps) {
   } = s;
 
   // The phone tab bar floats over the map; it steps aside while a country card is open
+  // (only while this is the hub on screen: a kept-alive map must not hide the tab bar from the other drawers)
+  const hubVisible = useHubVisible();
   useEffect(() => {
-    document.documentElement.toggleAttribute('data-map-sheet', !!selectedCountry);
+    document.documentElement.toggleAttribute('data-map-sheet', hubVisible && !!selectedCountry);
     return () => document.documentElement.removeAttribute('data-map-sheet');
-  }, [selectedCountry]);
+  }, [selectedCountry, hubVisible]);
 
   return (
     <main className={`relative w-full h-[var(--hub-h,calc(100vh-56px))] supports-[height:100dvh]:h-[var(--hub-h,calc(100dvh-56px))] flex flex-col lg:flex-row bg-paper dark:bg-paper-dark overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>

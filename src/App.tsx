@@ -9,6 +9,7 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './app/quickActions';
 import { TabBar } from './components/TabBar';
 import { DrawerHost, HubSkeleton } from './components/DrawerHost';
+import { Freeze } from './components/Freeze';
 import { shouldSkipBackgroundPrefetch } from './utils/prefetchHelper';
 import { isDrawerView, useIsPhone } from './app/drawerViews';
 import { useJourneyThumbs } from './app/useJourneyThumbs';
@@ -584,6 +585,7 @@ function App() {
             }>
               {baseView === 'home' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
+                  <Freeze frozen={!!activeDrawer}>
                   <HomePage 
                     onNavigate={navigateTo} 
                     trips={trips} 
@@ -637,6 +639,7 @@ function App() {
                     transitByTrip={transitByTrip}
                     isAdmin={isAdmin}
                   />
+                  </Freeze>
                 </div>
               )}
               {baseView === 'archive' && (

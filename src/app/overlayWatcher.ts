@@ -50,6 +50,11 @@ export function watchFullScreenOverlays(): () => void {
   document.addEventListener('transitionend', schedule, true);
   document.addEventListener('animationend', schedule, true);
   window.addEventListener('resize', schedule);
+  // A home-screen app resumed from the background: timers and transitions that were frozen never finished, so
+  // the state they would have settled is worked out again
+  const onVisible = () => { if (document.visibilityState === 'visible') schedule(); };
+  document.addEventListener('visibilitychange', onVisible);
+  window.addEventListener('pageshow', schedule);
   schedule();
 
   return () => {
@@ -57,6 +62,8 @@ export function watchFullScreenOverlays(): () => void {
     document.removeEventListener('transitionend', schedule, true);
     document.removeEventListener('animationend', schedule, true);
     window.removeEventListener('resize', schedule);
+    document.removeEventListener('visibilitychange', onVisible);
+    window.removeEventListener('pageshow', schedule);
     window.clearTimeout(timer);
     window.clearTimeout(settleTimer);
     document.documentElement.removeAttribute('data-overlay');

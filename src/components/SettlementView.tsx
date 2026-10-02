@@ -11,16 +11,7 @@ import html2canvas from 'html2canvas';
 import { createPortal } from 'react-dom';
 import { notify, confirmDialog } from '../utils/feedback';
 import { EmptyScene } from './scenes/EmptyScene';
-
-const EXCHANGE_RATES: { [currency: string]: number } = {
-  KRW: 1,
-  USD: 1380,
-  JPY: 9.0,
-  EUR: 1480,
-  CNY: 190,
-  GBP: 1750,
-  TWD: 42,
-};
+import { useExchangeRates } from '../utils/exchangeRates';
 
 const CURRENCY_SYMBOLS: { [key: string]: string } = {
   KRW: 'KRW ', USD: 'USD ', JPY: 'JPY ', EUR: 'EUR ', CNY: 'CNY ', GBP: 'GBP ', TWD: 'TWD ',
@@ -158,7 +149,8 @@ export function SettlementView({
     return list.sort((a, b) => a.date.localeCompare(b.date));
   }, [timelineData, flights, stays, transits, defaultCurrency, customExpenses]);
 
-  // --- KRW conversion ---
+  // --- KRW conversion --- (the latest rates, refreshed daily; see utils/exchangeRates)
+  const { rates: EXCHANGE_RATES, date: rateDate } = useExchangeRates();
   const parseCostToKRW = (costStr: string, currency: string): number => {
     const clean = costStr.replace(/[^0-9.]/g, '');
     const val = parseFloat(clean);
@@ -177,11 +169,11 @@ export function SettlementView({
       stats[payer] = (stats[payer] || 0) + krw;
     });
     return { totalExpenseKRW: total, memberPaidStats: stats };
-  }, [expenseItems, members]);
+  }, [expenseItems, members, EXCHANGE_RATES]);
 
   const sharePerPerson = Math.round(totalExpenseKRW / Math.max(1, members.length));
 
-  // 해당 여정에 관련된 환율 목록 계산 (여정 시작일 기준)
+  // 해당 여정에 관련된 환율 목록 계산 (최신 환율 기준)
   const exchangeRatesText = React.useMemo(() => {
     const activeDefault = (defaultCurrency || 'KRW').toUpperCase();
     const currencies = new Set<string>();
@@ -215,19 +207,14 @@ export function SettlementView({
     const items = Array.from(currencies).map(curr => {
       const rate = EXCHANGE_RATES[curr];
       if (!rate) return null;
-      return `${curr} ${rate.toLocaleString()}`;
+      return `${curr} ${rate.toLocaleString(undefined, { maximumFractionDigits: rate >= 100 ? 0 : 2 })}`;
     }).filter(Boolean);
 
     return items.join(' · ');
-  }, [defaultCurrency, expenseItems, trip.locationStr]);
+  }, [defaultCurrency, expenseItems, trip.locationStr, EXCHANGE_RATES]);
 
-  const exchangeDateLabel = React.useMemo(() => {
-    if (trip.date) {
-      const startDateStr = trip.date.split(' - ')[0]?.trim();
-      if (startDateStr) return `${startDateStr} 기준`;
-    }
-    return '여정 날짜 기준';
-  }, [trip.date]);
+  // Settlement uses the latest rates, not the rates of the trip's dates
+  const exchangeDateLabel = rateDate ? `${rateDate.replace(/-/g, '.')} 최신` : '최신 환율';
 
   const memberBalances = React.useMemo(() => {
     const balances: { [name: string]: number } = {};

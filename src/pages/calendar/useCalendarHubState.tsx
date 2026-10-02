@@ -10,6 +10,7 @@ import { fetchCityWeather, getSimulatedWeatherForDate, CityWeatherData, DailyFor
 import { WORLD_CITIES, findCityByNameOrAlias } from '../../data/worldDestinations';
 import { confirmDialog } from '../../utils/feedback';
 import { swipeStart, swipeDirection, SwipeStart } from '../../utils/swipe';
+import { useHubVisible } from '../../app/hubVisible';
 import { useMyCities } from '../../utils/myCities';
 import { CalendarWeatherCity, CALENDAR_WEATHER_CITIES, CalendarHubPageProps, MONTH_TABS, EVENT_CATEGORIES, DayCellData, parseTripDateRange, getDaysDifference, normalizeRange } from './calendarData';
 
@@ -94,11 +95,14 @@ export function useCalendarHubState({
   const isPeekOpen = !!quickViewDate;
 
   // 하단 피크 바가 열려 있는 동안 다른 하단 플로팅(퀵 독, TOP)은 비켜선다
+  // (only while the calendar is the hub on screen: a kept-alive calendar must not hide the tab bar from the other drawers)
+  const hubVisible = useHubVisible();
   useEffect(() => {
     if (!isPeekOpen) { setIsPeekExpanded(false); return; }
+    if (!hubVisible) return;
     document.documentElement.setAttribute('data-peek', '1');
     return () => document.documentElement.removeAttribute('data-peek');
-  }, [isPeekOpen]);
+  }, [isPeekOpen, hubVisible]);
 
   useEffect(() => {
     if (quickViewDate) {

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { lockBodyScroll } from '../utils/scrollLock';
+import { HubVisibleContext } from '../app/hubVisible';
 
 // Hub drawers (v1.3.8): the tab bar's hubs and the airport terminal rise from the bottom as one family.
 //  - phones: hubs fill the screen to its top edge; the terminal is a sheet with a gap above it. A grip drags the
@@ -90,7 +91,15 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  useEffect(() => (active ? lockBodyScroll() : undefined), [active]);
+  // The page behind stops scrolling once the slide is under way: locking it costs the page a layout pass, and
+  // doing that in the frame of the tap is what stalled the first frames of the slide
+  const hasActive = !!active;
+  useEffect(() => {
+    if (!hasActive) return;
+    let unlock: (() => void) | undefined;
+    const t = window.setTimeout(() => { unlock = lockBodyScroll(); }, 460);
+    return () => { window.clearTimeout(t); unlock?.(); };
+  }, [hasActive]);
 
   const shown = active ?? leaving;
   const current = shown ? panels[shown] : undefined;
@@ -169,8 +178,16 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
             const idx = order.indexOf(id);
             // Where this panel waits when it is not the one on show: the side it sits on in the tab bar
             const pos = on ? 'on' : shownIdx < 0 || idx < 0 ? 'after' : idx < shownIdx ? 'before' : 'after';
-            const node = p.node ?? cache.current[id] ?? null;
-            if (p.node) cache.current[id] = p.node;
+            // A hub that is not on show keeps the element it last had, so React skips its subtree while the app
+            // re-renders around it; the one on show (or arriving) always gets the current element
+            let node: React.ReactNode;
+            if (on) {
+              node = p.node ?? cache.current[id] ?? null;
+              if (p.node) cache.current[id] = p.node;
+            } else {
+              if (cache.current[id] === undefined) cache.current[id] = p.node;
+              node = cache.current[id] ?? null;
+            }
             return (
               <div
                 key={id}
@@ -181,6 +198,7 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
                 aria-hidden={!on}
                 className="tgl-hubdrawer-panel absolute inset-0"
               >
+                <HubVisibleContext.Provider value={on}>
                 {p.scroll ? (
                   <div className="absolute inset-0 overflow-y-auto overscroll-contain" style={{ paddingTop: 'var(--drawer-grip)', paddingBottom: 'calc(var(--tabbar-lift, 0px) + 16px)' }}>
                     {node}
@@ -190,6 +208,7 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
                     {node}
                   </div>
                 )}
+                </HubVisibleContext.Provider>
               </div>
             );
           })}

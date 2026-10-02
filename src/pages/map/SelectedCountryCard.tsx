@@ -17,9 +17,11 @@ import { MapLayerPanel } from './MapLayerPanel';
 import type { MapHubState } from './useMapHubState';
 import { NewTripButton } from '../../components/NewTripButton';
 import { useSnapSheet } from '../../components/sheet/useSnapSheet';
+import { useExchangeRates } from '../../utils/exchangeRates';
 
 // Selected country card: journeys there, local clock, exchange rate, weather and major cities.
 export function SelectedCountryCard({ s }: { s: MapHubState }) {
+  const { rates: liveRates } = useExchangeRates();
   const {
     trips,
     plans,
@@ -298,8 +300,10 @@ export function SelectedCountryCard({ s }: { s: MapHubState }) {
               {/* Col 2: Balanced 50:50 Modern Travel Exchange Widget Card */}
               <div className="bg-paper dark:bg-paper-dark rounded-card p-2 sm:p-3 flex flex-col justify-between h-full select-none">
                 {(() => {
-                  const unit = getOptimalCurrencyUnit(selectedCountry.rateToKRW, selectedCountry.currency);
-                  const approxKRW = Math.round(selectedCountry.rateToKRW * unit);
+                  // The latest rate when the app has one for this currency, else the table's rough figure
+                  const rate = liveRates[selectedCountry.currency] ?? selectedCountry.rateToKRW;
+                  const unit = getOptimalCurrencyUnit(rate, selectedCountry.currency);
+                  const approxKRW = Math.round(rate * unit);
 
                   return (
                     <>

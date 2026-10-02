@@ -9,16 +9,7 @@ import html2canvas from 'html2canvas';
 import { createPortal } from 'react-dom';
 import { notify } from '../utils/feedback';
 import { CountUp } from './CountUp';
-
-const EXCHANGE_RATES: { [currency: string]: number } = {
-  KRW: 1,
-  USD: 1380,
-  JPY: 9.0,
-  EUR: 1480,
-  CNY: 190,
-  GBP: 1750,
-  TWD: 42,
-};
+import { useExchangeRates } from '../utils/exchangeRates';
 
 const CURRENCY_SYMBOLS: { [key: string]: string } = {
   KRW: 'KRW ', USD: 'USD ', JPY: 'JPY ', EUR: 'EUR ', CNY: 'CNY ', GBP: 'GBP ', TWD: 'TWD ',
@@ -509,6 +500,7 @@ export function SummaryView({
     return isNaN(num) ? 0 : num;
   };
 
+  const { rates: EXCHANGE_RATES } = useExchangeRates();
   const budgetSummary: { [currency: string]: number } = {};
   let totalInBaseCurrency = 0;
 
