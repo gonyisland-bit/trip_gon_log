@@ -472,6 +472,7 @@ Firestore 컬렉션: `users/{uid}`, `users/public/users/{uid}`
 ## 7. 변경 이력 (Changelog)
 
 ### v1.3.7 (2026.10.01)
+- **새 곰 장면 7컷(총 74컷)**: `uploading-photo`(사진 올리는 중, 편집 시트 커버 올리기), `receipt-empty`(지출 내역 없음, 정산), `done-check`(저장 완료 알림 `SAVED` 등 한 버튼 완료 창 머리), `invite-letter`(친구 초대 줄), `publish-done`(매거진 발행 완료 시트), `photo-add`(사진 없는 매거진 `EmptyScene photos`), `lost-guide`(여정을 찾을 수 없는 상세, `EmptyScene lost`). 상세 화면이 여정을 못 찾아 끝없이 뼈대만 보이던 문제도 함께 고침(`DetailMissing`: 1.8초 기다린 뒤 안내와 "여정 목록으로"). 아직 화면에 연결하지 않은 컷: `offline` · `season-*` 4컷 · `weather-rain` · `weather-snow`(기획 제안: 오프라인 안내 띠 · 달력 월 머리글 · 비와 눈 예보일 카드). 빌드는 Windows에서 `.venvScriptspython.exe scripts/art/build.py`(`.venv`는 git 제외).
 - **여정 편집 시트**: 직각 모달 `Edit Journey Cover Info`를 공용 `Sheet`(폰은 아래 서랍, 웹은 가운데 모달)의 `여정 편집`으로 교체(`EditTripModal`, 1,485줄 → 약 670줄). 탭 알약 4개 `기본 · 장소·태그 · 인원 · 커버`로 나눠 한 화면에 들어가고(높이 고정, 360×640에서도 스크롤은 장소와 태그가 매우 많을 때만), 바닥 `취소 | 저장`. 유형(`기록 | 계획`)은 한 곳으로 합치고 바꾸면 저장할 때 한 번 확인, 뱃지는 `NEW` · `EDITING` 칩. 인원은 이름 알약 + 지우기 + 친구 연결 한 버튼(바코드 장식 제거). 커버는 `카드 | 히어로` 알약 하나에 미리보기와 동작 알약(올리기 · 붙여넣기 · 다른 쪽에도 · 비우기); 올릴 때 사진은 2560px로 줄임. 바뀐 내용이 있으면 닫기 · 뒤로가기 모두 저장 · 버리기 · 계속 편집을 묻습니다.
 - **커버 로딩**: 카드 메뉴의 커버 패널은 여정 사진을 사본으로, 24장씩(`더 보기`) 그립니다. 카드 터치는 원본 커버를 받지 않고(카드가 쓰는 960px 사본이 이미 있음) 청크만 데웁니다. 매거진 커버는 `ProgressiveImage`: 사본을 즉시 그리고 원본을 `decode()`까지 마친 뒤 부드럽게 교체합니다.
 - **정리**: 어디서도 쓰이지 않던 `SettingsModal`(옛 설정, 1,041줄) · `IssueCard` · `IssueTextWindow` 삭제. `PasswordVerifyModal` · `PocketScheduleModal`을 공용 `Sheet`로(알약 버튼, 날짜와 시간대 칩).

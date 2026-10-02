@@ -3,6 +3,7 @@ import { ChevronUp, ChevronDown, Map as MapIcon, LayoutGrid, Clock, Plane, BedDo
 import { SettlementView } from '../components/SettlementView';
 import { BoardView } from '../components/board/JourneyBoard';
 import { Lightbox } from '../components/Lightbox';
+import { Sheet, SheetCloseButton } from '../components/Sheet';
 import { Footer } from '../components/Footer';
 import { FloatingPocketWidget } from '../components/FloatingPocketWidget';
 import { TabType } from '../types';
@@ -51,6 +52,8 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
   // ── Magazine (v1.3.6 4-b) ──
   const [magazineOpen, setMagazineOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  // The bear's party after a journey is published as a magazine
+  const [showPublished, setShowPublished] = useState(false);
   const uid = currentUid();
   const canEdit = Boolean(isLoggedIn && trip && (!trip.ownerId || trip.ownerId === uid || trip.editors?.includes(uid || '')));
   const isPast = Boolean(trip && !getUpcomingPlanInfo(trip).isPlanOrFuture && !getLiveTripStatus(trip.date).isLive);
@@ -100,7 +103,8 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
       const id = String(trip.id);
       const col = (await getDoc(doc(db, 'users', 'public', 'plans', id)).catch(() => null))?.exists() ? 'plans' : 'trips';
       await setDoc(doc(db, 'users', 'public', col, id), { publishedAt: on ? Date.now() : null }, { merge: true });
-      notify(on ? '매거진으로 발행했습니다. 여정 허브의 발행됨과 홈 매거진에서 볼 수 있습니다.' : '발행을 취소했습니다.', 'success');
+      if (on) setShowPublished(true);
+      else notify('발행을 취소했습니다.', 'success');
     } catch (err) {
       console.error('Publish failed:', err);
       notify('저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
@@ -411,6 +415,17 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
 
       {/* Fullscreen Lightbox component */}
       <DetailOverlays s={s} />
+
+      {showPublished && (
+        <Sheet label="발행했습니다" onClose={() => setShowPublished(false)} placement="center" tone="paper" zIndex={10001} panelClassName="sm:max-w-sm">
+          <div className="flex flex-col items-center gap-3 p-5 pt-2 text-center">
+            <Art id="publish-done" className="h-56 w-auto" />
+            <h2 className="text-[20px] font-extrabold tracking-tight">매거진으로 발행했어요</h2>
+            <p className="text-[14px] text-black/60 dark:text-white/60 break-keep">이 여정은 이제 매거진으로 열립니다. 여정 허브의 발행됨과 홈 매거진에서 볼 수 있어요.</p>
+            <SheetCloseButton className="btn btn-primary w-full mt-1">확인</SheetCloseButton>
+          </div>
+        </Sheet>
+      )}
 
       {magazineOpen && tripToUse && (
         <JourneyMagazine

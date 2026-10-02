@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { Art } from '../art/Art';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, Check, Info, X } from 'lucide-react';
 
@@ -169,6 +170,8 @@ export function ConfirmModal({
         >
           <X className="w-4 h-4" />
         </button>
+
+        {iconType === 'check' && singleButton && <Art id="done-check" className="h-24 w-auto self-center" />}
 
         {/* Header: Swiss Minimal Black/White Icon & Clean Uppercase Title */}
         <div className="flex items-center gap-2 pr-6 text-black dark:text-white">

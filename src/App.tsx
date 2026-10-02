@@ -10,6 +10,7 @@ import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKE
 import { TabBar } from './components/TabBar';
 import { DrawerHost, HubSkeleton } from './components/DrawerHost';
 import { Freeze } from './components/Freeze';
+import { DetailMissing } from './components/DetailMissing';
 import { shouldSkipBackgroundPrefetch } from './utils/prefetchHelper';
 import { isDrawerView, useIsPhone } from './app/drawerViews';
 import { useJourneyThumbs } from './app/useJourneyThumbs';
@@ -778,7 +779,7 @@ function App() {
                     </ErrorBoundary>
                   );
                 })() : (
-                  <DetailSkeleton />
+                  tripsLoaded && plansLoaded ? <DetailMissing onBack={() => navigateTo('archive')} /> : <DetailSkeleton />
                 )
               )}
             </Suspense>
@@ -935,8 +936,8 @@ function App() {
           <ConfirmModal
             isOpen={showSaveCompleteModal}
             title="SAVED"
-            message="All changes have been successfully saved."
-            confirmLabel="OK"
+            message="저장했습니다."
+            confirmLabel="확인"
             iconType="check"
             singleButton
             autoDismiss

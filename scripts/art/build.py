@@ -47,6 +47,11 @@ FILES = {
     'museum-visit-2': 'museum-visit-2.jpg', 'resort-hammock': 'resort-hammock.jpg', 'beach-relaxation': 'beach-relaxation.jpg',
     'beach-relaxation-2': 'beach-relaxation-2.jpg', 'beach-surfing': 'beach-surfing.jpg', 'swimming': 'swimming.jpg',
     'poolside-cocktail': 'poolside-cocktail.jpg', 'beach-drink': 'beach-drink1.jpg', 'sofa-rest': 'sofa-rest.jpg', 'sleeping': 'sleeping.jpg',
+    # app states (v1.3.8): uploading, empty receipts, saved, invitations, published, first photo, lost
+    'uploading-photo': 'Bear_carrying_framed_photo_20261002174915.jpg', 'receipt-empty': 'Bear_examining_receipt_paper_20261002174915.jpg',
+    'done-check': 'Bear_holding_green_checkmark_20261002174915.jpg', 'invite-letter': 'Teal_bear_holding_envelope_20261002174915.jpg',
+    'publish-done': 'Teal_bear_holding_magazine_20261002174915.jpg', 'photo-add': 'Teal_bear_standing_near_frame_20261002174915.jpg',
+    'lost-guide': 'Two_bears_waving_and_confused_20261002174915.jpg',
 }
 
 # Pictures that carry a caption under the art: rows from this one down are dropped

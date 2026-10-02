@@ -68,6 +68,13 @@ export const ART_IDS = [
   'beach-drink',
   'sofa-rest',
   'sleeping',
+  'uploading-photo',
+  'receipt-empty',
+  'done-check',
+  'invite-letter',
+  'publish-done',
+  'photo-add',
+  'lost-guide',
 ] as const;
 
 export type ArtId = typeof ART_IDS[number];

@@ -6,6 +6,7 @@ import type { Trip } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { cardCoverUrl } from '../../utils/journeyThumbs';
 import { ProgressiveImage } from '../ProgressiveImage';
+import { EmptyScene } from '../scenes/EmptyScene';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { lockBodyScroll } from '../../utils/scrollLock';
 import { confirmDialog } from '../../utils/feedback';
@@ -168,17 +169,12 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
       {/* Days */}
       <main className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-10 sm:py-16 flex flex-col gap-16 sm:gap-24">
         {byDay.days.length === 0 && byDay.loose.length === 0 && (
-          <div className="py-16 flex flex-col items-center text-center gap-3">
-            <span className="font-mono text-meta font-bold uppercase tracking-wider text-black/50 dark:text-white/50">No photos yet</span>
-            <p className="text-[15px] text-black/65 dark:text-white/65 max-w-sm">일정에 사진을 넣으면 날짜와 장소에 맞춰 이 매거진이 채워집니다.</p>
-            {addable ? (
-              <button type="button" className="btn btn-primary" onClick={pickPhotos} disabled={uploading}>
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <ImagePlus className="w-4 h-4" aria-hidden />}사진 올리기
-              </button>
-            ) : (
-              <button type="button" className="btn btn-primary" onClick={onShowRecord}>기록 보기</button>
-            )}
-          </div>
+          <EmptyScene
+            kind="photos"
+            title="아직 사진이 없어요"
+            copy="일정에 사진을 넣으면 날짜와 장소에 맞춰 이 매거진이 채워집니다."
+            action={addable ? { label: uploading ? '올리는 중' : '사진 올리기', onClick: pickPhotos } : { label: '기록 보기', onClick: onShowRecord }}
+          />
         )}
         {byDay.days.map(([day, list]) => (
           <section key={day} className="flex flex-col gap-6 sm:gap-8">

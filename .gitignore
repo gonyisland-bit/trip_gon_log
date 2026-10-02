@@ -33,3 +33,6 @@ promo/out/
 
 # art tracing
 scripts/art/__pycache__/
+
+# Python environment for scripts/art
+.venv/

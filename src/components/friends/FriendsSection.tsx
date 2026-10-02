@@ -9,6 +9,7 @@ import {
   activeInvite, createInvite, inviteLink, normalizeCode, promptAcceptInvite,
   type Invite, type PersonCard, friendLabel } from '../../utils/friends';
 import { useFriends } from './useFriends';
+import { Art } from '../../art/Art';
 import { EmptyScene } from '../scenes/EmptyScene';
 
 // Settings → Friends (v1.3.6 5-a): the friend list, an invite to hand out (link or 6-letter
@@ -135,7 +136,13 @@ export function FriendsSection({ me, canWrite, cardClass, labelClass, journeys, 
 
       {canWrite && (
         <div className="flex flex-col gap-2 pt-1">
-          <span className="text-[14px] font-bold">친구 초대</span>
+          <div className="flex items-center gap-3">
+            <Art id="invite-letter" className="h-14 w-auto shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-[14px] font-bold">친구 초대</span>
+              <span className="text-meta text-black/55 dark:text-white/55 break-keep">코드를 보내거나 받은 코드로 연결합니다.</span>
+            </div>
+          </div>
           {invite ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-[18px] font-bold tracking-[0.2em] tabular-nums px-1" aria-label={`초대 코드 ${invite.code}`}>{invite.code}</span>

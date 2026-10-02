@@ -8,6 +8,7 @@ import { cardCoverUrl } from '../utils/journeyThumbs';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ConfirmModal } from './ConfirmModal';
 import { Sheet } from './Sheet';
+import { Art } from '../art/Art';
 import { Segment } from './ui/Segment';
 import { Chip } from './ui/Chip';
 import { notify, confirmDialog } from '../utils/feedback';
@@ -618,7 +619,10 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
                     </button>
                   )}
                   {uploading && (
-                    <span className="absolute inset-0 grid place-items-center bg-black/40"><Loader2 className="w-6 h-6 text-white animate-spin" aria-label="올리는 중" /></span>
+                    <span role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-paper/90 dark:bg-paper-dark/90">
+                      <Art id="uploading-photo" className="h-24 w-auto" />
+                      <span className="text-meta font-bold text-black/60 dark:text-white/60">올리는 중</span>
+                    </span>
                   )}
                 </div>
                 <input
