@@ -5,37 +5,15 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
-  ChevronDown,
   ZoomIn,
   ZoomOut,
   RotateCcw,
   MessageSquare,
-  Play,
-  Pause,
-  SkipBack,
   MapPin,
-  Music,
-  Volume1,
   Volume2,
   VolumeX,
-  SkipForward,
-  Check,
-  Shuffle,
-  Eye,
-  EyeOff,
-  ListMusic,
-  SlidersHorizontal,
 } from 'lucide-react';
-import {
-  bgmPlayer,
-  getStoredBgmAutoplay,
-  getStoredBgmDefaultVolume,
-  getStoredSlideshowInterval,
-  saveStoredSlideshowInterval,
-  BgmTrack,
-} from '../utils/audioHelper';
-import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from './player/PlayerDock';
+import { bgmPlayer, BgmTrack } from '../utils/audioHelper';
 import { lockBodyScroll } from '../utils/scrollLock';
 
 
@@ -47,9 +25,6 @@ export interface LightboxImageMeta {
   imgNote?: string;
   type?: 'gallery' | 'timeline';
 }
-
-// Photos on each side of the current one that the slideshow settings strip loads right away
-const STRIP_EAGER = 6;
 
 interface LightboxProps {
   isOpen: boolean;
@@ -75,145 +50,17 @@ export function Lightbox({
   const [prevLoaded, setPrevLoaded] = useState<boolean>(false);
   const [nextLoaded, setNextLoaded] = useState<boolean>(false);
 
-  // Slideshow state
-  const [isSlideshow, setIsSlideshow] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [slideProgress, setSlideProgress] = useState(0); // 0-100 for progress bar
-  const [slideshowInterval, setSlideshowInterval] = useState(() => getStoredSlideshowInterval());
-  const slideshowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const wasFullscreenBeforeSlideshowRef = useRef<boolean>(false);
-
-  // Auto-hide controls in slideshow mode
-  const [isControlsVisible, setIsControlsVisible] = useState(true);
-  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // True when the current touch only woke the hidden slideshow controls
-  const wokeControlsRef = useRef(false);
-
-  // Clean view mode (hide bottom memo/captions in slideshow)
-  const [isCleanView, setIsCleanView] = useState(false);
-
-  // Pulse action feedback HUD on Space key (play/pause)
-  const [pulseAction, setPulseAction] = useState<'play' | 'pause' | null>(null);
-  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const triggerPulse = useCallback((action: 'play' | 'pause') => {
-    setPulseAction(action);
-    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
-    pulseTimerRef.current = setTimeout(() => {
-      setPulseAction(null);
-    }, 700);
-  }, []);
-
-  // BGM Player & Volume state
+  // Background music button. The slideshow is the magazine's Memory Reel; this viewer has none.
   const [isBgmPlaying, setIsBgmPlaying] = useState(() => bgmPlayer.isPlaying());
   const [currentBgmTrack, setCurrentBgmTrack] = useState<BgmTrack | null>(() => bgmPlayer.getCurrentTrack());
-  const [isTrackListOpen, setIsTrackListOpen] = useState(false);
-  // Phones: speed, music and caption details live in one panel that only opens on request
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const settingsOpenRef = useRef(false);
-  settingsOpenRef.current = isSettingsOpen;
-  // The panel opens at once; its photo strip mounts a frame later so decoding never delays the tap
-  const [isSettingsStripReady, setIsSettingsStripReady] = useState(false);
-  useEffect(() => {
-    if (!isSettingsOpen) { setIsSettingsStripReady(false); return; }
-    const id = window.setTimeout(() => setIsSettingsStripReady(true), 60);
-    return () => window.clearTimeout(id);
-  }, [isSettingsOpen]);
-  // Center the current photo when the strip appears or the photo changes, never on other re-renders
-  const settingsActiveThumbRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!isSettingsStripReady) return;
-    settingsActiveThumbRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' });
-  }, [isSettingsStripReady, currentIndex]);
-  const [isBgmShuffle, setIsBgmShuffle] = useState(() => bgmPlayer.isShuffle());
-
-  // Volume HUD state
-  const [volume, setVolume] = useState(() => bgmPlayer.getVolumePercent());
-  const [isMuted, setIsMuted] = useState(() => bgmPlayer.getVolumePercent() === 0);
-  const prevVolumeBeforeMuteRef = useRef<number>(getStoredBgmDefaultVolume() || 50);
-  const [isVolumeHudVisible, setIsVolumeHudVisible] = useState(false);
-  const volumeHudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showVolumeHud = useCallback(() => {
-    setIsVolumeHudVisible(true);
-    if (volumeHudTimerRef.current) clearTimeout(volumeHudTimerRef.current);
-    volumeHudTimerRef.current = setTimeout(() => {
-      setIsVolumeHudVisible(false);
-    }, 1500);
-  }, []);
-
-  const handleVolumeChange = useCallback((newPercent: number) => {
-    const clamped = Math.max(0, Math.min(100, Math.round(newPercent)));
-    bgmPlayer.setVolumePercent(clamped);
-    setVolume(clamped);
-    setIsMuted(clamped === 0);
-    showVolumeHud();
-  }, [showVolumeHud]);
-
-  const handleVolumeUp = useCallback(() => {
-    setVolume(prev => {
-      const next = Math.min(100, prev + 5);
-      handleVolumeChange(next);
-      return next;
-    });
-  }, [handleVolumeChange]);
-
-  const handleVolumeDown = useCallback(() => {
-    setVolume(prev => {
-      const next = Math.max(0, prev - 5);
-      handleVolumeChange(next);
-      return next;
-    });
-  }, [handleVolumeChange]);
-
-  const handleToggleMute = useCallback(() => {
-    if (volume > 0) {
-      prevVolumeBeforeMuteRef.current = volume;
-      handleVolumeChange(0);
-    } else {
-      const restore = prevVolumeBeforeMuteRef.current || getStoredBgmDefaultVolume() || 50;
-      handleVolumeChange(restore);
-    }
-  }, [volume, handleVolumeChange]);
-
-  const handleToggleShuffle = useCallback(() => {
-    const next = bgmPlayer.toggleShuffle();
-    setIsBgmShuffle(next);
-  }, []);
-
-  useEffect(() => { if (!isSlideshow) setIsSettingsOpen(false); }, [isSlideshow]);
-
-  const handleChangeInterval = useCallback((newInterval: number) => {
-    setSlideshowInterval(newInterval);
-    saveStoredSlideshowInterval(newInterval);
-  }, []);
-
-  const resetControlsTimer = useCallback(() => {
-    setIsControlsVisible(true);
-    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    if (isSlideshow && !isPaused) {
-      controlsTimeoutRef.current = setTimeout(() => {
-        if (!settingsOpenRef.current) setIsControlsVisible(false);
-      }, 2500);
-    }
-  }, [isSlideshow, isPaused]);
 
   useEffect(() => {
     const unsub = bgmPlayer.subscribe(() => {
       setIsBgmPlaying(bgmPlayer.isPlaying());
       setCurrentBgmTrack(bgmPlayer.getCurrentTrack());
-      const curVol = bgmPlayer.getVolumePercent();
-      setVolume(curVol);
-      setIsMuted(curVol === 0);
-      setIsBgmShuffle(bgmPlayer.isShuffle());
     });
     return () => unsub();
   }, []);
-
-  // True crossfade: old image fades out on top while new is already visible underneath
-  const [fadeOutSrc, setFadeOutSrc] = useState<string | null>(null);
-  const [fadeOutActive, setFadeOutActive] = useState(false);
 
   // Ambient Blur Background crossfade state
   const [ambientCurrUrl, setAmbientCurrUrl] = useState<string>(images[currentIndex]?.url || '');
@@ -284,7 +131,7 @@ export function Lightbox({
 
   // Auto-scroll active thumbnail to center immediately on index change (only when not directly scrolled by user)
   useEffect(() => {
-    if (!isOpen || isSlideshow) return;
+    if (!isOpen) return;
 
     if (isUserScrollingThumbsRef.current) {
       // User is scrolling thumbnail bar; do NOT fight momentum with scrollTo!
@@ -305,7 +152,7 @@ export function Lightbox({
         isProgrammaticScrollRef.current = false;
       }, 350);
     }
-  }, [currentIndex, isOpen, isSlideshow]);
+  }, [currentIndex, isOpen]);
 
   // Settle helper to compute nearest thumbnail at exact final stop position
   const settleThumbnailImmediate = useCallback(() => {
@@ -354,7 +201,7 @@ export function Lightbox({
 
   // Handle user drag/scroll on thumbnail bar
   const handleThumbnailsScroll = () => {
-    if (!isOpen || isSlideshow || isProgrammaticScrollRef.current) return;
+    if (!isOpen || isProgrammaticScrollRef.current) return;
     isUserScrollingThumbsRef.current = true;
     scheduleThumbnailSettle();
   };
@@ -362,7 +209,7 @@ export function Lightbox({
   // Convert mouse wheel up/down to horizontal scroll with 1-by-1 step and acceleration
   const handleThumbnailsWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     const container = thumbnailsContainerRef.current;
-    if (!container || !isOpen || isSlideshow) return;
+    if (!container || !isOpen) return;
 
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.preventDefault();
@@ -411,7 +258,7 @@ export function Lightbox({
   // ── Native Non-Passive Pinch-to-Zoom Listener on Mobile ──
   useEffect(() => {
     const el = imageContainerRef.current;
-    if (!el || !isOpen || isSlideshow) return;
+    if (!el || !isOpen) return;
 
     let startPinchDist = 0;
     let startScaleVal = 1;
@@ -482,148 +329,26 @@ export function Lightbox({
       el.removeEventListener('touchend', handleNativeTouchEnd);
       el.removeEventListener('touchcancel', handleNativeTouchEnd);
     };
-  }, [isOpen, isSlideshow]);
+  }, [isOpen]);
 
-  // ── Slideshow engine ──
-  const stopSlideshow = useCallback(() => {
-    if (slideshowTimerRef.current) clearTimeout(slideshowTimerRef.current);
-    if (progressTimerRef.current) clearInterval(progressTimerRef.current);
-    slideshowTimerRef.current = null;
-    progressTimerRef.current = null;
-    setSlideProgress(0);
-  }, []);
-
-  const startSlideshowCycle = useCallback(() => {
-    stopSlideshow();
-    setSlideProgress(0);
-
-    // Progress bar ticks every 50ms
-    const startTime = Date.now();
-    progressTimerRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      setSlideProgress(Math.min(100, (elapsed / slideshowInterval) * 100));
-    }, 50);
-
-    slideshowTimerRef.current = setTimeout(() => {
-      // Capture old image src BEFORE navigating
-      const oldSrc = images[currentIndex]?.url ?? null;
-
-      // 1. Place old image as an opaque absolute overlay
-      setFadeOutSrc(oldSrc);
-      setFadeOutActive(true);
-
-      // 2. Immediately navigate — new image is now the "current" (fully visible underneath)
-      onNavigate((currentIndex + 1) % images.length);
-
-      // 3. On next two frames (ensure React has painted), start fading out the overlay
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setFadeOutActive(false); // triggers CSS transition opacity 1 → 0
-        });
-      });
-
-      // 4. Clean up overlay after transition finishes
-      setTimeout(() => {
-        setFadeOutSrc(null);
-        setFadeOutActive(false);
-      }, 900); // slightly longer than CSS transition (700ms)
-    }, slideshowInterval);
-  }, [currentIndex, images, onNavigate, stopSlideshow, slideshowInterval]);
-
-  // When slideshow is running and not paused, start a cycle on each index change
-  useEffect(() => {
-    if (isSlideshow && !isPaused) {
-      startSlideshowCycle();
-    } else {
-      stopSlideshow();
-    }
-    return () => stopSlideshow();
-  }, [isSlideshow, isPaused, currentIndex, startSlideshowCycle, stopSlideshow]);
-
-  // Synchronize controls timer when slideshow/pause state changes
-  useEffect(() => {
-    if (isSlideshow) {
-      if (isPaused) {
-        setIsControlsVisible(true);
-        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-      } else {
-        resetControlsTimer();
-      }
-    } else {
-      setIsControlsVisible(true);
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    }
-  }, [isSlideshow, isPaused, resetControlsTimer]);
-
-  // Stop slideshow & BGM & exit fullscreen when lightbox closes or unmounts
+  // Music stops and fullscreen (the F key) ends when the lightbox closes or unmounts
   useEffect(() => {
     if (!isOpen) {
-      setIsSlideshow(false);
-      setIsPaused(false);
-      setIsControlsVisible(true);
-      stopSlideshow();
       bgmPlayer.stop();
-
-      // Exit fullscreen if it was entered specifically for slideshow
-      if (!wasFullscreenBeforeSlideshowRef.current) {
-        try {
-          if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
-            if (document.exitFullscreen) {
-              document.exitFullscreen();
-            } else if ((document as any).webkitExitFullscreen) {
-              (document as any).webkitExitFullscreen();
-            }
-          }
-        } catch (_) {}
-      }
-    }
-    return () => {
-      bgmPlayer.stop();
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    };
-  }, [isOpen, stopSlideshow]);
-
-  // No slideshow here (v1.3.8): the magazine's Memory Reel is the only one. This viewer shows attachments and notes.
-  const handleStopSlideshow = async () => {
-    setIsSlideshow(false);
-    setIsPaused(false);
-    setIsControlsVisible(true);
-    stopSlideshow();
-    await bgmPlayer.fadeOut(400);
-
-    // Revert to non-fullscreen only if user wasn't in fullscreen before
-    if (!wasFullscreenBeforeSlideshowRef.current) {
       try {
         if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
           if (document.exitFullscreen) {
-            await document.exitFullscreen();
+            document.exitFullscreen();
           } else if ((document as any).webkitExitFullscreen) {
-            await (document as any).webkitExitFullscreen();
+            (document as any).webkitExitFullscreen();
           }
         }
-      } catch (err) {
-        console.warn('Exit fullscreen failed:', err);
-      }
+      } catch (_) {}
     }
-  };
-
-  const handleTogglePause = () => {
-    setIsPaused(prev => {
-      const next = !prev;
-      triggerPulse(next ? 'pause' : 'play');
-      if (next) {
-        bgmPlayer.pause();
-        setIsControlsVisible(true);
-        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-      } else {
-        if (getStoredBgmAutoplay()) {
-          bgmPlayer.play();
-        }
-        resetControlsTimer();
-      }
-      return next;
-    });
-  };
+    return () => {
+      bgmPlayer.stop();
+    };
+  }, [isOpen]);
 
   // Touch event refs for mobile swiping & panning
   const touchStartX = useRef<number | null>(null);
@@ -716,29 +441,18 @@ export function Lightbox({
   };
 
   const handlePrev = useCallback(() => {
-    if (isSlideshow) {
-      stopSlideshow();
-      setSlideProgress(0);
-    }
     const nextIndex = (currentIndex - 1 + images.length) % images.length;
     onNavigate(nextIndex);
-  }, [currentIndex, images.length, onNavigate, isSlideshow, stopSlideshow]);
+  }, [currentIndex, images.length, onNavigate]);
 
   const handleNext = useCallback(() => {
-    if (isSlideshow) {
-      stopSlideshow();
-      setSlideProgress(0);
-    }
     const nextIndex = (currentIndex + 1) % images.length;
     onNavigate(nextIndex);
-  }, [currentIndex, images.length, onNavigate, isSlideshow, stopSlideshow]);
+  }, [currentIndex, images.length, onNavigate]);
 
-  // ESC & Arrow & Space key handling
+  // ESC & Arrow & zoom key handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Reset controls timer on key interaction
-      resetControlsTimer();
-
       // F key: toggle fullscreen
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
@@ -761,13 +475,8 @@ export function Lightbox({
       }
 
       if (e.key === 'Escape') {
-        if (isSlideshow) {
-          handleStopSlideshow();
-        } else {
-          onClose();
-        }
+        onClose();
       }
-      // Arrow keys work in both normal and slideshow modes (playing or paused)
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         handlePrev();
@@ -776,39 +485,17 @@ export function Lightbox({
         e.preventDefault();
         handleNext();
       }
-      // Volume & Slide Controls in Slideshow
-      if (isSlideshow) {
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          handleVolumeUp();
-        }
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          handleVolumeDown();
-        }
-        if (e.key === 'm' || e.key === 'M') {
-          e.preventDefault();
-          handleToggleMute();
-        }
-        if (e.key === 'c' || e.key === 'C') {
-          e.preventDefault();
-          setIsCleanView(prev => !prev);
-        }
+      if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
+        e.preventDefault();
+        handleZoomIn();
       }
-
-      if (!isSlideshow) {
-        if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
-          e.preventDefault();
-          handleZoomIn();
-        }
-        if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') {
-          e.preventDefault();
-          handleZoomOut();
-        }
-        if (e.key === '*' || e.code === 'NumpadMultiply') {
-          e.preventDefault();
-          resetZoom();
-        }
+      if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') {
+        e.preventDefault();
+        handleZoomOut();
+      }
+      if (e.key === '*' || e.code === 'NumpadMultiply') {
+        e.preventDefault();
+        resetZoom();
       }
     };
 
@@ -832,12 +519,6 @@ export function Lightbox({
     handlePrev,
     handleNext,
     onClose,
-    isSlideshow,
-    handleTogglePause,
-    handleStopSlideshow,
-    handleVolumeUp,
-    handleVolumeDown,
-    handleToggleMute,
   ]);
 
   // Reset zoom on image change
@@ -888,16 +569,6 @@ export function Lightbox({
     }
   }
 
-  function handleSlideshowWheel(e: React.WheelEvent) {
-    if (!isSlideshow) return;
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      handleVolumeUp();
-    } else if (e.deltaY > 0) {
-      handleVolumeDown();
-    }
-  }
-
   function handleWheel(e: React.WheelEvent) {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 0.1 : -0.1;
@@ -925,30 +596,6 @@ export function Lightbox({
     setIsDragging(false);
   }
 
-  // Slideshow speed (interval) selector, shown in the dock's settings panel
-  const renderSpeed = () => (
-    <div className="flex items-center bg-white/10 border border-white/20 p-0.5">
-      {[
-        { label: '3s', val: 3000 },
-        { label: '4s', val: 4000 },
-        { label: '6s', val: 6000 },
-        { label: '8s', val: 8000 },
-      ].map((item) => (
-        <button
-          key={item.val}
-          type="button"
-          onClick={() => handleChangeInterval(item.val)}
-          className={`px-2.5 py-1 font-mono text-micro uppercase transition-colors cursor-pointer ${
-            slideshowInterval === item.val ? 'bg-red-500 text-white font-bold' : 'text-white/60 hover:text-white'
-          }`}
-          aria-pressed={slideshowInterval === item.val}
-          title={`슬라이드 전환 속도 ${item.label}`}
-        >
-          {item.label}
-        </button>
-      ))}
-    </div>
-  );
   // Format date: YYYY.MM.DD → 'MM / DD / YYYY' film stamp style
   function formatFilmDate(dateStr?: string) {
     if (!dateStr) return '';
@@ -962,17 +609,10 @@ export function Lightbox({
   return createPortal(
     <div
       data-bg-cover
-      className={`fixed inset-0 z-player bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden ${
-        isSlideshow && !isControlsVisible ? 'cursor-none [&_*]:!cursor-none' : ''
-      }`}
-      onMouseMove={resetControlsTimer}
+      className="fixed inset-0 z-player bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      onTouchStart={(e) => {
-        wokeControlsRef.current = isSlideshow && !isControlsVisible;
-        resetControlsTimer();
-        handleTouchStart(e);
-      }}
+      onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
@@ -1000,310 +640,105 @@ export function Lightbox({
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* ── SLIDESHOW: one line on top (progress, count, close), one dock at the bottom ── */}
-      {isSlideshow && (
-        <PlayerTopBar
-          visible={isControlsVisible}
-          count={images.length}
-          index={currentIndex}
-          progress={slideProgress / 100}
-          countLabel={<>{currentIndex + 1} / {images.length}</>}
-          label={isPaused ? (
-            <span className="inline-flex items-center gap-1.5 text-white/85">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-              PAUSED
+      {/* ── Top header controls ── */}
+      <div className="flex justify-between items-center px-4 py-3 md:px-6 md:py-4 text-white z-20 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 pointer-events-none">
+        <span className="text-meta md:text-xs uppercase tracking-widest font-bold opacity-50 pointer-events-auto">
+          {currentIndex + 1} / {images.length}
+        </span>
+
+        <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
+          {/* Log toggle */}
+          <button
+            onClick={() => setShowLog(v => !v)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
+              showLog
+                ? 'bg-white/10 border-white/20 text-white font-extrabold'
+                : 'border-white/10 text-white/60 hover:text-white/70 hover:border-white/20'
+            }`}
+            title="Toggle log info"
+          >
+            <MessageSquare className="w-3 h-3" />
+            Log {showLog ? 'ON' : 'OFF'}
+          </button>
+
+          <div className="h-4 w-[1px] bg-white/20 mx-1" />
+
+          {/* BGM Toggle in Normal Mode */}
+          <button
+            onClick={() => bgmPlayer.toggle()}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
+              isBgmPlaying
+                ? 'border-red-500/80 bg-red-500/10 text-red-400 font-extrabold'
+                : 'border-white/20 hover:bg-white/10 text-white/60 hover:text-white'
+            }`}
+            title={isBgmPlaying ? `배경음악 끄기 (${currentBgmTrack?.title || 'BGM'})` : '배경음악 켜기'}
+          >
+            {isBgmPlaying ? <Volume2 className="w-3 h-3 text-red-400 animate-pulse" /> : <VolumeX className="w-3 h-3 opacity-60" />}
+            BGM
+          </button>
+
+          {/* Desktop Zoom controls */}
+          <div className="hidden sm:flex items-center gap-1">
+            <div className="h-4 w-[1px] bg-white/20 mx-1" />
+
+            <button
+              onClick={handleZoomOut}
+              disabled={scale <= 0.5}
+              className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+              title="Zoom Out (-)"
+            >
+              <ZoomOut className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+
+            <span className="text-meta md:text-xs font-mono font-bold w-10 text-center opacity-70">
+              {Math.round(scale * 100)}%
             </span>
-          ) : undefined}
-          onClose={() => { handleStopSlideshow(); onClose(); }}
-        />
-      )}
 
-      {isSlideshow && (
-        <div
-          className="absolute inset-0 z-30 flex flex-col pointer-events-none select-none"
-          onMouseEnter={() => {
-            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-          }}
-          onMouseLeave={() => {
-            resetControlsTimer();
-          }}
-        >
-          {/* Tap the picture to pause or play (a tap that only wakes the controls does not pause) */}
-          <div
+            <button
+              onClick={handleZoomIn}
+              disabled={scale >= 4}
+              className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+              title="Zoom In (+)"
+            >
+              <ZoomIn className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+
+            <button
+              onClick={resetZoom}
+              disabled={scale === 1 && position.x === 0 && position.y === 0}
+              className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+              title="Reset Zoom (*)"
+            >
+              <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+          </div>
+
+          <div className="h-4 w-[1px] bg-white/20 mx-1" />
+
+          {/* Exit/Close Button (Always visible & prominent on mobile) */}
+          <button
             onClick={() => {
-              if (wokeControlsRef.current) { wokeControlsRef.current = false; return; }
-              handleTogglePause();
+              bgmPlayer.stop();
+              onClose();
             }}
-            className="flex-grow pointer-events-auto cursor-pointer"
-          />
-
-          <div className="relative w-full flex flex-col gap-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}>
-            <div
-              className={`absolute inset-x-0 bottom-0 -top-24 bg-gradient-to-t from-black/80 via-black/35 to-transparent transition-opacity duration-300 pointer-events-none ${
-                isControlsVisible || !isCleanView ? 'opacity-100' : 'opacity-0'
-              }`}
-            />
-
-            {/* Caption stays while the controls hide; only the caption toggle removes it */}
-            {!isCleanView && (() => {
-              const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
-              const secondaryLoc = (currentMeta.location && currentMeta.location.trim() !== primaryTitle) ? currentMeta.location.trim() : '';
-              const extraNote = (currentMeta.imgNote && currentMeta.imgNote.trim() !== primaryTitle && currentMeta.imgNote.trim() !== secondaryLoc) ? currentMeta.imgNote.trim() : '';
-              if (!primaryTitle && !currentMeta.date && !secondaryLoc && !extraNote) return null;
-              return (
-                <div key={currentIndex} className={`relative z-10 w-full max-w-2xl px-4 sm:px-8 pointer-events-none tgl-reel-caption drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] transition-opacity duration-base ${isSettingsOpen ? 'opacity-0' : ''}`}>
-                  {(currentMeta.date || secondaryLoc) && (
-                    <div className="flex items-center gap-2 min-w-0 font-mono text-micro sm:text-meta font-bold uppercase tracking-[0.16em]">
-                      {/* Film date stamp keeps its orange */}
-                      {currentMeta.date && <span className="shrink-0 tabular-nums" style={{ color: '#f97316' }}>{formatFilmDate(currentMeta.date)}</span>}
-                      {currentMeta.date && secondaryLoc && <span className="w-4 h-px bg-white/50 shrink-0" />}
-                      {secondaryLoc && <span className="truncate text-white/85">{secondaryLoc}</span>}
-                    </div>
-                  )}
-                  {primaryTitle && (
-                    <div className="mt-1 text-white text-lg sm:text-2xl font-extrabold tracking-[-0.02em] leading-tight break-keep line-clamp-2">
-                      {primaryTitle}
-                    </div>
-                  )}
-                  {extraNote && !secondaryLoc && (
-                    <div className="mt-1 text-white/80 text-xs sm:text-sm truncate">{extraNote}</div>
-                  )}
-                </div>
-              );
-            })()}
-
-            <PlayerDock
-              className="relative z-10 self-center"
-              visible={isControlsVisible}
-              playing={!isPaused}
-              onTogglePlay={handleTogglePause}
-              onPrev={handlePrev}
-              onNext={handleNext}
-              prevLabel="이전 (←)"
-              nextLabel="다음 (→)"
-              leading={
-                <DockButton label={volume === 0 ? '소리 켜기 (M)' : '소리 끄기 (M)'} onClick={handleToggleMute}>
-                  {volume === 0 ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
-                </DockButton>
-              }
-              trailing={
-                <DockButton
-                  label={isSettingsOpen ? '설정 닫기' : '설정'}
-                  active={isSettingsOpen}
-                  aria-expanded={isSettingsOpen}
-                  onClick={() => { if (isSettingsOpen) setTimeout(resetControlsTimer, 0); setIsSettingsOpen(v => !v); setIsTrackListOpen(false); }}
-                >
-                  <SlidersHorizontal className="w-5 h-5" />
-                </DockButton>
-              }
-              hud={isVolumeHudVisible && !isSettingsOpen ? (
-                <div className="flex items-center gap-2 px-3 h-8 bg-black/70 backdrop-blur-md border border-white/20 text-white font-mono text-micro tabular-nums animate-in fade-in duration-150">
-                  {volume === 0 ? <VolumeX className="w-3.5 h-3.5 opacity-60" /> : <Volume2 className="w-3.5 h-3.5" />}
-                  <span className="w-24 h-[2px] bg-white/20 overflow-hidden"><span className="block h-full bg-red-500" style={{ width: `${volume}%` }} /></span>
-                  <span className="w-8 text-right">{volume}%</span>
-                </div>
-              ) : undefined}
-              panel={isSettingsOpen ? (
-                <DockPanel>
-                  <DockPanelRow label="전환 시간">{renderSpeed()}</DockPanelRow>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-micro uppercase tracking-widest text-white/60 w-16 shrink-0">볼륨</span>
-                    <input
-                      type="range" min={0} max={100} value={volume}
-                      onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                      className="flex-1 min-w-0 accent-red-500"
-                      aria-label="볼륨"
-                    />
-                    <span className="w-9 text-right font-mono text-micro font-bold text-white/80 tabular-nums shrink-0">{volume}%</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button type="button" onClick={() => setIsTrackListOpen(prev => !prev)} aria-expanded={isTrackListOpen} className={`flex-1 min-w-0 h-9 px-3 flex items-center gap-2 bg-white/10 hover:bg-white/15 text-left ${isBgmPlaying ? 'text-red-400' : 'text-white/80'}`}>
-                      <ListMusic className="w-4 h-4 shrink-0" />
-                      <span className="truncate text-xs font-bold">{currentBgmTrack?.title || (isBgmPlaying ? 'BGM ON' : 'BGM OFF')}</span>
-                    </button>
-                    <button type="button" onClick={handleToggleShuffle} className={`tap-target w-9 h-9 grid place-items-center shrink-0 ${isBgmShuffle ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/15 text-white'}`} aria-label={isBgmShuffle ? '셔플 끄기' : '셔플 켜기'} aria-pressed={isBgmShuffle}>
-                      <Shuffle className="w-4 h-4" />
-                    </button>
-                    <button type="button" onClick={() => bgmPlayer.next()} className="tap-target w-9 h-9 grid place-items-center bg-white/10 hover:bg-white/15 text-white shrink-0" aria-label="다음 곡">
-                      <SkipForward className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {isTrackListOpen && (
-                    <div className="max-h-36 overflow-y-auto overscroll-contain border border-white/15 shrink-0">
-                      {bgmPlayer.getPlayableTracks().length === 0 ? (
-                        <div className="p-3 text-center text-xs text-white/60 font-mono">재생 가능한 음원이 없습니다</div>
-                      ) : bgmPlayer.getPlayableTracks().map((track, idx) => {
-                        const on = currentBgmTrack?.id === track.id;
-                        return (
-                          <button key={track.id} type="button" onClick={() => { bgmPlayer.playTrackById(track.id); setIsTrackListOpen(false); }}
-                            className={`w-full text-left px-3 py-2 flex items-center justify-between text-xs font-mono ${on ? 'bg-red-500/20 text-red-400 font-bold' : 'text-white/80 hover:bg-white/10'}`}>
-                            <span className="truncate pr-2"><span className="opacity-60">#{idx + 1}</span> {track.title}</span>
-                            {on && <Check className="w-3.5 h-3.5 shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {images.length > 1 && (
-                    <div className="flex gap-1 overflow-x-auto hide-scrollbar shrink-0 -mx-1 px-1 h-11">
-                      {/* Every photo stays scrollable; only those near the current one load right away,
-                          the rest load as they scroll into view, decoded off the main thread */}
-                      {isSettingsStripReady && images.map((img, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          ref={idx === currentIndex ? settingsActiveThumbRef : undefined}
-                          onClick={() => onNavigate(idx)}
-                          className={`w-11 h-11 shrink-0 overflow-hidden border bg-white/5 ${idx === currentIndex ? 'border-red-500' : 'border-white/15 opacity-70 hover:opacity-100'}`}
-                          aria-label={`${idx + 1}번째 사진`}
-                          aria-current={idx === currentIndex}
-                        >
-                          <img
-                            src={img.url}
-                            alt=""
-                            loading={Math.abs(idx - currentIndex) <= STRIP_EAGER ? 'eager' : 'lazy'}
-                            decoding="async"
-                            className="w-full h-full object-cover"
-                            draggable={false}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5">
-                    <button type="button" onClick={() => setIsCleanView((prev) => !prev)} aria-pressed={isCleanView} className={`flex-1 h-9 px-3 flex items-center justify-center gap-2 text-xs font-bold ${isCleanView ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/15 text-white'}`}>
-                      {isCleanView ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      <span>{isCleanView ? '자막 보이기' : '자막 숨기기'}</span>
-                    </button>
-                    <button type="button" onClick={handleStopSlideshow} className="flex-1 h-9 px-3 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white text-xs font-bold">
-                      <SkipBack className="w-4 h-4" />
-                      <span>갤러리로</span>
-                    </button>
-                  </div>
-                </DockPanel>
-              ) : undefined}
-            />
-          </div>
+            className="tap-target p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
+            title="나가기 / 닫기 (ESC)"
+            aria-label="Close Lightbox"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
         </div>
-      )}
-
-      {/* ── SPACE KEY PLAY/PAUSE PULSE HUD ── */}
-      {isSlideshow && pulseAction && (
-        <div className="pointer-events-none fixed inset-0 flex items-center justify-center z-40 transition-opacity duration-200">
-          <div className="w-16 h-16 rounded-full bg-black/70 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl animate-in zoom-in-75 fade-in duration-150">
-            {pulseAction === 'play' ? (
-              <Play className="w-7 h-7 text-red-400 fill-red-400/20 translate-x-0.5" />
-            ) : (
-              <Pause className="w-7 h-7 text-white" />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── NORMAL MODE: Top Header controls ── */}
-      {!isSlideshow && (
-        <div className="flex justify-between items-center px-4 py-3 md:px-6 md:py-4 text-white z-20 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 pointer-events-none">
-          <span className="text-meta md:text-xs uppercase tracking-widest font-bold opacity-50 pointer-events-auto">
-            {currentIndex + 1} / {images.length}
-          </span>
-
-          <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
-            {/* Log toggle */}
-            <button
-              onClick={() => setShowLog(v => !v)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
-                showLog
-                  ? 'bg-white/10 border-white/20 text-white font-extrabold'
-                  : 'border-white/10 text-white/60 hover:text-white/70 hover:border-white/20'
-              }`}
-              title="Toggle log info"
-            >
-              <MessageSquare className="w-3 h-3" />
-              Log {showLog ? 'ON' : 'OFF'}
-            </button>
-
-            <div className="h-4 w-[1px] bg-white/20 mx-1" />
-
-            {/* BGM Toggle in Normal Mode */}
-            <button
-              onClick={() => bgmPlayer.toggle()}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
-                isBgmPlaying
-                  ? 'border-red-500/80 bg-red-500/10 text-red-400 font-extrabold'
-                  : 'border-white/20 hover:bg-white/10 text-white/60 hover:text-white'
-              }`}
-              title={isBgmPlaying ? `배경음악 끄기 (${currentBgmTrack?.title || 'BGM'})` : '배경음악 켜기'}
-            >
-              {isBgmPlaying ? <Volume2 className="w-3 h-3 text-red-400 animate-pulse" /> : <VolumeX className="w-3 h-3 opacity-60" />}
-              BGM
-            </button>
-
-            {/* Desktop Zoom controls */}
-            <div className="hidden sm:flex items-center gap-1">
-              <div className="h-4 w-[1px] bg-white/20 mx-1" />
-
-              <button
-                onClick={handleZoomOut}
-                disabled={scale <= 0.5}
-                className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
-                title="Zoom Out (-)"
-              >
-                <ZoomOut className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
-
-              <span className="text-meta md:text-xs font-mono font-bold w-10 text-center opacity-70">
-                {Math.round(scale * 100)}%
-              </span>
-
-              <button
-                onClick={handleZoomIn}
-                disabled={scale >= 4}
-                className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
-                title="Zoom In (+)"
-              >
-                <ZoomIn className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
-
-              <button
-                onClick={resetZoom}
-                disabled={scale === 1 && position.x === 0 && position.y === 0}
-                className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
-                title="Reset Zoom (*)"
-              >
-                <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
-            </div>
-
-            <div className="h-4 w-[1px] bg-white/20 mx-1" />
-
-            {/* Exit/Close Button (Always visible & prominent on mobile) */}
-            <button
-              onClick={() => {
-                bgmPlayer.stop();
-                onClose();
-              }}
-              className="tap-target p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
-              title="나가기 / 닫기 (ESC)"
-              aria-label="Close Lightbox"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </div>
-        </div>
-      )}
-
+      </div>
       {/* Main image area */}
       <div
         className="flex-grow flex items-center justify-center relative overflow-hidden w-full"
-        onWheel={isSlideshow ? handleSlideshowWheel : handleWheel}
+        onWheel={handleWheel}
       >
         {/* Left Arrow */}
-        {images.length > 1 && !isSlideshow && (
+        {images.length > 1 && (
           <button
             onClick={handlePrev}
-            className={`tap-target absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
-              isSlideshow && !isControlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            }`}
+            className="tap-target absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 opacity-100"
             title="이전 사진 (←)"
             aria-label="Previous photo"
           >
@@ -1315,8 +750,8 @@ export function Lightbox({
         <div
           ref={imageContainerRef}
           className="relative flex items-center justify-center w-full h-full cursor-grab active:cursor-grabbing touch-none select-none"
-          onMouseDown={isSlideshow ? undefined : handleMouseDown}
-          onMouseMove={isSlideshow ? undefined : handleMouseMove}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
         >
           <div
             className="relative inline-block"
@@ -1333,21 +768,11 @@ export function Lightbox({
               src={currentMeta.url}
               alt="Fullscreen Gallery"
               decoding="async"
-              onDoubleClick={isSlideshow ? undefined : handleDoubleClick}
+              onDoubleClick={handleDoubleClick}
               data-pin-nopin="true"
               style={{
-                maxHeight: isSlideshow
-                  ? '100dvh'
-                  : isMobile
-                    ? 'calc(100dvh - 85px)'
-                    : 'calc(100dvh - 145px)',
-                maxWidth: isSlideshow
-                  ? '100vw'
-                  : isMobile
-                    ? 'calc(100vw - 8px)'
-                    : 'min(96vw, calc(100vw - 100px))',
-                width: isSlideshow ? '100vw' : undefined,
-                height: isSlideshow ? '100dvh' : undefined,
+                maxHeight: isMobile ? 'calc(100dvh - 85px)' : 'calc(100dvh - 145px)',
+                maxWidth: isMobile ? 'calc(100vw - 8px)' : 'min(96vw, calc(100vw - 100px))',
                 objectFit: 'contain',
                 userSelect: 'none',
                 display: 'block',
@@ -1356,29 +781,8 @@ export function Lightbox({
               draggable={false}
             />
 
-            {/* ── Crossfade overlay: old image fades out on top (no black flash) ── */}
-            {fadeOutSrc && (
-              <img
-                src={fadeOutSrc}
-                aria-hidden="true"
-                data-pin-nopin="true"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  opacity: fadeOutActive ? 1 : 0,
-                  transition: 'opacity 700ms ease',
-                  pointerEvents: 'none',
-                  userSelect: 'none',
-                }}
-                draggable={false}
-              />
-            )}
-
             {/* ── Film Date Stamp: bottom-right of image ── */}
-            {hasDate && showLog && !isSlideshow && (
+            {hasDate && showLog && (
               <div className="absolute bottom-3 right-3 z-30 pointer-events-none text-right">
                 <span
                   className="font-mono font-bold tracking-widest leading-none"
@@ -1395,7 +799,7 @@ export function Lightbox({
             )}
           </div>
 
-          {scale <= 1 && !isSlideshow && (
+          {scale <= 1 && (
             <div
               className="absolute inset-0 z-10 w-full h-full cursor-pointer"
               onDoubleClick={handleDoubleClick}
@@ -1404,12 +808,10 @@ export function Lightbox({
         </div>
 
         {/* Right Arrow */}
-        {images.length > 1 && !isSlideshow && (
+        {images.length > 1 && (
           <button
             onClick={handleNext}
-            className={`tap-target absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
-              isSlideshow && !isControlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            }`}
+            className="tap-target absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 opacity-100"
             title="다음 사진 (→)"
             aria-label="Next photo"
           >
@@ -1418,8 +820,8 @@ export function Lightbox({
         )}
       </div>
 
-      {/* Bottom Thumbnails Strip (hidden in slideshow mode) */}
-      {images.length > 1 && !isSlideshow && (
+      {/* Bottom Thumbnails Strip */}
+      {images.length > 1 && (
         <div 
           ref={thumbnailsContainerRef}
           onScroll={handleThumbnailsScroll}
@@ -1488,8 +890,8 @@ export function Lightbox({
         </div>
       )}
 
-      {/* Bottom captions panel (normal mode only) */}
-      {showLog && !isSlideshow && (
+      {/* Bottom captions panel */}
+      {showLog && (
         <div className="relative z-20 bg-black/90 border-t border-white/10 px-4 py-2.5 md:px-8 md:py-3 flex flex-col items-center justify-center shrink-0 min-h-16 md:min-h-20 text-center w-full">
           <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center text-center gap-1">
             {(() => {
@@ -1524,7 +926,7 @@ export function Lightbox({
       )}
 
       {/* Hint when no log or date */}
-      {(!showLog || !hasLog) && !hasDate && !isSlideshow && (
+      {(!showLog || !hasLog) && !hasDate && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pb-3 pt-6 text-center bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
           <p className="text-white/60 text-micro uppercase tracking-widest font-bold">
             +/- to Zoom · * to Reset · Swipe/Click Thumbnails to Navigate
