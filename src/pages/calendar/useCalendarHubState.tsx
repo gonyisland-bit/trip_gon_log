@@ -70,6 +70,7 @@ export function useCalendarHubState({
       type: 'trip' | 'event';
       isPlan?: boolean;
       categoryColor?: string;
+      categoryLabel?: string;
       days?: number;
     }[];
   } | null>(null);
@@ -84,6 +85,7 @@ export function useCalendarHubState({
       type: 'trip' | 'event';
       isPlan?: boolean;
       categoryColor?: string;
+      categoryLabel?: string;
       days?: number;
       itemObj?: any;
     }[];
@@ -636,6 +638,7 @@ export function useCalendarHubState({
           isPlan,
           days: getDaysDifference(range.start, range.end),
           categoryColor: isPlan ? '#3b82f6' : '#ef4444',
+          categoryLabel: isPlan ? '계획' : '여정',
           itemObj: journey
         });
       }
@@ -650,6 +653,7 @@ export function useCalendarHubState({
           title: ev.title,
           type: 'event' as const,
           categoryColor: cat?.color || '#10b981',
+          categoryLabel: cat?.label || '일정',
           days: getDaysDifference(ev.startDate, evEnd),
           itemObj: ev
         });
@@ -1226,12 +1230,14 @@ export function useCalendarHubState({
             isPlan: t.isPlan,
             days: t.totalDays,
             categoryColor: t.isPlan ? '#3b82f6' : '#ef4444',
+            categoryLabel: t.isPlan ? '계획' : '여정',
             itemObj: t.trip
           })),
           ...cell.overlappingEvents.map(ev => ({
             title: ev.event.title,
             type: 'event' as const,
             categoryColor: '#10b981',
+            categoryLabel: '일정',
             days: ev.totalDays,
             itemObj: ev.event
           }))
@@ -1368,6 +1374,7 @@ export function useCalendarHubState({
       type: 'trip' | 'event';
       isPlan?: boolean;
       categoryColor?: string;
+      categoryLabel?: string;
       days?: number;
     }[] = [];
 
@@ -1386,6 +1393,7 @@ export function useCalendarHubState({
         title: ev.title,
         type: 'event',
         categoryColor: cat?.color,
+        categoryLabel: cat?.label,
         days: ev.totalDays
       });
     });

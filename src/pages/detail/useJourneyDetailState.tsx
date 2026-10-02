@@ -2812,12 +2812,15 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     const bookingRef = type === 'train' ? 'TRN-000' : type === 'bus' ? 'BUS-000' : type === 'car' ? 'N/A' : 'TX-000';
     const seat = type === 'car' || type === 'taxi' ? 'N/A' : 'Car 0, 00A';
 
+    // A ticket starts on the journey's first day (a rental is returned on the last); with no journey dates it keeps the template
+    const startDot = minDate ? minDate.replace(/-/g, '.') : '';
+    const endDot = maxDate ? maxDate.replace(/-/g, '.') : '';
     const newTransit: TransitItem = {
       id: Date.now(),
       ticketType,
       transitType: type,
-      date: 'YYYY.MM.DD',
-      rentalDropoffDate: type === 'car' ? 'YYYY.MM.DD' : undefined,
+      date: startDot || 'YYYY.MM.DD',
+      rentalDropoffDate: type === 'car' ? (endDot || startDot || 'YYYY.MM.DD') : undefined,
       rentalDropoffTime: type === 'car' ? '06:00 PM' : undefined,
       carModel: type === 'car' ? '' : undefined,
       carNumber: type === 'car' ? '' : undefined,

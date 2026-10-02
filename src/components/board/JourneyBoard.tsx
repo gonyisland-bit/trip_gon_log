@@ -1,13 +1,19 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowUpRight, BedDouble, Bus, Car, CarTaxiFront, ChevronLeft, ChevronRight, Copy, Loader2, MapPin, Maximize2, Navigation, Plane, Plus, Share2, TrainFront, X,
+  ArrowUpRight, BedDouble, Bus, Car, CarTaxiFront, ChevronDown, ChevronLeft, ChevronRight, Copy, Loader2, MapPin, Maximize2, Navigation, Plane, Plus, Share2, TrainFront, X,
 } from 'lucide-react';
+import { doc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import type { FlightItem, Plan, StayItem, TimelineData, TimelineItem, TransitItem, Trip } from '../../types';
 import { Sheet } from '../Sheet';
 import { IconButton } from '../ui/IconButton';
+import { Chip } from '../ui/Chip';
+import { currentUid, setDoc } from '../../utils/ownership';
+import { NO_DATE, clockTime, dateText, isPlaceholderDate, stayLabel, timeLabel } from '../../utils/itemDate';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { notify } from '../../utils/feedback';
+import { prefersReducedMotion } from '../../motion';
 import { kindArtUrl, placeKind } from '../../utils/placeArt';
 import { mapSearchUrl } from '../../utils/mapLinks';
 import { boardPlaces, boardStatus, buildBoard, md, openJourneyBoard, placesPerDay, transitEnds, type BoardEntry, type BoardModel } from './boardData';
@@ -90,7 +96,18 @@ function Tile({ className = '', onOpen, label, children, dim }: { className?: st
 }
 
 function when(at: BoardEntry, time?: string) {
-  return [md(at.date), time].filter(Boolean).join(' ');
+  return [at.date ? md(at.date) : NO_DATE, timeLabel(time)].filter(Boolean).join(' · ');
+}
+
+const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
+const dayWithWeekday = (d: Date | null) => (d ? `${md(d)} ${WEEKDAY[d.getDay()]}` : '');
+
+/** The journey's own days, for choosing a booking's date */
+function journeyDays(start: Date | null, end: Date | null): Date[] {
+  if (!start || !end) return [];
+  const days: Date[] = [];
+  for (let t = start.getTime(); t <= end.getTime() && days.length < 60; t += 86400000) days.push(new Date(t));
+  return days;
 }
 
 /** Width of an element, live: the board picks two or four columns from its own width */
@@ -129,6 +146,11 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
 
   const place = boardPlaces(trip);
   const status = boardStatus(b);
+  const range = b.start && b.end ? { start: b.start, end: b.end } : null;
+  const year = b.start?.getFullYear() ?? new Date().getFullYear();
+  const days = useMemo(() => journeyDays(b.start, b.end), [b.start, b.end]);
+  const uid = currentUid();
+  const canEdit = !trip.ownerId || trip.ownerId === uid || Boolean(trip.editors?.includes(uid || ''));
   const [outbound, ...otherFlights] = b.flights;
   const art = useMemo(() => kindArtUrl(placeKind(trip.tags || [], trip.locationStr || trip.title), String(trip.id)), [trip.id, trip.tags, trip.locationStr, trip.title]);
 
@@ -142,7 +164,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
     <Tile key={`s${s.id}`} className="bg-sage text-sage-ink dark:bg-sage-dark dark:text-sage" dim={dimPast && s.at.past} label={`숙소 ${s.title}`} onOpen={() => setDetail({ kind: 'stay', item: s })}>
       <span className={kicker}><BedDouble className="w-3.5 h-3.5" aria-hidden />숙소</span>
       <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep [overflow-wrap:anywhere]">{s.title}</span>
-      <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums break-keep">{s.dateRange}</span>
+      <span className="font-mono text-meta text-black/60 dark:text-white/60 tabular-nums break-keep">{stayLabel(s.dateRange, year, range)}</span>
       {s.address && <span className="text-meta text-black/50 dark:text-white/50 break-keep [overflow-wrap:anywhere]">{s.address}</span>}
       {s.confNo && <span className="mt-auto pt-1"><CodeChip value={s.confNo} what="확인번호" /></span>}
     </Tile>,
@@ -279,7 +301,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
               </span>
               <span className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-mono text-meta font-semibold tabular-nums opacity-80">
-                  {[md(outbound.at.date), outbound.fromTime && outbound.toTime ? `${outbound.fromTime} → ${outbound.toTime}` : outbound.fromTime, outbound.seat && `좌석 ${outbound.seat}`].filter(Boolean).join(' · ')}
+                  {[outbound.at.date ? md(outbound.at.date) : NO_DATE, outbound.fromTime && outbound.toTime ? `${timeLabel(outbound.fromTime)} → ${timeLabel(outbound.toTime)}` : timeLabel(outbound.fromTime), outbound.seat && `좌석 ${outbound.seat}`].filter(Boolean).join(' · ')}
                 </span>
                 <CodeChip value={outbound.pnr} what="예약번호" tone="ink" />
               </span>
@@ -298,7 +320,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
           {/* The day's places, one line each */}
           {b.focusDay.length > 0 && (
             <div className="col-span-2 rounded-card bg-surface dark:bg-surface-dark p-2 flex flex-col">
-              <span className="px-2 pt-2 pb-1 font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">{b.phase === 'live' ? '오늘' : '첫날'} · {md(b.focusDay[0].at.date)}</span>
+              <span className="px-2 pt-2 pb-1 font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">{b.phase === 'live' ? '오늘' : '첫날'} · {dayWithWeekday(b.focusDay[0].at.date)}</span>
               {b.focusDay.slice(0, 6).map(p => (
                 <button
                   key={p.id}
@@ -306,7 +328,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
                   onClick={() => setDetail({ kind: 'place', item: p })}
                   className={`flex items-center gap-3 min-h-[44px] px-2 rounded-thumb text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.05] ${dimPast && p.at.past ? 'opacity-55' : ''}`}
                 >
-                  <span className={`w-12 shrink-0 font-mono text-meta font-semibold tabular-nums ${b.next?.id === p.id ? 'text-red-600 dark:text-red-400' : 'text-black/55 dark:text-white/55'}`}>{p.time ? p.time.replace(/\s?(AM|PM)$/i, '') : '—'}</span>
+                  <span className={`w-[4.5rem] shrink-0 font-mono text-meta font-semibold tabular-nums ${b.next?.id === p.id ? 'text-red-600 dark:text-red-400' : 'text-black/55 dark:text-white/55'}`}>{timeLabel(p.time) || '—'}</span>
                   <span className="flex-1 min-w-0 py-2 text-[14px] font-bold break-keep [overflow-wrap:anywhere]">{p.place}</span>
                   <ArrowUpRight className="w-4 h-4 shrink-0 text-black/40 dark:text-white/40" aria-hidden />
                 </button>
@@ -320,6 +342,8 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
         <BoardSummary
           summary={detail}
           b={b}
+          year={year}
+          range={range}
           trip={trip}
           place={place}
           status={status}
@@ -334,6 +358,11 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
       {detail && detail.kind !== 'journey' && detail.kind !== 'places' && detail.kind !== 'list' && (
         <BoardDetail
           detail={detail}
+          tripId={trip.id}
+          year={year}
+          range={range}
+          days={days}
+          canEdit={canEdit}
           canBack={trail.length > 0}
           onBack={stepBack}
           onClose={() => setDetail(null)}
@@ -383,6 +412,7 @@ export function JourneyBoard({ onClose, ...data }: Props) {
 // `long` values (an address) wrap in full; codes (booking numbers) stay on one mono line
 function Row({ label, value, copyAs, long }: { label: string; value?: string | null; copyAs?: string; long?: boolean }) {
   if (!value) return null;
+  const unset = value.startsWith(NO_DATE);
   return (
     <div className="flex items-start justify-between gap-3 min-h-[44px] py-3 border-b border-black/[0.06] dark:border-white/[0.08] last:border-0">
       <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50 shrink-0">{label}</span>
@@ -391,7 +421,7 @@ function Row({ label, value, copyAs, long }: { label: string; value?: string | n
           <span className={long ? 'min-w-0' : 'truncate'}>{value}</span><Copy className={`w-3.5 h-3.5 shrink-0 opacity-60 ${long ? 'mt-1' : ''}`} aria-hidden />
         </button>
       ) : (
-        <span className="min-w-0 text-[14px] font-semibold text-right break-keep [overflow-wrap:anywhere]">{value}</span>
+        <span className={`min-w-0 text-[14px] text-right break-keep [overflow-wrap:anywhere] ${unset ? 'font-medium text-black/45 dark:text-white/45' : 'font-semibold'}`}>{value}</span>
       )}
     </div>
   );
@@ -399,8 +429,36 @@ function Row({ label, value, copyAs, long }: { label: string; value?: string | n
 
 function mapsUrl(name?: string, address?: string, lat?: number, lng?: number) { return mapSearchUrl(name, address, lat, lng); }
 
-function BoardDetail({ detail, canBack, onBack, onClose, onOpenItem }: { detail: ItemDetail; canBack?: boolean; onBack?: () => void; onClose: () => void; onOpenItem: (tab: string, id: number | null) => void }) {
+function BoardDetail({ detail, tripId, year, range, days, canEdit, canBack, onBack, onClose, onOpenItem }: {
+  detail: ItemDetail;
+  tripId: number;
+  year: number;
+  range: { start: Date; end: Date } | null;
+  days: Date[];
+  canEdit: boolean;
+  canBack?: boolean;
+  onBack?: () => void;
+  onClose: () => void;
+  onOpenItem: (tab: string, id: number | null) => void;
+}) {
   const { kind, item } = detail;
+  const [savingDay, setSavingDay] = useState<string | null>(null);
+  // A flight or a ticket still on the YYYY.MM.DD template can be given one of the journey's days right here
+  const undated = (kind === 'flight' || kind === 'transit') && isPlaceholderDate(item.date);
+  const pickDay = async (d: Date) => {
+    if (savingDay || (kind !== 'flight' && kind !== 'transit')) return;
+    const text = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+    setSavingDay(text);
+    try {
+      await setDoc(doc(db, 'users', 'public', kind === 'flight' ? 'flights' : 'transits', String(item.id)), { date: text, tripId: item.tripId ?? tripId }, { merge: true });
+      notify(`${md(d)}로 정했습니다.`, 'success');
+      onClose();
+    } catch (err) {
+      console.error('Setting the date failed:', err);
+      notify('날짜를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+      setSavingDay(null);
+    }
+  };
   let title = '';
   let kickerText = '';
   let rows: React.ReactNode = null;
@@ -412,10 +470,10 @@ function BoardDetail({ detail, canBack, onBack, onClose, onOpenItem }: { detail:
     rows = <>
       <Row label="예약번호" value={item.pnr} copyAs="예약번호" />
       <Row label="편명" value={item.flightNo} copyAs="편명" />
-      <Row label="날짜" value={item.date} />
-      <Row label="출발" value={[item.fromTime, item.fromTerminal && `터미널 ${item.fromTerminal}`].filter(Boolean).join(' · ')} />
-      <Row label="도착" value={[item.toTime, item.toTerminal && `터미널 ${item.toTerminal}`].filter(Boolean).join(' · ')} />
-      <Row label="경유" value={[item.layoverCode, item.layoverTime].filter(Boolean).join(' · ')} />
+      <Row label="날짜" value={dateText(item.date)} />
+      <Row label="출발" value={[timeLabel(item.fromTime), item.fromTerminal && `터미널 ${item.fromTerminal}`].filter(Boolean).join(' · ')} />
+      <Row label="도착" value={[timeLabel(item.toTime), item.toTerminal && `터미널 ${item.toTerminal}`].filter(Boolean).join(' · ')} />
+      <Row label="경유" value={[item.layoverCode, timeLabel(item.layoverTime)].filter(Boolean).join(' · ')} />
       <Row label="좌석" value={item.seat} />
     </>;
   } else if (kind === 'stay') {
@@ -423,7 +481,7 @@ function BoardDetail({ detail, canBack, onBack, onClose, onOpenItem }: { detail:
     kickerText = item.status || '숙소';
     rows = <>
       <Row label="확인번호" value={item.confNo} copyAs="확인번호" />
-      <Row label="기간" value={item.dateRange} />
+      <Row label="기간" value={stayLabel(item.dateRange, year, range)} />
       <Row label="주소" value={item.address} copyAs="주소" long />
       <Row label="메모" value={item.memo} />
     </>;
@@ -434,7 +492,7 @@ function BoardDetail({ detail, canBack, onBack, onClose, onOpenItem }: { detail:
     rows = <>
       <Row label="예약번호" value={item.bookingRef} copyAs="예약번호" />
       <Row label="구간" value={item.route} />
-      <Row label="날짜" value={[item.date, item.time].filter(Boolean).join(' ')} />
+      <Row label="날짜" value={[dateText(item.date), timeLabel(item.time)].filter(Boolean).join(' · ')} />
       <Row label="좌석" value={item.seat} />
       <Row label="차량" value={[item.carModel, item.carNumber].filter(Boolean).join(' · ')} />
       <Row label="탑승" value={item.boardingPlace || item.departPlace} />
@@ -443,7 +501,7 @@ function BoardDetail({ detail, canBack, onBack, onClose, onOpenItem }: { detail:
     map = mapsUrl(item.boardingPlace || item.departPlace, undefined, item.boardingLat ?? item.departLat, item.boardingLng ?? item.departLng);
   } else {
     title = item.place;
-    kickerText = [item.dayKey, item.time].filter(Boolean).join(' · ');
+    kickerText = [item.dayKey, timeLabel(item.time)].filter(Boolean).join(' · ');
     rows = <>
       <Row label="주소" value={item.location} copyAs="주소" long />
       <Row label="영업" value={item.hours} />
@@ -464,6 +522,19 @@ function BoardDetail({ detail, canBack, onBack, onClose, onOpenItem }: { detail:
           </div>
         </div>
         <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-1">{rows}</section>
+        {undated && canEdit && days.length > 0 && (
+          <section className="flex flex-col gap-2" aria-label="날짜 정하기">
+            <span className="px-1 font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">날짜 정하기</span>
+            <div className="flex flex-wrap gap-1.5">
+              {days.map(d => {
+                const label = dayWithWeekday(d);
+                return (
+                  <Chip key={d.getTime()} size="sm" onClick={() => { void pickDay(d); }} disabled={!!savingDay}>{label}</Chip>
+                );
+              })}
+            </div>
+          </section>
+        )}
         <div className="flex flex-wrap gap-2">
           {map && (
             <a href={map} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
@@ -501,9 +572,11 @@ function SummaryLine({ lead, text, sub, onClick, accent, dim }: { lead?: React.R
   );
 }
 
-function BoardSummary({ summary, b, trip, place, status, perDay, canBack, onBack, onDrill, onClose, onOpenItem }: {
+function BoardSummary({ summary, b, year, range, trip, place, status, perDay, canBack, onBack, onDrill, onClose, onOpenItem }: {
   summary: SummaryDetail;
   b: BoardModel;
+  year: number;
+  range: { start: Date; end: Date } | null;
   trip: Trip | Plan;
   place: string[];
   status: string;
@@ -564,33 +637,7 @@ function BoardSummary({ summary, b, trip, place, status, perDay, canBack, onBack
   } else if (summary.kind === 'places') {
     kickerText = `장소 ${b.places.length}곳`;
     title = '여행지';
-    const days: { key: string; date: Date | null; items: BoardModel['places'] }[] = [];
-    b.places.forEach(p => {
-      const last = days[days.length - 1];
-      if (last && last.key === p.dayKey) last.items.push(p);
-      else days.push({ key: p.dayKey, date: p.at.date, items: [p] });
-    });
-    body = days.length === 0 ? (
-      <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-5 text-[14px] text-black/60 dark:text-white/60">아직 정한 장소가 없어요.</section>
-    ) : (
-      <>
-        {days.map((d, i) => (
-          <section key={d.key} className="rounded-card bg-surface dark:bg-surface-dark px-3 pt-3 pb-1 flex flex-col">
-            <span className="px-1 pb-1 font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">Day {i + 1}{d.date ? ` · ${md(d.date)}` : ''}</span>
-            {d.items.map(p => (
-              <SummaryLine
-                key={p.id}
-                lead={p.time ? p.time.replace(/\s?(AM|PM)$/i, '') : '—'}
-                text={p.place}
-                accent={b.next?.id === p.id}
-                dim={b.phase !== 'past' && p.at.past}
-                onClick={() => onDrill({ kind: 'place', item: p })}
-              />
-            ))}
-          </section>
-        ))}
-      </>
-    );
+    body = <PlacesByDay b={b} onDrill={onDrill} />;
   } else {
     const of = summary.of;
     tab = TAB[of];
@@ -604,7 +651,7 @@ function BoardSummary({ summary, b, trip, place, status, perDay, canBack, onBack
       kickerText = `숙소 ${b.stays.length}`;
       title = '숙소';
       body = <section className="rounded-card bg-surface dark:bg-surface-dark px-3 py-1">{b.stays.map(st => (
-        <SummaryLine key={st.id} text={st.title} sub={st.dateRange} dim={b.phase !== 'past' && st.at.past} onClick={() => onDrill({ kind: 'stay', item: st })} />
+        <SummaryLine key={st.id} text={st.title} sub={stayLabel(st.dateRange, year, range)} dim={b.phase !== 'past' && st.at.past} onClick={() => onDrill({ kind: 'stay', item: st })} />
       ))}</section>;
     } else {
       kickerText = `교통 ${b.transits.length}`;
@@ -633,5 +680,140 @@ function BoardSummary({ summary, b, trip, place, status, perDay, canBack, onBack
         </div>
       </div>
     </Sheet>
+  );
+}
+
+// ── The places drawer: day by day, each day folded to one line, an open day split into morning and afternoon ──
+
+type DayGroup = { key: string; date: Date | null; items: BoardModel['places'] };
+
+function PlacesByDay({ b, onDrill }: { b: BoardModel; onDrill: (d: Detail) => void }) {
+  const groups = useMemo(() => {
+    const out: DayGroup[] = [];
+    b.places.forEach(p => {
+      const last = out[out.length - 1];
+      if (last && last.key === p.dayKey) last.items.push(p);
+      else out.push({ key: p.dayKey, date: p.at.date, items: [p] });
+    });
+    return out;
+  }, [b.places]);
+
+  const todayMs = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); }, []);
+  // A short list opens whole; a long one opens the day that matters (today on the trip, else the first) and folds the rest
+  const [open, setOpen] = useState<Set<string>>(() => {
+    if (b.places.length <= 24) return new Set(groups.map(g => g.key));
+    const focus = b.focusDay[0]?.at.date?.getTime();
+    const g = groups.find(x => x.date && x.date.getTime() === focus) ?? groups[0];
+    return new Set(g ? [g.key] : []);
+  });
+  const rootRef = useRef<HTMLDivElement>(null);
+  const sections = useRef(new Map<string, HTMLElement>());
+
+  const toggle = (key: string) => setOpen(prev => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+  // A day chip opens that day and brings it under the chip row
+  const jump = (key: string) => {
+    setOpen(prev => new Set(prev).add(key));
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      const scroller = rootRef.current?.closest('[data-sheet-open]') as HTMLElement | null;
+      const section = sections.current.get(key);
+      const chips = rootRef.current?.firstElementChild as HTMLElement | null;
+      if (!scroller || !section) return;
+      // The day's header lands a few pixels under the sticky chip row
+      const top = section.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - (chips?.offsetHeight ?? 0) + 4;
+      scroller.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    }));
+  };
+  const allOpen = groups.length > 0 && open.size === groups.length;
+
+  if (groups.length === 0) {
+    return <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-5 text-[14px] text-black/60 dark:text-white/60">아직 정한 장소가 없어요.</section>;
+  }
+
+  return (
+    <div ref={rootRef} className="flex flex-col gap-3">
+      <div className="sticky top-0 z-10 -mx-4 px-4 py-2 flex items-center gap-2 bg-paper dark:bg-paper-dark">
+        <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto hide-scrollbar" role="group" aria-label="날짜로 이동">
+          {groups.map((g, i) => (
+            <Chip key={g.key} size="sm" onClick={() => jump(g.key)} className={b.phase !== 'past' && g.items.every(p => p.at.past) ? 'opacity-60' : ''}>
+              Day {i + 1}<span className="font-mono opacity-70 tabular-nums">{g.date ? md(g.date) : ''}</span>
+            </Chip>
+          ))}
+        </div>
+        <button type="button" className="btn btn-ghost btn-sm shrink-0" onClick={() => setOpen(allOpen ? new Set() : new Set(groups.map(g => g.key)))}>
+          {allOpen ? '모두 접기' : '모두 펼치기'}
+        </button>
+      </div>
+
+      {groups.map((g, i) => {
+        const isOpen = open.has(g.key);
+        const isToday = g.date?.getTime() === todayMs;
+        const past = b.phase !== 'past' && g.items.every(p => p.at.past);
+        const am = g.items.filter(p => { const m = clockTime(p.time).minutes; return m >= 0 && m < 720; });
+        const pm = g.items.filter(p => clockTime(p.time).minutes >= 720);
+        const none = g.items.filter(p => clockTime(p.time).minutes < 0);
+        const byClock = (x: typeof am[number], y: typeof am[number]) => clockTime(x.time).minutes - clockTime(y.time).minutes;
+        const parts: { label: string; items: typeof am }[] = [
+          { label: '오전', items: [...am].sort(byClock) },
+          { label: '오후', items: [...pm].sort(byClock) },
+          { label: '시간 미정', items: none },
+        ].filter(x => x.items.length > 0);
+        return (
+          <section key={g.key} ref={el => { if (el) sections.current.set(g.key, el); else sections.current.delete(g.key); }} className={`rounded-card bg-surface dark:bg-surface-dark ${past ? 'opacity-70' : ''}`}>
+            <button
+              type="button"
+              onClick={() => toggle(g.key)}
+              aria-expanded={isOpen}
+              className="w-full flex items-center gap-3 min-h-[52px] px-4 py-2 text-left rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+            >
+              <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55 flex items-center gap-2">
+                  Day {i + 1} · {g.date ? dayWithWeekday(g.date) : g.key}
+                  {isToday && <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400"><span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500" aria-hidden />오늘</span>}
+                </span>
+                {!isOpen && (
+                  <span className="text-meta text-black/60 dark:text-white/60 truncate">
+                    {[`${g.items.length}곳`, am.length > 0 && `오전 ${am.length}`, pm.length > 0 && `오후 ${pm.length}`, none.length > 0 && `시간 미정 ${none.length}`].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+              </span>
+              <span className="font-mono text-[15px] font-semibold tabular-nums">{g.items.length}</span>
+              <ChevronDown className={`w-4 h-4 shrink-0 text-black/45 dark:text-white/45 transition-transform duration-base ${isOpen ? 'rotate-180' : ''}`} aria-hidden />
+            </button>
+            {isOpen && (
+              <div className="px-3 pb-2 flex flex-col">
+                {parts.map(part => (
+                  <div key={part.label} className="flex flex-col">
+                    <span className="flex items-center gap-2 h-6 px-1 mt-1 font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/45 dark:text-white/45">
+                      {part.label} · {part.items.length}
+                      <span className="flex-1 h-px bg-black/[0.07] dark:bg-white/[0.1]" aria-hidden />
+                    </span>
+                    {part.items.map(p => {
+                      const clock = clockTime(p.time);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => onDrill({ kind: 'place', item: p })}
+                          title={p.place}
+                          className={`w-full flex items-center gap-3 min-h-10 px-1 rounded-thumb text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.05] ${b.phase !== 'past' && p.at.past ? 'opacity-55' : ''}`}
+                        >
+                          <span className={`w-11 shrink-0 font-mono text-meta font-semibold tabular-nums ${b.next?.id === p.id ? 'text-red-600 dark:text-red-400' : 'text-black/55 dark:text-white/55'}`}>{clock.minutes >= 0 ? clock.hm : '—'}</span>
+                          <span className="flex-1 min-w-0 truncate text-[14px] font-bold">{p.place}</span>
+                          <ChevronRight className="w-4 h-4 shrink-0 text-black/35 dark:text-white/35" aria-hidden />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
   );
 }

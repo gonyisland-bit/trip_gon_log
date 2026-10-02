@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin, ChevronDown, ChevronUp, Clock, Paperclip, Loader2, X, ExternalLink } from 'lucide-react';
 import { TransitItem } from '../types';
+import { NO_DATE, dateText, isPlaceholderDate } from '../utils/itemDate';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
@@ -70,9 +71,9 @@ function time24hTo12h(val24h: string): string {
 }
 
 function formatRentalDateRange(pickup: string, dropoff: string): string {
-  if (!pickup) return '';
+  if (isPlaceholderDate(pickup)) return NO_DATE;
   const formattedPickup = pickup.replace(/-/g, '.');
-  if (!dropoff) return formattedPickup;
+  if (isPlaceholderDate(dropoff)) return formattedPickup;
   const formattedDropoff = dropoff.replace(/-/g, '.');
 
   const d1 = new Date(pickup);
@@ -276,7 +277,7 @@ export function TransitCard({
               className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-36 text-right"
             />
           ) : (
-            <span>{transit.date}</span>
+            <span>{dateText(transit.date)}</span>
           )}
           <button
             type="button"

@@ -4,6 +4,7 @@ import { Trip, Plan, FlightItem, StayItem, TransitItem } from '../../types';
 import { parseTripDateRange } from '../../utils/tripPlanHelper';
 import { bookingContextFromTrip, buildAgodaUrl, buildBookingComUrl, buildNaverFlightUrl, buildSkyscannerFlightUrl } from '../../utils/bookingDeepLinks';
 import { notify } from '../../utils/feedback';
+import { NO_DATE, md, parseItemDate, stayLabel, timeLabel } from '../../utils/itemDate';
 import { NewTripButton } from '../NewTripButton';
 import { EmptyScene } from '../scenes/EmptyScene';
 
@@ -39,17 +40,6 @@ interface WalletJourney {
 const DAY = 86400000;
 const today0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
 const daysFrom = (d: Date, base: Date) => Math.round((d.getTime() - base.getTime()) / DAY);
-const md = (d: Date) => `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-
-// Booking dates are free text: "2026.10.15", "10.15", "2026-10-15 ~ 10.18"; a missing year borrows the journey's
-function parseItemDate(str: string | undefined, year: number): Date | null {
-  if (!str) return null;
-  const full = str.match(/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
-  if (full) return new Date(+full[1], +full[2] - 1, +full[3]);
-  const short = str.match(/(\d{1,2})\s*[-./]\s*(\d{1,2})/);
-  if (short) return new Date(year, +short[1] - 1, +short[2]);
-  return null;
-}
 
 function dLabel(days: number | null): string {
   if (days === null) return '';
@@ -76,24 +66,24 @@ function buildJourneys(
         ...flights.map(f => {
           const date = parseItemDate(f.date, year);
           return {
-            kind: 'flight' as const, id: f.id, date, dateLabel: date ? md(date) : f.date || '',
+            kind: 'flight' as const, id: f.id, date, dateLabel: date ? md(date) : NO_DATE,
             title: [f.fromCode, f.toCode].filter(Boolean).join(' → ') || f.title,
-            detail: [f.flightNo, f.fromTime && `${f.fromTime} 출발`, f.seat && `좌석 ${f.seat}`].filter(Boolean).join(' · '),
+            detail: [f.flightNo, f.fromTime && `${timeLabel(f.fromTime)} 출발`, f.seat && `좌석 ${f.seat}`].filter(Boolean).join(' · '),
             ref: f.pnr || '',
           };
         }),
         ...stays.map(s => {
           const date = parseItemDate(s.dateRange, year);
           return {
-            kind: 'stay' as const, id: s.id, date, dateLabel: date ? md(date) : s.dateRange || '',
-            title: s.title, detail: [s.dateRange, s.address].filter(Boolean).join(' · '), ref: s.confNo || '',
+            kind: 'stay' as const, id: s.id, date, dateLabel: date ? md(date) : NO_DATE,
+            title: s.title, detail: [stayLabel(s.dateRange, year), s.address].filter(Boolean).join(' · '), ref: s.confNo || '',
           };
         }),
         ...transits.map(t => {
           const date = parseItemDate(t.date, year);
           return {
-            kind: 'transit' as const, id: t.id, date, dateLabel: date ? md(date) : t.date || '',
-            title: t.title || t.route, detail: [t.route !== t.title && t.route, t.time, t.seat].filter(Boolean).join(' · '), ref: t.bookingRef || '',
+            kind: 'transit' as const, id: t.id, date, dateLabel: date ? md(date) : NO_DATE,
+            title: t.title || t.route, detail: [t.route !== t.title && t.route, timeLabel(t.time), t.seat].filter(Boolean).join(' · '), ref: t.bookingRef || '',
           };
         }),
       ].sort((a, b) => (a.date?.getTime() ?? Infinity) - (b.date?.getTime() ?? Infinity));

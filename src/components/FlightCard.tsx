@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Plane, Trash2, RefreshCw, Clock, Paperclip, Loader2, X, ExternalLink, ChevronDown } from 'lucide-react';
 import { FlightItem } from '../types';
+import { dateText } from '../utils/itemDate';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
 import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { auth } from '../firebase';
@@ -322,7 +323,7 @@ export function FlightCard({
         ) : (
           // Default titles repeat the Outbound/Inbound group header, so only custom titles are shown
           isDefaultTitle ? (
-            <span className="font-mono">{flight.date}</span>
+            <span className="font-mono">{dateText(flight.date)}</span>
           ) : (
             <span className="uppercase truncate">{flight.title}</span>
           )
@@ -338,7 +339,7 @@ export function FlightCard({
             className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-meta md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-28 sm:w-36 text-right font-mono"
           />
         ) : (
-          !isDefaultTitle && <span className="font-mono">{flight.date}</span>
+          !isDefaultTitle && <span className="font-mono">{dateText(flight.date)}</span>
         )}
       </div>
       

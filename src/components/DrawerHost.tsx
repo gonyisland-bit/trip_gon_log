@@ -153,7 +153,7 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
         data-open={open}
         data-size={current?.narrow ? 'narrow' : 'wide'}
         aria-label={current?.label}
-        className="tgl-hubdrawer pointer-events-auto bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark rounded-t-sheet md:rounded-card shadow-[0_-12px_48px_rgba(0,0,0,0.22)] overflow-hidden"
+        className="tgl-hubdrawer pointer-events-auto bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark rounded-t-sheet md:rounded-card shadow-[0_-12px_48px_rgba(0,0,0,0.22)] overflow-clip"
         style={{
           ...(drag > 0 ? { transform: `translateY(${drag}px)`, transition: 'none' } : null),
           ...(exitMs !== null ? { ['--motion-sheet-out' as any]: `${exitMs}ms` } : null),

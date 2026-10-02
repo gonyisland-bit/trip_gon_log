@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { isPlaceholderDate } from '../utils/itemDate';
 import { 
   UserPlus, Coins, ArrowRight, AlertCircle, Plus, Trash2,
   ChevronRight, ChevronDown, Paperclip, Loader2, X, ExternalLink, Share2, Download,
@@ -124,7 +125,7 @@ export function SettlementView({
 
     flights.forEach(item => {
       if (item.cost && item.cost !== '-' && item.cost.trim() !== '') {
-        list.push({ id: item.id, name: `${item.title || '항공권'} ${item.fromCode}→${item.toCode}`, itemType: 'flight', date: item.date || '항공일정', cost: item.cost, currency: item.currency || defaultCurrency, paidBy: item.paidBy || '나', rawItem: item });
+        list.push({ id: item.id, name: `${item.title || '항공권'} ${item.fromCode}→${item.toCode}`, itemType: 'flight', date: isPlaceholderDate(item.date) ? '항공일정' : item.date, cost: item.cost, currency: item.currency || defaultCurrency, paidBy: item.paidBy || '나', rawItem: item });
       }
     });
 
@@ -137,7 +138,7 @@ export function SettlementView({
 
     transits.forEach(item => {
       if (item.cost && item.cost !== '-' && item.cost.trim() !== '') {
-        list.push({ id: item.id, name: `${item.ticketType || '이동수단'} ${item.title || item.route}`, itemType: 'transit', date: item.date || '이동일정', cost: item.cost, currency: item.currency || defaultCurrency, paidBy: item.paidBy || '나', rawItem: item });
+        list.push({ id: item.id, name: `${item.ticketType || '이동수단'} ${item.title || item.route}`, itemType: 'transit', date: isPlaceholderDate(item.date) ? '이동일정' : item.date, cost: item.cost, currency: item.currency || defaultCurrency, paidBy: item.paidBy || '나', rawItem: item });
       }
     });
 

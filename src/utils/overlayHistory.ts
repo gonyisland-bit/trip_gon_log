@@ -40,6 +40,18 @@ function ensureListener() {
   listening = true;
 }
 
+/**
+ * True when this pop only closes a layer (our own step back, or the back gesture on an open layer). The app's navigation
+ * listener asks first, because it can run before the capture listener above on some browsers.
+ */
+export function popBelongsToLayer(e: PopStateEvent): boolean {
+  if (ignoredPops > 0) return true;
+  const top = stack[stack.length - 1];
+  if (!top) return false;
+  const stateLayer = (e.state && e.state.tglLayer) as number | undefined;
+  return !(stateLayer !== undefined && stateLayer >= top.id);
+}
+
 /** True while a layer's closing step back is still on its way; navigation should wait for it. */
 export function isLayerBackPending(): boolean {
   return ignoredPops > 0;

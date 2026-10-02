@@ -1,6 +1,9 @@
 import type { FlightItem, Plan, StayItem, TimelineData, TimelineItem, TransitItem, Trip } from '../../types';
 import { getLiveTripStatus, getUpcomingPlanInfo, parseTripDateRange } from '../../utils/tripPlanHelper';
 import { parseTimeToMinutes } from '../../pages/detail/detailUtils';
+import { md, parseItemDate, parseItemRange } from '../../utils/itemDate';
+
+export { md, parseItemDate };
 
 // Journey board data: one journey's bookings and places in time order, read from the app state
 // (which is live from Firestore and cached on the device, so the board opens offline too).
@@ -17,6 +20,8 @@ export interface BoardEntry {
   id: number;
   /** Day the entry happens, when the free-text date can be read */
   date: Date | null;
+  /** Last day of a stay (check-out) or a rental, when it has one */
+  endDate: Date | null;
   /** Minutes from midnight, for ordering within a day */
   minutes: number;
   past: boolean;
@@ -43,27 +48,15 @@ export interface BoardModel {
 const DAY = 86400000;
 const today0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
 
-/** Booking dates are free text: "2026.10.15", "10.15", "2026-10-15 ~ 10.18"; a missing year borrows the journey's */
-export function parseItemDate(str: string | undefined, year: number): Date | null {
-  if (!str) return null;
-  const full = str.match(/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
-  if (full) return new Date(+full[1], +full[2] - 1, +full[3]);
-  const short = str.match(/(\d{1,2})\s*[-./]\s*(\d{1,2})/);
-  if (short) return new Date(year, +short[1] - 1, +short[2]);
-  return null;
-}
-
-export const md = (d: Date | null) => d ? `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}` : '';
-
-function entry(kind: BoardKind, id: number, date: Date | null, time: string | undefined): BoardEntry {
+function entry(kind: BoardKind, id: number, date: Date | null, time: string | undefined, endDate: Date | null = null): BoardEntry {
   const minutes = time ? parseTimeToMinutes(time) : 0;
   let past = false;
   if (date) {
     const at = new Date(date.getTime() + minutes * 60000);
-    // A booking stays current through its whole day
-    past = time ? at.getTime() < Date.now() - 60 * 60000 : date.getTime() + DAY <= Date.now();
+    // A booking stays current through its whole day; a stay or a rental, through its last day
+    past = endDate ? endDate.getTime() + DAY <= Date.now() : time ? at.getTime() < Date.now() - 60 * 60000 : date.getTime() + DAY <= Date.now();
   }
-  return { kind, id, date, minutes, past };
+  return { kind, id, date, endDate, minutes, past };
 }
 
 const byTime = (a: { at: BoardEntry }, b: { at: BoardEntry }) =>
@@ -83,11 +76,14 @@ export function buildBoard(
   const now = today0();
   const phase: BoardModel['phase'] = live.isLive ? 'live' : range && range.start > now ? 'upcoming' : range ? 'past' : 'upcoming';
 
-  const f = flights.map(x => ({ ...x, at: entry('flight', x.id, parseItemDate(x.date, year), x.fromTime) })).sort(byTime);
-  const s = stays.map(x => ({ ...x, at: entry('stay', x.id, parseItemDate(x.dateRange, year), undefined) })).sort(byTime);
-  const t = transits.map(x => ({ ...x, at: entry('transit', x.id, parseItemDate(x.date, year), x.time) })).sort(byTime);
+  const f = flights.map(x => ({ ...x, at: entry('flight', x.id, parseItemDate(x.date, year, range), x.fromTime) })).sort(byTime);
+  const s = stays.map(x => {
+    const r = parseItemRange(x.dateRange, year, range);
+    return { ...x, at: entry('stay', x.id, r.start, undefined, r.end) };
+  }).sort(byTime);
+  const t = transits.map(x => ({ ...x, at: entry('transit', x.id, parseItemDate(x.date, year, range), x.time, x.transitType === 'car' ? parseItemDate(x.rentalDropoffDate, year, range) : null) })).sort(byTime);
   const p = Object.entries(timelineData || {})
-    .flatMap(([dayKey, list]) => (list || []).filter(i => i.tripId === trip.id).map(i => ({ ...i, dayKey, at: entry('place', i.id, parseItemDate(dayKey, year), i.time) })))
+    .flatMap(([dayKey, list]) => (list || []).filter(i => i.tripId === trip.id).map(i => ({ ...i, dayKey, at: entry('place', i.id, parseItemDate(dayKey, year, range), i.time) })))
     .sort(byTime);
 
   const focusKey = phase === 'live' ? now : range?.start ?? null;

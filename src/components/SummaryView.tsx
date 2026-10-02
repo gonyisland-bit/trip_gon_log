@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { dateText, isPlaceholderDate } from '../utils/itemDate';
 import { 
   FileText, Share2, Download, X, Calendar, MapPin, 
   Bed, Plane, Train, Landmark, ChevronDown, ChevronUp, ArrowDownRight, ArrowRight,
@@ -846,7 +847,7 @@ export function SummaryView({
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <span className="text-xs font-mono text-black/60 dark:text-white/60">
-                          {f.date}
+                          {dateText(f.date)}
                         </span>
                         <span className="text-black/60 dark:text-white/60">
                           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -942,7 +943,7 @@ export function SummaryView({
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className="text-xs font-mono text-black/60 dark:text-white/60">
-                            {isCar && t.rentalDropoffDate ? `${t.date} ~ ${t.rentalDropoffDate}` : t.date}
+                            {isCar && !isPlaceholderDate(t.rentalDropoffDate) ? `${dateText(t.date)} ~ ${t.rentalDropoffDate}` : dateText(t.date)}
                           </span>
                           <span className="text-black/60 dark:text-white/60">
                             {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

@@ -27,6 +27,14 @@ export function cleanCityDisplayName(name: string): string {
   return cleaned || name;
 }
 
+// Weather colours (spec 4.2): sunshine is orange, rain and snow are blue, a storm is the caution amber, and cloud,
+// fog and wind are the neutral ink. Each is dark enough for 3:1 on the soft grey day cells (light) and bright enough on
+// the dark ones; the icon's shape tells snow from rain and fog from wind.
+const SUN = 'text-orange-700 dark:text-orange-400';
+const WET = 'text-blue-600 dark:text-blue-400';
+const STORM = 'text-amber-700 dark:text-amber-400';
+const GREY = 'text-zinc-600 dark:text-zinc-300';
+
 export function getWeatherMeta(code: number, precipitationProb?: number, temp?: number): WeatherMeta {
   let effectiveCode = code;
 
@@ -53,21 +61,21 @@ export function getWeatherMeta(code: number, precipitationProb?: number, temp?: 
   }
 
   if (effectiveCode === 0) {
-    return { label: 'CLEAR', labelKo: '맑음', icon: Sun, colorClass: 'text-amber-500' };
+    return { label: 'CLEAR', labelKo: '맑음', icon: Sun, colorClass: SUN };
   } else if (effectiveCode === 1 || effectiveCode === 2) {
-    return { label: 'FAIR', labelKo: '대체로 맑음', icon: CloudSun, colorClass: 'text-amber-400' };
+    return { label: 'FAIR', labelKo: '대체로 맑음', icon: CloudSun, colorClass: SUN };
   } else if (effectiveCode === 3) {
-    return { label: 'OVERCAST', labelKo: '흐림', icon: Cloud, colorClass: 'text-zinc-400' };
+    return { label: 'OVERCAST', labelKo: '흐림', icon: Cloud, colorClass: GREY };
   } else if (effectiveCode === 45 || effectiveCode === 48) {
-    return { label: 'FOGGY', labelKo: '안개', icon: Cloud, colorClass: 'text-zinc-400' };
+    return { label: 'FOGGY', labelKo: '안개', icon: Cloud, colorClass: GREY };
   } else if ((effectiveCode >= 71 && effectiveCode <= 77) || (effectiveCode >= 85 && effectiveCode <= 86)) {
-    return { label: 'SNOW', labelKo: '눈', icon: Snowflake, colorClass: 'text-cyan-400' };
+    return { label: 'SNOW', labelKo: '눈', icon: Snowflake, colorClass: WET };
   } else if ((effectiveCode >= 51 && effectiveCode <= 67) || (effectiveCode >= 80 && effectiveCode <= 82)) {
-    return { label: 'RAIN', labelKo: '비', icon: CloudRain, colorClass: 'text-blue-500' };
+    return { label: 'RAIN', labelKo: '비', icon: CloudRain, colorClass: WET };
   } else if (effectiveCode >= 95) {
-    return { label: 'STORM', labelKo: '뇌우', icon: CloudLightning, colorClass: 'text-purple-500' };
+    return { label: 'STORM', labelKo: '뇌우', icon: CloudLightning, colorClass: STORM };
   }
-  return { label: 'BREEZE', labelKo: '바람', icon: Wind, colorClass: 'text-teal-400' };
+  return { label: 'BREEZE', labelKo: '바람', icon: Wind, colorClass: GREY };
 }
 
 // ============================================================================

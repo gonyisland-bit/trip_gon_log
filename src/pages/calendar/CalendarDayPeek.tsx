@@ -126,6 +126,7 @@ export function CalendarDayPeek({ s }: { s: CalendarHubState }) {
                     <span className="font-sans font-bold truncate text-white">
                       {it.title}
                     </span>
+                    {it.categoryLabel && <span className="text-micro font-mono text-white/55 shrink-0">{it.categoryLabel}</span>}
                   </div>
                   {it.days && (
                     <span className="text-meta font-mono text-white/60 shrink-0 font-bold">
@@ -228,6 +229,7 @@ export function CalendarDayPeek({ s }: { s: CalendarHubState }) {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: it.categoryColor || (it.isPlan ? '#3b82f6' : '#ef4444') }} />
                           <span className="text-sm font-bold truncate">{it.title}</span>
+                          {it.categoryLabel && <span className="text-meta font-mono text-black/55 dark:text-white/55 shrink-0">{it.categoryLabel}</span>}
                         </div>
                         {it.days && <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 shrink-0">{it.days}D</span>}
                       </li>

@@ -94,6 +94,14 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
               </div>
             )}
 
+            {/* Weather mode: which days are a forecast and which are the usual weather of the season */}
+            {isWeatherMode && (
+              <div className="flex items-center justify-end gap-4 pb-2 text-meta font-bold text-black/60 dark:text-white/60 select-none" aria-label="범례">
+                <span className="inline-flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded-full bg-black/10 dark:bg-white/20" aria-hidden />예보</span>
+                <span className="inline-flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded-full border border-dashed border-black/50 dark:border-white/55" aria-hidden />평년값</span>
+              </div>
+            )}
+
             {/* Weekday Header Row: SUN MON TUE WED THU FRI SAT */}
             <div className="grid grid-cols-7 border-b border-black/15 dark:border-white/15 pb-2.5 sm:pb-3 text-center text-xs sm:text-sm font-extrabold tracking-widest font-mono select-none">
               {WEEKDAYS.map((day, idx) => {
@@ -149,9 +157,9 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                 // Circular badge styling based on Concept B & Swiss Minimal (웹 반응형 대형 스케일업)
                 // 크기는 날씨 모드 전체 칸에 동일 적용(다음 달로 이어지는 여정 알약 높이가 달라지지 않게)
                 const wxOn = isWeatherMode;
-                // 날씨 모드 모바일: 원형은 유지하고 지름만 46px로 키워 숫자 · 아이콘 · 기온 간격 확보
-                const cellW = wxOn ? 'w-[46px] land:w-[46px]' : 'w-10';
-                const cellH = wxOn ? 'h-[46px] land:h-[46px]' : 'h-10';
+                // 날씨 모드 모바일: 원형은 유지하고 지름만 48px로 키워 숫자 · 아이콘 · 기온 간격 확보
+                const cellW = wxOn ? 'w-12 land:w-12' : 'w-10';
+                const cellH = wxOn ? 'h-12 land:h-12' : 'h-10';
                 const cellRound = 'rounded-full';
                 let circleClasses = `${cellW} ${cellH} sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 ${cellRound} sm:aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer`;
                 let textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-extrabold leading-none';
@@ -161,6 +169,8 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                 const isSelected = isSelectedDate || isSelectedWeather;
                 // 날씨 모드: 확대/오프셋 링은 온도 텍스트와 이웃 셀을 침범하므로 안쪽 링만 사용
                 const weatherCell = isWeatherMode && cell.isCurrentMonth;
+                const wx = weatherCell ? weatherForDate(cell.dateStr) : null;
+                const usualOnly = !!wx?.weather && !wx.isForecast;
 
                 if (!cell.isCurrentMonth) {
                   circleClasses += ' opacity-20 text-black/60 dark:text-white/60 hover:opacity-40';
@@ -199,6 +209,9 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                     textClasses += ' text-black/80 dark:text-white/80';
                   }
                 }
+
+                // Days that only carry the usual weather of the season get a dashed edge (the legend says so), not a faded icon
+                if (usualOnly && !cell.isToday && !hasTrip) circleClasses += ' border border-dashed border-black/30 dark:border-white/40';
 
                 const ribbonColor = isPlan ? 'bg-amber-500' : 'bg-[#FF4500] dark:bg-[#FF4500]';
 
@@ -249,7 +262,7 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                     >
                       {/* Weather Mode 3-Tier Layout (실시간 예보는 OpenWeatherMap 사용, 타월/예보외 구간은 실제 기후 통계 시뮬레이터 연동) */}
                       {isWeatherMode && cell.isCurrentMonth ? (() => {
-                        const { weather: weatherItem, isForecast } = weatherForDate(cell.dateStr);
+                        const { weather: weatherItem } = wx!;
 
                         if (!weatherItem) {
                           return <span className={textClasses}>{cell.dayNum}</span>;
@@ -261,21 +274,25 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                         return (
                           <div className="flex flex-col items-center justify-center gap-[2px] h-full w-full sm:justify-between sm:gap-0 sm:py-1.5 land:justify-center land:gap-[2px] land:py-0 pointer-events-none select-none">
                             {/* 1. 상단: 날짜 일자 숫자 */}
-                            <span className={`text-[9px] sm:text-meta land:text-[9px] font-mono leading-none ${
+                            <span className={`text-[11px] sm:text-meta land:text-[10px] font-mono leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-extrabold' 
                                 : cell.isToday
                                   ? 'text-white dark:text-black font-extrabold'
                                   : isSelected 
                                     ? 'text-black dark:text-white font-extrabold' 
-                                    : 'text-black/70 dark:text-white/70 font-bold'
+                                    : (isSunday || isHoliday)
+                                      ? 'text-red-700 dark:text-red-400 font-extrabold'
+                                      : isSaturday
+                                        ? 'text-blue-700 dark:text-blue-400 font-extrabold'
+                                        : 'text-black/80 dark:text-white/80 font-bold'
                             }`}>
                               {cell.dayNum}
                             </span>
 
                             {/* 2. 중앙 메인: 날씨 아이콘 */}
-                            <div className={`flex items-center justify-center sm:my-auto land:my-0 ${isForecast ? '' : 'opacity-60'}`}>
-                              <WeatherIconComponent className={`w-[13px] h-[13px] sm:w-5 sm:h-5 md:w-6 md:h-6 land:w-[13px] land:h-[13px] shrink-0 ${
+                            <div className="flex items-center justify-center sm:my-auto land:my-0">
+                              <WeatherIconComponent className={`w-[17px] h-[17px] sm:w-5 sm:h-5 md:w-6 md:h-6 land:w-[14px] land:h-[14px] shrink-0 ${
                                 isOrangeBg 
                                   ? 'text-white stroke-[2.4] drop-shadow-xs' 
                                   : cell.isToday
@@ -285,14 +302,14 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                             </div>
 
                             {/* 3. 하단: 최저/최고 기온 */}
-                            <span className={`text-[9px] sm:text-micro md:text-micro land:text-[9px] font-mono tracking-tighter leading-none ${
+                            <span className={`text-[11px] sm:text-micro md:text-micro land:text-[10px] font-mono tracking-tighter leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-extrabold' 
                                 : cell.isToday
                                   ? 'text-white dark:text-black font-extrabold'
                                   : isSelected 
                                     ? 'text-black dark:text-white font-extrabold' 
-                                    : 'text-black/75 dark:text-white/75 font-bold'
+                                    : 'text-black/85 dark:text-white/85 font-bold'
                             }`}>
                               <span className="sm:hidden land:inline">{weatherItem.tempMax}°</span>
                               <span className="hidden sm:inline land:hidden">{weatherItem.tempMin}°/{weatherItem.tempMax}°</span>
@@ -855,7 +872,7 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                                 }`}>
                                   {day.dayNum}
                                 </span>
-                                <WeatherIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${cellForecast?.isForecast ? '' : 'opacity-60'} ${
+                                <WeatherIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${
                                   day.hasTrip
                                     ? 'text-white stroke-[2.4]'
                                     : day.isToday

@@ -65,7 +65,7 @@ export function MyCitiesEditor({ cardClass, labelClass }: { cardClass: string; l
         {favorites.length > 1 && <span className="text-meta text-black/55 dark:text-white/55 -mt-1">위쪽 도시부터 달력, 홈 날씨, 터미널 창밖에 이 순서로 나옵니다.</span>}
         <ul className="flex flex-col gap-1.5">
           {favorites.map((c, i) => (
-            <li key={c.nameEn} className="flex items-center gap-2 min-h-11 pl-1.5 pr-1 rounded-thumb border border-black/10 dark:border-white/10">
+            <li key={c.nameEn} className="flex items-center gap-2 min-h-12 pl-1 pr-1 rounded-thumb border border-black/10 dark:border-white/10">
               {favorites.length > 1 && (
                 <span className="flex flex-col shrink-0">
                   <button
@@ -73,7 +73,7 @@ export function MyCitiesEditor({ cardClass, labelClass }: { cardClass: string; l
                     onClick={() => move(i, -1)}
                     disabled={i === 0}
                     aria-label={`${c.name || c.nameEn} 위로`}
-                    className="tap-target w-7 h-[18px] rounded-full grid place-items-center text-black/55 dark:text-white/55 hover:bg-black/[0.06] dark:hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none"
+                    className="w-10 h-6 rounded-full grid place-items-center text-black/55 dark:text-white/55 hover:bg-black/[0.06] dark:hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none"
                   >
                     <ChevronUp className="w-4 h-4" aria-hidden />
                   </button>
@@ -82,7 +82,7 @@ export function MyCitiesEditor({ cardClass, labelClass }: { cardClass: string; l
                     onClick={() => move(i, 1)}
                     disabled={i === favorites.length - 1}
                     aria-label={`${c.name || c.nameEn} 아래로`}
-                    className="tap-target w-7 h-[18px] rounded-full grid place-items-center text-black/55 dark:text-white/55 hover:bg-black/[0.06] dark:hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none"
+                    className="w-10 h-6 rounded-full grid place-items-center text-black/55 dark:text-white/55 hover:bg-black/[0.06] dark:hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none"
                   >
                     <ChevronDown className="w-4 h-4" aria-hidden />
                   </button>

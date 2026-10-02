@@ -37,7 +37,8 @@ import { setNotificationSender } from '../utils/notifications';
 import { pendingInvite, personCard, promptAcceptInvite, takeInviteFromUrl, type PersonCard } from '../utils/friends';
 import { CONTENT_COLLECTIONS, journeyItems, ownTrash, pickHomeKeys, registerJourneys, sharedContent, visibleContent } from '../utils/ownership';
 import type { RemixPayload } from '../components/RemixSheet';
-import { afterLayerBack, isLayerBackPending, takeOverLayerEntry } from '../utils/overlayHistory';
+import { afterLayerBack, isLayerBackPending, popBelongsToLayer, takeOverLayerEntry } from '../utils/overlayHistory';
+import { noteAppScroll } from '../utils/scrollLock';
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
 import { applyJourneyOpenBy } from '../utils/journeyOpen';
 import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
@@ -1402,6 +1403,9 @@ export function useAppState() {
   // Listen to popstate events for browser back/forward navigation
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
+      // A sheet or drawer closing (from its own control, or by the back gesture) steps history back; that is not a
+      // navigation, and it must not put the page back at the top (this listener can run before the layer's own one)
+      if (popBelongsToLayer(event)) return;
       const state = event.state;
       const isUnsaved = (currentView === 'manage' && isManageDirty) || (currentView === 'detail' && isDetailEditing);
       if (isUnsaved) {
@@ -1451,6 +1455,7 @@ export function useAppState() {
       // swapping (a magazine or journey closing onto a hub) and only corrects itself on the next scroll
       const toDrawer = isPhoneViewport() && ['/archive', '/map', '/calendar', '/pocket', '/'].includes(window.location.pathname) && (isDrawerView(currentView) || currentView === 'home');
       if (!toDrawer) {
+        noteAppScroll();
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         window.requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
       }
@@ -1515,7 +1520,7 @@ export function useAppState() {
     }, 280);
 
     // Scroll to top when changing views (a drawer opening or closing leaves home where it was)
-    if (!drawerNav && !leavingDrawer) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (!drawerNav && !leavingDrawer) { noteAppScroll(); window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
 
     try {
       sessionStorage.setItem('lastView', effectiveView);
