@@ -13,7 +13,7 @@ import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { JourneyCard } from '../components/cards/JourneyCard';
 import { openJourneyActions } from '../components/cards/JourneyActionsSheet';
-import { openJourneyFromCard } from '../utils/journeyOpen';
+import { openJourneyFromCard, warmJourney } from '../utils/journeyOpen';
 import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
 import { NewTripButton } from '../components/NewTripButton';
 import { EmptyScene } from '../components/scenes/EmptyScene';
@@ -968,7 +968,7 @@ export function ArchiveHubPage({
                           meta={[place, formatNonRepeatingDate(trip.date), days > 0 ? `${days} days` : ''].filter(Boolean).join(' · ')}
                           active={activeCardId === trip.id}
                           onOpen={() => openJourneyFromCard(trip, onNavigate)}
-                          onPreload={preloadDetailPage}
+                          onPreload={() => warmJourney(trip)}
                           onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
                           sharedBy={sharedOwner(trip)}
                         />
@@ -991,7 +991,7 @@ export function ArchiveHubPage({
                           isActive={activeCardId === trip.id}
                           isWide={cardViewMode === 'wide'}
                           onOpen={() => openJourneyFromCard(trip, onNavigate)}
-                          onPreload={preloadDetailPage}
+                          onPreload={() => warmJourney(trip)}
                           onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
                           draggable={isLoggedIn && sortBy === 'user'}
                           onDragStart={(e) => handleTripDragStart(e, trip.id)}

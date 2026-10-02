@@ -4,6 +4,7 @@ import { Maximize2, Minimize2, SkipForward, SlidersHorizontal, Volume2, VolumeX 
 import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from '../player/PlayerDock';
 import { getStoredBgmAutoplay, getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval, saveStoredBgmDefaultVolume, saveStoredSlideshowInterval } from '../../utils/audioHelper';
 import { prefersReducedMotion } from '../../motion';
+import { VolumeGauge } from './VolumeGauge';
 import { lockBodyScroll } from '../../utils/scrollLock';
 
 // Memory Reel (v1.3): a full-screen photo film with music.
@@ -61,8 +62,15 @@ function isSameOrigin(url: string): boolean {
   }
 }
 
-export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose, startIndex = 0, startPaused = false }: MemoryReelProps) {
-  useBackToClose(true, onClose);
+export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose: onCloseNow, startIndex = 0, startPaused = false }: MemoryReelProps) {
+  useBackToClose(true, onCloseNow);
+  // Closing from the reel's own controls fades out first; the back gesture closes at once
+  const [leaving, setLeaving] = useState(false);
+  const onClose = useCallback(() => {
+    if (prefersReducedMotion()) { onCloseNow(); return; }
+    setLeaving(true);
+    window.setTimeout(onCloseNow, 220);
+  }, [onCloseNow]);
   const [index, setIndex] = useState(() => Math.max(0, Math.min(shots.length - 1, startIndex)));
   const [playing, setPlaying] = useState(!startPaused);
   const [muted, setMuted] = useState(false);
@@ -91,13 +99,27 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
     hudTimer.current = window.setTimeout(() => setHud(null), 1200);
   }, []);
 
+  // The volume gauge rises over the speaker button; it stays while it is being used and goes after a pause
+  const [gaugeOpen, setGaugeOpen] = useState(false);
+  const gaugeTimer = useRef<number | null>(null);
+  const keepGauge = useCallback(() => {
+    setGaugeOpen(true);
+    if (gaugeTimer.current) window.clearTimeout(gaugeTimer.current);
+    gaugeTimer.current = window.setTimeout(() => setGaugeOpen(false), 2600);
+  }, []);
+  const hideGauge = useCallback(() => {
+    if (gaugeTimer.current) window.clearTimeout(gaugeTimer.current);
+    setGaugeOpen(false);
+  }, []);
+  useEffect(() => () => { if (gaugeTimer.current) window.clearTimeout(gaugeTimer.current); }, []);
+
   const changeVolume = useCallback((next: number) => {
     const v = Math.max(0, Math.min(100, Math.round(next)));
     setVolume(v);
     setMuted(false);
     saveStoredBgmDefaultVolume(v);
-    flash(`음량 ${v}%`);
-  }, [flash]);
+    keepGauge();
+  }, [keepGauge]);
 
   const toggleFit = useCallback(() => {
     setFit(f => {
@@ -234,7 +256,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       else if (e.key === 'ArrowLeft') goBack();
       else if (e.key === 'ArrowUp') { e.preventDefault(); changeVolume(volumeRef.current + 10); }
       else if (e.key === 'ArrowDown') { e.preventDefault(); changeVolume(volumeRef.current - 10); }
-      else if (e.key === 'm' || e.key === 'M') setMuted(m => { flash(m ? '소리 켬' : '소리 끔'); return !m; });
+      else if (e.key === 'm' || e.key === 'M') { setMuted(m => !m); keepGauge(); }
       else if (e.key === 'f' || e.key === 'F') toggleFit();
       else if (e.key === 'i' || e.key === 'I') setCaptions(c => { flash(c ? '사진 정보 숨김' : '사진 정보 표시'); return !c; });
       else if (e.key === 'n' || e.key === 'N') { nextTrack(); flash('다음 곡'); }
@@ -245,7 +267,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       window.removeEventListener('keydown', onKey, true);
       unlock();
     };
-  }, [advance, goBack, onClose, changeVolume, flash, toggleFit, nextTrack]);
+  }, [advance, goBack, onClose, changeVolume, flash, toggleFit, nextTrack, keepGauge]);
 
   // Controls fade out while watching
   useEffect(() => {
@@ -271,7 +293,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       role="dialog"
       aria-label={`${title} Memory Reel`}
       data-bg-cover
-      className="fixed inset-0 z-[200] bg-black text-white select-none overflow-hidden"
+      className={`fixed inset-0 z-[200] bg-black text-white select-none overflow-hidden ${leaving ? 'tgl-reel-out' : 'tgl-reel-in'}`}
       onPointerMove={() => setChromeVisible(true)}
       onClick={() => setChromeVisible(true)}
       // Swipe left / right on a phone moves between shots
@@ -383,19 +405,6 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
           ) : undefined}
           panel={volumePanel ? (
             <DockPanel>
-              <DockPanelRow label="Volume">
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={5}
-                  value={muted ? 0 : volume}
-                  onChange={(e) => changeVolume(Number(e.target.value))}
-                  aria-label="음량"
-                  className="w-40 accent-red-500"
-                />
-                <span className="w-10 text-right font-mono text-meta tabular-nums">{muted ? 0 : volume}%</span>
-              </DockPanelRow>
               <DockPanelRow label="Pace">
                 <div className="flex gap-1" role="radiogroup" aria-label="넘기는 간격">
                   {[3000, 4000, 6000, 8000].map(ms => (
@@ -404,20 +413,31 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
                 </div>
               </DockPanelRow>
               <DockPanelRow label="Info">
-                <button type="button" role="switch" aria-checked={captions} onClick={() => setCaptions(c => !c)} className={`h-8 px-3 rounded-full text-meta font-bold ${captions ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'}`}>{captions ? '사진 정보 표시' : '사진 정보 숨김'}</button>
+                <button type="button" role="switch" aria-checked={captions} onClick={() => setCaptions(c => !c)} className={`h-8 px-3 rounded-full text-meta font-bold ${captions ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'}`}>{captions ? '사진 정보 켬' : '사진 정보 끔'}</button>
                 {tracks.length > 1 && (
                   <button type="button" onClick={() => { nextTrack(); flash('다음 곡'); }} className="h-8 px-3 rounded-full bg-white/10 hover:bg-white/20 text-meta font-bold inline-flex items-center gap-1.5"><SkipForward className="w-3.5 h-3.5" aria-hidden />다음 곡</button>
                 )}
               </DockPanelRow>
-              <span className="font-mono text-micro text-white/55">← → 넘기기 · Space 재생 · ↑ ↓ 음량 · M 소리 · F 보기 · I 정보 · N 다음 곡</span>
             </DockPanel>
           ) : undefined}
           leading={
             <>
-              <DockButton label={muted ? '소리 켜기 (M)' : '소리 끄기 (M)'} onClick={() => setMuted(m => !m)}>
-                {muted ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
-              </DockButton>
-              <DockButton label="옵션" onClick={() => setVolumePanel(v => !v)}>
+              <div className="relative">
+                {gaugeOpen && (
+                  <VolumeGauge
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3"
+                    value={volume}
+                    muted={muted}
+                    onChange={changeVolume}
+                    onToggleMute={() => setMuted(m => !m)}
+                    onActivity={keepGauge}
+                  />
+                )}
+                <DockButton label="음량" active={gaugeOpen} aria-expanded={gaugeOpen} onClick={() => { if (gaugeOpen) hideGauge(); else { setVolumePanel(false); keepGauge(); } }}>
+                  {muted || volume === 0 ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
+                </DockButton>
+              </div>
+              <DockButton label="옵션" onClick={() => { hideGauge(); setVolumePanel(v => !v); }}>
                 <SlidersHorizontal className={`w-5 h-5 ${volumePanel ? 'text-red-400' : ''}`} />
               </DockButton>
             </>

@@ -7,6 +7,7 @@ import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { lockBodyScroll } from '../../utils/scrollLock';
 import { confirmDialog } from '../../utils/feedback';
+import { prefersReducedMotion } from '../../motion';
 import { IconButton } from '../ui/IconButton';
 
 // Retries, then reloads once, when a deploy has replaced the chunk this page was built with
@@ -49,6 +50,8 @@ interface Props {
   onRemovePhoto?: (url: string, e: React.MouseEvent) => void;
   /** Opens the record at the entry a photo belongs to */
   onJumpToItem?: (itemId: number, date?: string) => void;
+  /** The page under it changes as soon as it is closed (it was opened on its own): close first, then slide away over the new page */
+  closeFirst?: boolean;
 }
 
 const WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -61,14 +64,23 @@ function dayLabel(d: string): string {
   return `${String(day).padStart(2, '0')} ${MON[m - 1]} · ${WEEK[w]}`;
 }
 
-export function JourneyMagazine({ trip, photos, days, canPublish, published, onPublish, onUnpublish, onClose, onShowRecord, canAddPhotos, uploading, fileInputRef, onAddPhotos, onRemovePhoto, onJumpToItem }: Props) {
+export function JourneyMagazine({ trip, photos, days, canPublish, published, onPublish, onUnpublish, onClose, onShowRecord, canAddPhotos, uploading, fileInputRef, onAddPhotos, onRemovePhoto, onJumpToItem, closeFirst }: Props) {
   useBackToClose(true, onClose);
+  // Its own close controls slide it away; the back gesture closes at once
+  const [leaving, setLeaving] = useState(false);
+  const slideAway = () => {
+    if (leaving) return;
+    if (prefersReducedMotion()) { onClose(); return; }
+    setLeaving(true);
+    if (closeFirst) onClose();
+    else window.setTimeout(onClose, 280);
+  };
   // The one slideshow: the play button runs it from the first photo; a tapped photo opens it still, on that photo
   const [reel, setReel] = useState<{ at: number; paused: boolean } | null>(null);
 
   useEffect(() => {
     const unlock = lockBodyScroll();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !reel) onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !reel) slideAway(); };
     window.addEventListener('keydown', onKey);
     return () => { unlock(); window.removeEventListener('keydown', onKey); };
   }, [onClose, reel]);
@@ -105,10 +117,10 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
 
   // Portaled to <body> so it covers the site header and the map, not just the record panel
   return createPortal(
-    <div role="dialog" aria-label={`${trip.title} 매거진`} data-bg-cover className="fixed inset-0 z-[185] bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark overflow-y-auto overscroll-contain">
+    <div role="dialog" aria-label={`${trip.title} 매거진`} data-bg-cover className={`fixed inset-0 z-[185] bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark overflow-y-auto overscroll-contain ${leaving ? 'tgl-reader-out pointer-events-none' : 'tgl-reader-in'}`}>
       {/* Top bar */}
       <div className="sticky top-0 z-10 flex items-center justify-between gap-2 px-3 sm:px-5 h-14 bg-paper/85 dark:bg-paper-dark/85 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <IconButton icon={X} label="매거진 닫기" size="sm" onClick={onClose} />
+        <IconButton icon={X} label="매거진 닫기" size="sm" onClick={slideAway} />
         <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-black/55 dark:text-white/55 truncate">Magazine · {photos.length} photos</span>
         <div className="flex items-center gap-1.5">
           {addable && (

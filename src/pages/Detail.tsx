@@ -432,6 +432,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
             setMagazineOpen(false);
           }}
           onShowRecord={() => { setMagazineOnly(false); setMagazineOpen(false); setActiveTab('timeline' as TabType); }}
+          closeFirst={magazineOnly}
           canAddPhotos={canEdit}
           uploading={s.uploadingImage}
           fileInputRef={s.fileInputRef as React.RefObject<HTMLInputElement>}

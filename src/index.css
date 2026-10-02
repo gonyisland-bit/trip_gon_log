@@ -998,6 +998,13 @@ input[type="range"]:focus-visible {
   --motion-emph: 420ms;
   --motion-hero: 900ms;
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
+  /* Sheets and drawers (v1.3.8): accelerate out of rest, settle long; leave quicker, speeding up */
+  --ease-sheet-in: cubic-bezier(.3, 0, .1, 1);
+  --ease-sheet-out: cubic-bezier(.4, 0, 1, .6);
+  --ease-cross: cubic-bezier(.4, 0, .2, 1);
+  --motion-sheet-in: 420ms;
+  --motion-sheet-out: 280ms;
+  --motion-cross: 240ms;
   --ease-emphasized: cubic-bezier(.16, 1, .3, 1);
   /* v1.3: springy settle for presses, pops and landings (falls back to a back-out curve) */
   --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
@@ -1140,14 +1147,13 @@ input[type="range"]:focus-visible {
 /* Departure Board arrival: the lobby lights up, then you walk up to the board */
 @keyframes tglLobbyIn { from { opacity: 0; } }
 @keyframes tglBoardIn {
-  0% { opacity: 0; transform: translateY(70px) scale(.78) rotateX(14deg); filter: blur(8px); }
-  60% { filter: blur(0); }
-  100% { opacity: 1; transform: none; filter: none; }
+  0% { opacity: 0; transform: translateY(28px) scale(.94); }
+  100% { opacity: 1; transform: none; }
 }
 @keyframes tglLobbySceneIn { from { opacity: 0; transform: translateY(50px) scale(1.12); } }
 @keyframes tglLobbyOut { to { opacity: 0; transform: scale(1.04); } }
 .tgl-lobby-in { animation: tglLobbyIn 420ms var(--ease-standard) both; }
-.tgl-board-in { transform-origin: 50% 100%; animation: tglBoardIn 1000ms var(--ease-emphasized) 120ms both; }
+.tgl-board-in { transform-origin: 50% 100%; animation: tglBoardIn 560ms var(--ease-sheet-in) 300ms both; }
 .tgl-lobby-in .tgl-lobby-scene { transform-origin: 50% 100%; animation: tglLobbySceneIn 1100ms var(--ease-emphasized) 60ms both; }
 .tgl-lobby-out { animation: tglLobbyOut 420ms var(--ease-standard) both; }
 
@@ -1230,15 +1236,15 @@ input[type="datetime-local"] { min-width: 0; max-width: 100%; }
 @keyframes tglSheetFall { to { opacity: 0; transform: translateY(8px) scale(.985); } }
 @keyframes tglFadeIn { from { opacity: 0; } }
 @keyframes tglFadeOut { to { opacity: 0; } }
-.tgl-sheet-in { animation: tglSheetUp var(--motion-emph) var(--ease-emphasized) both; }
-.tgl-sheet-out { animation: tglSheetDown 220ms var(--ease-standard) both; }
+.tgl-sheet-in { animation: tglSheetUp var(--motion-sheet-in) var(--ease-sheet-in) both; }
+.tgl-sheet-out { animation: tglSheetDown var(--motion-sheet-out) var(--ease-sheet-out) both; }
 @media (min-width: 640px) {
-  .tgl-sheet-in { animation: tglSheetRise var(--motion-emph) var(--ease-emphasized) both; }
-  .tgl-sheet-out { animation: tglSheetFall 220ms var(--ease-standard) both; }
+  .tgl-sheet-in { animation: tglSheetRise var(--motion-sheet-in) var(--ease-sheet-in) both; }
+  .tgl-sheet-out { animation: tglSheetFall 220ms var(--ease-cross) both; }
 }
-.tgl-dialog-in { animation: tglSheetRise var(--motion-emph) var(--ease-emphasized) both; }
+.tgl-dialog-in { animation: tglSheetRise var(--motion-sheet-in) var(--ease-sheet-in) both; }
 .tgl-dialog-out { animation: tglSheetFall 220ms var(--ease-standard) both; }
-.tgl-sheet-backdrop-in { animation: tglFadeIn var(--motion-base) var(--ease-standard) both; }
+.tgl-sheet-backdrop-in { animation: tglFadeIn var(--motion-cross) var(--ease-cross) both; }
 .tgl-sheet-backdrop-out { animation: tglFadeOut 220ms var(--ease-standard) both; }
 @media (prefers-reduced-motion: reduce) {
   .tgl-sheet-in, .tgl-sheet-out, .tgl-dialog-in, .tgl-dialog-out, .tgl-sheet-backdrop-in, .tgl-sheet-backdrop-out { animation: none; }
@@ -1362,24 +1368,30 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
   position: absolute; left: 0; right: 0; bottom: 0;
   top: calc(env(safe-area-inset-top, 0px) + 28px);
   transform: translateY(100%);
-  transition: transform 300ms var(--ease-emphasized);
+  transition: transform var(--motion-sheet-out) var(--ease-sheet-out), top 260ms var(--ease-cross), border-radius 200ms var(--ease-cross);
   will-change: transform;
 }
-.tgl-hubdrawer[data-open="true"] { transform: none; will-change: auto; }
-.tgl-hubdrawer-backdrop { opacity: 0; transition: opacity 240ms var(--ease-standard); }
-.tgl-hubdrawer-backdrop[data-open="true"] { opacity: 1; }
-/* Panels inside the sheet: the one on show fades in over the one leaving, so a switch never shows an empty sheet */
-.tgl-hubdrawer-panel { transition: opacity 180ms var(--ease-standard), transform 220ms var(--ease-emphasized), visibility 0s; }
-.tgl-hubdrawer-panel[data-on="false"] { opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(8px); transition: opacity 140ms var(--ease-standard), transform 200ms var(--ease-emphasized), visibility 0s 200ms; }
+.tgl-hubdrawer[data-open="true"] { transform: none; will-change: auto; transition-duration: var(--motion-sheet-in), 260ms, 200ms; transition-timing-function: var(--ease-sheet-in), var(--ease-cross), var(--ease-cross); }
+/* Hubs reach the top of the screen, the status bar included; their corners square off as they arrive */
+.tgl-hubdrawer[data-full="true"] { top: 0; --drawer-grip: calc(env(safe-area-inset-top, 0px) + 24px); }
+.tgl-hubdrawer[data-full="true"][data-open="true"] { border-radius: 0; transition-delay: 0s, 0s, 180ms; }
+.tgl-hubdrawer-backdrop { opacity: 0; transition: opacity var(--motion-sheet-out) var(--ease-cross); }
+.tgl-hubdrawer-backdrop[data-open="true"] { opacity: 1; transition-duration: var(--motion-sheet-in); }
+/* Panels in the sheet: the one on show settles in from the side it sits on in the tab bar while the one leaving
+   slides out the other way, so a switch reads as moving along the bar and never shows an empty sheet */
+.tgl-hubdrawer-panel { transition: opacity var(--motion-cross) var(--ease-cross), transform var(--motion-cross) var(--ease-cross), visibility 0s; }
+.tgl-hubdrawer-panel[data-on="false"] { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 160ms var(--ease-cross), transform var(--motion-cross) var(--ease-cross), visibility 0s var(--motion-cross); }
+.tgl-hubdrawer-panel[data-pos="before"] { transform: translateX(-28px); }
+.tgl-hubdrawer-panel[data-pos="after"] { transform: translateX(28px); }
 @media (min-width: 768px) {
   .tgl-hubdrawer {
     --drawer-grip: 0px;
     left: 50%; right: auto; top: 50%; bottom: auto;
     width: min(880px, calc(100vw - 48px)); height: min(860px, calc(100dvh - 64px));
     transform: translate(-50%, -46%) scale(.97); opacity: 0;
-    transition: transform 260ms var(--ease-emphasized), opacity 200ms var(--ease-standard);
+    transition: transform 260ms var(--ease-sheet-out), opacity 200ms var(--ease-cross);
   }
-  .tgl-hubdrawer[data-open="true"] { transform: translate(-50%, -50%); opacity: 1; }
+  .tgl-hubdrawer[data-open="true"] { transform: translate(-50%, -50%); opacity: 1; transition-duration: var(--motion-sheet-in), 240ms; transition-timing-function: var(--ease-sheet-in), var(--ease-cross); }
 }
 @media (prefers-reduced-motion: reduce) {
   .tgl-hubdrawer, .tgl-hubdrawer-backdrop, .tgl-hubdrawer-panel { transition: none !important; }
@@ -1391,3 +1403,18 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 /* The lobby window gives way first: a strip too short to show the picture shows nothing */
 .tgl-term-art { container-type: size; container-name: tgl-art; }
 @container tgl-art (max-height: 88px) { .tgl-term-art-scene { display: none; } }
+
+/* Full-screen readers (magazine, reel): they rise or fade in on the sheet curves and leave the same way */
+@keyframes tglReaderUp { from { transform: translateY(5%); opacity: 0; } }
+@keyframes tglReaderDown { to { transform: translateY(5%); opacity: 0; } }
+@keyframes tglReelIn { from { opacity: 0; transform: scale(1.04); } }
+@keyframes tglReelOut { to { opacity: 0; } }
+.tgl-reader-in { animation: tglReaderUp var(--motion-sheet-in) var(--ease-sheet-in) both; }
+.tgl-reader-out { animation: tglReaderDown var(--motion-sheet-out) var(--ease-sheet-out) both; }
+.tgl-reel-in { animation: tglReelIn 360ms var(--ease-cross) both; }
+.tgl-reel-out { animation: tglReelOut 220ms var(--ease-cross) both; }
+@media (prefers-reduced-motion: reduce) { .tgl-reader-in, .tgl-reader-out, .tgl-reel-in, .tgl-reel-out { animation: none; } }
+
+/* Volume gauge (components/reel/VolumeGauge): a tall pill that fills from the bottom under the finger */
+.tgl-vgauge-in { animation: tglVGaugeIn 200ms var(--ease-sheet-in) both; }
+@keyframes tglVGaugeIn { from { opacity: 0; transform: translateY(8px) scale(.96); } }

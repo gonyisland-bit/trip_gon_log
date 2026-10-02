@@ -26,7 +26,7 @@ import { EmptyScene } from '../components/scenes/EmptyScene';
 import { useMyCities } from '../utils/myCities';
 import { useHomeWidgets } from '../utils/homeWidgetPrefs';
 import { setDetailIntent } from '../utils/detailIntent';
-import { openJourneyFromCard } from '../utils/journeyOpen';
+import { openJourneyFromCard, warmJourney } from '../utils/journeyOpen';
 import { CURRENT_LOCATION_EN } from '../utils/userPrefs';
 
 interface HomePageProps {
@@ -1518,7 +1518,7 @@ export function HomePage({
                   meta={[place, formatNonRepeatingDate(trip.date), days > 0 ? `${days} days` : ''].filter(Boolean).join(' · ')}
                   active={activeCardId === trip.id}
                   onOpen={() => openJourneyFromCard(trip, onNavigate)}
-                  onPreload={preloadDetailPage}
+                  onPreload={() => warmJourney(trip)}
                   onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
                   sharedBy={sharedOwner(trip)}
                 />
@@ -1541,7 +1541,7 @@ export function HomePage({
                   isActive={activeCardId === trip.id}
                   isWide={cardViewMode === 'wide'}
                   onOpen={() => openJourneyFromCard(trip, onNavigate)}
-                  onPreload={preloadDetailPage}
+                  onPreload={() => warmJourney(trip)}
                   onMenu={isLoggedIn ? () => openJourneyActions(trip.id) : undefined}
                   draggable={isLoggedIn}
                   onDragStart={(e) => handleTripDragStart(e, trip.id)}

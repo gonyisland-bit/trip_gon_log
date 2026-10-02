@@ -245,11 +245,12 @@ export function DepartureBoard({
     onPlan();
   };
 
-  // Arrival: the chime, then the board rolls to the ticket
+  // Arrival: the drawer finishes its slide, then the chime, then the board rolls to the ticket
   useEffect(() => {
-    if (!muted) playChime();
-    const t = window.setTimeout(() => setRollKey(k => k + 1), prefersReducedMotion() ? 0 : 500);
-    return () => clearTimeout(t);
+    const slow = !prefersReducedMotion();
+    const chime = window.setTimeout(() => { if (!muted) playChime(); }, slow ? 380 : 0);
+    const t = window.setTimeout(() => setRollKey(k => k + 1), slow ? 560 : 0);
+    return () => { clearTimeout(chime); clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

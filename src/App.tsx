@@ -8,7 +8,8 @@ import { ArchiveHubPage } from './pages/Archive';
 import { ScrollToTop } from './components/ScrollToTop';
 import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './app/quickActions';
 import { TabBar } from './components/TabBar';
-import { DrawerHost } from './components/DrawerHost';
+import { DrawerHost, HubSkeleton } from './components/DrawerHost';
+import { shouldSkipBackgroundPrefetch } from './utils/prefetchHelper';
 import { isDrawerView, useIsPhone } from './app/drawerViews';
 import { useJourneyThumbs } from './app/useJourneyThumbs';
 import { TOGGLE_PALETTE_EVENT, OPEN_REMIX_EVENT, openRemix } from './app/layerEvents';
@@ -239,11 +240,48 @@ function App() {
     setDepartureTab('counter');
     setIsDepartureOpen(true);
   };
-  const drawerLoading = (
-    <div className="h-full min-h-[40vh] flex items-center justify-center">
-      <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin" />
-    </div>
-  );
+  // Hub drawers are drawn hidden ahead of their first visit, one at a time while the phone is idle, so opening one
+  // is only the slide. Not on data saver or a slow network; those draw on the first tap as before.
+  const [warmHubs, setWarmHubs] = useState<string[]>([]);
+  useEffect(() => {
+    if (!isLoggedIn || !isPhone || showSplash || shouldSkipBackgroundPrefetch()) return;
+    const queue = ['archive', 'calendar', 'pocket', 'map'];
+    const idle: (cb: () => void) => number = (window as any).requestIdleCallback
+      ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 4000 })
+      : (cb) => window.setTimeout(cb, 600);
+    let timer = 0;
+    let stopped = false;
+    const next = () => {
+      if (stopped) return;
+      const id = queue.shift();
+      if (!id) return;
+      setWarmHubs(w => (w.includes(id) ? w : [...w, id]));
+      // The next hub waits a moment, so each one is drawn on its own idle slice
+      timer = window.setTimeout(() => idle(next), 700);
+    };
+    const start = window.setTimeout(() => idle(next), 1500);
+    return () => { stopped = true; window.clearTimeout(start); window.clearTimeout(timer); };
+  }, [isLoggedIn, isPhone, showSplash]);
+  // Some entrances hand a hub a one-time instruction through sessionStorage (open the scrap sheet, focus a date, only
+  // published journeys, a tag) that the page reads when it is built. A hub kept alive or drawn ahead was built long
+  // ago, so when such a note is waiting as its drawer opens, that hub is built again to read it.
+  const [hubKeys, setHubKeys] = useState<Record<string, number>>({ archive: 0, calendar: 0, pocket: 0 });
+  const lastTagRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!drawerView) return;
+    let stale = false;
+    try {
+      if (drawerView === 'pocket') stale = sessionStorage.getItem(POCKET_OPEN_SCRAP_FLAG) === '1';
+      if (drawerView === 'calendar') stale = !!sessionStorage.getItem('calendar_target_date');
+      if (drawerView === 'archive') {
+        stale = sessionStorage.getItem('archivePublishedOnly') === '1' || selectedTagFilter !== lastTagRef.current;
+        lastTagRef.current = selectedTagFilter;
+      }
+    } catch (_) {}
+    if (stale) setHubKeys(k => ({ ...k, [drawerView]: (k[drawerView] ?? 0) + 1 }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawerView]);
+  const hubFallback = (tint: 'peach' | 'mist' | 'sage' | 'butter') => <HubSkeleton tint={tint} />;
   const terminalEl = isDepartureOpen ? (
     <LayerBoundary name="공항 터미널" onClose={() => setIsDepartureOpen(false)}>
     <Suspense fallback={null}>
@@ -297,7 +335,8 @@ function App() {
 
   // The tab bar's hubs: a page on the web, a drawer over home on phones (same element either way)
   const archiveEl = (
-    <ArchiveHubPage 
+    <ArchiveHubPage key={hubKeys.archive}
+      
           trips={trips} 
           plans={plans} 
           onNavigate={navigateTo} 
@@ -337,7 +376,7 @@ function App() {
         />
   );
   const calendarEl = (
-    <CalendarHubPage
+    <CalendarHubPage key={hubKeys.calendar}
           trips={trips}
           plans={plans}
           timelineData={timelineData}
@@ -347,7 +386,7 @@ function App() {
         />
   );
   const pocketEl = (
-    <PocketHubPage
+    <PocketHubPage key={hubKeys.pocket}
           trips={trips}
           plans={plans}
           onNavigate={navigateTo}
@@ -950,11 +989,13 @@ function App() {
           <DrawerHost
             active={activeDrawer}
             onClose={closeDrawer}
+            order={['archive', 'map', 'terminal', 'calendar', 'pocket']}
+            warm={warmHubs}
             panels={{
-              archive: { label: '여정', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={drawerLoading}>{archiveEl}</Suspense> },
-              map: { label: '지도', keepAlive: true, flush: true, dragClose: false, node: <Suspense fallback={drawerLoading}>{mapEl}</Suspense> },
-              calendar: { label: '달력', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={drawerLoading}>{calendarEl}</Suspense> },
-              pocket: { label: '포켓', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={drawerLoading}>{pocketEl}</Suspense> },
+              archive: { label: '여정', keepAlive: true, scroll: true, full: true, dragClose: true, node: <Suspense fallback={hubFallback('peach')}>{archiveEl}</Suspense> },
+              map: { label: '지도', keepAlive: true, flush: true, full: true, dragClose: false, node: <Suspense fallback={hubFallback('mist')}>{mapEl}</Suspense> },
+              calendar: { label: '달력', keepAlive: true, scroll: true, full: true, dragClose: true, node: <Suspense fallback={hubFallback('mist')}>{calendarEl}</Suspense> },
+              pocket: { label: '포켓', keepAlive: true, scroll: true, full: true, dragClose: true, node: <Suspense fallback={hubFallback('sage')}>{pocketEl}</Suspense> },
               terminal: { label: '공항 터미널', dragClose: true, node: terminalEl },
             }}
           />
