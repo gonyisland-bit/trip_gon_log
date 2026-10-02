@@ -39,7 +39,7 @@ const SCENE: Record<EmptySceneKind, { art: ArtId; tint: keyof typeof TINT }> = {
   search: { art: 'no-results', tint: 'mist' },
   ticket: { art: 'waiting-gate', tint: 'butter' },
   storage: { art: 'luggage-travel-2', tint: 'butter' },
-  upcoming: { art: 'train-station', tint: 'butter' },
+  upcoming: { art: 'window-waiting', tint: 'butter' },
   flights: { art: 'luggage-travel', tint: 'mist' },
   stays: { art: 'sleeping', tint: 'sage' },
   transit: { art: 'train-station', tint: 'mist' },

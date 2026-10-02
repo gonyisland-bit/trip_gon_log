@@ -4,6 +4,8 @@ import { Trip } from '../../types';
 import { getWeatherMeta, cleanCityDisplayName } from '../../utils/weatherApi';
 import { NewTripButton } from '../../components/NewTripButton';
 import { MONTH_NAMES, MONTH_TABS } from './calendarData';
+import { Art } from '../../art/Art';
+import { seasonArt } from '../../art/season';
 import type { CalendarHubState } from './useCalendarHubState';
 
 export function CalendarHeader({ s }: { s: CalendarHubState }) {
@@ -140,6 +142,9 @@ export function CalendarHeader({ s }: { s: CalendarHubState }) {
 
         {/* Center Hero: Giant Month (09 SEPTEMBER) & Expandable 1~12 Month Strip */}
         <div className="relative flex flex-col items-center justify-center my-4 sm:my-6 select-none" ref={monthDropdownRef}>
+          {viewMode === 'month' && (
+            <Art key={seasonArt(currentMonth)} id={seasonArt(currentMonth)} className="tgl-fade-in pointer-events-none absolute right-0 sm:right-[8%] top-0 h-24 sm:h-36 w-auto" />
+          )}
           {viewMode === 'month' ? (
             <>
               {/* Clickable Giant Month Heading */}

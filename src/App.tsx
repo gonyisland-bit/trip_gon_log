@@ -11,6 +11,7 @@ import { TabBar } from './components/TabBar';
 import { DrawerHost, HubSkeleton } from './components/DrawerHost';
 import { Freeze } from './components/Freeze';
 import { DetailMissing } from './components/DetailMissing';
+import { OfflineBanner } from './components/OfflineBanner';
 import { shouldSkipBackgroundPrefetch } from './utils/prefetchHelper';
 import { isDrawerView, useIsPhone } from './app/drawerViews';
 import { useJourneyThumbs } from './app/useJourneyThumbs';
@@ -436,6 +437,7 @@ function App() {
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-clip w-full`}>
       {/* Toasts (notify) and confirm dialogs (confirmDialog) */}
       <FeedbackHost />
+      <OfflineBanner />
 
       {/* Tiny Planet motion splash */}
       {showSplash && (

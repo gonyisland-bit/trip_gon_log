@@ -11,6 +11,7 @@ import {
 import { Trip, CityWeatherConfig } from '../types';
 import { WeatherGlass } from './weather/WeatherGlass';
 import { resolveWeatherEffectType } from './WeatherEffectLayer';
+import { Art } from '../art/Art';
 import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
 
 interface HomeWeatherWidgetProps {
@@ -336,6 +337,25 @@ export function HomeWeatherWidget({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {activeForecastCity && displayForecast.length === 7 && (
         <div ref={forecastRef} className="w-full py-4 sm:py-5 border-b border-black/10 dark:border-white/10 bg-transparent animate-in fade-in duration-200 select-none">
+          {/* Rain or snow in the next days: the bear says so */}
+          {(() => {
+            const hit = displayForecast.slice(0, 4)
+              .map((f: DailyForecastItem, i: number) => ({ i, type: resolveWeatherEffectType(f.weatherCode, f.precipitationProb) }))
+              .find(x => x.type === 'rain' || x.type === 'storm' || x.type === 'snow');
+            if (!hit) return null;
+            const snow = hit.type === 'snow';
+            const when = hit.i === 0 ? '오늘' : hit.i === 1 ? '내일' : `${hit.i}일 뒤`;
+            return (
+              <div className="mb-3 flex items-center gap-3 rounded-card bg-mist/60 dark:bg-mist-dark px-3 py-2 font-sans">
+                <Art id={snow ? 'weather-snow' : 'weather-rain'} className="h-16 w-auto shrink-0" />
+                <div className="min-w-0 flex flex-col gap-0.5">
+                  <span className="text-[15px] font-extrabold tracking-tight">{when} {snow ? '눈이 와요' : '비가 와요'}</span>
+                  <span className="text-meta text-black/60 dark:text-white/60 break-keep">{snow ? '따뜻하게 입고, 미끄러운 길을 조심하세요.' : '우산을 챙기세요.'}</span>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Sub Header */}
           <div className="flex items-center justify-between pb-2.5 border-b border-black/10 dark:border-white/10 mb-2 font-mono">
             <div className="flex items-center gap-2">

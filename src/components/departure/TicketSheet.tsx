@@ -9,6 +9,7 @@ import { inferAirportCode } from '../../utils/bookingDeepLinks';
 import type { Plan, StayItem, Trip } from '../../types';
 import { DepartureTicket, formatHours, ticketRange, ticketStops } from './departureData';
 import { TicketFace } from './TicketCard';
+import { Art } from '../../art/Art';
 
 // The ticket sheet (v1.3.7): one ticket in full, with smart booking for its flight and its stays, and
 // the actions that belong to it. A ticket at the counter boards; a kept one is raised to the counter.
@@ -76,7 +77,18 @@ function Content({ ticket, atCounter, trips, plans, staysByTrip, boarding, onBoa
         <span className={kicker}>Ticket</span>
         <h2 className="text-[22px] font-extrabold tracking-tight leading-tight break-keep">{ticket.plan?.title || `${ticket.cityKo} 여행`}</h2>
       </div>
-      <TicketFace ticket={ticket} />
+      <TicketFace ticket={ticket} className="shrink-0" />
+
+      {/* A ticket kept before its days were planned */}
+      {!ticket.plan && (
+        <div className="rounded-card bg-butter/60 dark:bg-butter-dark px-3 py-2 flex items-center gap-3">
+          <Art id="departure-board" className="h-24 w-auto shrink-0 rounded-thumb" />
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <span className="text-[15px] font-extrabold tracking-tight">일정이 아직 없어요</span>
+            <span className="text-meta text-black/60 dark:text-white/60 break-keep">날짜와 일정을 정하면 탑승할 수 있는 티켓이 됩니다.</span>
+          </div>
+        </div>
+      )}
 
       <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-1">
         <Row name="기간" value={`${ticketRange(ticket)}${ticket.nights ? ` · ${ticket.nights}박 ${ticket.nights + 1}일` : ''}`} />
