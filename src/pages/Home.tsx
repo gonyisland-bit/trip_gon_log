@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, Coins, Clock, Sliders } from 'lucide-react';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig, FlightItem, StayItem, TransitItem } from '../types';
+import { ArrowRight, ChevronLeft, ChevronRight, Tag, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
+import { auth } from '../firebase';
+import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, FlightItem, StayItem, TransitItem } from '../types';
 import { MagazineSpread, SpreadCard } from '../components/magazine/MagazineSpread';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { JourneyListRow, type JourneyRowBadge } from '../components/cards/JourneyListRow';
@@ -10,7 +9,6 @@ import { sharedOwner } from '../components/cards/SharedMark';
 import { cardCoverUrl } from '../utils/journeyThumbs';
 import { ViewModeSegment } from '../components/ui/ViewModeSegment';
 import { Chip } from '../components/ui/Chip';
-import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
 import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getKoreanHolidays } from '../utils/koreanHolidays';
@@ -34,20 +32,13 @@ interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
   trips: Trip[];
   plans: Plan[];
-  handleMoveToArchive: (plan: Plan) => void;
-  onMoveToPlans?: (trip: Trip) => void;
-  onCloneTrip?: (id: number) => void;
-  onClonePlan?: (id: number) => void;
   homeTitle: string;
   homeSubtitle?: string;
   heroJourneyIds?: number[];
   heroAutoSlide?: boolean;
   heroMediaType?: 'image' | 'video';
   heroSlideDuration?: number;
-  onEditTrip?: (id: number) => void;
-  onDeleteTrip?: (id: number) => void;
   onReorderTrips?: (orderedIds: number[]) => void;
-  onReorderPlans?: (orderedIds: number[]) => void;
   isLoggedIn?: boolean;
   isDarkMode?: boolean;
   homeGradientEnabled?: boolean;
@@ -62,8 +53,6 @@ interface HomePageProps {
   staysByTrip?: Record<number, StayItem[]>;
   transitByTrip?: Record<number, TransitItem[]>;
   landingHeroImage?: string;
-  canEditTrip?: (trip?: Trip) => boolean;
-  canDeleteTrip?: (trip?: Trip) => boolean;
   onOpenAuthModal?: (mode?: 'login' | 'signup') => void;
   isAdmin?: boolean;
   /** Starts the New trip flow (the empty hero's button) */
@@ -513,169 +502,6 @@ function formatSimpleDateWithDay(dateStr?: string): string {
   return `${year}.${month}.${day} ${dayName}`;
 }
 
-// Journey card hamburger menu
-export function JourneyCardMenu({
-  onEdit,
-  onDelete,
-  isLoggedIn,
-  onClone,
-  onMove,
-  moveLabel,
-  className,
-  variant = 'card',
-}: {
-  onEdit?: () => void;
-  onDelete?: () => void;
-  isLoggedIn: boolean;
-  onClone?: () => void;
-  onMove?: () => void;
-  moveLabel?: string;
-  className?: string;
-  variant?: 'card' | 'minimal';
-}) {
-  const [open, setOpen] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setOpen(false);
-      } else if (e.key === 'e' || e.key === 'E') {
-        if (onEdit) {
-          e.preventDefault();
-          setOpen(false);
-          onEdit();
-        }
-      } else if (e.key === 'c' || e.key === 'C') {
-        if (onClone) {
-          e.preventDefault();
-          setOpen(false);
-          onClone();
-        }
-      } else if (e.key === 's' || e.key === 'S') {
-        if (onMove) {
-          e.preventDefault();
-          setOpen(false);
-          onMove();
-        }
-      } else if (e.key === 'd' || e.key === 'D') {
-        if (onDelete) {
-          e.preventDefault();
-          setOpen(false);
-          setShowDeleteConfirm(true);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutsideClick);
-    document.addEventListener('touchstart', handleOutsideClick);
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      document.removeEventListener('touchstart', handleOutsideClick);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open, onEdit, onClone, onMove, onDelete]);
-
-  if (!isLoggedIn) return null;
-
-  return (
-    <>
-      <div ref={menuRef} className={`${className || (variant === 'minimal' ? 'relative' : "absolute bottom-3 right-3 z-30")} pointer-events-auto`}>
-        <button
-          onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
-          className={variant === 'minimal'
-            ? "p-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer bg-transparent border-0 shadow-none"
-            : "p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
-          }
-          title="카드 관리 메뉴"
-          aria-label="Journey menu"
-        >
-          <Menu className="w-3.5 h-3.5" />
-        </button>
-
-        {open && (
-          <div className={`absolute ${variant === 'minimal' ? 'top-full right-0 mt-1' : 'bottom-full right-0 mb-1'} w-48 bg-black text-white border border-white/20 shadow-2xl rounded-none z-50 overflow-hidden divide-y divide-white/10 animate-in zoom-in-95 duration-150`}>
-            {onEdit && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-extrabold uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Edit2 className="w-3.5 h-3.5 text-white/80" />
-                  <span>EDIT</span>
-                </div>
-                <span className="font-mono text-micro font-bold text-white/60 border border-white/20 px-1.5 py-0.5">E</span>
-              </button>
-            )}
-            {onClone && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setOpen(false); onClone(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-extrabold uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Copy className="w-3.5 h-3.5 text-white/80" />
-                  <span>COPY</span>
-                </div>
-                <span className="font-mono text-micro font-bold text-white/60 border border-white/20 px-1.5 py-0.5">C</span>
-              </button>
-            )}
-            {onMove && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setOpen(false); onMove(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-extrabold uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <ArrowUp className="w-3.5 h-3.5 text-white/80" />
-                  <span>{moveLabel || "MOVE"}</span>
-                </div>
-                <span className="font-mono text-micro font-bold text-white/60 border border-white/20 px-1.5 py-0.5">S</span>
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setOpen(false); setShowDeleteConfirm(true); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-extrabold uppercase tracking-widest text-red-400 hover:bg-red-950/50 hover:text-red-300 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                  <span>DELETE</span>
-                </div>
-                <span className="font-mono text-micro font-bold text-red-400/70 border border-red-500/30 px-1.5 py-0.5">D</span>
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <ConfirmModal
-        isOpen={showDeleteConfirm}
-        title="DELETE JOURNEY"
-        message="Are you sure you want to delete this journey?"
-        confirmLabel="Yes (Y)"
-        cancelLabel="Cancel (Esc)"
-        confirmVariant="danger"
-        onConfirm={() => {
-          setShowDeleteConfirm(false);
-          if (onDelete) onDelete();
-        }}
-        onCancel={() => setShowDeleteConfirm(false)}
-      />
-    </>
-  );
-}
-
 interface HeroMediaProps {
   journey: Trip | Plan;
   isActive: boolean;
@@ -801,7 +627,6 @@ export function HomePage({
   onNavigate,
   trips,
   plans,
-  handleMoveToArchive,
   homeTitle,
   homeSubtitle,
   heroJourneyIds = [],
@@ -810,13 +635,7 @@ export function HomePage({
   heroAutoSlide = true,
   heroMediaType = 'image',
   heroSlideDuration = 6,
-  onEditTrip,
-  onDeleteTrip,
   onReorderTrips,
-  onReorderPlans,
-  onMoveToPlans,
-  onCloneTrip,
-  onClonePlan,
   isLoggedIn = false,
   isDarkMode = false,
   homeGradientEnabled,
@@ -831,8 +650,6 @@ export function HomePage({
   staysByTrip,
   transitByTrip,
   landingHeroImage = '',
-  canEditTrip,
-  canDeleteTrip,
   onOpenAuthModal,
   isAdmin = false,
 }: HomePageProps) {

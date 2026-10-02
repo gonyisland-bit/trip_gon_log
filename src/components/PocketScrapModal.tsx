@@ -1,231 +1,178 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { 
-  X, Check, ExternalLink, Image as ImageIcon,
-  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles,
-  ScanText, Loader2, Link2, Clipboard, FileText, ZoomIn, MapPin,
-  Bookmark
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Bookmark, Check, ClipboardPaste, ExternalLink, FileText, ImagePlus, Link2, Loader2, MapPin, ScanText, ZoomIn,
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
-import { ConfirmModal } from './ConfirmModal';
+import { Sheet, useSheetClose } from './Sheet';
+import { Chip } from './ui/Chip';
+import { ImageViewer } from './ui/ImageViewer';
+import { Art } from '../art/Art';
+import { areaClass, fieldClass, labelClass } from './ui/formStyles';
+import { CATEGORY_FORM_ORDER, CATEGORY_META } from './pocket/categoryMeta';
 import { ScrapedSpotData, ScrapedSpotCandidate, scrapeSnsMetadata, extractAddressFromText, extractKeywordCandidates } from '../utils/snsScraper';
-import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
+import { PocketCategory, SpotPocketItem } from '../types';
+import { detectPlatform } from '../utils/pocketStorage';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { extractTextFromImageUrl } from '../utils/ocrHelper';
-import { notify } from '../utils/feedback';
+import { notify, confirmDialog } from '../utils/feedback';
+import { useBackToClose } from '../utils/overlayHistory';
+
+// Pocket scrap sheet (v1.3.8): the same rounded sheet as every other panel. One column, three parts: where the spot
+// comes from (a link, or a picture pasted, dropped or picked), what was read from it (place names as chips, one
+// note), and the fields to keep. The footer with 취소 and 저장 stays in place. A spot is kept only by 저장.
+// It is also how a kept spot is edited (`editing`): the same fields, filled in, with nothing read automatically.
 
 interface PocketScrapModalProps {
-  isOpen: boolean;
   onClose: () => void;
   scrapedData: ScrapedSpotData;
+  /** A kept spot being edited: the sheet changes it instead of adding a new one */
+  editing?: SpotPocketItem;
   onSave: (item: SpotPocketItem) => Promise<void>;
 }
 
-const CATEGORY_BUTTONS: { key: PocketCategory; label: string; icon: React.ElementType }[] = [
-  { key: 'spot', label: 'SPOT', icon: Camera },
-  { key: 'food', label: 'FOOD', icon: Utensils },
-  { key: 'cafe', label: 'CAFE', icon: Coffee },
-  { key: 'shopping', label: 'SHOPPING', icon: ShoppingBag },
-  { key: 'tip', label: 'TIP', icon: Lightbulb },
-];
+/** A kept spot as the sheet's starting point */
+export function spotAsScrap(spot: SpotPocketItem): ScrapedSpotData {
+  return {
+    sourceUrl: spot.sourceUrl || '',
+    platform: spot.platform || detectPlatform(spot.sourceUrl),
+    title: spot.title,
+    category: spot.category,
+    memo: spot.memo || '',
+    thumbnailUrl: spot.thumbnailUrl || '',
+    allImages: spot.thumbnailUrl ? [spot.thumbnailUrl] : [],
+    city: spot.city,
+    country: spot.country,
+    address: spot.address,
+    candidates: [],
+  };
+}
 
-const renderPlatformBadge = (platform: SpotPocketPlatform) => {
-  const p = platform.toLowerCase();
-  if (p === 'instagram') {
-    return (
-      <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-transparent text-black dark:text-white border border-black/20 dark:border-white/20">
-        INSTAGRAM
-      </span>
-    );
-  }
-  if (p === 'threads') {
-    return (
-      <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
-        THREADS
-      </span>
-    );
-  }
-  if (p === 'x') {
-    return (
-      <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-black/10 dark:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20">
-        X / TWITTER
-      </span>
-    );
-  }
-  if (p === 'youtube') {
-    return (
-      <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-red-600/15 text-red-600 dark:text-red-400 border border-red-600/30">
-        YOUTUBE
-      </span>
-    );
-  }
+const PLATFORM_LABEL: Record<string, string> = { instagram: 'INSTAGRAM', threads: 'THREADS', x: 'X / TWITTER', youtube: 'YOUTUBE', blog: 'BLOG', maps: 'MAPS' };
+
+const isWebUrl = (v: string) => /^https?:\/\/\S+$/i.test(v.trim());
+
+export function PocketScrapModal({ onClose, scrapedData, editing, onSave }: PocketScrapModalProps) {
+  // The sheet asks before closing over typed work; the form below keeps `dirty` current
+  const dirtyRef = useRef(false);
+  const [viewing, setViewing] = useState(false);
   return (
-    <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full font-mono text-meta font-bold tracking-wider bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/15 dark:border-white/15 uppercase">
-      {platform}
-    </span>
+    <Sheet
+      label={editing ? '스팟 수정' : '포켓에 담기'}
+      onClose={onClose}
+      tone="paper"
+      locked={viewing}
+      backToClose={false}
+      confirmClose={async () => !dirtyRef.current || confirmDialog(editing ? '수정한 내용이 있어요. 저장하지 않고 닫을까요?' : '작성 중인 내용이 있어요. 저장하지 않고 닫을까요?', { title: 'DISCARD', confirmLabel: '닫기', danger: true })}
+      panelClassName="sm:max-w-lg h-[min(92dvh,780px)]"
+    >
+      <ScrapForm scrapedData={scrapedData} editing={editing} onSave={onSave} dirtyRef={dirtyRef} viewing={viewing} setViewing={setViewing} />
+    </Sheet>
   );
-};
+}
 
-export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: PocketScrapModalProps) {
+function ScrapForm({ scrapedData, editing, onSave, dirtyRef, viewing, setViewing }: {
+  scrapedData: ScrapedSpotData;
+  editing?: SpotPocketItem;
+  onSave: (item: SpotPocketItem) => Promise<void>;
+  dirtyRef: React.MutableRefObject<boolean>;
+  viewing: boolean;
+  setViewing: (v: boolean) => void;
+}) {
+  const close = useSheetClose();
   const [title, setTitle] = useState(scrapedData.title);
   const [category, setCategory] = useState<PocketCategory>(scrapedData.category);
   const [memo, setMemo] = useState(scrapedData.memo);
   const [selectedImage, setSelectedImage] = useState(scrapedData.thumbnailUrl);
   const [city, setCity] = useState(scrapedData.city || '');
   const [country, setCountry] = useState(scrapedData.country || '');
-  const [address, setAddress] = useState('');
-  const [lat, setLat] = useState<number | undefined>(undefined);
-  const [lng, setLng] = useState<number | undefined>(undefined);
-  const [sourceUrlInput, setSourceUrlInput] = useState(scrapedData.sourceUrl || '');
+  const [address, setAddress] = useState(scrapedData.address || extractAddressFromText(scrapedData.memo) || '');
+  const [lat, setLat] = useState<number | undefined>(editing?.lat);
+  const [lng, setLng] = useState<number | undefined>(editing?.lng);
+  const [sourceUrlInput, setSourceUrlInput] = useState(scrapedData.sourceUrl && isWebUrl(scrapedData.sourceUrl) ? scrapedData.sourceUrl : '');
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeCandidateIndex, setActiveCandidateIndex] = useState<number | null>(
     scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null
   );
-
-  // Full-size Lightbox modal state
-  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
-
-  // 2-step confirmation modal on discard/exit
-  const [showDiscardConfirmModal, setShowDiscardConfirmModal] = useState<boolean>(false);
-
-  // User manual edit tracker to prevent background OCR from overwriting user's typed title
+  // Typing a title by hand keeps the background reading from overwriting it
   const [isUserEditedTitle, setIsUserEditedTitle] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  // Check if form has modified/unsaved content
-  const isDirty = Boolean(title.trim() || memo.trim() || selectedImage || address.trim() || sourceUrlInput.trim());
+  // Something worth asking about before it is thrown away: a new scrap holds work as soon as it has content; a spot
+  // being edited only once something differs from what was kept
+  dirtyRef.current = editing
+    ? title !== editing.title || category !== editing.category || memo !== (editing.memo || '') || selectedImage !== (editing.thumbnailUrl || '')
+      || city !== (editing.city || '') || country !== (editing.country || '') || address !== (editing.address || '') || sourceUrlInput.trim() !== (editing.sourceUrl || '')
+    : Boolean(title.trim() || memo.trim() || selectedImage || address.trim() || sourceUrlInput.trim());
+  // The back gesture asks the same way the backdrop and Escape do
+  useBackToClose(true, () => { close(); });
 
-  const handleAttemptClose = useCallback(() => {
-    if (isDirty) {
-      setShowDiscardConfirmModal(true);
-    } else {
-      onClose();
-    }
-  }, [isDirty, onClose]);
-
-  // OCR cache & state
+  // What was read from the picture: place names, and the text around them as one note
   const [ocrCache, setOcrCache] = useState<Record<string, { candidates: string[]; descriptionText: string }>>({});
-  const [isOcrRunning, setIsOcrRunning] = useState<boolean>(false);
+  const [isOcrRunning, setIsOcrRunning] = useState(false);
   const [ocrCandidates, setOcrCandidates] = useState<string[]>([]);
-  const [ocrDescription, setOcrDescription] = useState<string>('');
-  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrDescription, setOcrDescription] = useState('');
 
-  // Dedicated OCR runner for any target image URL
-  const runOcrForImage = useCallback(async (targetImg: string, autoApply: boolean = false, bypassCache: boolean = false) => {
+  const runOcrForImage = useCallback(async (targetImg: string, autoApply = false, bypassCache = false) => {
     if (!targetImg) return;
-
-    // Check cache first for instant retrieval unless explicitly bypassed
-    const cached = ocrCache[targetImg];
-    if (cached && !bypassCache) {
-      setOcrCandidates(cached.candidates);
-      setOcrDescription(cached.descriptionText);
-      setOcrError(null);
-
+    const apply = (candidates: string[], descriptionText: string) => {
+      setOcrCandidates(candidates);
+      setOcrDescription(descriptionText);
       if (autoApply && !isUserEditedTitle) {
-        if (cached.candidates.length > 0) {
-          setTitle(cached.candidates[0]);
-        }
-        if (cached.descriptionText) {
-          setMemo(cached.descriptionText);
-        }
+        if (candidates.length > 0) setTitle(candidates[0]);
+        if (descriptionText) setMemo(descriptionText);
       }
-      return;
-    }
-
+    };
+    const cached = ocrCache[targetImg];
+    if (cached && !bypassCache) { apply(cached.candidates, cached.descriptionText); return; }
     try {
       setIsOcrRunning(true);
-      setOcrError(null);
       const res = await extractTextFromImageUrl(targetImg, 'kor');
       const candidates = res.candidates || [];
       const descriptionText = res.descriptionText || '';
-
-      setOcrCache(prev => ({
-        ...prev,
-        [targetImg]: { candidates, descriptionText }
-      }));
-
-      setOcrCandidates(candidates);
-      setOcrDescription(descriptionText);
-
-      if (candidates.length === 0 && !descriptionText) {
-        setOcrError('이미지에서 인식 가능한 텍스트를 찾지 못했습니다.');
-      }
-
-      if (autoApply && !isUserEditedTitle) {
-        if (candidates.length > 0) {
-          setTitle(candidates[0]);
-        }
-        if (descriptionText) {
-          setMemo(descriptionText);
-        }
-      }
-    } catch (err: any) {
+      setOcrCache(prev => ({ ...prev, [targetImg]: { candidates, descriptionText } }));
+      apply(candidates, descriptionText);
+      if (candidates.length === 0 && !descriptionText) notify('사진에서 읽을 수 있는 글씨를 찾지 못했어요.');
+    } catch (err) {
       console.warn('[PocketScrapModal] OCR error:', err);
-      setOcrError('이미지 텍스트 인식 중 오류가 발생했습니다.');
+      notify('사진의 글씨를 읽지 못했어요. 잠시 후 다시 시도해 주세요.', 'error');
     } finally {
       setIsOcrRunning(false);
     }
   }, [ocrCache, isUserEditedTitle]);
 
+  // Start: read the picture when there is no real title yet, else offer keywords from the text
   useEffect(() => {
-    if (!isOpen) return;
-    setTitle(scrapedData.title);
-    setCategory(scrapedData.category);
-    setMemo(scrapedData.memo);
-    setSelectedImage(scrapedData.thumbnailUrl);
-    setCity(scrapedData.city || '');
-    setCountry(scrapedData.country || '');
-    setAddress(scrapedData.address || extractAddressFromText(scrapedData.memo) || '');
-    setLat(undefined);
-    setLng(undefined);
+    if (editing) return;
     setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
-    setIsUserEditedTitle(false);
-    setOcrDescription('');
-    setOcrError(null);
-    setIsLightboxOpen(false);
-
-    // Initial candidates from scrapedData
-    let initialCandidates = scrapedData.candidates?.map(c => c.title) || [];
-    setOcrCandidates(initialCandidates);
-
-    // 1. If image exists and title is generic/unspecified, trigger OCR directly as highest priority!
-    const isGenericTitle = !scrapedData.title || scrapedData.title === '스크린샷 스크랩' || scrapedData.title === '추천 여행 스팟';
-    if (scrapedData.thumbnailUrl && (isGenericTitle || initialCandidates.length === 0)) {
-      runOcrForImage(scrapedData.thumbnailUrl, isGenericTitle);
-    } else if (initialCandidates.length === 0 && (scrapedData.memo || scrapedData.title)) {
-      // 2. Only if no image or text-only scrap, extract keyword chips from memo/title as fallback
-      const textKeywords = extractKeywordCandidates(`${scrapedData.title || ''} ${scrapedData.memo || ''}`);
-      if (textKeywords.length > 0) {
-        setOcrCandidates(textKeywords);
-      }
+    const feed = scrapedData.candidates?.map(c => c.title) || [];
+    setOcrCandidates(feed);
+    const generic = !scrapedData.title || scrapedData.title === '스크린샷 스크랩' || scrapedData.title === '추천 여행 스팟';
+    if (scrapedData.thumbnailUrl && (generic || feed.length === 0)) {
+      void runOcrForImage(scrapedData.thumbnailUrl, generic);
+    } else if (feed.length === 0 && (scrapedData.memo || scrapedData.title)) {
+      const keywords = extractKeywordCandidates(`${scrapedData.title || ''} ${scrapedData.memo || ''}`);
+      if (keywords.length > 0) setOcrCandidates(keywords);
     }
-  }, [isOpen, scrapedData.sourceUrl, scrapedData.thumbnailUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrapedData.sourceUrl, scrapedData.thumbnailUrl]);
 
-  // Fetch metadata directly from URL inside modal
-  const handleFetchUrl = async () => {
-    if (!sourceUrlInput.trim() || !/^https?:\/\//i.test(sourceUrlInput.trim())) {
-      notify('유효한 웹/SNS 링크 URL(https://...)을 입력해주세요.');
-      return;
-    }
+  // A link: read its title, picture, place and text into the form
+  const fetchUrl = async (raw = sourceUrlInput) => {
+    const url = raw.trim();
+    if (!isWebUrl(url)) { notify('https://로 시작하는 링크를 넣어 주세요.'); return; }
     try {
       setIsFetchingUrl(true);
-      const res = await scrapeSnsMetadata(sourceUrlInput.trim());
-      if (res.title) {
-        setTitle(res.title);
-        setIsUserEditedTitle(false);
-      }
+      const res = await scrapeSnsMetadata(url);
+      if (res.title) { setTitle(res.title); setIsUserEditedTitle(false); }
       if (res.category) setCategory(res.category);
       if (res.memo) setMemo(res.memo);
       if (res.city) setCity(res.city);
       if (res.country) setCountry(res.country);
-      if (res.address) {
-        setAddress(res.address);
-      } else if (res.memo) {
-        const detectedAddr = extractAddressFromText(res.memo);
-        if (detectedAddr) setAddress(detectedAddr);
-      }
+      const addr = res.address || (res.memo ? extractAddressFromText(res.memo) : '');
+      if (addr) setAddress(addr);
       if (res.thumbnailUrl) {
         setSelectedImage(res.thumbnailUrl);
         await runOcrForImage(res.thumbnailUrl, false);
@@ -238,643 +185,297 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       }
     } catch (err) {
       console.warn('[PocketScrapModal] Fetch URL error:', err);
-      notify('링크 정보를 불러오는데 실패했습니다. 스크린샷 이미지를 붙여넣어주세요.');
+      notify('링크 정보를 불러오지 못했어요. 스크린샷을 붙여넣어 주세요.', 'error');
     } finally {
       setIsFetchingUrl(false);
     }
   };
 
-  // Clipboard Paste handler (Ctrl+V) for instant image scraping/replacement
+  // A picture (picked, dropped or pasted): uploaded, then read right away
   const processImageFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) { notify('사진 파일만 올릴 수 있어요.'); return; }
     try {
       setIsUploading(true);
       const compressed = await compressImage(file, 2560, 2560, 0.88);
-      const publicUrl = await uploadFileToR2(compressed, `pocket_scraps/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`);
-      setSelectedImage(publicUrl);
+      const url = await uploadFileToR2(compressed, `pocket_scraps/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`);
+      setSelectedImage(url);
       setIsUserEditedTitle(false);
-      // 업로드 즉시 OCR을 실행하여 제목과 메모 자동 반영!
-      await runOcrForImage(publicUrl, true);
+      await runOcrForImage(url, true);
     } catch (err) {
       console.error('[PocketScrapModal] Image upload/OCR failed:', err);
-      notify('이미지 업로드 및 글씨 인식에 실패했습니다.');
+      notify('사진을 올리거나 읽지 못했어요. 잠시 후 다시 시도해 주세요.', 'error');
     } finally {
       setIsUploading(false);
     }
   }, [runOcrForImage]);
 
-  // Global ESC & Paste listener
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        e.preventDefault();
-        if (isLightboxOpen) {
-          setIsLightboxOpen(false);
-        } else {
-          handleAttemptClose();
-        }
-      }
-    };
-
-    const handlePaste = async (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const file = items[i].getAsFile();
-          if (file) {
-            e.preventDefault();
-            await processImageFile(file);
-            break;
+  const pasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard?.read) {
+        for (const item of await navigator.clipboard.read()) {
+          const type = item.types.find(t => t.startsWith('image/'));
+          if (type) {
+            const blob = await item.getType(type);
+            await processImageFile(new File([blob], `pasted_${Date.now()}.${type.split('/')[1] || 'png'}`, { type }));
+            return;
           }
         }
       }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('paste', handlePaste);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('paste', handlePaste);
-    };
-  }, [isOpen, isLightboxOpen, handleAttemptClose, processImageFile]);
-
-  // OCR handler: Extract text from selected thumbnail image
-  const handleRunOcr = async (autoApply: boolean = false) => {
-    if (!selectedImage) {
-      notify('분석할 이미지가 없습니다.');
-      return;
+      const text = (await navigator.clipboard?.readText?.())?.trim();
+      if (text && isWebUrl(text)) { setSourceUrlInput(text); await fetchUrl(text); return; }
+      notify('클립보드에 사진이나 링크가 없어요.');
+    } catch {
+      notify('붙여넣기를 쓸 수 없어요. 키보드의 Ctrl+V를 눌러 주세요.');
     }
-    await runOcrForImage(selectedImage, autoApply, true);
   };
 
-  // Replace memo with OCR description text
-  const handleApplyDescriptionToMemo = () => {
-    if (!ocrDescription) return;
-    setMemo(ocrDescription);
-  };
+  // Ctrl+V anywhere on the sheet (outside a text field): a picture is read, a link is loaded
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const inField = (e.target as HTMLElement | null)?.closest?.('input, textarea');
+      const file = Array.from(e.clipboardData?.files || []).find(f => f.type.startsWith('image/'));
+      if (file) { e.preventDefault(); void processImageFile(file); return; }
+      const text = e.clipboardData?.getData('text')?.trim();
+      if (!inField && text && isWebUrl(text)) { e.preventDefault(); setSourceUrlInput(text); void fetchUrl(text); }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [processImageFile]);
 
-  if (!isOpen) return null;
+  // Place names to pick from: the feed's own spots first, then names read from the picture or text
+  const feed = scrapedData.candidates || [];
+  const feedTitles = new Set(feed.map(c => c.title));
+  const readNames = ocrCandidates.filter(n => !feedTitles.has(n));
 
-  // Handle candidate chip selection
-  const handleSelectCandidate = (candidate: ScrapedSpotCandidate, idx: number) => {
+  const pickFeed = (candidate: ScrapedSpotCandidate, idx: number) => {
     setActiveCandidateIndex(idx);
     setTitle(candidate.title);
     setCategory(candidate.category);
-    if (candidate.memo) {
-      setMemo(candidate.memo);
-    }
+    if (candidate.memo) setMemo(candidate.memo);
     if (candidate.city) setCity(candidate.city);
     if (candidate.country) setCountry(candidate.country);
-    if (candidate.address) {
-      setAddress(candidate.address);
-    } else if (candidate.memo) {
-      const detectedAddr = extractAddressFromText(candidate.memo);
-      if (detectedAddr) setAddress(detectedAddr);
-    }
-
-    // If candidate has an index, also auto-pick image if available in allImages
-    if (candidate.index && scrapedData.allImages[candidate.index - 1]) {
-      setSelectedImage(scrapedData.allImages[candidate.index - 1]);
-    }
+    const addr = candidate.address || (candidate.memo ? extractAddressFromText(candidate.memo) : '');
+    if (addr) setAddress(addr);
+    if (candidate.index && scrapedData.allImages[candidate.index - 1]) setSelectedImage(scrapedData.allImages[candidate.index - 1]);
   };
-
-  // Image Upload handler
-  const handleCustomImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await processImageFile(file);
-    e.target.value = '';
-  };
+  const pickName = (name: string) => { setActiveCandidateIndex(null); setTitle(name); setIsUserEditedTitle(true); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      notify('장소명(제목)을 입력해주세요.');
-      return;
-    }
-
+    if (!title.trim()) { notify('장소명을 입력해 주세요.'); return; }
     try {
       setIsSubmitting(true);
-      const newPocketItem: SpotPocketItem = {
-        id: `spot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      // The link as it stands in the box is the one kept
+      const link = isWebUrl(sourceUrlInput) ? sourceUrlInput.trim() : '';
+      const fields = {
         title: title.trim(),
         category,
         memo: memo.trim() || undefined,
-        sourceUrl: scrapedData.sourceUrl,
-        platform: scrapedData.platform,
+        sourceUrl: link || undefined,
+        platform: link ? detectPlatform(link) : undefined,
         thumbnailUrl: selectedImage.trim() || undefined,
         city: city.trim() || undefined,
         country: country.trim() || undefined,
         address: address.trim() || undefined,
         lat,
         lng,
-        createdAt: Date.now()
       };
-
-      await onSave(newPocketItem);
-      onClose();
+      await onSave(editing
+        ? { ...editing, ...fields }
+        : { id: `spot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, createdAt: Date.now(), ...fields });
+      // Saved: nothing is left to ask about
+      dirtyRef.current = false;
+      close();
     } catch (err) {
       console.error('[PocketScrapModal] Save failed:', err);
-      notify('포켓 보관 중 오류가 발생했습니다.');
+      notify('포켓에 담지 못했어요. 잠시 후 다시 시도해 주세요.', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return createPortal(
-    <div 
-      className="fixed inset-0 z-modal bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
-      onClick={handleAttemptClose}
-    >
-      <div 
-        className="w-full max-w-xl bg-surface dark:bg-surface-dark rounded-card shadow-2xl flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="px-5 py-3.5 border-b border-black/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="font-mono text-xs font-extrabold tracking-widest uppercase text-black dark:text-white flex items-center gap-1.5">
-              <Bookmark className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-              POCKET SCRAP
-            </span>
-            {scrapedData.platform && renderPlatformBadge(scrapedData.platform)}
-          </div>
-          <button
-            type="button"
-            onClick={handleAttemptClose}
-            className="tap-target p-1.5 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
-            title="닫기 (ESC)"
-          >
-            <X className="w-4 h-4" />
-          </button>
+  const linkNow = isWebUrl(sourceUrlInput) ? sourceUrlInput.trim() : '';
+  const platform = linkNow ? PLATFORM_LABEL[detectPlatform(linkNow)] : undefined;
+  const reading = isUploading || isOcrRunning;
+
+  return (
+    <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+      {/* Head: what this is, and where the spot came from */}
+      <div className="shrink-0 px-4 pt-1 pb-3 flex items-center gap-3">
+        <span className="w-11 h-11 rounded-thumb bg-sage text-sage-ink dark:bg-sage-dark dark:text-sage grid place-items-center shrink-0">
+          <Bookmark className="w-5 h-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex flex-col">
+          <span className="text-[17px] font-extrabold tracking-tight leading-tight">{editing ? '스팟 수정' : '포켓에 담기'}</span>
+          <span className="font-mono text-meta text-black/55 dark:text-white/55 truncate">{platform || (linkNow ? 'WEB' : editing ? '직접 입력한 스팟' : '직접 입력')}</span>
         </div>
-
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[78vh]">
-          {/* STEP 1: SOURCE LOADING (URL or Screenshot Image) */}
-          <div className="flex flex-col gap-2 p-3 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10">
-            <span className="text-meta font-mono font-bold tracking-widest text-black/60 dark:text-white/60 uppercase">
-              01 SOURCE (링크 또는 이미지 불러오기)
-            </span>
-
-            {/* URL Input Row */}
-            <div className="flex items-center gap-1.5">
-              <div className="relative flex-1">
-                <input
-                  type="url"
-                  value={sourceUrlInput}
-                  onChange={(e) => setSourceUrlInput(e.target.value)}
-                  placeholder="https://... (인스타그램, 유튜브, 블로그 등 링크)"
-                  className="w-full pl-7 pr-3 py-1.5 text-xs font-mono bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors placeholder:text-black/50 dark:placeholder:text-white/50"
-                />
-                <Link2 className="w-3.5 h-3.5 text-black/60 dark:text-white/60 absolute left-2 top-2" />
-              </div>
-              <button
-                type="button"
-                onClick={handleFetchUrl}
-                disabled={isFetchingUrl || !sourceUrlInput.trim()}
-                className="btn btn-primary btn-sm shrink-0 flex"
-              >
-                {isFetchingUrl ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
-                <span>{isFetchingUrl ? 'FETCHING' : 'FETCH'}</span>
-              </button>
-            </div>
-
-            {/* Image Loading Options Bar */}
-            <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-black/60 dark:text-white/60">
-              <span className="flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-                <span>스크린샷 이미지</span>
-              </span>
-              <div className="flex items-center gap-2">
-                {selectedImage && (
-                  <button
-                    type="button"
-                    onClick={() => setIsLightboxOpen(true)}
-                    className="text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <ZoomIn className="w-3 h-3" />
-                    <span>원본 확대</span>
-                  </button>
-                )}
-                <label className="text-meta font-mono text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:underline cursor-pointer flex items-center gap-1">
-                  <Upload className="w-3 h-3" />
-                  <span>{isUploading ? '분석 중...' : '이미지 불러오기'}</span>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleCustomImageUpload} 
-                    disabled={isUploading} 
-                    className="hidden" 
-                  />
-                </label>
-              </div>
-            </div>
-
-            {/* Image Frame Preview */}
-            <div 
-              className="relative w-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/15 dark:border-white/15 overflow-hidden group cursor-zoom-in"
-              onClick={() => selectedImage && setIsLightboxOpen(true)}
-            >
-              {selectedImage ? (
-                <img 
-                  src={selectedImage} 
-                  alt={title} 
-                  className="block w-full h-auto max-h-[60vh] object-contain select-none transition-transform duration-200 group-hover:scale-[1.01]" 
-                  crossOrigin="anonymous"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-1.5 text-black/60 dark:text-white/60 font-mono text-xs py-12">
-                  <ImageIcon className="w-7 h-7 stroke-1" />
-                  <span>이미지 없음 (클립보드 스크린샷 Ctrl+V 붙여넣기 지원)</span>
-                </div>
-              )}
-              {selectedImage && (
-                <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none z-10">
-                  <span className="flex items-center gap-1 px-2 py-0.5 bg-black/70 backdrop-blur-xs text-white/90 text-micro font-mono border border-white/15">
-                    <Clipboard className="w-2.5 h-2.5" />
-                    <span>Ctrl+V 붙여넣기 지원</span>
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* STEP 2: EXTRACT & EDIT */}
-          <div className="flex flex-col gap-3">
-            <span className="text-meta font-mono font-bold tracking-widest text-black/60 dark:text-white/60 uppercase">
-              02 EXTRACT & EDIT (장소명·노트 추출 및 편집)
-            </span>
-
-            {/* Unified Minimal OCR Extract Button */}
-            {selectedImage && (
-              <button
-                type="button"
-                onClick={() => handleRunOcr(true)}
-                disabled={isOcrRunning || !selectedImage}
-                className="btn btn-primary w-full flex"
-                title="이미지에서 텍스트를 자동 인식하여 제목과 메모에 채웁니다"
-              >
-                {isOcrRunning ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
-                    <span>EXTRACTING...</span>
-                  </>
-                ) : (
-                  <>
-                    <ScanText className="w-3.5 h-3.5 text-red-500" />
-                    <span>EXTRACT (OCR 추출)</span>
-                  </>
-                )}
-              </button>
-            )}
-
-            {/* Multi-spot Candidates (If feed contains multiple recommendations) */}
-            {scrapedData.candidates && scrapedData.candidates.length > 0 && (
-              <div className="p-2.5 bg-red-600/[0.04] dark:bg-red-500/[0.06] border border-red-500/20 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-meta font-mono font-bold text-red-600 dark:text-red-400">
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    FEED SPOTS ({scrapedData.candidates.length})
-                  </span>
-                  {scrapedData.targetImgIndex && (
-                    <span className="text-micro font-normal text-black/60 dark:text-white/60">
-                      SLIDE #{scrapedData.targetImgIndex}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                  {scrapedData.candidates.map((cand, idx) => {
-                    const isSelected = activeCandidateIndex === idx;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSelectCandidate(cand, idx)}
-                        className={`px-2 py-0.5 text-[11px] font-mono border transition-all cursor-pointer flex items-center gap-1 ${
-                          isSelected
-                            ? 'bg-red-600 text-white border-red-600 font-bold'
-                            : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
-                        }`}
-                      >
-                        {cand.index && <span className="opacity-60 text-micro">#{cand.index}</span>}
-                        <span>{cand.title}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Detected Place Candidates Chips */}
-            {ocrCandidates.length > 0 && (
-              <div className="p-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 flex flex-col gap-1.5 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between text-meta font-mono font-bold text-black/60 dark:text-white/60">
-                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                    <ScanText className="w-3 h-3" />
-                    DETECTED PLACES ({ocrCandidates.length})
-                  </span>
-                  <span className="text-micro font-normal text-black/60 dark:text-white/60">클릭 시 제목 적용</span>
-                </div>
-                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                  {ocrCandidates.map((cand, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => { setTitle(cand); setIsUserEditedTitle(true); }}
-                      className={`px-2.5 py-1 text-xs font-mono border transition-all cursor-pointer ${
-                        title === cand
-                          ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold'
-                          : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
-                      }`}
-                    >
-                      {cand}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Detected Description Note */}
-            {ocrDescription && (
-              <div className="p-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 flex flex-col gap-1.5 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between">
-                  <span className="text-meta font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
-                    <FileText className="w-3 h-3 text-red-600 dark:text-red-400" />
-                    DETECTED NOTE ({ocrDescription.length})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleApplyDescriptionToMemo}
-                    className="btn btn-primary btn-sm flex"
-                  >
-                    <Check className="w-2.5 h-2.5" />
-                    <span>APPLY TO MEMO</span>
-                  </button>
-                </div>
-                <p className="text-meta font-sans text-black/60 dark:text-white/60 line-clamp-3 leading-relaxed">
-                  {ocrDescription}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Title Field & Candidate Chips */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-                장소명 (제목) *
-              </label>
-              <button
-                type="button"
-                onClick={() => handleRunOcr(false)}
-                disabled={isOcrRunning || !selectedImage}
-                className="text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
-                title="사진에서 글씨를 다시 읽어 장소명 후보와 설명을 추출합니다"
-              >
-                {isOcrRunning ? (
-                  <Loader2 className="w-3 h-3 animate-spin text-red-500" />
-                ) : (
-                  <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
-                )}
-                <span>사진 글씨 다시 읽기</span>
-              </button>
-            </div>
-
-            <PlaceAutocompleteInput 
-              value={title}
-              onChange={(val) => {
-                setTitle(val);
-                setIsUserEditedTitle(true);
-              }}
-              onSelectPlace={(placeName, coords, fullAddress, countryName, cityName) => {
-                if (placeName) setTitle(placeName);
-                if (coords?.lat) setLat(coords.lat);
-                if (coords?.lng) setLng(coords.lng);
-                if (fullAddress) setAddress(fullAddress);
-                if (countryName) setCountry(countryName);
-                if (cityName) setCity(cityName);
-                setIsUserEditedTitle(true);
-              }}
-              placeholder="장소 검색 (구글 자동완성) 또는 직접 입력"
-              className="w-full px-3 py-2 text-sm font-bold bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
-            />
-
-            {/* Selected Address & Location Info Badge */}
-            {address && (
-              <div className="flex items-center gap-1.5 text-meta font-mono text-black/60 dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02] px-2.5 py-1 border border-black/10 dark:border-white/10 animate-in fade-in duration-150">
-                <MapPin className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0" />
-                <span className="truncate">{address}</span>
-              </div>
-            )}
-
-            {/* OCR Extracted Place Name Candidates (One-touch select) */}
-            {ocrCandidates.length > 0 && (
-              <div className="flex flex-col gap-1.5 p-2.5 bg-black/[0.025] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between text-meta font-mono font-bold text-black/60 dark:text-white/60">
-                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                    <ScanText className="w-3 h-3" />
-                    추천 장소명 후보 키워드 ({ocrCandidates.length}개):
-                  </span>
-                  <span className="text-micro font-normal text-black/60 dark:text-white/60">클릭 시 제목에 즉시 입력</span>
-                </div>
-                <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pt-0.5">
-                  {ocrCandidates.map((cand, idx) => {
-                    const isSelected = title === cand;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setTitle(cand);
-                          setIsUserEditedTitle(true);
-                        }}
-                        className={`px-2.5 py-1 text-xs font-mono border transition-all cursor-pointer flex items-center gap-1 ${
-                          isSelected
-                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold shadow-xs'
-                            : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black/50 dark:hover:border-white/50'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3 text-red-500" />}
-                        <span>{cand}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Category Pill Buttons */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-              카테고리 *
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORY_BUTTONS.map((cat) => {
-                const isSelected = category === cat.key;
-                const Icon = cat.icon;
-                return (
-                  <button
-                    key={cat.key}
-                    type="button"
-                    onClick={() => setCategory(cat.key)}
-                    className={`px-3 py-1.5 text-xs font-mono font-bold border transition-colors cursor-pointer flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
-                        : 'border-black/15 dark:border-white/15 text-black/65 dark:text-white/65 hover:border-black dark:hover:border-white'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{cat.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* City & Country Fields */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-                City
-              </label>
-              <input 
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="예: 도쿄, 서울"
-                className="w-full px-3 py-2 text-xs font-mono font-medium bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-                Country
-              </label>
-              <input 
-                type="text"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                placeholder="예: JAPAN, KOREA"
-                className="w-full px-3 py-2 text-xs font-mono font-medium bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* Memo / Notes */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-                메모 및 꿀팁 (요약)
-              </label>
-              {ocrDescription && (
-                <button
-                  type="button"
-                  onClick={handleApplyDescriptionToMemo}
-                  className="text-meta font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
-                  title="사진 속 설명 텍스트로 기존 메모를 대체합니다"
-                >
-                  <FileText className="w-3 h-3" />
-                  <span>사진 설명 추출 덮어쓰기</span>
-                </button>
-              )}
-            </div>
-            <textarea 
-              rows={4}
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              placeholder="추천 메뉴, 상세 위치/주소, 영업시간, 웨이팅 팁, 주의사항 등..."
-              className="w-full px-3 py-2 text-xs font-sans font-medium leading-relaxed bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors resize-y min-h-[96px]"
-            />
-          </div>
-
-          {/* Source Link Preview */}
-          <div className="flex items-center justify-between text-[11px] font-mono text-black/60 dark:text-white/60 pt-1 border-t border-black/10 dark:border-white/10">
-            <span className="truncate max-w-[320px] flex items-center gap-1">
-              <Link2 className="w-3 h-3 shrink-0" />
-              <span className="truncate">{scrapedData.sourceUrl}</span>
-            </span>
-            <a 
-              href={scrapedData.sourceUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white flex items-center gap-1 shrink-0 ml-2"
-            >
-              <span>원문 보기</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={handleAttemptClose}
-              className="btn btn-secondary"
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="btn btn-primary flex"
-            >
-              <Check className="w-3.5 h-3.5 text-red-500" />
-              <span>{isSubmitting ? 'SAVING...' : 'SAVE SPOT (포켓 저장)'}</span>
-            </button>
-          </div>
-        </form>
       </div>
 
-      {/* Full-size High-Res Image Lightbox Popup */}
-      {isLightboxOpen && selectedImage && (
-        <div 
-          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <div className="w-full flex items-center justify-between pb-2 text-white/80">
-              <span className="text-[11px] font-mono tracking-widest uppercase">
-                ORIGINAL FULL-RES IMAGE
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsLightboxOpen(false)}
-                className="tap-target p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
-                title="닫기 (ESC)"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="relative max-h-[85vh] max-w-full overflow-hidden flex items-center justify-center border border-white/20 shadow-2xl bg-black">
-              <img 
-                src={selectedImage} 
-                alt="Full resolution preview" 
-                className="max-h-[84vh] max-w-full w-auto h-auto object-contain select-none"
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 flex flex-col gap-4">
+        {/* Source: a link, or a picture */}
+        <section aria-label="불러오기" className="rounded-card bg-surface dark:bg-surface-dark p-3 flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black/45 dark:text-white/45 pointer-events-none" aria-hidden />
+              <input
+                id="scrap-url"
+                type="url"
+                inputMode="url"
+                value={sourceUrlInput}
+                onChange={(e) => setSourceUrlInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void fetchUrl(); } }}
+                placeholder="링크 (인스타그램, 유튜브, 블로그)"
+                aria-label="링크"
+                className={`${fieldClass} pl-10 bg-paper dark:bg-paper-dark`}
               />
             </div>
+            <button type="button" onClick={() => { void fetchUrl(); }} disabled={isFetchingUrl || !sourceUrlInput.trim()} className="btn btn-secondary shrink-0">
+              {isFetchingUrl ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : null}불러오기
+            </button>
+          </div>
+
+          <div className="relative rounded-thumb overflow-hidden bg-black/[0.04] dark:bg-white/[0.06]">
+            {selectedImage ? (
+              <button type="button" onClick={() => setViewing(true)} aria-label="사진 크게 보기" className="block w-full cursor-zoom-in">
+                <img src={selectedImage} alt="" className="block w-full h-auto max-h-[34dvh] object-contain mx-auto select-none" />
+              </button>
+            ) : (
+              <div className="py-5 flex flex-col items-center gap-1.5 text-center px-4">
+                <Art id="photo-add" className="h-20 w-auto" />
+                <p className="text-meta text-black/55 dark:text-white/55 break-keep">스크린샷이나 사진을 붙여넣으세요 (Ctrl+V)</p>
+              </div>
+            )}
+            {selectedImage && (
+              <span className="absolute right-2 top-2 w-8 h-8 rounded-full bg-black/45 text-white grid place-items-center pointer-events-none"><ZoomIn className="w-4 h-4" aria-hidden /></span>
+            )}
+            {reading && (
+              <span role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-paper/90 dark:bg-paper-dark/90">
+                <Art id="uploading-photo" className="h-20 w-auto" />
+                <span className="text-meta font-bold text-black/60 dark:text-white/60">{isUploading ? '올리는 중' : '글씨 읽는 중'}</span>
+              </span>
+            )}
+          </div>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void processImageFile(f); }}
+          />
+          <div className={`grid gap-2 ${selectedImage ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()} disabled={reading}>
+              <ImagePlus className="w-3.5 h-3.5 shrink-0" aria-hidden />올리기
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => { void pasteFromClipboard(); }} disabled={reading}>
+              <ClipboardPaste className="w-3.5 h-3.5 shrink-0" aria-hidden />붙여넣기
+            </button>
+            {selectedImage && (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => { void runOcrForImage(selectedImage, true, true); }} disabled={reading} title="사진 속 글씨를 읽어 장소명과 메모에 채웁니다">
+                <ScanText className="w-3.5 h-3.5 shrink-0" aria-hidden />글씨 읽기
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* Names found in the feed, the picture or the text: one tap puts one in the title */}
+        {(feed.length > 0 || readNames.length > 0) && (
+          <section aria-label="추천 장소명" className="flex flex-col gap-2">
+            <span className={labelClass}>추천 장소명 · {feed.length + readNames.length}</span>
+            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto overscroll-contain">
+              {feed.map((c, i) => (
+                <Chip key={`f-${i}`} size="sm" selected={activeCandidateIndex === i} onClick={() => pickFeed(c, i)}>
+                  {c.index ? <span className="opacity-60 tabular-nums">#{c.index}</span> : null}{c.title}
+                </Chip>
+              ))}
+              {readNames.map((n, i) => (
+                <Chip key={`r-${i}`} size="sm" selected={activeCandidateIndex === null && title === n} onClick={() => pickName(n)}>{n}</Chip>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <span className={labelClass}>장소명</span>
+          <PlaceAutocompleteInput
+            value={title}
+            onChange={(val) => { setTitle(val); setIsUserEditedTitle(true); setActiveCandidateIndex(null); }}
+            onSelectPlace={(placeName, coords, fullAddress, countryName, cityName) => {
+              if (placeName) setTitle(placeName);
+              if (coords?.lat) setLat(coords.lat);
+              if (coords?.lng) setLng(coords.lng);
+              if (fullAddress) setAddress(fullAddress);
+              if (countryName) setCountry(countryName);
+              if (cityName) setCity(cityName);
+              setIsUserEditedTitle(true);
+            }}
+            placeholder="장소 검색 또는 직접 입력"
+            className={fieldClass}
+          />
+          {address && (
+            <span className="flex items-center gap-1.5 text-meta text-black/55 dark:text-white/55 min-w-0">
+              <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden />
+              <span className="truncate">{address}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className={labelClass}>분류</span>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="분류">
+            {CATEGORY_FORM_ORDER.map(key => (
+              <Chip key={key} icon={CATEGORY_META[key].icon} selected={category === key} onClick={() => setCategory(key)}>{CATEGORY_META[key].label}</Chip>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* 2-Step Confirmation Modal on Unsaved Exit */}
-      <ConfirmModal
-        isOpen={showDiscardConfirmModal}
-        onCancel={() => setShowDiscardConfirmModal(false)}
-        onConfirm={() => {
-          setShowDiscardConfirmModal(false);
-          onClose();
-        }}
-        title="작성 취소"
-        message="작성 중인 내용이 있습니다. 저장을 취소하고 닫으시겠습니까?"
-        confirmLabel="저장 취소 (닫기)"
-        cancelLabel="계속 작성"
-        confirmVariant="danger"
-      />
-    </div>,
-    document.body
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1.5">
+            <span className={labelClass}>도시</span>
+            <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="예) 도쿄" className={fieldClass} />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className={labelClass}>국가</span>
+            <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="예) JAPAN" className={fieldClass} />
+          </label>
+        </div>
+
+        <label className="flex flex-col gap-1.5" htmlFor="scrap-memo">
+          <span className="flex items-center justify-between gap-2">
+            <span className={labelClass}>메모</span>
+            {ocrDescription && ocrDescription !== memo && (
+              <button type="button" onClick={() => setMemo(ocrDescription)} className="inline-flex items-center gap-1 text-meta font-bold text-red-600 dark:text-red-400 hover:underline" title="사진 속 글씨로 메모를 바꿉니다">
+                <FileText className="w-3 h-3" aria-hidden />사진에서 읽은 글로 채우기
+              </button>
+            )}
+          </span>
+          <textarea
+            id="scrap-memo"
+            rows={4}
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            placeholder="추천 메뉴, 영업시간, 웨이팅 팁 등"
+            className={`${areaClass} min-h-[96px]`}
+          />
+        </label>
+
+        {linkNow && (
+          <a href={linkNow} target="_blank" rel="noopener noreferrer" className="self-start inline-flex items-center gap-1.5 max-w-full text-meta font-bold text-black/55 dark:text-white/55 hover:text-ink dark:hover:text-ink-dark">
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            <span className="truncate">원문 보기</span>
+          </a>
+        )}
+      </div>
+
+      <div className="shrink-0 px-4 py-3 flex items-center gap-2 border-t border-black/[0.06] dark:border-white/[0.08]">
+        <button type="button" className="btn btn-secondary flex-1" onClick={close} disabled={isSubmitting}>취소</button>
+        <button type="submit" className="btn btn-primary flex-1" disabled={isSubmitting || reading || !title.trim()}>
+          {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden />저장 중</> : <><Check className="w-4 h-4" aria-hidden />{editing ? '수정 저장' : '저장'}</>}
+        </button>
+      </div>
+
+      {viewing && selectedImage && <ImageViewer src={selectedImage} onClose={() => setViewing(false)} />}
+    </form>
   );
 }

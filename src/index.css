@@ -1362,19 +1362,18 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:first-child { border-bottom-color: rgba(255, 255, 255, 0.1); }
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:hover { background: rgba(255, 255, 255, 0.08); }
 
-/* Hub drawers (components/DrawerHost, v1.3.8): the tab bar's hubs and the terminal rise as one sheet */
+/* Hub drawers (components/DrawerHost, v1.3.8): the tab bar's hubs and the terminal rise as one sheet. Every drawer has
+   the same shape: it fills the screen to a small gap under the status bar and keeps its rounded top corners, so the
+   dimmed page shows above it and it reads as a drawer, not a new page */
 .tgl-hubdrawer {
   --drawer-grip: 24px;
   position: absolute; left: 0; right: 0; bottom: 0;
-  top: calc(env(safe-area-inset-top, 0px) + 28px);
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
   transform: translateY(100%);
-  transition: transform var(--motion-sheet-out) var(--ease-sheet-out), top 260ms var(--ease-cross), border-radius 200ms var(--ease-cross);
+  transition: transform var(--motion-sheet-out) var(--ease-sheet-out);
   will-change: transform;
 }
-.tgl-hubdrawer[data-open="true"] { transform: none; will-change: auto; transition-duration: var(--motion-sheet-in), 260ms, 200ms; transition-timing-function: var(--ease-sheet-in), var(--ease-cross), var(--ease-cross); }
-/* Hubs reach the top of the screen, the status bar included; their corners square off as they arrive */
-.tgl-hubdrawer[data-full="true"] { top: 0; --drawer-grip: calc(env(safe-area-inset-top, 0px) + 24px); }
-.tgl-hubdrawer[data-full="true"][data-open="true"] { border-radius: 0; transition-delay: 0s, 0s, 180ms; }
+.tgl-hubdrawer[data-open="true"] { transform: none; will-change: auto; transition-duration: var(--motion-sheet-in); transition-timing-function: var(--ease-sheet-in); }
 .tgl-hubdrawer-backdrop { opacity: 0; transition: opacity var(--motion-sheet-out) var(--ease-cross); }
 .tgl-hubdrawer-backdrop[data-open="true"] { opacity: 1; transition-duration: var(--motion-sheet-in); }
 /* Panels in the sheet: the one on show settles in from the side it sits on in the tab bar while the one leaving
@@ -1391,6 +1390,8 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
     transform: translate(-50%, -46%) scale(.97); opacity: 0;
     transition: transform 260ms var(--ease-sheet-out), opacity 200ms var(--ease-cross);
   }
+  /* The terminal is one column on every device, so on a tablet or the web it is a phone-width dialog */
+  .tgl-hubdrawer[data-size="narrow"] { width: min(520px, calc(100vw - 48px)); }
   .tgl-hubdrawer[data-open="true"] { transform: translate(-50%, -50%); opacity: 1; transition-duration: var(--motion-sheet-in), 240ms; transition-timing-function: var(--ease-sheet-in), var(--ease-cross); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1400,10 +1401,6 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 /* Terminal board cells scale with their row (components/departure/DepartureBoard): the glyph is sized from the cell's own width */
 .tgl-flap { container-type: inline-size; }
 .tgl-flapch { position: absolute; inset: 0; display: grid; place-items: center; font-size: 88cqw; line-height: 1; }
-/* The lobby window gives way first: a strip too short to show the picture shows nothing */
-.tgl-term-art { container-type: size; container-name: tgl-art; }
-@container tgl-art (max-height: 88px) { .tgl-term-art-scene { display: none; } }
-
 /* Full-screen readers (magazine, reel): they rise or fade in on the sheet curves and leave the same way */
 @keyframes tglReaderUp { from { transform: translateY(5%); opacity: 0; } }
 @keyframes tglReaderDown { to { transform: translateY(5%); opacity: 0; } }

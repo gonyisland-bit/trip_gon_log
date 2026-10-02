@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LocateFixed, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, LocateFixed, Search, X } from 'lucide-react';
 import type { CityWeatherConfig } from '../../types';
 import { CURRENT_LOCATION_EN, saveUserPref } from '../../utils/userPrefs';
 import { MAX_FAVORITES, makeMain, searchCities, setFavorites, useMyCities } from '../../utils/myCities';
@@ -9,6 +9,7 @@ import { WeatherReading } from '../weather/WeatherReading';
 
 // Settings → 도시 (v1.3.6): the main city and up to four favourites. One list for the header
 // weather pill, the mini widget, the calendar, the home weather widget and the terminal window.
+// The favourites keep the order set here (moved with the arrows), on every screen that lists them.
 
 export function MyCitiesEditor({ cardClass, labelClass }: { cardClass: string; labelClass: string }) {
   const { main, favorites } = useMyCities();
@@ -28,6 +29,13 @@ export function MyCitiesEditor({ cardClass, labelClass }: { cardClass: string; l
     setQuery('');
   };
   const remove = (c: CityWeatherConfig) => setFavorites(favorites.filter(f => f.nameEn !== c.nameEn));
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= favorites.length) return;
+    const next = [...favorites];
+    [next[i], next[j]] = [next[j], next[i]];
+    setFavorites(next);
+  };
 
   return (
     <section className={cardClass}>
@@ -53,10 +61,34 @@ export function MyCitiesEditor({ cardClass, labelClass }: { cardClass: string; l
       {favorites.length === 0 ? (
         <span className="text-meta text-black/55 dark:text-white/55">달력과 홈 날씨, 터미널 창밖에 함께 보여 줄 도시를 더하세요.</span>
       ) : (
+        <>
+        {favorites.length > 1 && <span className="text-meta text-black/55 dark:text-white/55 -mt-1">위쪽 도시부터 달력, 홈 날씨, 터미널 창밖에 이 순서로 나옵니다.</span>}
         <ul className="flex flex-col gap-1.5">
-          {favorites.map(c => (
-            <li key={c.nameEn} className="flex items-center gap-2 min-h-11 pl-3 pr-1 rounded-thumb border border-black/10 dark:border-white/10">
-              <span className="flex-1 min-w-0 flex flex-col">
+          {favorites.map((c, i) => (
+            <li key={c.nameEn} className="flex items-center gap-2 min-h-11 pl-1.5 pr-1 rounded-thumb border border-black/10 dark:border-white/10">
+              {favorites.length > 1 && (
+                <span className="flex flex-col shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => move(i, -1)}
+                    disabled={i === 0}
+                    aria-label={`${c.name || c.nameEn} 위로`}
+                    className="tap-target w-7 h-[18px] rounded-full grid place-items-center text-black/55 dark:text-white/55 hover:bg-black/[0.06] dark:hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none"
+                  >
+                    <ChevronUp className="w-4 h-4" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(i, 1)}
+                    disabled={i === favorites.length - 1}
+                    aria-label={`${c.name || c.nameEn} 아래로`}
+                    className="tap-target w-7 h-[18px] rounded-full grid place-items-center text-black/55 dark:text-white/55 hover:bg-black/[0.06] dark:hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none"
+                  >
+                    <ChevronDown className="w-4 h-4" aria-hidden />
+                  </button>
+                </span>
+              )}
+              <span className="flex-1 min-w-0 flex flex-col pl-1.5">
                 <span className="text-[14px] font-bold truncate">{c.name || c.nameEn}</span>
                 <span className="font-mono text-micro text-black/50 dark:text-white/50 truncate">{c.nameEn}</span>
               </span>
@@ -73,6 +105,7 @@ export function MyCitiesEditor({ cardClass, labelClass }: { cardClass: string; l
             </li>
           ))}
         </ul>
+        </>
       )}
 
       <label className={`flex items-center gap-2 h-11 px-3 rounded-full border border-black/15 dark:border-white/15 ${full ? 'opacity-50' : ''}`}>

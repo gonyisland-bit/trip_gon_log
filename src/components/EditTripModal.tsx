@@ -1,14 +1,10 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { ArrowRightLeft, ClipboardPaste, ImagePlus, Loader2, MapPin, Plus, Trash2, UserPlus, X } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Loader2, MapPin, Plus, UserPlus, X } from 'lucide-react';
 import { Trip } from '../types';
-import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
-import { compressImage } from '../utils/imageHelper';
-import { inspectAndPrepareVideo } from '../utils/videoHelper';
 import { cardCoverUrl } from '../utils/journeyThumbs';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ConfirmModal } from './ConfirmModal';
 import { Sheet } from './Sheet';
-import { Art } from '../art/Art';
 import { Segment } from './ui/Segment';
 import { Chip } from './ui/Chip';
 import { notify, confirmDialog } from '../utils/feedback';
@@ -18,8 +14,9 @@ import { useFriends } from './friends/useFriends';
 import { UserProfileAvatar } from './UserProfileAvatar';
 import type { MemberLink } from '../utils/memberLinks';
 
-// Journey edit sheet (v1.3.8): the same rounded sheet as every other panel. Four short tabs keep each one on a
-// single screen (basics, places and tags, people, covers); the footer with 취소 and 저장 stays in place.
+// Journey edit sheet (v1.3.8): the same rounded sheet as every other panel. Three short tabs keep each one on a
+// single screen (basics, places and tags, people); the footer with 취소 and 저장 stays in place. Covers are not
+// edited here: the card's ⋯ menu (cards/JourneyActionsSheet) is the one place for the card cover and the hero.
 
 interface EditTripModalProps {
   isOpen: boolean;
@@ -97,10 +94,7 @@ const parseDateRange = (dateStr: string) => {
   return { start: toInput(startRaw), end: toInput(parts[1], startRaw.slice(0, 4)) };
 };
 
-const isVideoUrl = (v: string) => /\.(mp4|webm|mov)(\?.*)?$/i.test(v);
-
-type EditTab = 'basic' | 'places' | 'people' | 'cover';
-type Media = { img: string; video: string };
+type EditTab = 'basic' | 'places' | 'people';
 
 // Shared looks: inputs are the only bordered pills; labels are small meta lines
 const field = 'h-11 w-full min-w-0 rounded-full px-4 bg-surface dark:bg-surface-dark border border-black/10 dark:border-white/10 text-[14px] font-bold text-ink dark:text-ink-dark outline-none placeholder:font-medium placeholder:text-black/35 dark:placeholder:text-white/35 focus:border-red-600 dark:focus:border-red-400 transition-colors';
@@ -150,21 +144,12 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
   const [memberLinks, setMemberLinks] = useState<MemberLink[]>(trip.memberLinks || []);
   const [renames, setRenames] = useState<Record<string, string>>({});
   const [linkTarget, setLinkTarget] = useState<string | null>(null);
-  const [card, setCard] = useState<Media>({ img: trip.img, video: trip.videoUrl || '' });
-  const [hero, setHero] = useState<Media>({ img: trip.heroImg || '', video: trip.heroVideoUrl || '' });
-  const [coverTab, setCoverTab] = useState<'card' | 'hero'>('card');
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showUnsaved, setShowUnsaved] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const uid = currentUid();
   const isOwner = Boolean(uid && (!trip.ownerId || trip.ownerId === uid));
   const { friends } = useFriends(isOwner ? uid : null);
-
-  const cur = coverTab === 'card' ? card : hero;
-  const setCur = coverTab === 'card' ? setCard : setHero;
 
   const isDirty =
     title !== trip.title ||
@@ -172,8 +157,6 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
     kind !== (isPlanJourney ? 'plan' : 'log') ||
     badge !== initialBadge ||
     country !== (trip.country || '') ||
-    card.img !== trip.img || card.video !== (trip.videoUrl || '') ||
-    hero.img !== (trip.heroImg || '') || hero.video !== (trip.heroVideoUrl || '') ||
     JSON.stringify(locations) !== JSON.stringify(trip.locations && Array.isArray(trip.locations) ? trip.locations : trip.locationStr ? [{ name: trip.locationStr, lat: trip.lat, lng: trip.lng }] : []) ||
     JSON.stringify(tags) !== JSON.stringify(trip.tags || []) ||
     JSON.stringify(members) !== JSON.stringify(trip.members || []) ||
@@ -248,80 +231,6 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
     }
   };
 
-  // ── Covers: one set of controls for the card's and the hero's media ──
-  const setMedia = (which: 'card' | 'hero', url: string, video: boolean) => {
-    const set = which === 'card' ? setCard : setHero;
-    set(video ? { img: '', video: url } : { img: url, video: '' });
-  };
-
-  const uploadMedia = async (file: File, which: 'card' | 'hero') => {
-    const isVideo = file.type.startsWith('video/');
-    if (isVideo && file.size > 30 * 1024 * 1024) {
-      notify('모바일에서 끊기지 않도록 30MB 이하의 동영상만 올릴 수 있습니다.');
-      return;
-    }
-    if (!isVideo && !file.type.startsWith('image/')) {
-      notify('사진이나 동영상 파일만 올릴 수 있습니다.');
-      return;
-    }
-    setUploading(true);
-    try {
-      if (isVideo) {
-        const inspection = await inspectAndPrepareVideo(file);
-        if (!inspection.isCompatible) notify('이 동영상은 아이폰에서 재생되지 않는 형식일 수 있습니다. H.264 MP4를 권장합니다.');
-      }
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const body = isVideo ? file : await compressImage(file, 2560, 2560, 0.82);
-      const url = await uploadFileToR2(body, `users/public/covers/${which === 'hero' ? 'hero_' : ''}${Date.now()}_${safeName}`);
-      setMedia(which, url, isVideo);
-    } catch (err) {
-      console.error('Cover upload failed:', err);
-      notify('올리지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
-    }
-  };
-
-  const pasteMedia = async () => {
-    try {
-      if (navigator.clipboard?.read) {
-        for (const item of await navigator.clipboard.read()) {
-          const type = item.types.find(t => t.startsWith('image/'));
-          if (type) {
-            const blob = await item.getType(type);
-            await uploadMedia(new File([blob], `pasted_${Date.now()}.${type.split('/')[1] || 'png'}`, { type }), coverTab);
-            return;
-          }
-        }
-      }
-      const text = (await navigator.clipboard?.readText?.())?.trim();
-      if (text) { setMedia(coverTab, text, isVideoUrl(text)); return; }
-      notify('클립보드에 사진이나 주소가 없습니다.');
-    } catch {
-      notify('붙여넣기를 쓸 수 없습니다. 키보드의 Ctrl+V를 눌러 주세요.');
-    }
-  };
-
-  // Ctrl+V anywhere on the sheet (outside a text field) pastes a picture into the open cover
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const t = e.target as HTMLElement;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-    const file = e.clipboardData?.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      e.preventDefault();
-      setTab('cover');
-      await uploadMedia(file, coverTab);
-    }
-  };
-
-  const copyToOther = () => {
-    if (!cur.img && !cur.video) { notify('옮길 커버가 없습니다.'); return; }
-    const other = coverTab === 'card' ? 'hero' : 'card';
-    setMedia(other, cur.video || cur.img, !!cur.video);
-    notify(other === 'hero' ? '히어로에도 같은 커버를 넣었습니다.' : '카드에도 같은 커버를 넣었습니다.', 'success');
-  };
-
   // ── Save ──
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -348,10 +257,6 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
         lng: locations[0]?.lng ?? trip.lng,
         locations,
         country: country.trim(),
-        videoUrl: card.video,
-        img: card.img,
-        heroImg: hero.img,
-        heroVideoUrl: hero.video,
         tags: finalTags,
         members,
         memberLinks: memberLinks.filter(l => members.includes(l.name)),
@@ -367,15 +272,14 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
   };
 
   const range = parseDateRange(date);
-  const coverFilled = (m: Media) => !!(m.img || m.video);
 
   return (
     <>
       <Sheet label="여정 편집" onClose={onClose} tone="paper" locked={saving} backToClose={false} confirmClose={confirmClose} panelClassName="sm:max-w-md h-[min(84dvh,620px)]">
-        <form onSubmit={handleSubmit} onPaste={handlePaste} className="flex-1 min-h-0 flex flex-col">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
           {/* Head: the cover, what this is, and which journey */}
           <div className="shrink-0 px-4 pt-1 pb-3 flex items-center gap-3">
-            <img src={cardCoverUrl({ img: card.img || trip.img, imgSmall: trip.imgSmall, imgSmallSrc: trip.imgSmallSrc })} alt="" decoding="async" className="w-11 h-11 rounded-thumb object-cover bg-black/5 dark:bg-white/10 shrink-0" />
+            <img src={cardCoverUrl(trip)} alt="" decoding="async" className="w-11 h-11 rounded-thumb object-cover bg-black/5 dark:bg-white/10 shrink-0" />
             <div className="min-w-0 flex flex-col">
               <span className="text-[17px] font-extrabold tracking-tight leading-tight">여정 편집</span>
               <span className="font-mono text-meta text-black/55 dark:text-white/55 truncate">{trip.title}</span>
@@ -393,7 +297,6 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
                 { value: 'basic', label: '기본' },
                 { value: 'places', label: '장소·태그' },
                 { value: 'people', label: <span className="inline-flex items-center gap-1">인원{members.length > 0 && <span className="font-mono text-micro opacity-60 tabular-nums">{members.length}</span>}</span> },
-                { value: 'cover', label: '커버' },
               ]}
             />
           </div>
@@ -457,11 +360,13 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
                         onChange={setLocationInput}
                         onSelectPlace={(name, coords, address, countryName) => {
                           if (!name.trim()) return;
+                          const named = countryName ? extractCountry(countryName) || countryName.toUpperCase() : '';
                           setLocations(prev => {
                             if (prev.some(loc => loc.name === name.trim())) return prev;
-                            const resolved = countryName ? extractCountry(countryName) || countryName.toUpperCase() : extractCountry(address);
-                            return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng, country: resolved }];
+                            return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng, country: named || extractCountry(address) }];
                           });
+                          // The country box fills itself from the first place that names one
+                          if (named) setCountry(c => (c.trim() ? c : named));
                           setLocationInput('');
                         }}
                         className={`${field} pl-10`}
@@ -583,79 +488,11 @@ function EditSheet({ onClose, trip, onSave, isLoggedIn, existingTags, onMoveToPl
                 )}
               </>
             )}
-
-            {tab === 'cover' && (
-              <>
-                <Segment<'card' | 'hero'>
-                  block
-                  ariaLabel="커버 종류"
-                  value={coverTab}
-                  onChange={setCoverTab}
-                  options={[
-                    { value: 'card', label: <span className="inline-flex items-center gap-1.5">카드{coverFilled(card) && <span className="w-1.5 h-1.5 rounded-full bg-red-600" aria-hidden />}</span> },
-                    { value: 'hero', label: <span className="inline-flex items-center gap-1.5">히어로{coverFilled(hero) && <span className="w-1.5 h-1.5 rounded-full bg-red-600" aria-hidden />}</span> },
-                  ]}
-                />
-                <div
-                  onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={async (e) => {
-                    e.preventDefault();
-                    setDragOver(false);
-                    const f = e.dataTransfer.files?.[0];
-                    if (f) await uploadMedia(f, coverTab);
-                  }}
-                  className={`relative w-full aspect-[16/9] rounded-card overflow-hidden bg-black/[0.05] dark:bg-white/[0.08] grid place-items-center transition-shadow ${dragOver ? 'ring-2 ring-red-600' : ''}`}
-                >
-                  {cur.video ? (
-                    <video src={getEffectiveImageUrl(cur.video)} muted loop playsInline autoPlay className="w-full h-full object-cover" />
-                  ) : cur.img ? (
-                    <img src={getEffectiveImageUrl(cur.img)} alt="" decoding="async" className="w-full h-full object-cover" />
-                  ) : (
-                    <button type="button" onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-1.5 text-meta font-bold text-black/55 dark:text-white/55">
-                      <ImagePlus className="w-6 h-6" aria-hidden />
-                      {coverTab === 'hero' ? '비워 두면 카드 커버가 쓰입니다' : '사진이나 영상을 올려 주세요'}
-                    </button>
-                  )}
-                  {uploading && (
-                    <span role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-paper/90 dark:bg-paper-dark/90">
-                      <Art id="uploading-photo" className="h-24 w-auto" />
-                      <span className="text-meta font-bold text-black/60 dark:text-white/60">올리는 중</span>
-                    </span>
-                  )}
-                </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (f) await uploadMedia(f, coverTab);
-                  }}
-                />
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()} disabled={uploading}><ImagePlus className="w-3.5 h-3.5" aria-hidden />올리기</button>
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => { void pasteMedia(); }} disabled={uploading}><ClipboardPaste className="w-3.5 h-3.5" aria-hidden />붙여넣기</button>
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={copyToOther} disabled={!coverFilled(cur)}><ArrowRightLeft className="w-3.5 h-3.5" aria-hidden />{coverTab === 'card' ? '히어로에도' : '카드에도'}</button>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCur({ img: '', video: '' })} disabled={!coverFilled(cur) || uploading}><Trash2 className="w-3.5 h-3.5" aria-hidden />비우기</button>
-                </div>
-                <input
-                  type="text"
-                  aria-label="사진이나 영상 주소"
-                  value={cur.video || cur.img}
-                  onChange={(e) => { const v = e.target.value; setCur(!v ? { img: '', video: '' } : isVideoUrl(v) ? { img: '', video: v } : { img: v, video: '' }); }}
-                  className={`${field} h-10 font-mono text-meta`}
-                  placeholder="주소로 넣기"
-                />
-              </>
-            )}
           </div>
 
           <div className="shrink-0 px-4 py-3 flex items-center gap-2 border-t border-black/[0.06] dark:border-white/[0.08]">
             <button type="button" className="btn btn-secondary flex-1" onClick={() => { if (confirmClose()) onClose(); }} disabled={saving}>취소</button>
-            <button type="submit" className="btn btn-primary flex-1" disabled={saving || uploading || !title.trim()}>
+            <button type="submit" className="btn btn-primary flex-1" disabled={saving || !title.trim()}>
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden />저장 중</> : '저장'}
             </button>
           </div>

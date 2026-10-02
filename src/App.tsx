@@ -43,7 +43,7 @@ const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').t
 import { ConfirmModal } from './components/ConfirmModal';
 const LandingGuestView = lazyWithRetry(() => import('./components/LandingGuestView').then(m => ({ default: m.LandingGuestView })));
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Trip, TimelineData } from './types';
+import { TimelineData } from './types';
 import { WeatherEffectLayer } from './components/WeatherEffectLayer';
 import { auth, db } from './firebase';
 import { doc } from 'firebase/firestore';
@@ -59,7 +59,6 @@ import { VerifyEmailPanel } from './components/account/VerifyEmailPanel';
 import { JourneyActionsSheet, OPEN_JOURNEY_ACTIONS } from './components/cards/JourneyActionsSheet';
 import { OPEN_JOURNEY_SHARE } from './components/share/ShareJourneySheet';
 import { OPEN_JOURNEY_BOARD } from './components/board/boardData';
-import { setDetailIntent } from './utils/detailIntent';
 import { OPEN_SETTINGS_EVENT } from './utils/myCities';
 import type { SettingsTab } from './components/settings/SettingsSheet';
 
@@ -104,9 +103,9 @@ function App() {
     showSaveCompleteModal, showUnsavedModal, journeyDeleteConfirm, setJourneyDeleteConfirm,
     detailSaveRef, manageSaveRef, isNavigating, handleCloseSaveCompleteModal,
     handleSaveAndNavigate, handleDiscardAndNavigate, handleCancelUnsavedModal, isSuperAdmin, isAdmin,
-    canEditTrip, canDeleteTrip, activeTrip, displayMarqueeText, marqueeTrips, navigateTo,
+    activeTrip, displayMarqueeText, marqueeTrips, navigateTo,
     handleSearchResultClick, handleMoveToArchive,
-    handleMoveToPlans, handleCloneJourney, handleSaveSettings, saveHeroPrefs, handleSaveMagazineMoments,
+    handleMoveToPlans, handleSaveSettings, saveHeroPrefs, handleSaveMagazineMoments,
     handleSaveMagazineHubConfig, handleSaveArchiveHubConfig, handleSaveMagazineSections,
     handleUpdateMagazineSections, handleSaveBgmSettings, handleEditTripSave,
     handleCreateTripForCountry, newTripPrefill, setNewTripPrefill, handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney,
@@ -243,6 +242,14 @@ function App() {
     setDepartureTab('counter');
     setIsDepartureOpen(true);
   };
+  // The header's terminal button (tablet, web): opens the dialog over whatever page this is, a journey included, and
+  // closes it again; unlike the phone tab it never moves the page underneath
+  const onTerminalHeader = () => {
+    if (isDepartureOpen) { setIsDepartureOpen(false); return; }
+    setDepartureTicketId(undefined);
+    setDepartureTab('counter');
+    setIsDepartureOpen(true);
+  };
   // Hub drawers are drawn hidden ahead of their first visit, one at a time while the phone is idle, so opening one
   // is only the slide. Not on data saver or a slow network; those draw on the first tap as before.
   const [warmHubs, setWarmHubs] = useState<string[]>([]);
@@ -346,11 +353,6 @@ function App() {
           onAddArchive={() => handleCreateTripForCountry('')}
           dataReady={tripsLoaded && plansLoaded}
           isLoggedIn={isLoggedIn}
-          onDeleteTrip={handleDeleteJourney}
-          onEditTrip={(id) => setEditingTripId(id)}
-          onCloneTrip={openRemix}
-          onMoveToPlans={handleMoveToPlans}
-          onMoveToArchive={handleMoveToArchive}
           onReorderTrips={async (orderedIds) => {
             if (!isLoggedIn) return;
             const batch = writeBatch(db);
@@ -492,6 +494,8 @@ function App() {
             // Signed in, the header search is the quick finder (Ctrl+K); its last row and / open the full search
             onSearchClick={() => { if (isLoggedIn) { setIsPaletteOpen(true); return; } setSearchInitialQuery(''); setIsSearchOpen(true); }}
             onNewTrip={() => handleCreateTripForCountry('', '')}
+            onTerminal={onTerminalHeader}
+            terminalOpen={isDepartureOpen}
             isAdmin={isAdmin}
             isHomeGradientActive={isHomeGradientActive}
             currentUserProfile={currentUserProfile}
@@ -593,10 +597,6 @@ function App() {
                     onNavigate={navigateTo} 
                     trips={trips} 
                     plans={plans} 
-                    handleMoveToArchive={handleMoveToArchive}
-                    onMoveToPlans={handleMoveToPlans}
-                    onCloneTrip={openRemix}
-                    onClonePlan={openRemix}
                     homeTitle={homeTitle}
                     homeSubtitle={homeSubtitle}
                     heroJourneyIds={heroJourneyIds}
@@ -605,8 +605,6 @@ function App() {
                     heroAutoSlide={heroAutoSlide}
                     heroMediaType={heroMediaType}
                     heroSlideDuration={heroSlideDuration}
-                    onEditTrip={(id) => setEditingTripId(id)}
-                    onDeleteTrip={(id) => handleDeleteJourney(id)}
                     onReorderTrips={async (orderedIds) => {
                       if (!isLoggedIn) return;
                       const batch = writeBatch(db);
@@ -615,19 +613,9 @@ function App() {
                       });
                       await batch.commit();
                     }}
-                    onReorderPlans={async (orderedIds) => {
-                      if (!isLoggedIn) return;
-                      const batch = writeBatch(db);
-                      orderedIds.forEach((id, idx) => {
-                        batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
-                      });
-                      await batch.commit();
-                    }}
                     isLoggedIn={isLoggedIn}
                     isDarkMode={isDarkMode}
                     landingHeroImage={landingHeroImage}
-                    canEditTrip={canEditTrip}
-                    canDeleteTrip={canDeleteTrip}
                     onOpenAuthModal={(mode) => { setAuthModalMode(mode || 'login'); setIsAuthModalOpen(true); }}
                     homeGradientEnabled={homeGradientEnabled}
                     homeGradientFrom={homeGradientFrom}
@@ -998,11 +986,11 @@ function App() {
             order={['archive', 'map', 'terminal', 'calendar', 'pocket']}
             warm={warmHubs}
             panels={{
-              archive: { label: '여정', keepAlive: true, scroll: true, full: true, dragClose: true, node: <Suspense fallback={hubFallback('peach')}>{archiveEl}</Suspense> },
-              map: { label: '지도', keepAlive: true, flush: true, full: true, dragClose: false, node: <Suspense fallback={hubFallback('mist')}>{mapEl}</Suspense> },
-              calendar: { label: '달력', keepAlive: true, scroll: true, full: true, dragClose: true, node: <Suspense fallback={hubFallback('mist')}>{calendarEl}</Suspense> },
-              pocket: { label: '포켓', keepAlive: true, scroll: true, full: true, dragClose: true, node: <Suspense fallback={hubFallback('sage')}>{pocketEl}</Suspense> },
-              terminal: { label: '공항 터미널', dragClose: true, node: terminalEl },
+              archive: { label: '여정', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('peach')}>{archiveEl}</Suspense> },
+              map: { label: '지도', keepAlive: true, flush: true, dragClose: false, node: <Suspense fallback={hubFallback('mist')}>{mapEl}</Suspense> },
+              calendar: { label: '달력', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('mist')}>{calendarEl}</Suspense> },
+              pocket: { label: '포켓', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('sage')}>{pocketEl}</Suspense> },
+              terminal: { label: '공항 터미널', narrow: true, dragClose: true, node: terminalEl },
             }}
           />
         )}

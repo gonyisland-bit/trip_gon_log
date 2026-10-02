@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { HubHeader } from '../components/ui/HubHeader';
 import { 
-  Bookmark, MapPin, Plus, ExternalLink, Trash2, Edit3, Compass, 
-  Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
-  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, MoreVertical, Star,
-  Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
-  Globe, FileText, CheckSquare, Square,
-  SlidersHorizontal, ArrowUpDown, ChevronDown, ChevronUp, GripVertical, ArrowUp, ArrowDown,
-  Tag, Link2, ScanText, Clipboard
+  Bookmark, MapPin, Plus, 
+  Search, Check, X, ChevronRight, 
+  Star,
+  Loader2, Heart, MessageSquare,
+  Globe, FileText, 
+  ArrowUpDown, ChevronDown, ChevronUp, GripVertical, 
+  Tag
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
 import { EmptyScene } from '../components/scenes/EmptyScene';
 import { FriendPockets, spotKey } from '../components/friends/FriendPockets';
 import { keepFriendSpot } from '../utils/friends';
-import { getSavedPockets, savePockets,detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike, getCardThumbUrl, needsCardThumb, buildCardThumb } from '../utils/pocketStorage';
-import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
+import { getSavedPockets, savePockets, subscribePockets, getOrCreateGuestId, toggleSpotLike, getCardThumbUrl, needsCardThumb, buildCardThumb } from '../utils/pocketStorage';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
 import { PocketShareSheet } from '../components/pocket/PocketShareSheet';
-import { PocketScrapModal } from '../components/PocketScrapModal';
+import { PocketScrapModal, spotAsScrap } from '../components/PocketScrapModal';
+import { CATEGORY_META } from '../components/pocket/categoryMeta';
 import { POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG } from '../app/quickActions';
 import { takeSharedLink } from '../utils/shareTarget';
 import { scrapeSnsMetadata, ScrapedSpotData, inferCategory, detectCityAndCountry } from '../utils/snsScraper';
@@ -43,13 +43,7 @@ interface PocketHubPageProps {
   onOpenAuthModal?: () => void;
 }
 
-const CATEGORY_META: Record<PocketCategory, { label: string; icon: React.ElementType; color: string }> = {
-  food: { label: 'FOOD', icon: Utensils, color: '#dc2626' },
-  cafe: { label: 'CAFE', icon: Coffee, color: '#d97706' },
-  spot: { label: 'SPOT', icon: Camera, color: '#2563eb' },
-  shopping: { label: 'SHOPPING', icon: ShoppingBag, color: '#7c3aed' },
-  tip: { label: 'TIP', icon: Lightbulb, color: '#059669' },
-};
+
 
 const renderPlatformIcon = (platform?: string) => {
   const p = (platform || '').toLowerCase();
@@ -259,32 +253,13 @@ export function PocketHubPage({
     });
   };
   
-  // New or Edit Spot Modal state
-  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  // A kept spot being edited: it opens in the same sheet as a new scrap (components/PocketScrapModal)
   const [editingSpot, setEditingSpot] = useState<SpotPocketItem | null>(null);
+  const isEditOpen = editingSpot !== null;
   const [activeMenuSpotId, setActiveMenuSpotId] = useState<string | null>(null);
 
-  const [newTitle, setNewTitle] = useState<string>('');
-  const [newCategory, setNewCategory] = useState<PocketCategory>('spot');
-  const [newMemo, setNewMemo] = useState<string>('');
-  const [newSourceUrl, setNewSourceUrl] = useState<string>('');
-  const [newThumbnailUrl, setNewThumbnailUrl] = useState<string>('');
-  const [newCountry, setNewCountry] = useState<string>('');
-  const [newCity, setNewCity] = useState<string>('');
-  const [newLat, setNewLat] = useState<number | undefined>();
-  const [newLng, setNewLng] = useState<number | undefined>();
-  const [newAddress, setNewAddress] = useState<string>('');
-  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState<boolean>(false);
-  const [isDraggingThumbnail, setIsDraggingThumbnail] = useState<boolean>(false);
-
-  // Edit/Add Modal OCR state
-  const [isModalOcrRunning, setIsModalOcrRunning] = useState<boolean>(false);
-  const [modalOcrCandidates, setModalOcrCandidates] = useState<string[]>([]);
-  const [modalOcrDescription, setModalOcrDescription] = useState<string>('');
-  const [modalOcrError, setModalOcrError] = useState<string | null>(null);
-
   // Smart SNS Quick Scrap state
-  const [isScraping, setIsScraping] = useState<boolean>(false);
+  const [, setIsScraping] = useState<boolean>(false);
   const [scrapedResult, setScrapedResult] = useState<ScrapedSpotData | null>(null);
   const [isScrapModalOpen, setIsScrapModalOpen] = useState<boolean>(false);
 
@@ -298,10 +273,10 @@ export function PocketHubPage({
     try {
       if (sessionStorage.getItem(POCKET_OPEN_SCRAP_FLAG) === '1') {
         sessionStorage.removeItem(POCKET_OPEN_SCRAP_FLAG);
-        setIsScrapModalOpen(true);
+        handleOpenBlankScrapModal();
       }
     } catch (_) {}
-    const open = () => setIsScrapModalOpen(true);
+    const open = () => handleOpenBlankScrapModal();
     window.addEventListener(POCKET_OPEN_SCRAP_EVENT, open);
     return () => window.removeEventListener(POCKET_OPEN_SCRAP_EVENT, open);
   }, []);
@@ -376,65 +351,6 @@ export function PocketHubPage({
     }
   };
 
-  // One-click Auto Scrap (Triggered by SCRAP button or global paste)
-  const handleOneClickScrap = async () => {
-    if (isScraping) return;
-
-    try {
-      // 1. Try reading clipboard items for image file first (Screenshots)
-      if (navigator.clipboard && 'read' in navigator.clipboard) {
-        try {
-          const items = await navigator.clipboard.read();
-          for (const item of items) {
-            const imageType = item.types.find(t => t.startsWith('image/'));
-            if (imageType) {
-              const blob = await item.getType(imageType);
-              const file = new File([blob], `screenshot_${Date.now()}.png`, { type: imageType });
-              await handleImageFileToScrap(file);
-              return;
-            }
-          }
-        } catch (_) {}
-      }
-
-      // 2. Fallback: read clipboard text (SNS / Web links)
-      let text = '';
-      try {
-        text = await navigator.clipboard.readText();
-      } catch (_) {}
-
-      if (text && text.trim()) {
-        const trimmed = text.trim();
-        if (/^https?:\/\//i.test(trimmed)) {
-          await handleQuickScrapSubmit(trimmed);
-          return;
-        } else {
-          // Plain text title/memo
-          const scrapedData: ScrapedSpotData = {
-            sourceUrl: '',
-            platform: 'web',
-            title: trimmed.slice(0, 40),
-            category: inferCategory(trimmed),
-            memo: trimmed,
-            thumbnailUrl: '',
-            allImages: [],
-            candidates: []
-          };
-          setScrapedResult(scrapedData);
-          setIsScrapModalOpen(true);
-          return;
-        }
-      }
-
-      setActionSuccessToast('클립보드에 복사된 링크나 스크린샷이 없습니다. 복사 후 SCRAP을 눌러주세요.');
-      setTimeout(() => setActionSuccessToast(null), 3500);
-    } catch (err) {
-      console.warn('Clipboard read failed:', err);
-      setActionSuccessToast('화면에서 키보드 Ctrl+V (Cmd+V)를 눌러 붙여넣어 주세요.');
-      setTimeout(() => setActionSuccessToast(null), 3500);
-    }
-  };
-
   // A spot from a friend's pocket (5-d) becomes a spot of mine
   const keptKeys = useMemo(() => new Set(spots.map(spotKey)), [spots]);
   const handleKeepFriendSpot = async (spot: SpotPocketItem, from: { name: string }) => {
@@ -470,7 +386,6 @@ export function PocketHubPage({
     return Array.from(new Set(list));
   }, [isLoggedIn, currentUserProfile]);
 
-  const currentUserId = currentUserIdentifiers[0] || 'anonymous';
 
   const isSpotLikedByUser = useCallback((spot?: SpotPocketItem | null): boolean => {
     if (!spot || !Array.isArray(spot.likedBy) || spot.likedBy.length === 0) return false;
@@ -533,14 +448,7 @@ export function PocketHubPage({
   useEffect(() => {
     const handleModalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
-        if (isAddModalOpen) {
-          e.preventDefault();
-          handleCloseModal();
-        } else if (isScrapModalOpen) {
-          e.preventDefault();
-          setIsScrapModalOpen(false);
-          setScrapedResult(null);
-        } else if (spotToDelete) {
+        if (spotToDelete) {
           e.preventDefault();
           setSpotToDelete(null);
         } else if (scheduleTargetTrip) {
@@ -555,7 +463,7 @@ export function PocketHubPage({
 
     window.addEventListener('keydown', handleModalKeyDown);
     return () => window.removeEventListener('keydown', handleModalKeyDown);
-  }, [isAddModalOpen, isScrapModalOpen, spotToDelete, scheduleTargetTrip, spotToUseInTrip]);
+  }, [spotToDelete, scheduleTargetTrip, spotToUseInTrip]);
 
   // ESC 키로 선택 해제 및 셀렉트 모드 종료 제어 (모달이 닫혀있을 때만)
   useEffect(() => {
@@ -564,7 +472,7 @@ export function PocketHubPage({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
         // 모달이나 팝오버가 열려있지 않은 상태일 때만 반응
-        if (isAddModalOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) return;
+        if (isEditOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) return;
 
         if (selectedSpotIds.size > 0) {
           e.preventDefault();
@@ -578,7 +486,7 @@ export function PocketHubPage({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSelectionMode, selectedSpotIds.size, isAddModalOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip]);
+  }, [isSelectionMode, selectedSpotIds.size, isEditOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip]);
 
   const handleOpenBlankScrapModal = useCallback(() => {
     setScrapedResult({
@@ -603,7 +511,7 @@ export function PocketHubPage({
       if (isInput) return;
 
       // Ignore if any modal is already open
-      if (isAddModalOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) return;
+      if (isEditOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) return;
 
       // Check for standalone S or Alt+S
       if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) {
@@ -617,7 +525,7 @@ export function PocketHubPage({
 
     window.addEventListener('keydown', handleScrapKeyDown);
     return () => window.removeEventListener('keydown', handleScrapKeyDown);
-  }, [isAddModalOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip, handleOpenBlankScrapModal]);
+  }, [isEditOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip, handleOpenBlankScrapModal]);
 
   const handleCreateTripFromSelectedPockets = () => {
     const selectedList = spots.filter(s => selectedSpotIds.has(s.id));
@@ -630,51 +538,11 @@ export function PocketHubPage({
     }
   };
 
-  // Handle direct file upload (drag & drop, file picker, or paste) in Modal
-  const handleUploadThumbnailFile = async (file: File) => {
-    if (!file || !file.type.startsWith('image/')) return;
-    try {
-      setIsUploadingThumbnail(true);
-      const compressed = await compressImage(file, 1600, 1200, 0.85);
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const storagePath = `pockets/${Date.now()}_${safeName}`;
-      const url = await uploadFileToR2(compressed, storagePath);
-      setNewThumbnailUrl(url);
-    } catch (err) {
-      console.error('Failed to upload pocket thumbnail:', err);
-      notify('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
-    } finally {
-      setIsUploadingThumbnail(false);
-      setIsDraggingThumbnail(false);
-    }
-  };
-
-  // Clipboard paste listener when modal is open
-  useEffect(() => {
-    if (!isAddModalOpen) return;
-    const handlePaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const file = items[i].getAsFile();
-          if (file) {
-            e.preventDefault();
-            handleUploadThumbnailFile(file);
-            break;
-          }
-        }
-      }
-    };
-    window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
-  }, [isAddModalOpen]);
-
   // Global Clipboard paste listener for direct screenshot scrap anywhere on PocketHub
   useEffect(() => {
     const handleGlobalPaste = (e: ClipboardEvent) => {
       // If any modal is open, let modal handle its own paste
-      if (isAddModalOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) {
+      if (isEditOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) {
         return;
       }
 
@@ -705,7 +573,7 @@ export function PocketHubPage({
 
     window.addEventListener('paste', handleGlobalPaste);
     return () => window.removeEventListener('paste', handleGlobalPaste);
-  }, [isAddModalOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip]);
+  }, [isEditOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip]);
 
 
   // Real-time sync with Firestore server on mount (multi-device synchronization)
@@ -927,15 +795,6 @@ export function PocketHubPage({
     return groups;
   }, [sortedSpots, sortMode]);
 
-  // Sort labels
-  const SORT_LABELS: Record<SortMode, string> = {
-    user: 'USER',
-    city: 'CITY',
-    country: 'COUNTRY',
-    new: 'NEW',
-    old: 'OLD',
-  };
-
   // Admin-only: reorder spots by drag result
   const handleDrop = async (targetId: string) => {
     if (!draggingSpotId || draggingSpotId === targetId) {
@@ -959,24 +818,6 @@ export function PocketHubPage({
     await savePockets(updated);
   };
 
-  // Admin-only: move spot up/down in custom order
-  const handleMoveSpot = async (spotId: string, direction: 'up' | 'down') => {
-    const currentOrder = sortedSpots.map(s => s.id);
-    const idx = currentOrder.indexOf(spotId);
-    if (idx === -1) return;
-    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= currentOrder.length) return;
-    const reordered = [...currentOrder];
-    reordered.splice(idx, 1);
-    reordered.splice(newIdx, 0, spotId);
-    const orderRecord: Record<string, number> = {};
-    reordered.forEach((id, i) => { orderRecord[id] = i; });
-    const updated = spots.map(s => s.id in orderRecord ? { ...s, order: orderRecord[s.id] } : s);
-    setSpots(updated);
-    setActiveMenuSpotId(null);
-    await savePockets(updated);
-  };
-
   // Toggle Favorite
   const handleToggleFavorite = async (spotId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -985,151 +826,17 @@ export function PocketHubPage({
     await savePockets(updated);
   };
 
-  // Open Edit Modal
+  // Edit a kept spot in the scrap sheet
   const handleOpenEditSpot = (spot: SpotPocketItem) => {
-    setEditingSpot(spot);
-    setNewTitle(spot.title);
-    setNewCategory(spot.category);
-    setNewMemo(spot.memo || '');
-    setNewSourceUrl(spot.sourceUrl || '');
-    setNewThumbnailUrl(spot.thumbnailUrl || '');
-    setNewCountry(spot.country || '');
-    setNewCity(spot.city || '');
-    setNewLat(spot.lat);
-    setNewLng(spot.lng);
-    setNewAddress(spot.address || '');
     setActiveMenuSpotId(null);
-    setModalOcrCandidates([]);
-    setModalOcrDescription('');
-    setModalOcrError(null);
-    setIsModalOcrRunning(false);
-    setIsAddModalOpen(true);
+    setEditingSpot(spot);
   };
 
-  // Reset form
-  const handleCloseModal = () => {
-    setEditingSpot(null);
-    setNewTitle('');
-    setNewCategory('spot');
-    setNewMemo('');
-    setNewSourceUrl('');
-    setNewThumbnailUrl('');
-    setNewCountry('');
-    setNewCity('');
-    setNewLat(undefined);
-    setNewLng(undefined);
-    setNewAddress('');
-    setIsUploadingThumbnail(false);
-    setIsDraggingThumbnail(false);
-    setModalOcrCandidates([]);
-    setModalOcrDescription('');
-    setModalOcrError(null);
-    setIsModalOcrRunning(false);
-    setIsAddModalOpen(false);
-  };
-
-  // Run OCR on current thumbnail image in modal
-  const handleRunOcrInModal = async () => {
-    if (!newThumbnailUrl) {
-      notify('분석할 썸네일 이미지가 없습니다. 이미지를 먼저 등록해주세요.');
-      return;
-    }
-
-    try {
-      setIsModalOcrRunning(true);
-      setModalOcrError(null);
-      const res = await extractTextFromImageUrl(newThumbnailUrl, 'kor');
-      if (res.candidates && res.candidates.length > 0) {
-        setModalOcrCandidates(res.candidates);
-        if (!newTitle.trim() || newTitle.length < 3) {
-          setNewTitle(res.candidates[0]);
-        }
-      } else {
-        setModalOcrError('이미지에서 인식 가능한 텍스트를 찾지 못했습니다.');
-      }
-
-      if (res.descriptionText) {
-        setModalOcrDescription(res.descriptionText);
-      }
-    } catch (err: any) {
-      console.warn('[PocketHub] Modal OCR error:', err);
-      setModalOcrError('이미지 텍스트 인식 중 오류가 발생했습니다.');
-    } finally {
-      setIsModalOcrRunning(false);
-    }
-  };
-
-  // Replace memo with OCR description text in modal
-  const handleApplyDescriptionToNewMemo = () => {
-    if (!modalOcrDescription) return;
-    setNewMemo(modalOcrDescription);
-  };
-
-  // Create or Update spot
-  const handleSaveSpot = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // 장소명이 비어있고 팁인 경우 자동 명명
-    let finalTitle = newTitle.trim();
-    if (!finalTitle && newCategory === 'tip') {
-      finalTitle = newCity || newCountry ? `${newCity || newCountry} 여행 꿀팁` : '여행 꿀팁';
-    }
-
-    if (!finalTitle) {
-      notify('제목(장소명 또는 꿀팁 제목)을 입력해주세요.');
-      return;
-    }
-
-    const platform = detectPlatform(newSourceUrl);
-
-    if (editingSpot) {
-      // Update existing
-      const updated = spots.map(s => {
-        if (s.id === editingSpot.id) {
-          return {
-            ...s,
-            title: finalTitle,
-            category: newCategory,
-            memo: newMemo.trim() || undefined,
-            sourceUrl: newSourceUrl.trim() || undefined,
-            platform,
-            thumbnailUrl: newThumbnailUrl.trim() || undefined,
-            country: newCountry.trim() || undefined,
-            city: newCity.trim() || undefined,
-            lat: newLat,
-            lng: newLng,
-            address: newAddress.trim() || undefined,
-          };
-        }
-        return s;
-      });
-      setSpots(updated);
-      await savePockets(updated);
-      setActionSuccessToast(`'${finalTitle}' 수정 완료`);
-    } else {
-      // Create new
-      const item: SpotPocketItem = {
-        id: `spot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        title: finalTitle,
-        category: newCategory,
-        memo: newMemo.trim() || undefined,
-        sourceUrl: newSourceUrl.trim() || undefined,
-        platform,
-        thumbnailUrl: newThumbnailUrl.trim() || undefined,
-        country: newCountry.trim() || undefined,
-        city: newCity.trim() || undefined,
-        lat: newLat,
-        lng: newLng,
-        address: newAddress.trim() || undefined,
-        createdAt: Date.now()
-      };
-      const updated = [item, ...spots];
-      setSpots(updated);
-      await savePockets(updated);
-      setActionSuccessToast(`'${item.title}' 포켓에 보관 완료`);
-    }
-
-    handleCloseModal();
+  const handleSaveEditedSpot = async (item: SpotPocketItem) => {
+    const updated = spots.map(sp => (sp.id === item.id ? item : sp));
+    setSpots(updated);
+    await savePockets(updated);
+    setActionSuccessToast(`'${item.title}' 수정 완료`);
     setTimeout(() => setActionSuccessToast(null), 3000);
   };
 
@@ -1512,7 +1219,7 @@ export function PocketHubPage({
                             : 'border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black dark:text-white'
                         }`}
                       >
-                        <CatIcon className="w-3 h-3" style={{ color: isSelected ? undefined : meta.color }} />
+                        <CatIcon className="w-3 h-3" />
                         <span>{meta.label}</span>
                       </button>
                     );
@@ -1635,7 +1342,7 @@ export function PocketHubPage({
 
                       {/* Category */}
                       <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 dark:bg-black/90 border border-black/10 dark:border-white/15 text-black dark:text-white text-micro font-mono font-bold tracking-wider uppercase flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
+                        <meta.icon className="w-3 h-3 shrink-0" aria-hidden />
                         <span>{meta.label}</span>
                       </div>
 
@@ -1900,371 +1607,15 @@ export function PocketHubPage({
         />
       )}
 
-      {/* ── CREATE OR EDIT SPOT MODAL (Swiss Minimal) ── */}
-      {isAddModalOpen && (
-        <div 
-          className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
-          onClick={handleCloseModal}
-        >
-          <div 
-            className="bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-5">
-              <div>
-                <span className="text-meta font-mono tracking-widest text-red-500 uppercase">
-                  {editingSpot ? 'EDIT SPOT' : 'KEEP SPOT'}
-                </span>
-                <h3 className="text-xl font-extrabold uppercase tracking-tight">
-                  {editingSpot ? 'EDIT SAVED SPOT' : 'KEEP NEW SPOT'}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveSpot} className="space-y-5">
-              {/* Title / Spot Name or Tip Title */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
-                    제목 (장소명 또는 꿀팁 제목) *
-                  </label>
-                  {newThumbnailUrl && (
-                    <button
-                      type="button"
-                      onClick={handleRunOcrInModal}
-                      disabled={isModalOcrRunning}
-                      className="text-meta font-mono font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                      title="썸네일 사진 속 글씨(장소명)를 읽어옵니다"
-                    >
-                      {isModalOcrRunning ? (
-                        <>
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          <span>텍스트 읽는 중...</span>
-                        </>
-                      ) : (
-                        <>
-                          <ScanText className="w-3 h-3" />
-                          <span>Scan text</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-                <PlaceAutocompleteInput
-                  value={newTitle}
-                  onChange={setNewTitle}
-                  onSelectPlace={(placeName, coords, address, countryName, cityName) => {
-                    if (placeName) setNewTitle(placeName);
-                    if (coords?.lat) setNewLat(coords.lat);
-                    if (coords?.lng) setNewLng(coords.lng);
-                    if (address) setNewAddress(address);
-                    if (countryName) setNewCountry(countryName);
-                    if (cityName) setNewCity(cityName);
-                  }}
-                  placeholder="장소 검색 또는 직접 꿀팁 제목 입력 (예: 시부야 환전 꿀팁)"
-                  className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                />
-
-                {/* OCR Candidates Chips in Modal */}
-                {modalOcrCandidates.length > 0 && (
-                  <div className="mt-2 p-2 bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 flex flex-col gap-1.5 animate-in fade-in duration-150">
-                    <span className="text-micro font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
-                      <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
-                      인식된 제목 후보 (터치하여 자동완성 위치에 적용):
-                    </span>
-                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                      {modalOcrCandidates.map((cand, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setNewTitle(cand)}
-                          className={`px-2 py-0.5 text-meta font-mono border transition-all cursor-pointer ${
-                            newTitle === cand
-                              ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold'
-                              : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
-                          }`}
-                        >
-                          {cand}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {modalOcrError && (
-                  <p className="text-micro font-mono text-red-500 mt-1">{modalOcrError}</p>
-                )}
-                <p className="text-micro font-mono text-black/60 dark:text-white/60 mt-1">
-                  구글 장소 자동완성을 사용하거나, 꿀팁인 경우 제목을 직접 입력하세요.
-                </p>
-              </div>
-
-              {/* Category selector */}
-              <div>
-                <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1.5">
-                  카테고리
-                </label>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {(Object.keys(CATEGORY_META) as PocketCategory[]).map(cat => {
-                    const isSelected = newCategory === cat;
-                    return (
-                      <button
-                        type="button"
-                        key={cat}
-                        onClick={() => setNewCategory(cat)}
-                        className={`h-8 text-meta font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
-                          isSelected
-                            ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white font-bold'
-                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Country & City */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
-                    Country
-                  </label>
-                  <input
-                    type="text"
-                    value={newCountry}
-                    onChange={e => setNewCountry(e.target.value)}
-                    placeholder="예: Japan, France"
-                    className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    value={newCity}
-                    onChange={e => setNewCity(e.target.value)}
-                    placeholder="예: Tokyo, Paris"
-                    className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* Memo & Tips */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
-                    핵심 꿀팁 / 할인 / 웨이팅 정보
-                  </label>
-                  {modalOcrDescription ? (
-                    <button
-                      type="button"
-                      onClick={handleApplyDescriptionToNewMemo}
-                      className="text-meta font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
-                      title="사진 속 설명 텍스트로 기존 메모를 대체합니다"
-                    >
-                      <FileText className="w-3 h-3" />
-                      <span>사진 설명 추출 덮어쓰기</span>
-                    </button>
-                  ) : newThumbnailUrl && !isModalOcrRunning ? (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await handleRunOcrInModal();
-                      }}
-                      className="text-meta font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
-                      title="사진에서 본문 설명을 찾아 메모에 넣습니다"
-                    >
-                      <FileText className="w-3 h-3" />
-                      <span>사진 설명 추출</span>
-                    </button>
-                  ) : null}
-                </div>
-
-                {/* Modal OCR Description preview card if detected */}
-                {modalOcrDescription && (
-                  <div className="mb-2 p-2 bg-amber-500/[0.05] border border-amber-500/20 text-meta flex flex-col gap-1 animate-in fade-in duration-150">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-micro">
-                        사진에서 추출된 설명 ({modalOcrDescription.length}자):
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleApplyDescriptionToNewMemo}
-                        className="btn btn-primary btn-sm"
-                      >
-                        덮어쓰기 적용
-                      </button>
-                    </div>
-                    <p className="line-clamp-2 text-black/70 dark:text-white/70">{modalOcrDescription}</p>
-                  </div>
-                )}
-
-                <textarea
-                  value={newMemo}
-                  onChange={e => setNewMemo(e.target.value)}
-                  rows={2}
-                  placeholder="예: 3시 이후 웨이팅 없음. 바닐라 라떼 & 크루아상 추천. 인스타 예약 필수."
-                  className="w-full px-4 py-2.5 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-thumb text-sm focus:border-black dark:focus:border-white focus:outline-none resize-none leading-relaxed transition-colors"
-                />
-              </div>
-
-              {/* Source SNS URL */}
-              <div>
-                <label className="block text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
-                  SNS 원본 링크 (인스타, 유튜브, 블로그, 구글맵)
-                </label>
-                <input
-                  type="url"
-                  value={newSourceUrl}
-                  onChange={e => setNewSourceUrl(e.target.value)}
-                  placeholder="https://www.instagram.com/p/..."
-                  className="w-full h-10 px-4 bg-black/[0.03] dark:bg-white/[0.06] border border-black/20 dark:border-white/20 rounded-full text-sm focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                />
-              </div>
-
-              {/* Thumbnail Image Uploader (Swiss Minimal, Drag&Drop, Paste, URL) */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-meta font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
-                    썸네일 이미지 (선택)
-                  </label>
-                  <span className="text-micro font-mono text-black/60 dark:text-white/60">
-                    드래그&드롭 · 붙여넣기(Ctrl+V) 지원
-                  </span>
-                </div>
-
-                {newThumbnailUrl ? (
-                  <div className="relative aspect-[3/4] max-h-64 mx-auto overflow-hidden border border-black/20 dark:border-white/20 group bg-black/5 dark:bg-white/5">
-                    <img
-                      src={newThumbnailUrl}
-                      alt="Thumbnail preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleRunOcrInModal}
-                        disabled={isModalOcrRunning}
-                        className="btn btn-primary btn-sm flex"
-                        title="사진 속 글씨(장소명/설명)를 읽어옵니다"
-                      >
-                        <ScanText className="w-3.5 h-3.5" />
-                        OCR 읽기
-                      </button>
-                      <label className="h-7 px-3 bg-white text-black text-meta font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-white/90">
-                        <Upload className="w-3.5 h-3.5" />
-                        CHANGE
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={async e => {
-                            const file = e.target.files?.[0];
-                            if (file) await handleUploadThumbnailFile(file);
-                          }}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setNewThumbnailUrl('')}
-                        className="h-7 px-3 bg-black/80 text-white text-meta font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-black"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        REMOVE
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label
-                      onDragOver={e => {
-                        e.preventDefault();
-                        setIsDraggingThumbnail(true);
-                      }}
-                      onDragLeave={() => setIsDraggingThumbnail(false)}
-                      onDrop={async e => {
-                        e.preventDefault();
-                        const file = e.dataTransfer.files?.[0];
-                        if (file) await handleUploadThumbnailFile(file);
-                      }}
-                      className={`block border border-dashed transition-all p-4 text-center cursor-pointer ${
-                        isDraggingThumbnail
-                          ? 'border-red-500 bg-red-500/5'
-                          : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
-                      }`}
-                    >
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async e => {
-                          const file = e.target.files?.[0];
-                          if (file) await handleUploadThumbnailFile(file);
-                        }}
-                      />
-                      {isUploadingThumbnail ? (
-                        <div className="flex flex-col items-center justify-center py-2 gap-1.5">
-                          <Loader2 className="w-5 h-5 animate-spin text-black dark:text-white" />
-                          <span className="text-meta font-mono uppercase tracking-wider text-black/60 dark:text-white/60">
-                            UPLOADING IMAGE...
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-2 gap-1">
-                          <Upload className="w-4 h-4 text-black/60 dark:text-white/60" />
-                          <span className="text-meta font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                            CLICK OR DRAG IMAGE HERE
-                          </span>
-                          <span className="text-micro font-mono text-black/60 dark:text-white/60">
-                            또는 이미지를 클립보드에 복사 후 Ctrl+V 붙여넣기
-                          </span>
-                        </div>
-                      )}
-                    </label>
-
-                    {/* URL direct input */}
-                    <div className="mt-2">
-                      <input
-                        type="url"
-                        value={newThumbnailUrl}
-                        onChange={e => setNewThumbnailUrl(e.target.value)}
-                        placeholder="또는 이미지 URL 직접 입력 (https://...)"
-                        className="w-full h-7 px-0 bg-transparent border-b border-black/15 dark:border-white/15 text-[11px] font-mono focus:border-black dark:focus:border-white focus:outline-none placeholder:text-black/50 dark:placeholder:text-white/50"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-black/15 dark:border-white/15 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="btn btn-secondary"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                >
-                  {editingSpot ? 'SAVE' : 'KEEP SPOT'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* ── EDIT A KEPT SPOT: the scrap sheet, filled in ── */}
+      {editingSpot && (
+        <PocketScrapModal
+          key={editingSpot.id}
+          editing={editingSpot}
+          scrapedData={spotAsScrap(editingSpot)}
+          onClose={() => setEditingSpot(null)}
+          onSave={handleSaveEditedSpot}
+        />
       )}
 
       {/* ── SPOT DETAIL EXPANDED MODAL ── */}
@@ -2309,7 +1660,6 @@ export function PocketHubPage({
       {/* ── SMART SNS QUICK SCRAP MODAL ── */}
       {isScrapModalOpen && scrapedResult && (
         <PocketScrapModal
-          isOpen={isScrapModalOpen}
           onClose={() => {
             setIsScrapModalOpen(false);
             setScrapedResult(null);

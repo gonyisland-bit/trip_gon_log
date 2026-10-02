@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { 
-  X, MapPin, Heart, Plus, ExternalLink, Edit3, Trash2, 
-  Navigation, Utensils, Coffee, Camera, ShoppingBag, Lightbulb,
-  MessageSquare, Send, Check, ZoomIn, ChevronDown, Users } from 'lucide-react';
-import { SpotPocketItem, PocketCategory, PocketComment, UserProfile } from '../types';
+import { ChevronDown, ExternalLink, Heart, MapPin, MessageSquare, Navigation, Pencil, Plus, Send, Trash2, Users, ZoomIn } from 'lucide-react';
+import { SpotPocketItem, PocketComment, UserProfile } from '../types';
 import { confirmDialog } from '../utils/feedback';
-import { lockBodyScroll } from '../utils/scrollLock';
+import { Sheet, useSheetClose } from './Sheet';
+import { IconButton } from './ui/IconButton';
+import { ImageViewer } from './ui/ImageViewer';
+import { Art } from '../art/Art';
+import { CATEGORY_META } from './pocket/categoryMeta';
+import { fieldClass, labelClass } from './ui/formStyles';
+
+// A kept spot (v1.3.8): the same rounded sheet as every other panel. The picture on top, the place and its map, the
+// address and note, comments, and one bar at the bottom: like, share, the original post, and 여정에 담기.
 
 interface PocketDetailModalProps {
   isOpen: boolean;
@@ -27,71 +31,35 @@ interface PocketDetailModalProps {
   onOpenAuthModal?: () => void;
 }
 
-const CATEGORY_META: Record<PocketCategory, { label: string; icon: React.ElementType; color: string }> = {
-  food: { label: 'FOOD', icon: Utensils, color: '#dc2626' },
-  cafe: { label: 'CAFE', icon: Coffee, color: '#d97706' },
-  spot: { label: 'SPOT', icon: Camera, color: '#2563eb' },
-  shopping: { label: 'SHOPPING', icon: ShoppingBag, color: '#7c3aed' },
-  tip: { label: 'TIP', icon: Lightbulb, color: '#059669' },
-};
+export function PocketDetailModal(props: PocketDetailModalProps) {
+  const { isOpen, spot, onClose } = props;
+  const [viewing, setViewing] = useState(false);
+  if (!isOpen || !spot) return null;
+  // Keyed by spot: opening another one starts the sheet over
+  return (
+    <Sheet key={spot.id} label={spot.title} onClose={onClose} tone="paper" locked={viewing} panelClassName="sm:max-w-lg max-h-[92dvh]">
+      <Detail {...props} spot={spot} viewing={viewing} setViewing={setViewing} />
+    </Sheet>
+  );
+}
 
-export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
-  isOpen,
-  spot,
-  onClose,
-  onToggleLike,
-  onUseInTrip,
-  onEdit,
-  onDelete,
-  onShare,
-  isLiked,
-  isAdmin = false,
-  onSaveComments,
-  isLoggedIn = false,
-  currentUser,
-  currentUserProfile,
-  onOpenAuthModal,
-}) => {
+function Detail({
+  spot, onToggleLike, onUseInTrip, onEdit, onDelete, onShare, isLiked, isAdmin = false, onSaveComments,
+  isLoggedIn = false, currentUser, currentUserProfile, onOpenAuthModal, viewing, setViewing,
+}: PocketDetailModalProps & { spot: SpotPocketItem; viewing: boolean; setViewing: (v: boolean) => void }) {
+  const close = useSheetClose();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
-  const [quickCommentText, setQuickCommentText] = useState('');
-  const [isCommentsExpanded, setIsCommentsExpanded] = useState<boolean>(true);
-  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [comment, setComment] = useState('');
+  const [commentsOpen, setCommentsOpen] = useState(true);
 
-  const hasCoordinates = typeof spot?.lat === 'number' && typeof spot?.lng === 'number' && !isNaN(spot.lat) && !isNaN(spot.lng);
+  const hasCoordinates = typeof spot.lat === 'number' && typeof spot.lng === 'number' && !isNaN(spot.lat) && !isNaN(spot.lng);
 
-  // Lock body scroll when modal is open
+  // A small map of the place (Google tiles through Leaflet, as on the journey page)
   useEffect(() => {
-    if (!isOpen) return;
-    return lockBodyScroll();
-  }, [isOpen]);
-
-  // ESC key handler
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (isLightboxOpen) {
-          setIsLightboxOpen(false);
-        } else {
-          onClose();
-        }
-      }
-    };
-    if (isOpen) window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isLightboxOpen, onClose]);
-
-  // Initialize Google Maps Tiles via Leaflet (Identical to Trip Detail MapArea)
-  useEffect(() => {
-    if (!isOpen || !spot || !hasCoordinates || !mapContainerRef.current) return;
+    if (!hasCoordinates || !mapContainerRef.current) return;
     const L = (window as any).L;
     if (!L) return;
-
-    if (leafletMapRef.current) {
-      try { leafletMapRef.current.remove(); } catch (_) {}
-      leafletMapRef.current = null;
-    }
-
     try {
       const isDark = document.documentElement.classList.contains('dark');
       const map = L.map(mapContainerRef.current, {
@@ -104,472 +72,235 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
         doubleClickZoom: false,
         touchZoom: false,
       });
-
-      const tileUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko';
-      L.tileLayer(tileUrl, {
+      L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', {
         maxNativeZoom: 20,
         maxZoom: 21,
         className: isDark ? 'map-tile-dark' : 'map-tile-light',
       }).addTo(map);
-
-      // Swiss Minimal Red Point Pin (Same as Trip Detail)
-      const pinHtml = `
-        <div style="display: flex; align-items: center; justify-content: center;">
-          <div style="width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 3px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
-            <div style="width: 6px; height: 6px; border-radius: 50%; background: #ffffff;"></div>
-          </div>
-        </div>
-      `;
       const icon = L.divIcon({
         className: 'custom-trip-point-pin',
-        html: pinHtml,
+        html: '<div style="display:flex;align-items:center;justify-content:center"><div style="width:22px;height:22px;border-radius:50%;background:#dc2626;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;border-radius:50%;background:#fff"></div></div></div>',
         iconSize: [24, 24],
         iconAnchor: [12, 12],
       });
-
       L.marker([spot.lat!, spot.lng!], { icon }).addTo(map);
       leafletMapRef.current = map;
-
-      const timer = setTimeout(() => {
-        try { map.invalidateSize(); } catch (_) {}
-      }, 250);
-
+      // The sheet is still sliding in: measure once it has settled
+      const timer = window.setTimeout(() => { try { map.invalidateSize(); } catch (_) { /* gone */ } }, 350);
       return () => {
-        clearTimeout(timer);
-        if (leafletMapRef.current) {
-          try { leafletMapRef.current.remove(); } catch (_) {}
-          leafletMapRef.current = null;
-        }
+        window.clearTimeout(timer);
+        try { map.remove(); } catch (_) { /* gone */ }
+        leafletMapRef.current = null;
       };
     } catch (err) {
       console.warn('[PocketDetailModal] Leaflet map init error:', err);
     }
-  }, [isOpen, spot?.id, spot?.lat, spot?.lng, hasCoordinates]);
-
-  if (!isOpen || !spot) return null;
+  }, [spot.id, spot.lat, spot.lng, hasCoordinates]);
 
   const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
   const CategoryIcon = meta.icon;
-  
-  // Google Maps Search URL (장소명 및 주소 기반 검색으로 통일)
+
+  // Google Maps search by place name and address
   const mapSearchTarget = (spot.address && spot.title)
     ? `${spot.title} ${spot.address}`
     : (spot.address || spot.title || [spot.city, spot.country].filter(Boolean).join(' '));
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchTarget)}`;
-
-  // Location display
   const locationLabel = [spot.country, spot.city].filter(Boolean).join(' · ');
+  const comments = spot.comments || [];
+  const hasLink = Boolean(spot.sourceUrl && /^https?:\/\//i.test(spot.sourceUrl));
 
-  return createPortal(
-    <div 
-      className="fixed inset-0 z-nested flex items-center justify-center p-3 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={onClose}
-    >
-      <div 
-        className="relative w-full max-w-lg max-h-[92vh] flex flex-col bg-white dark:bg-[#1A1A1C] rounded-3xl overflow-hidden border border-black/15 dark:border-white/20 shadow-2xl animate-in zoom-in-95 duration-200 select-none"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Floating Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="tap-target absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-black/60 dark:bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-black dark:hover:bg-white dark:hover:text-black transition cursor-pointer shadow-md"
-          title="닫기 (ESC)"
-        >
-          <X className="w-4 h-4 stroke-[2.5]" />
-        </button>
+  const submitComment = () => {
+    const text = comment.trim();
+    if (!text || !onSaveComments) return;
+    onSaveComments(spot.id, [...comments, {
+      id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      text,
+      createdAt: Date.now(),
+      authorId: currentUser?.uid || 'anonymous',
+      authorName: currentUserProfile?.username || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER',
+      authorEmail: currentUser?.email || undefined,
+    }]);
+    setComment('');
+  };
 
-        {/* Top Media Frame (Click to open fullsize Lightbox) */}
-        <div 
-          className={`relative w-full aspect-[16/10] bg-black/5 dark:bg-white/5 overflow-hidden shrink-0 border-b border-black/10 dark:border-white/10 ${
-            spot.thumbnailUrl ? 'cursor-zoom-in group' : ''
-          }`}
-          onClick={() => {
-            if (spot.thumbnailUrl) setIsLightboxOpen(true);
-          }}
-          title={spot.thumbnailUrl ? "클릭하여 원본 크기로 확대 보기" : undefined}
-        >
+  // Another panel opens over this one: this one goes away first
+  const act = (fn: () => void) => { close(); fn(); };
+
+  const pill = 'h-10 px-3.5 inline-flex items-center gap-1.5 rounded-full border text-[13px] font-bold transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 shrink-0';
+  const pillOff = 'bg-surface dark:bg-surface-dark border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]';
+
+  return (
+    <>
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 flex flex-col gap-4">
+        {/* The picture; tap to see it at full size */}
+        <div className="relative w-full aspect-[16/10] rounded-card overflow-hidden bg-black/[0.05] dark:bg-white/[0.07] shrink-0">
           {spot.thumbnailUrl ? (
-            <>
-              <img 
-                src={spot.thumbnailUrl} 
-                alt={spot.title}
-                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-              />
-              <div className="absolute top-3.5 right-14 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-meta font-mono opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <ZoomIn className="w-3 h-3" />
-                <span>원본 확대</span>
-              </div>
-            </>
+            <button type="button" onClick={() => setViewing(true)} aria-label="사진 크게 보기" className="block w-full h-full cursor-zoom-in">
+              <img src={spot.thumbnailUrl} alt={spot.title} className="w-full h-full object-cover" />
+            </button>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-black/60 dark:text-white/60">
-              <Camera className="w-12 h-12 mb-2" />
-              <span className="text-xs font-mono font-bold tracking-wider uppercase">NO PREVIEW IMAGE</span>
+            <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-black/55 dark:text-white/55">
+              <Art id="photo-add" className="h-24 w-auto" />
+              <span className="text-meta font-bold">등록된 사진이 없어요</span>
             </div>
           )}
-
-          {/* Top-Left Category Badge */}
-          <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-white/95 dark:bg-black/90 border border-black/10 dark:border-white/15 text-meta font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-sm text-black dark:text-white">
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
-              <span>{meta.label}</span>
-            </span>
-          </div>
-
-          {/* Platform Tag Overlay (if exists) */}
+          <span className="absolute left-3 top-3 h-7 px-2.5 inline-flex items-center gap-1.5 rounded-full bg-surface/95 dark:bg-surface-dark/95 text-ink dark:text-ink-dark font-mono text-micro font-bold tracking-wider uppercase pointer-events-none">
+            <CategoryIcon className="w-3 h-3" aria-hidden />{meta.label}
+          </span>
+          {spot.thumbnailUrl && (
+            <span className="absolute right-3 top-3 w-8 h-8 rounded-full bg-black/45 text-white grid place-items-center pointer-events-none"><ZoomIn className="w-4 h-4" aria-hidden /></span>
+          )}
           {spot.platform && (
-            <div className="absolute bottom-3 left-3.5 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-micro font-mono tracking-wider uppercase rounded-full">
-              @{spot.platform}
-            </div>
+            <span className="absolute left-3 bottom-3 h-6 px-2.5 inline-flex items-center rounded-full bg-black/45 text-white font-mono text-micro font-bold tracking-wider uppercase pointer-events-none">@{spot.platform}</span>
           )}
         </div>
 
-        {/* Modal Scrollable Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
-          {/* Title & Region */}
-          <div>
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-black/60 dark:text-white/60 mb-1">
-              <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
-              <span>{locationLabel}</span>
-            </div>
-            <h2 className="text-lg sm:text-xl font-extrabold text-black dark:text-white leading-tight break-words font-sans">
-              {spot.title}
-            </h2>
-          </div>
-
-          {/* Mini Interactive Map with Google Maps Tiles (Leaflet) */}
-          {hasCoordinates ? (
-            <div className="rounded-2xl overflow-hidden border border-black/15 dark:border-white/15 relative">
-              <div 
-                ref={mapContainerRef} 
-                className="w-full h-44 sm:h-52 bg-black/5 dark:bg-white/5" 
-              />
-              
-              {/* Overlay with Google Maps Navigation Trigger */}
-              <div className="absolute bottom-2.5 right-2.5 z-[1000]">
-                <a
-                  href={googleMapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 hover:bg-black text-white dark:bg-white/90 dark:hover:bg-white dark:text-black backdrop-blur-md text-meta font-mono font-bold tracking-wider uppercase shadow-sm border border-white/20 dark:border-black/20 transition cursor-pointer select-none"
-                  title="Google Maps 열기"
-                >
-                  <Navigation className="w-2.5 h-2.5 text-red-500 fill-red-500" />
-                  <span>MAPS</span>
-                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-                </a>
-              </div>
-            </div>
-          ) : null}
-
-          {/* Detailed Address Block */}
-          <div className="p-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl border border-black/10 dark:border-white/10 flex items-start gap-2.5 text-xs">
-            <MapPin className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0 mt-0.5" />
-            <div className="min-w-0 flex-1">
-              <span className="text-micro font-mono uppercase tracking-wider text-black/60 dark:text-white/60 block font-bold mb-0.5">
-                LOCATION & ADDRESS
-              </span>
-              <p className="text-black/80 dark:text-white/80 font-mono text-[11.5px] leading-relaxed break-words select-all">
-                {spot.address || '주소 정보가 등록되지 않았습니다.'}
-              </p>
-            </div>
-          </div>
-
-          {/* Full Story / Notes (No truncation) */}
-          {spot.memo && (
-            <div className="pt-2 border-t border-black/10 dark:border-white/10">
-              <span className="text-meta font-mono tracking-widest uppercase text-black/60 dark:text-white/60 font-bold block mb-1.5">
-                TRAVEL NOTE / MEMO
-              </span>
-              <p className="text-xs sm:text-[13px] font-sans text-black/85 dark:text-white/85 leading-relaxed whitespace-pre-wrap break-words">
-                {spot.memo}
-              </p>
-            </div>
+        <div className="flex flex-col gap-1">
+          {locationLabel && (
+            <span className="flex items-center gap-1.5 font-mono text-meta text-black/55 dark:text-white/55">
+              <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" aria-hidden />{locationLabel}
+            </span>
           )}
+          <h2 className="text-[22px] font-extrabold tracking-tight leading-tight break-words">{spot.title}</h2>
+        </div>
 
-          {/* Comments Section (Accordion Toggle) */}
-          <div className="pt-3 border-t border-black/10 dark:border-white/10">
-            <div 
-              onClick={() => setIsCommentsExpanded(prev => !prev)}
-              className="flex items-center justify-between py-1 cursor-pointer select-none group"
+        {hasCoordinates && (
+          <div className="relative rounded-card overflow-hidden shrink-0">
+            <div ref={mapContainerRef} className="w-full h-44 sm:h-52 bg-black/[0.05] dark:bg-white/[0.07]" />
+            <a
+              href={googleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute bottom-2.5 right-2.5 z-[1000] btn btn-sm btn-primary"
+              title="Google 지도에서 열기"
             >
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className={`w-3.5 h-3.5 transition-colors ${isCommentsExpanded ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`} />
-                <span className="text-meta font-mono tracking-widest uppercase text-black/70 dark:text-white/70 font-bold group-hover:text-black dark:group-hover:text-white transition-colors">
-                  COMMENTS ({spot.comments?.length || 0})
-                </span>
-              </div>
-              <span className="text-meta font-mono text-black/60 dark:text-white/60 group-hover:text-black/70 dark:group-hover:text-white/70">
-                <span className="inline-flex items-center gap-1">{isCommentsExpanded ? '접기' : '펼치기'}<ChevronDown className={`w-3.5 h-3.5 transition-transform duration-base ${isCommentsExpanded ? 'rotate-180' : ''}`} aria-hidden /></span>
-              </span>
-            </div>
+              <Navigation className="w-3.5 h-3.5" aria-hidden />지도
+            </a>
+          </div>
+        )}
 
-            {isCommentsExpanded && (
-              <div className="mt-2 space-y-2.5 animate-in fade-in duration-150">
-                {/* Comments List (Only rendered when comments exist) */}
-                {spot.comments && spot.comments.length > 0 && (
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {spot.comments.map((c) => {
-                      const canManage = isAdmin || (isLoggedIn && currentUser && (
-                        (c.authorId && c.authorId === currentUser.uid) ||
-                        (c.authorEmail && currentUser.email && c.authorEmail.toLowerCase() === currentUser.email.toLowerCase())
-                      ));
+        <div className="rounded-card bg-surface dark:bg-surface-dark p-4 flex flex-col gap-1.5">
+          <span className={labelClass}>주소</span>
+          <p className="text-[14px] leading-relaxed break-words select-all">{spot.address || '주소가 등록되지 않았어요.'}</p>
+        </div>
 
-                      return (
-                        <div key={c.id} className="p-2 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded group">
-                          <div className="flex items-center justify-between text-meta font-mono mb-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-black dark:text-white">{c.authorName}</span>
-                              {currentUser?.uid && c.authorId === currentUser.uid && (
-                                <span className="px-1 py-0.2 text-micro bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark font-bold">YOU</span>
-                              )}
-                              <span className="text-black/60 dark:text-white/60">
-                                {new Date(c.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                            {canManage && onSaveComments && (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (await confirmDialog('댓글을 삭제하시겠습니까?')) {
-                                    const updated = (spot.comments || []).filter(item => item.id !== c.id);
-                                    onSaveComments(spot.id, updated);
-                                  }
-                                }}
-                                className="tap-target text-red-500/70 hover:text-red-600 p-0.5 transition-colors cursor-pointer"
-                                title="댓글 삭제"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-xs text-black/80 dark:text-white/80 font-sans break-words whitespace-pre-wrap">
-                            {c.text}
-                          </p>
+        {spot.memo && (
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>메모</span>
+            <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words text-black/80 dark:text-white/80">{spot.memo}</p>
+          </div>
+        )}
+
+        {/* Comments */}
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setCommentsOpen(v => !v)}
+            aria-expanded={commentsOpen}
+            className="flex items-center justify-between gap-2 min-h-9 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 rounded-full"
+          >
+            <span className={`${labelClass} inline-flex items-center gap-1.5`}><MessageSquare className="w-3.5 h-3.5" aria-hidden />댓글 · {comments.length}</span>
+            <ChevronDown className={`w-4 h-4 text-black/55 dark:text-white/55 transition-transform duration-base ${commentsOpen ? 'rotate-180' : ''}`} aria-hidden />
+          </button>
+          {commentsOpen && (
+            <>
+              {comments.length > 0 && (
+                <ul className="flex flex-col gap-2 max-h-56 overflow-y-auto overscroll-contain">
+                  {comments.map((c) => {
+                    const mine = Boolean(currentUser?.uid && c.authorId === currentUser.uid);
+                    const canManage = isAdmin || (isLoggedIn && currentUser && (
+                      mine || (c.authorEmail && currentUser.email && c.authorEmail.toLowerCase() === currentUser.email.toLowerCase())
+                    ));
+                    return (
+                      <li key={c.id} className="rounded-card bg-surface dark:bg-surface-dark px-4 py-3 flex flex-col gap-1">
+                        <div className="flex items-center justify-between gap-2 min-h-6">
+                          <span className="flex items-center gap-2 min-w-0 text-meta">
+                            <b className="truncate">{c.authorName}</b>
+                            {mine && <span className="h-4 px-1.5 inline-flex items-center rounded-full bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark font-mono text-micro font-bold">YOU</span>}
+                            <span className="font-mono text-black/55 dark:text-white/55 shrink-0">{new Date(c.createdAt).toLocaleDateString()}</span>
+                          </span>
+                          {canManage && onSaveComments && (
+                            <IconButton
+                              icon={Trash2}
+                              label="댓글 삭제"
+                              size="sm"
+                              className="-mr-2 border-0 bg-transparent dark:bg-transparent text-black/45 dark:text-white/45 hover:text-red-600"
+                              onClick={async () => {
+                                if (await confirmDialog('댓글을 삭제할까요?')) onSaveComments(spot.id, comments.filter(item => item.id !== c.id));
+                              }}
+                            />
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Quick Comment Input */}
-                {isLoggedIn && onSaveComments ? (
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="text"
-                      value={quickCommentText}
-                      onChange={(e) => setQuickCommentText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (!quickCommentText.trim()) return;
-                          const authorDisplayName = currentUserProfile?.username || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
-                          const newComment: PocketComment = {
-                            id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                            text: quickCommentText.trim(),
-                            createdAt: Date.now(),
-                            authorId: currentUser?.uid || 'anonymous',
-                            authorName: authorDisplayName,
-                            authorEmail: currentUser?.email || undefined,
-                          };
-                          onSaveComments(spot.id, [...(spot.comments || []), newComment]);
-                          setQuickCommentText('');
-                        }
-                      }}
-                      placeholder="댓글 입력 후 Enter..."
-                      className="flex-1 px-2.5 py-1.5 text-xs bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 text-black dark:text-white font-sans outline-none rounded focus:border-black dark:focus:border-white"
-                    />
-                    <button
-                      type="button"
-                      disabled={!quickCommentText.trim()}
-                      onClick={() => {
-                        if (!quickCommentText.trim()) return;
-                        const authorDisplayName = currentUserProfile?.username || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
-                        const newComment: PocketComment = {
-                          id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                          text: quickCommentText.trim(),
-                          createdAt: Date.now(),
-                          authorId: currentUser?.uid || 'anonymous',
-                          authorName: authorDisplayName,
-                          authorEmail: currentUser?.email || undefined,
-                        };
-                        onSaveComments(spot.id, [...(spot.comments || []), newComment]);
-                        setQuickCommentText('');
-                      }}
-                      className="tap-target px-3 py-1.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase rounded cursor-pointer"
-                    >
-                      <Send className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : !isLoggedIn && onOpenAuthModal ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onOpenAuthModal();
-                    }}
-                    className="btn btn-secondary w-full"
-                  >
-                    댓글을 작성하려면 로그인하세요 →
-                  </button>
-                ) : null}
-              </div>
-            )}
-          </div>
-
-          {/* Admin Edit / Delete Actions (Icon only) */}
-          {isAdmin && (
-            <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2 text-xs font-mono">
-              {onEdit && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onEdit(spot);
-                  }}
-                  className="tap-target p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors cursor-pointer"
-                  title="스팟 수정"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                </button>
+                        <p className="text-[14px] break-words whitespace-pre-wrap text-black/80 dark:text-white/80">{c.text}</p>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-              {onDelete && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onDelete(spot);
-                  }}
-                  className="tap-target p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded transition-colors cursor-pointer"
-                  title="스팟 삭제"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+              {isLoggedIn && onSaveComments ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    id="pocket-comment"
+                    aria-label="댓글"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); submitComment(); } }}
+                    placeholder="댓글을 남겨 보세요"
+                    className={fieldClass}
+                  />
+                  <IconButton icon={Send} label="댓글 올리기" tone="ink" onClick={submitComment} disabled={!comment.trim()} />
+                </div>
+              ) : !isLoggedIn && onOpenAuthModal ? (
+                <button type="button" onClick={() => act(onOpenAuthModal)} className="btn btn-secondary w-full">댓글을 쓰려면 로그인하세요</button>
+              ) : null}
+            </>
           )}
         </div>
 
-        {/* Bottom Fixed Action Bar (Guaranteed 1-Row Layout on Mobile) */}
-        <div className="p-2.5 sm:p-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1.5 sm:gap-3 shrink-0 flex-nowrap">
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Heart / Likes Button */}
-            <button
-              type="button"
-              onClick={() => onToggleLike(spot.id)}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
-                isLiked
-                  ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
-                  : 'bg-surface dark:bg-surface-dark border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
-              }`}
-              title="좋아요 관심사 체크"
-            >
-              <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
-              <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight">
-                {spot.likes || 0}
-              </span>
-            </button>
-
-            {/* Comments Accordion Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setIsCommentsExpanded(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
-                isCommentsExpanded
-                  ? 'bg-black/10 dark:bg-white/15 border-black/30 dark:border-white/30 text-black dark:text-white shadow-xs'
-                  : 'bg-surface dark:bg-surface-dark border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
-              }`}
-              title={isCommentsExpanded ? "댓글 접기" : "댓글 펼치기"}
-            >
-              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight">
-                {spot.comments?.length || 0}
-              </span>
-            </button>
-
-            {onShare && (
-              <button
-                type="button"
-                onClick={() => onShare(spot)}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
-                  spot.sharedWith?.length
-                    ? 'bg-lilac text-lilac-ink border-transparent dark:bg-lilac-dark dark:text-lilac'
-                    : 'bg-surface dark:bg-surface-dark border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
-                }`}
-                title="친구에게 이 장소 공유"
-                aria-label="친구에게 이 장소 공유"
-              >
-                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                {!!spot.sharedWith?.length && (
-                  <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight">{spot.sharedWith.length}</span>
-                )}
-              </button>
-            )}
+        {isAdmin && (onEdit || onDelete) && (
+          <div className="flex items-center justify-end gap-2">
+            {onEdit && <button type="button" className="btn btn-secondary btn-sm" onClick={() => act(() => onEdit(spot))}><Pencil className="w-3.5 h-3.5" aria-hidden />수정</button>}
+            {onDelete && <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => act(() => onDelete(spot))}><Trash2 className="w-3.5 h-3.5" aria-hidden />삭제</button>}
           </div>
-
-          {/* Right Main CTA Buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Original Source Link */}
-            {spot.sourceUrl && (
-              <a
-                href={spot.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-surface dark:bg-surface-dark text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-meta font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1 cursor-pointer shrink-0"
-                title="출처 원본 게시물 보기"
-              >
-                <span className="hidden sm:inline">ORIGINAL</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-
-            {/* Add this place to a trip (not a new trip) */}
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onUseInTrip(spot);
-              }}
-              className="btn btn-primary btn-sm inline-flex shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add to trip</span>
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Full-size High-Res Image Lightbox Popup */}
-      {isLightboxOpen && spot.thumbnailUrl && (
-        <div 
-          className="fixed inset-0 z-nested bg-black/95 flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
-          onClick={() => setIsLightboxOpen(false)}
+      {/* One bar: like, share, the original post, and putting the spot in a journey */}
+      <div className="shrink-0 px-4 py-3 flex items-center gap-2 border-t border-black/[0.06] dark:border-white/[0.08]">
+        <button
+          type="button"
+          onClick={() => onToggleLike(spot.id)}
+          aria-pressed={isLiked}
+          aria-label="좋아요"
+          className={`${pill} ${isLiked ? 'bg-red-600/10 border-red-600/30 text-red-600 dark:text-red-400' : pillOff}`}
         >
-          <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <div className="w-full flex items-center justify-between pb-2 text-white/80">
-              <span className="text-[11px] font-mono tracking-widest uppercase">
-                ORIGINAL FULL-RES IMAGE
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsLightboxOpen(false)}
-                className="tap-target p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
-                title="닫기 (ESC)"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="relative max-h-[85vh] max-w-full overflow-hidden flex items-center justify-center border border-white/20 shadow-2xl bg-black">
-              <img 
-                src={spot.thumbnailUrl} 
-                alt={spot.title} 
-                className="max-h-[84vh] max-w-full w-auto h-auto object-contain select-none"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>,
-    document.body
+          <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} aria-hidden />
+          <span className="font-mono tabular-nums">{spot.likes || 0}</span>
+        </button>
+        {onShare && (
+          <button
+            type="button"
+            onClick={() => onShare(spot)}
+            aria-label="친구에게 이 장소 공유"
+            title="친구에게 이 장소 공유"
+            className={`${pill} ${spot.sharedWith?.length ? 'bg-lilac text-lilac-ink border-transparent dark:bg-lilac-dark dark:text-lilac' : pillOff}`}
+          >
+            <Users className="w-4 h-4" aria-hidden />
+            {!!spot.sharedWith?.length && <span className="font-mono tabular-nums">{spot.sharedWith.length}</span>}
+          </button>
+        )}
+        {hasLink && (
+          <a href={spot.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label="원문 보기" title="원문 보기" className={`${pill} ${pillOff}`}>
+            <ExternalLink className="w-4 h-4" aria-hidden />
+          </a>
+        )}
+        <button type="button" onClick={() => act(() => onUseInTrip(spot))} className="btn btn-primary flex-1 min-w-0">
+          <Plus className="w-4 h-4 shrink-0" aria-hidden /><span className="truncate">여정에 담기</span>
+        </button>
+      </div>
+
+      {viewing && spot.thumbnailUrl && <ImageViewer src={spot.thumbnailUrl} alt={spot.title} onClose={() => setViewing(false)} />}
+    </>
   );
-};
+}

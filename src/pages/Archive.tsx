@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { HubHeader } from '../components/ui/HubHeader';
-import { BookCheck, Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown, Compass } from 'lucide-react';
+import { BookCheck, ChevronDown, ChevronUp, Tag, Search, X, ArrowUpDown } from 'lucide-react';
 import { Trip, Plan, ArchiveHubConfig } from '../types';
-import { JourneyCardMenu, getEnglishCityName } from './Home';
-import { getEffectiveImageUrl } from '../utils/storageHelper';
+import { getEnglishCityName } from './Home';
 import { JourneyListRow, type JourneyRowBadge } from '../components/cards/JourneyListRow';
 import { sharedOwner } from '../components/cards/SharedMark';
 import { cardCoverUrl } from '../utils/journeyThumbs';
 import { ViewModeSegment } from '../components/ui/ViewModeSegment';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
-import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { JourneyCard } from '../components/cards/JourneyCard';
 import { openJourneyActions } from '../components/cards/JourneyActionsSheet';
@@ -27,11 +25,6 @@ interface ArchiveHubPageProps {
   isLoggedIn: boolean;
   /** True once the journey lists have loaded, so the empty scene never flashes while loading */
   dataReady?: boolean;
-  onDeleteTrip: (id: number) => Promise<void>;
-  onEditTrip?: (id: number) => void;
-  onCloneTrip?: (id: number) => void;
-  onMoveToPlans?: (trip: Trip) => void;
-  onMoveToArchive?: (plan: Plan) => void;
   onReorderTrips?: (orderedIds: number[]) => void;
   initialTagFilter?: string | null;
   hubConfig?: ArchiveHubConfig;
@@ -355,11 +348,6 @@ export function ArchiveHubPage({
   onAddArchive,
   isLoggedIn,
   dataReady,
-  onDeleteTrip,
-  onEditTrip,
-  onCloneTrip,
-  onMoveToPlans,
-  onMoveToArchive,
   onReorderTrips,
   initialTagFilter,
   hubConfig,

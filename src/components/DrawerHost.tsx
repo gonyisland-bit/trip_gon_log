@@ -3,9 +3,9 @@ import { lockBodyScroll } from '../utils/scrollLock';
 import { HubVisibleContext } from '../app/hubVisible';
 
 // Hub drawers (v1.3.8): the tab bar's hubs and the airport terminal rise from the bottom as one family.
-//  - phones: hubs fill the screen to its top edge; the terminal is a sheet with a gap above it. A grip drags the
-//    sheet down; the tab bar stays up in front, so the next drawer is one tap away
-//  - web: the same panel as a centred dialog (only the terminal uses it there; hubs are pages)
+//  - phones: every drawer is one sheet that fills the screen to a small gap under the status bar, its top corners
+//    rounded. A grip drags the sheet down; the tab bar stays up in front, so the next drawer is one tap away
+//  - tablet and web: the same panel as a centred dialog (only the terminal uses it there; hubs are pages)
 // A hub drawer is kept once opened (hidden) and can be drawn ahead of time (`warm`), so its first visit is only the
 // slide. Switching drawers slides the new one in from the side it sits on in the tab bar and the old one out to the
 // other. A panel that is not kept (the terminal) is rebuilt on every open.
@@ -19,8 +19,8 @@ export interface DrawerPanel {
   scroll?: boolean;
   /** The panel runs under the tab bar to the screen's edge (the map) instead of ending above it */
   flush?: boolean;
-  /** The sheet reaches the top of the screen (hubs); otherwise it leaves a gap above (the terminal) */
-  full?: boolean;
+  /** A phone-width dialog on tablet and web (the terminal) instead of the wide one */
+  narrow?: boolean;
   /** Dragging the grip down closes the drawer; off where the content pans (the map) */
   dragClose?: boolean;
 }
@@ -139,7 +139,6 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
   if (!mounted && ids.length === 0) return null;
 
   const shownIdx = shown ? order.indexOf(shown) : -1;
-  const full = !!current?.full;
 
   return (
     <div data-drawer className="fixed inset-0 z-[35] pointer-events-none" style={mounted ? undefined : { visibility: 'hidden' }}>
@@ -152,7 +151,7 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
       <section
         data-drawer-sheet
         data-open={open}
-        data-full={full}
+        data-size={current?.narrow ? 'narrow' : 'wide'}
         aria-label={current?.label}
         className="tgl-hubdrawer pointer-events-auto bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark rounded-t-sheet md:rounded-card shadow-[0_-12px_48px_rgba(0,0,0,0.22)] overflow-hidden"
         style={{

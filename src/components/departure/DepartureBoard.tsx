@@ -1,7 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { cityThumb, GENERIC_COVER } from '../../utils/placeArt';
-import { ArrowUp, Plane, Plus, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
-import { getEffectiveImageUrl } from '../../utils/storageHelper';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUp, Plane, Plus, Ticket, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { TerminalScene } from './TerminalScene';
 import { TerminalWeatherPicker } from './TerminalWeatherPicker';
 import { getWeatherMeta } from '../../utils/weatherApi';
@@ -17,16 +15,17 @@ import type { Trip, Plan, FlightItem, StayItem, TransitItem } from '../../types'
 import { TicketCard, TicketFace } from './TicketCard';
 import { TicketSheet } from './TicketSheet';
 import { EmptyScene } from '../scenes/EmptyScene';
-import { DepartureTicket, TicketStore, activeTicketOf, formatHours, readCachedTickets, removeTicket, setActiveTicket, subscribeTickets, ticketCity, ticketStatus } from './departureData';
+import { DepartureTicket, TicketStore, activeTicketOf, readCachedTickets, removeTicket, setActiveTicket, subscribeTickets, ticketStatus } from './departureData';
 import { Art } from '../../art/Art';
+import { CounterStage } from './CounterStage';
 
 // Airport terminal (spec 3.2): where a planned trip waits before it becomes a journey.
 // Tickets are issued from the New trip sheet. The counter holds one ticket at a time, shown on the
 // black split-flap board (destination, dates, stay, party, gate); every other ticket is kept in
 // storage, with the bookings of journeys still ahead. Raising a kept ticket rolls the board over to it.
 // Boarding creates the journey from the ticket and opens it.
-// It lives in the tab bar's centre drawer (components/DrawerHost, v1.3.8): the board, the buttons, the ticket and
-// the lobby window share the drawer's height without scrolling; the window takes what is left and gives way first.
+// It lives in the tab bar's centre drawer (components/DrawerHost, v1.3.8). The counter is one stage (CounterStage):
+// board, buttons, ticket and lobby window scale together to the drawer, so they keep the same proportions everywhere.
 // Two tabs: 카운터 (the one ticket being written or just finished, shown as a boarding pass under the
 // boarding button) and 발권표 (tickets written but not at the counter, and 탑승 예정, the bookings of
 // journeys already made). A ticket opens its own sheet, which holds smart booking.
@@ -217,11 +216,7 @@ export function DepartureBoard({
   const finished = useMemo(() => kept.filter(t => t.plan), [kept]);
   const sheetTicket = sheetId ? tickets.find(t => t.id === sheetId) ?? null : null;
   const ticketCount = kept.length + upcomingCount;
-  const city = ticket ? ticketCity(ticket) : undefined;
   const status = ticket ? ticketStatus(ticket) : null;
-
-  // The drawer slides itself away
-  const requestClose = onClose;
 
   // A kept ticket goes to the counter; the one there goes back to storage
   const raise = async (t: DepartureTicket): Promise<boolean> => {
@@ -268,10 +263,10 @@ export function DepartureBoard({
   useEffect(() => { const t = setInterval(() => setClock(new Date()), 15000); return () => clearInterval(t); }, []);
   useEffect(() => { try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch {} }, [muted]);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !covered) requestClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !covered) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [requestClose, covered]);
+  }, [onClose, covered]);
 
   const board = async (): Promise<boolean> => {
     if (!ticket?.plan || boarding) return false;
@@ -310,7 +305,7 @@ export function DepartureBoard({
   return (
     <div aria-label="공항 터미널" className="relative h-full flex flex-col text-ink dark:text-ink-dark overflow-hidden">
       {/* Top bar: the drawer's grip and its tab close it, so no close button */}
-      <div className="shrink-0 w-full max-w-[680px] mx-auto px-4 h-12 flex items-center justify-between gap-2">
+      <div className="shrink-0 w-full max-w-[680px] mx-auto px-4 h-12 md:mt-2 flex items-center justify-between gap-2">
         <div className="flex flex-col min-w-0">
           <span className="text-[17px] font-extrabold tracking-tight leading-tight">공항 터미널</span>
           <span className={`${label} ${muted} tabular-nums`}>Terminal 1 · ICN {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
@@ -374,12 +369,11 @@ export function DepartureBoard({
           </div>
         </div>
       ) : (
-        /* The counter: board, buttons, the ticket, then the lobby window with whatever height is left. The body is a size
-           container, so the board's cells scale with the drawer; it scrolls only when even the essentials do not fit */
-        <div className="flex-1 min-h-0 relative" style={{ containerType: 'size' }}>
-          <div className="absolute inset-0 overflow-y-auto overscroll-contain hide-scrollbar">
-            <div className={`w-full max-w-[680px] mx-auto px-4 pb-3 min-h-full flex flex-col gap-3 ${boarding ? '' : 'tgl-board-in'}`}>
-              <section aria-label="출발 안내판" className="dark shrink-0 w-full md:max-w-[540px] md:mx-auto rounded-card bg-[#101012] text-[#F2F2EE] p-3.5 flex flex-col gap-2.5 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+        /* The counter: one stage (board, buttons, ticket, lobby window) scaled as a whole to the room there is */
+        <div className="flex-1 min-h-0 relative">
+          <CounterStage>
+            <div className={`flex flex-col gap-3 ${boarding ? '' : 'tgl-board-in'}`}>
+              <section aria-label="출발 안내판" className="dark w-full rounded-card bg-[#101012] text-[#F2F2EE] p-3.5 flex flex-col gap-2.5 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
                 <div className="grid gap-x-3" style={{ gridTemplateColumns: '5fr 11fr' }}>
                   <div className="flex flex-col gap-1 min-w-0">
                     <span className={`${label} text-white/55`}>Flight</span>
@@ -422,7 +416,7 @@ export function DepartureBoard({
 
               {/* The main action. With no ticket the board says WELCOME and the one thing to do is a new ticket */}
               {ticket ? (
-                <div className="shrink-0 flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   {ticket.plan ? (
                     <button type="button" className="btn btn-accent btn-lg flex-1 min-w-0" onClick={() => { void board(); }} disabled={boarding}>
                       <Plane className="w-4 h-4 shrink-0 rotate-45" aria-hidden />
@@ -439,33 +433,33 @@ export function DepartureBoard({
                   </button>
                 </div>
               ) : (
-                <button type="button" className="shrink-0 btn btn-accent btn-lg w-full" onClick={() => onPlan()}>
+                <button type="button" className="btn btn-accent btn-lg w-full" onClick={() => onPlan()}>
                   <Plus className="w-4 h-4 shrink-0" aria-hidden />
                   새 티켓
                 </button>
               )}
 
-              {/* The counter's ticket, one card wide */}
-              {ticket && (
-                <div className="shrink-0 flex justify-center">
-                  <TicketCard ticket={ticket} onOpen={() => setSheetId(ticket.id)} />
+              {/* The counter's ticket; an empty counter keeps its place so the stage never changes size */}
+              {ticket ? (
+                <TicketCard ticket={ticket} onOpen={() => setSheetId(ticket.id)} />
+              ) : (
+                <div className="w-full min-h-[122px] rounded-card bg-surface dark:bg-surface-dark grid place-items-center px-4 text-center text-[14px] font-bold text-black/55 dark:text-white/55">
+                  카운터에 올린 티켓이 없어요
                 </div>
               )}
 
-              {/* The lobby window: whatever height is left; it hides itself when there is almost none */}
-              <div className="tgl-term-art flex-1 min-h-0 basis-0 relative rounded-card overflow-hidden">
-                <div className="tgl-term-art-scene absolute inset-0">
-                  <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
-                  {skyNote && (
-                    <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      {skyNote}
-                    </div>
-                  )}
-                </div>
+              {/* The lobby window keeps the picture's own proportions, so nothing of it is cut */}
+              <div className="relative w-full aspect-[1200/896] rounded-card overflow-hidden">
+                <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
+                {skyNote && (
+                  <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    {skyNote}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          </CounterStage>
         </div>
       )}
 
@@ -504,7 +498,7 @@ function StoredGroup({ title, tickets, onOpen, onRaise, onRemove }: {
   return (
     <div className="flex flex-col gap-2">
       <span className={`${label} ${muted}`}>{title} · {tickets.length}</span>
-      <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+      <ul className="grid grid-cols-1 gap-y-3">
         {tickets.map(t => (
           <li key={t.id} className="flex flex-col gap-2">
             <button type="button" onClick={() => onOpen(t)} aria-label={`${t.cityKo} 티켓 열기`} className="tgl-press block w-full rounded-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600">

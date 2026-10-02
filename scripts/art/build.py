@@ -50,8 +50,11 @@ FILES = {
     # app states (v1.3.8): uploading, empty receipts, saved, invitations, published, first photo, lost
     'uploading-photo': 'Bear_carrying_framed_photo_20261002174915.jpg', 'receipt-empty': 'Bear_examining_receipt_paper_20261002174915.jpg',
     'done-check': 'Bear_holding_green_checkmark_20261002174915.jpg', 'invite-letter': 'Teal_bear_holding_envelope_20261002174915.jpg',
-    'publish-done': 'Teal_bear_holding_magazine_20261002174915.jpg', 'photo-add': 'Teal_bear_standing_near_frame_20261002174915.jpg',
+    'publish-done': 'Bear_celebrating_with_confetti_20261002205803.jpg', 'photo-add': 'Teal_bear_standing_near_frame_20261002174915.jpg',
     'lost-guide': 'Two_bears_waving_and_confused_20261002174915.jpg',
+    # more states: a ticket waiting on the clock, approved, reading a receipt, saying goodbye
+    'letter-clock': 'Bear_holding_letter_envelope_20261002205803.jpg', 'thumbs-check': 'Teal_bear_giving_thumbs_up_20261002205803.jpg',
+    'receipt-look': 'Teal_bear_looking_at_receipt_20261002205803.jpg', 'goodbye-wave': 'Teal_bear_waving_goodbye_20261002205803.jpg',
 }
 
 # Pictures that carry a caption under the art: rows from this one down are dropped

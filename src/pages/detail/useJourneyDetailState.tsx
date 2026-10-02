@@ -1,14 +1,28 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { openJourneyActions } from '../../components/cards/JourneyActionsSheet';
 import {
-  Train, Bus, Car, Trash2, Image as ImageIcon, ChevronDown, MapPin, Loader2, ArrowLeft, ArrowUp,
-  ArrowDown, ArrowRight, Share2, Play, Pause, Check, Edit3, DollarSign,
-  X, Undo2, Redo2, Calendar, Search, Users, BookOpen
+  Trash2,
+  Image as ImageIcon,
+  ChevronDown,
+  MapPin,
+  Loader2,
+  ArrowLeft,
+  Share2,
+  Check,
+  Edit3,
+  DollarSign,
+  X,
+  Undo2,
+  Redo2,
+  Calendar,
+  Search,
+  Users,
+  BookOpen
 } from 'lucide-react';
 import { OPEN_JOURNEY_MAGAZINE } from '../../utils/detailIntent';
 import { getUpcomingPlanInfo, isJourneyOver } from '../../utils/tripPlanHelper';
 import { getDefaultCurrencyForLocation } from '../../components/SettlementExpenseInput';
 import { generateJourneyMessage } from '../../components/SummaryView';
-import { Lightbox, LightboxImageMeta } from '../../components/Lightbox';
 import { getSavedPockets, calculateDistanceInMeters } from '../../utils/pocketStorage';
 import { findUnifiedNearbyTargets, RadarItem } from '../../utils/radarService';
 import {
@@ -362,81 +376,6 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const { start: minDate, end: maxDate } = parseDateRange(tripToUse?.date || '');
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
   const tabContentRef = useRef<HTMLDivElement | null>(null);
-
-  // ─── Cover Image Change Modal States & Handlers ───
-  const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
-  const [coverInputUrl, setCoverInputUrl] = useState('');
-  const [isCoverUploading, setIsCoverUploading] = useState(false);
-  const coverFileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleUpdateTripCover = async (newCoverUrl: string) => {
-    if (!newCoverUrl.trim() || !trip) return;
-    const cleanUrl = newCoverUrl.trim();
-    if (isEditing && draftTrip) {
-      recordHistory();
-      setDraftTrip({ ...draftTrip, img: cleanUrl });
-      setIsCoverModalOpen(false);
-      return;
-    }
-    try {
-      setIsCoverUploading(true);
-      const isPlan = (trip.tags || []).includes('Plan');
-      const coll = isPlan ? 'plans' : 'trips';
-      await setDoc(doc(db, 'users', 'public', coll, String(trip.id)), { img: cleanUrl }, { merge: true });
-      if (draftTrip) setDraftTrip({ ...draftTrip, img: cleanUrl });
-      trip.img = cleanUrl;
-      setIsCoverModalOpen(false);
-    } catch (err) {
-      console.error("Failed to update trip cover:", err);
-      notify("커버 변경 저장에 실패했습니다.");
-    } finally {
-      setIsCoverUploading(false);
-    }
-  };
-
-  const handleUploadCoverFile = async (file: File) => {
-    setIsCoverUploading(true);
-    try {
-      const compressed = await compressImage(file, 2560, 2560, 0.82);
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const storagePath = `users/public/covers/${Date.now()}_${safeName}`;
-      const url = await uploadFileToR2(compressed, storagePath);
-      setCoverInputUrl(url);
-    } catch (err) {
-      console.error("Cover upload error:", err);
-      notify("커버 이미지 업로드 실패");
-    } finally {
-      setIsCoverUploading(false);
-    }
-  };
-
-  const handlePasteCoverFromClipboard = async () => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.read) {
-        const items = await navigator.clipboard.read();
-        for (const item of items) {
-          const imageType = item.types.find(t => t.startsWith('image/'));
-          if (imageType) {
-            const blob = await item.getType(imageType);
-            const ext = imageType.split('/')[1] || 'png';
-            const file = new File([blob], `cover_pasted_${Date.now()}.${ext}`, { type: imageType });
-            await handleUploadCoverFile(file);
-            return;
-          }
-        }
-      }
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
-        if (text && text.trim().startsWith('http')) {
-          setCoverInputUrl(text.trim());
-          return;
-        }
-      }
-      notify("클립보드에 이미지나 이미지 URL이 없습니다.");
-    } catch (err) {
-      console.warn("Clipboard paste error:", err);
-    }
-  };
 
   // ─── Cinematic Tour Mode ("Play Log") States & Logic ───
   const [isCinematicMode, setIsCinematicMode] = useState(false);
@@ -3323,18 +3262,18 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 <span className="hidden sm:inline">Calendar</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setCoverInputUrl(tripToUse?.img || '');
-                  setIsCoverModalOpen(true);
-                }}
-                className="btn btn-secondary btn-sm flex"
-                title="카드 커버 이미지 변경"
-              >
-                <ImageIcon className="w-3 h-3" />
-                <span>Cover</span>
-              </button>
+              {/* The covers have one place: the journey's ⋯ menu. Not while editing, whose draft would write the old one back */}
+              {!isEditing && trip && (
+                <button
+                  type="button"
+                  onClick={() => openJourneyActions(trip.id)}
+                  className="btn btn-secondary btn-sm flex"
+                  title="카드 · 히어로 커버 바꾸기"
+                >
+                  <ImageIcon className="w-3 h-3" />
+                  <span>Cover</span>
+                </button>
+              )}
 
               {isEditing && (
                 <button
@@ -3625,9 +3564,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     hiddenMapItemIds, setHiddenMapItemIds, stayCoords, setStayCoords, transitFocusType,
     setTransitFocusType, frequentPlaces, setFrequentPlaces, activePlaceInputId,
     setActivePlaceInputId, tripToUse, defaultCurrency, generatedDates, minDate, maxDate,
-    airportGeocodedCoords, setAirportGeocodedCoords, tabContentRef, isCoverModalOpen,
-    setIsCoverModalOpen, coverInputUrl, setCoverInputUrl, isCoverUploading, setIsCoverUploading,
-    coverFileInputRef, handleUpdateTripCover, handleUploadCoverFile, handlePasteCoverFromClipboard,
+    airportGeocodedCoords, setAirportGeocodedCoords, tabContentRef,
     isCinematicMode, setIsCinematicMode, cinematicIndex, setCinematicIndex, isCinematicPaused,
     setIsCinematicPaused, cinematicSpeed, setCinematicSpeed, isMobilePlayCollapsed,
     setIsMobilePlayCollapsed, cinematicStartTimeRef, cinematicRemainingRef, cinematicTimerRef,

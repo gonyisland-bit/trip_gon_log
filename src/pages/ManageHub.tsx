@@ -9,7 +9,6 @@ import { ProfileEditModal } from '../components/ProfileEditModal';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { useManageHubState, type ManageHubPageProps } from './manage/useManageHubState';
 import { HomeMode } from './manage/HomeMode';
-import { ArchiveMode } from './manage/ArchiveMode';
 import { CalendarMode } from './manage/CalendarMode';
 import { MagazineMode } from './manage/MagazineMode';
 import { UtilMode } from './manage/UtilMode';
@@ -141,14 +140,6 @@ export function ManageHubPage(props: ManageHubPageProps) {
           </div>
         )}
         {activeMode === 'HOME' && <HomeMode s={s} />}
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* MODE: ARCHIVE (Left: Detailed Edit Form, Right: Reorderable List)  */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* MODE: ARCHIVE (Top: Header Config, Left: Edit Form, Right: List)    */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'ARCHIVE' && <ArchiveMode s={s} />}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* MODE: CALENDAR (Calendar & Weather Cities Management)               */}

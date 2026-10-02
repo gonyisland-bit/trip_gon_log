@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BedDouble, Bookmark, Check, MapPin, X } from 'lucide-react';
 import { Trip, Plan, TimelineItem, StayItem, SpotPocketItem } from '../types';
 import { confirmDialog } from '../utils/feedback';

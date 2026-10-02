@@ -5,7 +5,7 @@ import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock, Ticket, S
 import { OPEN_PROFILE_EDIT } from '../app/quickActions';
 import { auth, db } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { UserProfile } from '../types';
 import { UserProfileAvatar } from './UserProfileAvatar';
 import { PasswordVerifyModal } from './PasswordVerifyModal';
@@ -46,6 +46,9 @@ interface NavigationProps {
   openSettingModal?: () => void;
   onSearchClick: () => void;
   onNewTrip?: () => void;
+  /** Desktop and tablet: opens (or closes) the airport terminal from any page. Phones use the tab bar */
+  onTerminal?: () => void;
+  terminalOpen?: boolean;
   isAdmin?: boolean;
   isHomeGradientActive?: boolean;
   currentUserProfile?: UserProfile | null;
@@ -67,6 +70,8 @@ export function Navigation({
   openSettingModal,
   onSearchClick,
   onNewTrip,
+  onTerminal,
+  terminalOpen = false,
   isAdmin = false,
   isHomeGradientActive = false,
   currentUserProfile,
@@ -246,7 +251,21 @@ export function Navigation({
 
         {/* Right: Action Icons (Search, Weather Widget, Hamburger Menu) */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0" ref={dropdownRef}>
-          {/* Desktop: the one main action. Phones use the tab bar's red + */}
+          {/* Desktop: the airport terminal is one click away on every page, journeys included; phones have the tab bar's
+              centre button. Beside it the one main action, New trip */}
+          {isLoggedIn && onTerminal && (
+            <button
+              type="button"
+              onClick={onTerminal}
+              aria-pressed={terminalOpen}
+              aria-label="공항 터미널"
+              title="공항 터미널"
+              className={`hidden md:inline-flex btn btn-sm shrink-0 max-lg:w-8 max-lg:px-0 ${terminalOpen ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              <Ticket className="w-3.5 h-3.5 shrink-0" aria-hidden />
+              <span className="max-lg:hidden">터미널</span>
+            </button>
+          )}
           {isLoggedIn && onNewTrip && (
             <NewTripButton onClick={onNewTrip} size="sm" className="hidden md:inline-flex mr-1" />
           )}

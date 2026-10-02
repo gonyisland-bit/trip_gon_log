@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Save, Upload, Calendar, Check } from 'lucide-react';
-import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, onSnapshot, QuerySnapshot, DocumentData, query } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 // Journey content writes carry owner / access fields (v1.3.6)
 import { setDoc, visibleContent } from '../../utils/ownership';
 import { auth, db } from '../../firebase';
@@ -1313,12 +1312,7 @@ export function useManageHubState(props: ManageHubPageProps) {
   const [editCountry, setEditCountry] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
-  const [editImg, setEditImg] = useState('');
-  const [editVideoUrl, setEditVideoUrl] = useState('');
-  const [editHeroImg, setEditHeroImg] = useState('');
-  const [editHeroVideoUrl, setEditHeroVideoUrl] = useState('');
   const [editStatusBadge, setEditStatusBadge] = useState<'' | 'NEW' | 'EDITING' | 'PLAN'>('');
-  const [archiveMediaTab, setArchiveMediaTab] = useState<'main' | 'hero'>('main');
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const countryDropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -1390,9 +1384,6 @@ export function useManageHubState(props: ManageHubPageProps) {
   });
   const [isSavingTrip, setIsSavingTrip] = useState(false);
   const [tripSaveSuccess, setTripSaveSuccess] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isMainDragActive, setIsMainDragActive] = useState(false);
-  const [isHeroDragActive, setIsHeroDragActive] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingJourneyId, setPendingJourneyId] = useState<number | null>(null);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -2151,10 +2142,6 @@ export function useManageHubState(props: ManageHubPageProps) {
       locationStr: (j?.locationStr || '').trim(),
       country: (j?.country || '').trim(),
       tags: Array.isArray(j?.tags) ? [...j.tags].map(t => String(t).trim()).sort() : [],
-      img: (j?.img || '').trim(),
-      videoUrl: (j?.videoUrl || '').trim(),
-      heroImg: (j?.heroImg || '').trim(),
-      heroVideoUrl: (j?.heroVideoUrl || '').trim(),
       statusBadge: normalizedBadge,
     };
   };
@@ -2233,14 +2220,10 @@ export function useManageHubState(props: ManageHubPageProps) {
       locationStr: editLocation,
       country: editCountry,
       tags: editTags,
-      img: editImg,
-      videoUrl: editVideoUrl,
-      heroImg: editHeroImg,
-      heroVideoUrl: editHeroVideoUrl,
       statusBadge: editStatusBadge,
     });
     return JSON.stringify(currentData) !== snapStr;
-  }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, saveRevision]);
+  }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editStatusBadge, saveRevision]);
 
   // Dirty tracking for MAGAZINE sections & moments
   const isMagazineDirty = useMemo(() => {
@@ -2348,10 +2331,6 @@ export function useManageHubState(props: ManageHubPageProps) {
         locationStr: editLocation,
         country: editCountry,
         tags: editTags,
-        img: editImg,
-        videoUrl: editVideoUrl,
-        heroImg: editHeroImg,
-        heroVideoUrl: editHeroVideoUrl,
         statusBadge: editStatusBadge,
       }));
     }
@@ -2408,10 +2387,6 @@ export function useManageHubState(props: ManageHubPageProps) {
           setEditLocation(d.locationStr || '');
           setEditCountry(d.country || '');
           setEditTags(d.tags || []);
-          setEditImg(d.img || '');
-          setEditVideoUrl(d.videoUrl || '');
-          setEditHeroImg(d.heroImg || '');
-          setEditHeroVideoUrl(d.heroVideoUrl || '');
           setEditStatusBadge(d.statusBadge || '');
         } catch (_) {}
       } else {
@@ -2420,10 +2395,6 @@ export function useManageHubState(props: ManageHubPageProps) {
         setEditLocation(selectedJourney.locationStr || '');
         setEditCountry(selectedJourney.country || '');
         setEditTags(selectedJourney.tags || []);
-        setEditImg(selectedJourney.img || '');
-        setEditVideoUrl(selectedJourney.videoUrl || '');
-        setEditHeroImg(selectedJourney.heroImg || '');
-        setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
         setEditStatusBadge(selectedJourney.statusBadge || ((selectedJourney as any).isPlan || selectedJourney.tags?.includes('Plan') ? 'PLAN' : ''));
       }
     }
@@ -2542,10 +2513,6 @@ export function useManageHubState(props: ManageHubPageProps) {
       setEditLocation(selectedJourney.locationStr || '');
       setEditCountry(selectedJourney.country || '');
       setEditTags(selectedJourney.tags || []);
-      setEditImg(selectedJourney.img || '');
-      setEditVideoUrl(selectedJourney.videoUrl || '');
-      setEditHeroImg(selectedJourney.heroImg || '');
-      setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
       const isPlan = (selectedJourney as any).isPlan || selectedJourney.tags?.includes('Plan') || selectedJourney.title?.includes('(Plan)');
       const initialStatusBadge = selectedJourney.statusBadge || (isPlan ? 'PLAN' : '');
       setEditStatusBadge(initialStatusBadge);
@@ -2553,7 +2520,6 @@ export function useManageHubState(props: ManageHubPageProps) {
 
       savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
         ...selectedJourney,
-        heroVideoUrl: selectedJourney.heroVideoUrl || '',
         statusBadge: initialStatusBadge
       }));
     }
@@ -2609,10 +2575,6 @@ export function useManageHubState(props: ManageHubPageProps) {
         locationStr: editLocation,
         country: editCountry,
         tags: editTags,
-        img: editImg,
-        videoUrl: editVideoUrl,
-        heroImg: editHeroImg,
-        heroVideoUrl: editHeroVideoUrl,
         statusBadge: editStatusBadge,
       });
 
@@ -2625,10 +2587,6 @@ export function useManageHubState(props: ManageHubPageProps) {
             locationStr: editLocation,
             country: editCountry,
             tags: editTags,
-            img: editImg,
-            videoUrl: editVideoUrl,
-            heroImg: editHeroImg,
-            heroVideoUrl: editHeroVideoUrl,
             statusBadge: editStatusBadge,
           };
         }
@@ -2649,10 +2607,6 @@ export function useManageHubState(props: ManageHubPageProps) {
         locationStr: editLocation,
         country: editCountry,
         tags: editTags,
-        img: editImg,
-        videoUrl: editVideoUrl,
-        heroImg: editHeroImg,
-        heroVideoUrl: editHeroVideoUrl,
         statusBadge: editStatusBadge,
       }));
 
@@ -2668,34 +2622,6 @@ export function useManageHubState(props: ManageHubPageProps) {
       notify('여정 저장에 실패했습니다.');
     } finally {
       setIsSavingTrip(false);
-    }
-  };
-
-  // Image Upload helper
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'img' | 'heroImg') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      let fileToUpload: File | Blob = file;
-      if (file.type.startsWith('image/')) {
-        fileToUpload = await compressImage(file, 1920, 1080, 0.85);
-      }
-      const url = await uploadFileToR2(fileToUpload, `covers/${Date.now()}_${file.name}`);
-      if (targetField === 'img') {
-        setEditImg(url);
-        setEditVideoUrl('');
-      }
-      if (targetField === 'heroImg') {
-        setEditHeroImg(url);
-        setEditHeroVideoUrl('');
-      }
-    } catch (err) {
-      console.error('File upload failed:', err);
-      notify('파일 업로드에 실패했습니다.');
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -2887,7 +2813,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeMode, isHomeDirty, isArchiveDirty, isMagazineDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, sectionsList, magUndoStack, magRedoStack]);
+  }, [activeMode, isHomeDirty, isArchiveDirty, isMagazineDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editStatusBadge, sectionsList, magUndoStack, magRedoStack]);
 
   // Filter hero candidate journeys by search query
   const filteredHeroCandidates = useMemo(() => {
@@ -3754,10 +3680,6 @@ export function useManageHubState(props: ManageHubPageProps) {
             locationStr: editLocation,
             country: editCountry,
             tags: editTags,
-            img: editImg,
-            videoUrl: editVideoUrl,
-            heroImg: editHeroImg,
-            heroVideoUrl: editHeroVideoUrl,
             statusBadge: editStatusBadge,
           });
           setLocalJourneys(prev => prev.map(j => {
@@ -3769,10 +3691,6 @@ export function useManageHubState(props: ManageHubPageProps) {
                 locationStr: editLocation,
                 country: editCountry,
                 tags: editTags,
-                img: editImg,
-                videoUrl: editVideoUrl,
-                heroImg: editHeroImg,
-                heroVideoUrl: editHeroVideoUrl,
                 statusBadge: editStatusBadge,
               };
             }
@@ -3784,10 +3702,6 @@ export function useManageHubState(props: ManageHubPageProps) {
             locationStr: editLocation,
             country: editCountry,
             tags: editTags,
-            img: editImg,
-            videoUrl: editVideoUrl,
-            heroImg: editHeroImg,
-            heroVideoUrl: editHeroVideoUrl,
             statusBadge: editStatusBadge,
           }));
         } catch (tripErr) {
@@ -3923,10 +3837,6 @@ export function useManageHubState(props: ManageHubPageProps) {
           locationStr: editLocation,
           country: editCountry,
           tags: editTags,
-          img: editImg,
-          videoUrl: editVideoUrl,
-          heroImg: editHeroImg,
-          heroVideoUrl: editHeroVideoUrl,
           statusBadge: editStatusBadge,
         }));
       }
@@ -4162,13 +4072,10 @@ export function useManageHubState(props: ManageHubPageProps) {
     setHeroSearchQuery, homeMagSectionId, setHomeMagSectionId, homeMagLimit, setHomeMagLimit,
     mapTileStyle, setMapTileStyle, editTitle, setEditTitle, editDate, setEditDate, editLocation,
     setEditLocation, editCountry, setEditCountry, editTags, setEditTags, newTagInput, setNewTagInput,
-    editImg, setEditImg, editVideoUrl, setEditVideoUrl, editHeroImg, setEditHeroImg,
-    editHeroVideoUrl, setEditHeroVideoUrl, editStatusBadge, setEditStatusBadge, archiveMediaTab,
-    setArchiveMediaTab, isCountryDropdownOpen, setIsCountryDropdownOpen, countryDropdownRef,
+    editStatusBadge, setEditStatusBadge, isCountryDropdownOpen, setIsCountryDropdownOpen, countryDropdownRef,
     matchedCountries, parsedDateInputs, handleStartDateChange, handleEndDateChange, homeJourneyLimit,
     setHomeJourneyLimit, isSavingTrip, setIsSavingTrip, tripSaveSuccess, setTripSaveSuccess,
-    isUploading, setIsUploading, isMainDragActive, setIsMainDragActive, isHeroDragActive,
-    setIsHeroDragActive, showUnsavedModal, setShowUnsavedModal, pendingJourneyId,
+    showUnsavedModal, setShowUnsavedModal, pendingJourneyId,
     setPendingJourneyId, pendingAction, setPendingAction, showSaveSuccessModal,
     setShowSaveSuccessModal, showQuickPhotoPicker, setShowQuickPhotoPicker, inlineAddMenuCardId,
     setInlineAddMenuCardId, showScrollTop, setShowScrollTop, activeScrollContainerRef,
@@ -4191,7 +4098,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     isMagazineDirty, isArchiveHubHeaderDirty, isMagazineHubHeaderDirty, isBgmDirty, isPresetsDirty,
     isCalendarDirty, syncAllSnapshotsToCurrent, isAnyDirty, handleResetAllState, navigateSafely,
     executeWithGuard, handleMoveOrder, handleDragStart, handleDragOver, handleDrop,
-    handleSaveJourney, handleFileUpload, handleAddTag, handleRemoveTag, handleSaveHome,
+    handleSaveJourney, handleAddTag, handleRemoveTag, handleSaveHome,
     pushMagazineSnapshot, handleMagazineUndo, handleMagazineRedo, filteredHeroCandidates, safeStr,
     candidateTimelineItems, handleAddSection, handleAutoGenerateSectionFromTrip, handleDeleteSection,
     handleMoveSection, handleUpdateSectionField, handleAddItemToCurrentSection,

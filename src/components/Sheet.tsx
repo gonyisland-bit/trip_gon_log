@@ -117,7 +117,8 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
             transition: dragging ? 'none' : undefined,
           }}
         >
-          {/* Grip: phones only, for sheets that rise from the bottom */}
+          {/* Grip: phones only, for sheets that rise from the bottom; a dialog gets a little air above its content instead */}
+          {placement !== 'top' && <div className="hidden sm:block shrink-0 h-3" aria-hidden />}
           {placement !== 'top' && <div
             className="sm:hidden shrink-0 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
             onPointerDown={onGripDown}

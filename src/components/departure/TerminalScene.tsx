@@ -1,10 +1,9 @@
-import React from 'react';
 import { artSrc } from '../../art/Art';
 import { WeatherParticleCanvas } from '../weather/WeatherParticleCanvas';
 import type { WeatherEffectType } from '../WeatherEffectLayer';
 
-// The terminal's window: the airport lobby with the bears waiting at the gate, filling the rounded
-// window, with the weather outside falling over it.
+// The terminal's window: the airport lobby with the bears waiting at the gate, filling a rounded window that has the
+// picture's own proportions, with the weather outside falling over it.
 
 interface TerminalSceneProps {
   isDarkMode: boolean;
@@ -20,7 +19,7 @@ export function TerminalScene({ isDarkMode, weatherType, intensity }: TerminalSc
         alt=""
         draggable={false}
         decoding="async"
-        className="absolute inset-0 w-full h-full object-cover object-[50%_76%] md:object-[50%_34%] select-none"
+        className="absolute inset-0 w-full h-full object-cover select-none"
       />
       <div className="absolute inset-0 pointer-events-none">
         <WeatherParticleCanvas type={weatherType} intensity={intensity} isDarkMode={isDarkMode} />
