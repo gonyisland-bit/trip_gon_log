@@ -8,7 +8,7 @@ export const CATEGORY_META: Record<PocketCategory, { label: string; icon: Lucide
   food: { label: 'FOOD', icon: Utensils },
   cafe: { label: 'CAFE', icon: Coffee },
   spot: { label: 'SPOT', icon: Camera },
-  shopping: { label: 'SHOPPING', icon: ShoppingBag },
+  shopping: { label: 'SHOP', icon: ShoppingBag },
   tip: { label: 'TIP', icon: Lightbulb },
 };
 

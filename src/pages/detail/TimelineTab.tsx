@@ -9,6 +9,7 @@ import { SettlementExpenseInput } from '../../components/SettlementExpenseInput'
 import { fetchCoordinates } from '../../utils/googleMapsHelper';
 import { fetchAddressFromCoords } from '../../utils/googleMapsHelper';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
+import { WEATHER_TONE } from '../../utils/weatherApi';
 import { TimelineItemPlaceInput } from './TimelineItemPlaceInput';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import {
@@ -105,7 +106,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                   <button
                     type="button"
                     onClick={() => handleWeatherChange(date, 'sunny', weatherInfo?.temp || '')}
-                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-yellow-400 text-black' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                     title="Sunny (해)"
                   >
                     <Sun className="w-4 h-4" />
@@ -141,7 +142,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                   <button
                     type="button"
                     onClick={() => handleWeatherChange(date, 'snowy', weatherInfo?.temp || '')}
-                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-blue-300 text-black' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-600 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                     title="Snowy (눈)"
                   >
                     <Snowflake className="w-4 h-4" />
@@ -150,7 +151,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                   <button
                     type="button"
                     onClick={() => handleWeatherChange(date, 'stormy', weatherInfo?.temp || '')}
-                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-violet-600 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                     title="Stormy (태풍)"
                   >
                     <CloudLightning className="w-4 h-4" />
@@ -214,12 +215,12 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
               ) : (
                 weatherInfo && (weatherInfo.type || weatherInfo.temp) && (
                   <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-black/85 dark:text-white/85 normal-case ml-2">
-                    {weatherInfo.type === 'sunny' && <Sun className="w-4 h-4 text-amber-500 shrink-0" />}
-                    {weatherInfo.type === 'overcast' && <Cloudy className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />}
-                    {weatherInfo.type === 'cloudy' && <Cloud className="w-4 h-4 text-neutral-500 dark:text-neutral-400 shrink-0" />}
-                    {weatherInfo.type === 'rainy' && <CloudRain className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />}
-                    {weatherInfo.type === 'snowy' && <Snowflake className="w-4 h-4 text-blue-300 shrink-0" />}
-                    {weatherInfo.type === 'stormy' && <CloudLightning className="w-4 h-4 text-red-500 shrink-0" />}
+                    {weatherInfo.type === 'sunny' && <Sun className={`w-4 h-4 shrink-0 ${WEATHER_TONE.sun}`} />}
+                    {weatherInfo.type === 'overcast' && <Cloudy className={`w-4 h-4 shrink-0 ${WEATHER_TONE.cloud}`} />}
+                    {weatherInfo.type === 'cloudy' && <Cloud className={`w-4 h-4 shrink-0 ${WEATHER_TONE.cloud}`} />}
+                    {weatherInfo.type === 'rainy' && <CloudRain className={`w-4 h-4 shrink-0 ${WEATHER_TONE.rain}`} />}
+                    {weatherInfo.type === 'snowy' && <Snowflake className={`w-4 h-4 shrink-0 ${WEATHER_TONE.snow}`} />}
+                    {weatherInfo.type === 'stormy' && <CloudLightning className={`w-4 h-4 shrink-0 ${WEATHER_TONE.storm}`} />}
                     {weatherInfo.temp && <span className="text-black/80 dark:text-white/80">{weatherInfo.temp}</span>}
                   </div>
                 )

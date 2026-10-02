@@ -423,9 +423,10 @@ function ScrapForm({ scrapedData, editing, onSave, dirtyRef, viewing, setViewing
 
         <div className="flex flex-col gap-1.5">
           <span className={labelClass}>분류</span>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="분류">
+          {/* One line at every width: compact chips (the label names the category, so a phone narrower than 390px drops the icons) */}
+          <div className="flex gap-1 overflow-x-auto hide-scrollbar" role="group" aria-label="분류">
             {CATEGORY_FORM_ORDER.map(key => (
-              <Chip key={key} icon={CATEGORY_META[key].icon} selected={category === key} onClick={() => setCategory(key)}>{CATEGORY_META[key].label}</Chip>
+              <Chip key={key} size="sm" className="!flex-1 justify-center !px-2 !gap-1 [&_svg]:!w-3 [&_svg]:!h-3 max-[389px]:[&_svg]:hidden" icon={CATEGORY_META[key].icon} selected={category === key} onClick={() => setCategory(key)}>{CATEGORY_META[key].label}</Chip>
             ))}
           </div>
         </div>

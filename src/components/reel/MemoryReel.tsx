@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useBackToClose } from '../../utils/overlayHistory';
 import { Maximize2, Minimize2, SkipForward, SlidersHorizontal, Volume2, VolumeX } from 'lucide-react';
 import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from '../player/PlayerDock';
-import { getStoredBgmAutoplay, getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval, saveStoredBgmDefaultVolume, saveStoredSlideshowInterval } from '../../utils/audioHelper';
+import { getBgmOff, getStoredBgmAutoplay, getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval, saveStoredBgmAutoplay, saveStoredBgmDefaultVolume, saveStoredSlideshowInterval } from '../../utils/audioHelper';
+import { saveUserPref } from '../../utils/userPrefs';
 import { prefersReducedMotion } from '../../motion';
-import { VolumeGauge } from './VolumeGauge';
+import { VolumeGauge, VolumeSlider } from './VolumeGauge';
 import { lockBodyScroll } from '../../utils/scrollLock';
 
 // Memory Reel (v1.3): a full-screen photo film with music.
@@ -16,6 +17,8 @@ import { lockBodyScroll } from '../../utils/scrollLock';
 //  - v1.3.7: the photo viewer's controls live here too, in one options panel (volume, pace,
 //    next track, captions on / off) with keys ← → (shots), ↑ ↓ (volume), Space (play),
 //    M (sound), F (fit), I (captions), N (next track)
+//  - sound: the speaker button is one tap on / off (the same switch as Settings → Slideshow → music, so the two
+//    never disagree); volume is a slider beside it on wider screens and a gauge that rises over it on a phone
 
 export interface ReelShot {
   src: string;
@@ -48,9 +51,8 @@ function readFit(): ShotFit {
   try { return localStorage.getItem(FIT_KEY) === 'fill' ? 'fill' : 'fit'; } catch { return 'fit'; }
 }
 
-/** The tracks this member lets play (none when slideshow music is off) */
+/** The tracks this member lets play. Whether the sound is on is a separate switch (`muted`) */
 function playableTracks(): string[] {
-  if (!getStoredBgmAutoplay()) return [];
   return getStoredBgmTracks().filter(t => t.enabled && t.url).map(t => t.url);
 }
 
@@ -73,7 +75,11 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   }, [onCloseNow]);
   const [index, setIndex] = useState(() => Math.max(0, Math.min(shots.length - 1, startIndex)));
   const [playing, setPlaying] = useState(!startPaused);
-  const [muted, setMuted] = useState(false);
+  // Sound is the member's own on / off (Settings → Slideshow). Off at the start loads no music until it is switched on.
+  const [muted, setMuted] = useState(() => !getStoredBgmAutoplay());
+  const [armed, setArmed] = useState(() => getStoredBgmAutoplay());
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
   const [ended, setEnded] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true);
   const [fit, setFit] = useState<ShotFit>(() => (startPaused ? 'fit' : readFit()));
@@ -113,13 +119,34 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   }, []);
   useEffect(() => () => { if (gaugeTimer.current) window.clearTimeout(gaugeTimer.current); }, []);
 
+  // Sound on / off: remembered on this device and in the account, the same switch Settings shows
+  const setSound = useCallback((on: boolean) => {
+    setMuted(!on);
+    if (on) setArmed(true);
+    saveStoredBgmAutoplay(on);
+    saveUserPref({ bgm: { autoplay: on, shuffle: getStoredBgmShuffle(), volume: getStoredBgmDefaultVolume(), off: getBgmOff() } });
+  }, []);
+  const toggleSound = useCallback(() => {
+    const on = mutedRef.current;
+    setSound(on);
+    flash(on ? '소리 켬' : '소리 끔');
+    keepGauge();
+  }, [setSound, flash, keepGauge]);
+
+  const volumeSaveTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (volumeSaveTimer.current) window.clearTimeout(volumeSaveTimer.current); }, []);
   const changeVolume = useCallback((next: number) => {
     const v = Math.max(0, Math.min(100, Math.round(next)));
     setVolume(v);
-    setMuted(false);
+    if (mutedRef.current && v > 0) setSound(true);
     saveStoredBgmDefaultVolume(v);
+    // The account copy follows once the hand stops moving
+    if (volumeSaveTimer.current) window.clearTimeout(volumeSaveTimer.current);
+    volumeSaveTimer.current = window.setTimeout(() => {
+      saveUserPref({ bgm: { autoplay: !mutedRef.current, shuffle: getStoredBgmShuffle(), volume: v, off: getBgmOff() } });
+    }, 500);
     keepGauge();
-  }, [keepGauge]);
+  }, [keepGauge, setSound]);
 
   const toggleFit = useCallback(() => {
     setFit(f => {
@@ -171,10 +198,11 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   // Music
   useEffect(() => {
     const url = trackUrl;
-    if (!url) return;
+    if (!url || !armed) return;
     const audio = new Audio(url);
     audio.loop = true;
     audio.volume = getStoredBgmDefaultVolume() / 100;
+    audio.muted = mutedRef.current;
     audioRef.current = audio;
 
     if (isSameOrigin(url) && !reduced) {
@@ -199,7 +227,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       audioRef.current = null;
       analyserRef.current = null;
     };
-  }, [reduced, trackUrl]);
+  }, [reduced, trackUrl, armed]);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume / 100;
@@ -221,7 +249,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
     let avg = 0;
     const tick = () => {
       const elapsed = performance.now() - shotStartRef.current;
-      const analyser = analyserRef.current;
+      const analyser = mutedRef.current ? null : analyserRef.current;
       if (analyser) {
         analyser.getByteFrequencyData(bins);
         let low = 0;
@@ -256,7 +284,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       else if (e.key === 'ArrowLeft') goBack();
       else if (e.key === 'ArrowUp') { e.preventDefault(); changeVolume(volumeRef.current + 10); }
       else if (e.key === 'ArrowDown') { e.preventDefault(); changeVolume(volumeRef.current - 10); }
-      else if (e.key === 'm' || e.key === 'M') { setMuted(m => !m); keepGauge(); }
+      else if (e.key === 'm' || e.key === 'M') toggleSound();
       else if (e.key === 'f' || e.key === 'F') toggleFit();
       else if (e.key === 'i' || e.key === 'I') setCaptions(c => { flash(c ? '사진 정보 숨김' : '사진 정보 표시'); return !c; });
       else if (e.key === 'n' || e.key === 'N') { nextTrack(); flash('다음 곡'); }
@@ -267,7 +295,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       window.removeEventListener('keydown', onKey, true);
       unlock();
     };
-  }, [advance, goBack, onClose, changeVolume, flash, toggleFit, nextTrack, keepGauge]);
+  }, [advance, goBack, onClose, changeVolume, flash, toggleFit, nextTrack, toggleSound]);
 
   // Controls fade out while watching
   useEffect(() => {
@@ -285,7 +313,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
   };
 
   const shot = shots[index];
-  const shotDuration = analyserRef.current ? maxShot : interval;
+  const shotDuration = analyserRef.current && !muted ? maxShot : interval;
   const places = new Set(shots.map(s => s.location || s.place).filter(Boolean)).size;
 
   return (
@@ -422,21 +450,27 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
           ) : undefined}
           leading={
             <>
-              <div className="relative">
-                {gaugeOpen && (
-                  <VolumeGauge
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3"
-                    value={volume}
-                    muted={muted}
-                    onChange={changeVolume}
-                    onToggleMute={() => setMuted(m => !m)}
-                    onActivity={keepGauge}
-                  />
-                )}
-                <DockButton label="음량" active={gaugeOpen} aria-expanded={gaugeOpen} onClick={() => { if (gaugeOpen) hideGauge(); else { setVolumePanel(false); keepGauge(); } }}>
-                  {muted || volume === 0 ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
-                </DockButton>
-              </div>
+              {tracks.length > 0 && (
+                <div
+                  className="relative flex items-center"
+                  onWheel={(e) => changeVolume(volumeRef.current + (e.deltaY < 0 ? 5 : -5))}
+                >
+                  {gaugeOpen && (
+                    <VolumeGauge
+                      className="sm:hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-3"
+                      value={volume}
+                      muted={muted}
+                      onChange={changeVolume}
+                      onToggleMute={toggleSound}
+                      onActivity={keepGauge}
+                    />
+                  )}
+                  <DockButton label={muted ? '소리 켜기 (M)' : '소리 끄기 (M)'} aria-pressed={!muted} onClick={toggleSound}>
+                    {muted || volume === 0 ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
+                  </DockButton>
+                  <VolumeSlider className="hidden sm:flex" value={volume} muted={muted} onChange={changeVolume} />
+                </div>
+              )}
               <DockButton label="옵션" onClick={() => { hideGauge(); setVolumePanel(v => !v); }}>
                 <SlidersHorizontal className={`w-5 h-5 ${volumePanel ? 'text-red-400' : ''}`} />
               </DockButton>

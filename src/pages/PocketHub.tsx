@@ -1194,12 +1194,12 @@ export function PocketHubPage({
               )}
 
               {/* CATEGORY */}
-              <div className="flex items-start gap-2.5 flex-wrap">
-                <span className="text-meta font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">CATEGORY</span>
-                <div className="flex flex-wrap gap-1.5 flex-1">
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-2.5">
+                <span className="text-meta font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase sm:pt-1 shrink-0 sm:w-20">CATEGORY</span>
+                <div className="flex gap-1.5 sm:flex-1 min-w-0 overflow-x-auto hide-scrollbar max-[389px]:[&_svg]:hidden">
                   <button
                     onClick={() => setSelectedCategory('ALL')}
-                    className={`rounded-full h-8 px-3 text-meta font-bold border transition-colors cursor-pointer ${
+                    className={`rounded-full h-8 px-3 text-meta font-bold border transition-colors cursor-pointer shrink-0 ${
                       selectedCategory === 'ALL'
                         ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                         : 'border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black dark:text-white'
@@ -1213,7 +1213,7 @@ export function PocketHubPage({
                       <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
-                        className={`rounded-full h-8 px-3 text-meta font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                        className={`rounded-full h-8 px-3 text-meta font-bold border transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${
                           isSelected
                             ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-transparent'
                             : 'border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-black dark:text-white'

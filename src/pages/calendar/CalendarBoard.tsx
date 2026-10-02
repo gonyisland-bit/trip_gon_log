@@ -94,14 +94,6 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
               </div>
             )}
 
-            {/* Weather mode: which days are a forecast and which are the usual weather of the season */}
-            {isWeatherMode && (
-              <div className="flex items-center justify-end gap-4 pb-2 text-meta font-bold text-black/60 dark:text-white/60 select-none" aria-label="범례">
-                <span className="inline-flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded-full bg-black/10 dark:bg-white/20" aria-hidden />예보</span>
-                <span className="inline-flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded-full border border-dashed border-black/50 dark:border-white/55" aria-hidden />평년값</span>
-              </div>
-            )}
-
             {/* Weekday Header Row: SUN MON TUE WED THU FRI SAT */}
             <div className="grid grid-cols-7 border-b border-black/15 dark:border-white/15 pb-2.5 sm:pb-3 text-center text-xs sm:text-sm font-extrabold tracking-widest font-mono select-none">
               {WEEKDAYS.map((day, idx) => {
@@ -170,7 +162,6 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                 // 날씨 모드: 확대/오프셋 링은 온도 텍스트와 이웃 셀을 침범하므로 안쪽 링만 사용
                 const weatherCell = isWeatherMode && cell.isCurrentMonth;
                 const wx = weatherCell ? weatherForDate(cell.dateStr) : null;
-                const usualOnly = !!wx?.weather && !wx.isForecast;
 
                 if (!cell.isCurrentMonth) {
                   circleClasses += ' opacity-20 text-black/60 dark:text-white/60 hover:opacity-40';
@@ -209,9 +200,6 @@ export function CalendarBoard({ s }: { s: CalendarHubState }) {
                     textClasses += ' text-black/80 dark:text-white/80';
                   }
                 }
-
-                // Days that only carry the usual weather of the season get a dashed edge (the legend says so), not a faded icon
-                if (usualOnly && !cell.isToday && !hasTrip) circleClasses += ' border border-dashed border-black/30 dark:border-white/40';
 
                 const ribbonColor = isPlan ? 'bg-amber-500' : 'bg-[#FF4500] dark:bg-[#FF4500]';
 

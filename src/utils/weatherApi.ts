@@ -5,6 +5,7 @@ import {
   CloudRain, 
   Snowflake, 
   CloudLightning, 
+  CloudFog,
   Wind,
   LucideIcon
 } from 'lucide-react';
@@ -27,13 +28,20 @@ export function cleanCityDisplayName(name: string): string {
   return cleaned || name;
 }
 
-// Weather colours (spec 4.2): sunshine is orange, rain and snow are blue, a storm is the caution amber, and cloud,
-// fog and wind are the neutral ink. Each is dark enough for 3:1 on the soft grey day cells (light) and bright enough on
-// the dark ones; the icon's shape tells snow from rain and fog from wind.
-const SUN = 'text-orange-700 dark:text-orange-400';
-const WET = 'text-blue-600 dark:text-blue-400';
-const STORM = 'text-amber-700 dark:text-amber-400';
-const GREY = 'text-zinc-600 dark:text-zinc-300';
+// Weather colours (spec 4.2): each kind has the colour people expect, so it reads before the shape does. Strokes are dark
+// enough for 3:1 on the soft grey day cells (light) and bright enough on the dark ones; closed shapes (sun, clouds, bolt)
+// also carry a soft fill of the same hue, which is what keeps a yellow sun visible on a light ground.
+//   sun: yellow · mostly sunny: pale yellow · cloud: grey · fog: blue-grey · rain: blue · snow: sky blue · storm: violet
+export const WEATHER_TONE = {
+  sun: 'text-yellow-700 fill-yellow-300 dark:text-yellow-400 dark:fill-yellow-400/25',
+  partly: 'text-[#8a7a2b] fill-yellow-100 dark:text-yellow-200 dark:fill-yellow-200/20',
+  cloud: 'text-zinc-500 fill-zinc-300 dark:text-zinc-300 dark:fill-zinc-300/20',
+  fog: 'text-slate-500 fill-slate-200 dark:text-slate-300 dark:fill-slate-300/20',
+  rain: 'text-blue-600 fill-blue-200 dark:text-blue-400 dark:fill-blue-400/25',
+  snow: 'text-[#0281c0] dark:text-sky-300',
+  storm: 'text-violet-600 fill-violet-200 dark:text-violet-400 dark:fill-violet-400/25',
+  wind: 'text-zinc-600 dark:text-zinc-300',
+} as const;
 
 export function getWeatherMeta(code: number, precipitationProb?: number, temp?: number): WeatherMeta {
   let effectiveCode = code;
@@ -61,21 +69,21 @@ export function getWeatherMeta(code: number, precipitationProb?: number, temp?: 
   }
 
   if (effectiveCode === 0) {
-    return { label: 'CLEAR', labelKo: '맑음', icon: Sun, colorClass: SUN };
+    return { label: 'CLEAR', labelKo: '맑음', icon: Sun, colorClass: WEATHER_TONE.sun };
   } else if (effectiveCode === 1 || effectiveCode === 2) {
-    return { label: 'FAIR', labelKo: '대체로 맑음', icon: CloudSun, colorClass: SUN };
+    return { label: 'FAIR', labelKo: '대체로 맑음', icon: CloudSun, colorClass: WEATHER_TONE.partly };
   } else if (effectiveCode === 3) {
-    return { label: 'OVERCAST', labelKo: '흐림', icon: Cloud, colorClass: GREY };
+    return { label: 'OVERCAST', labelKo: '흐림', icon: Cloud, colorClass: WEATHER_TONE.cloud };
   } else if (effectiveCode === 45 || effectiveCode === 48) {
-    return { label: 'FOGGY', labelKo: '안개', icon: Cloud, colorClass: GREY };
+    return { label: 'FOGGY', labelKo: '안개', icon: CloudFog, colorClass: WEATHER_TONE.fog };
   } else if ((effectiveCode >= 71 && effectiveCode <= 77) || (effectiveCode >= 85 && effectiveCode <= 86)) {
-    return { label: 'SNOW', labelKo: '눈', icon: Snowflake, colorClass: WET };
+    return { label: 'SNOW', labelKo: '눈', icon: Snowflake, colorClass: WEATHER_TONE.snow };
   } else if ((effectiveCode >= 51 && effectiveCode <= 67) || (effectiveCode >= 80 && effectiveCode <= 82)) {
-    return { label: 'RAIN', labelKo: '비', icon: CloudRain, colorClass: WET };
+    return { label: 'RAIN', labelKo: '비', icon: CloudRain, colorClass: WEATHER_TONE.rain };
   } else if (effectiveCode >= 95) {
-    return { label: 'STORM', labelKo: '뇌우', icon: CloudLightning, colorClass: STORM };
+    return { label: 'STORM', labelKo: '뇌우', icon: CloudLightning, colorClass: WEATHER_TONE.storm };
   }
-  return { label: 'BREEZE', labelKo: '바람', icon: Wind, colorClass: GREY };
+  return { label: 'BREEZE', labelKo: '바람', icon: Wind, colorClass: WEATHER_TONE.wind };
 }
 
 // ============================================================================
