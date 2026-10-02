@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { lockBodyScroll } from '../utils/scrollLock';
 import { LogOut, Sun, Moon, Search, X, SlidersHorizontal, Play, Clock, Ticket, Settings } from 'lucide-react';
 import { OPEN_PROFILE_EDIT } from '../app/quickActions';
 import { auth, db } from '../firebase';
@@ -147,9 +148,7 @@ export function Navigation({
   // The page underneath stays put while the menu is open
   useEffect(() => {
     if (!showSettings) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    return lockBodyScroll();
   }, [showSettings]);
 
   // Close menu on Escape key

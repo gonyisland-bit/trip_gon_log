@@ -8,13 +8,14 @@ import { ArchiveHubPage } from './pages/Archive';
 import { ScrollToTop } from './components/ScrollToTop';
 import { OPEN_DEPARTURE_EVENT, OPEN_WALLET_EVENT, POCKET_OPEN_SCRAP_EVENT, POCKET_OPEN_SCRAP_FLAG, openBookingWallet, openDepartureBoard } from './app/quickActions';
 import { TabBar } from './components/TabBar';
+import { DrawerHost } from './components/DrawerHost';
+import { isDrawerView, useIsPhone } from './app/drawerViews';
 import { useJourneyThumbs } from './app/useJourneyThumbs';
 import { TOGGLE_PALETTE_EVENT, OPEN_REMIX_EVENT, openRemix } from './app/layerEvents';
 import { getSavedPockets } from './utils/pocketStorage';
 import { LayerBoundary } from './components/LayerBoundary';
 import { watchFullScreenOverlays } from './app/overlayWatcher';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
-import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
 import { FeedbackHost } from './components/FeedbackHost';
 import { NoticeBanner } from './components/NoticeBanner';
@@ -97,10 +98,10 @@ function App() {
     currentUserProfile, setCurrentUserProfile, isSearchOpen, setIsSearchOpen, searchFocusItemId,
     setSearchFocusItemId, searchFocusTab, setSearchFocusTab, setIsDetailEditing, setIsManageDirty,
     showSaveCompleteModal, showUnsavedModal, journeyDeleteConfirm, setJourneyDeleteConfirm,
-    detailSaveRef, manageSaveRef, isNavigating, flightTransition, handleCloseSaveCompleteModal,
+    detailSaveRef, manageSaveRef, isNavigating, handleCloseSaveCompleteModal,
     handleSaveAndNavigate, handleDiscardAndNavigate, handleCancelUnsavedModal, isSuperAdmin, isAdmin,
     canEditTrip, canDeleteTrip, activeTrip, displayMarqueeText, marqueeTrips, navigateTo,
-    handleFlightHalfway, handleFlightComplete, handleSearchResultClick, handleMoveToArchive,
+    handleSearchResultClick, handleMoveToArchive,
     handleMoveToPlans, handleCloneJourney, handleSaveSettings, saveHeroPrefs, handleSaveMagazineMoments,
     handleSaveMagazineHubConfig, handleSaveArchiveHubConfig, handleSaveMagazineSections,
     handleUpdateMagazineSections, handleSaveBgmSettings, handleEditTripSave,
@@ -206,6 +207,190 @@ function App() {
     navigateTo('pocket');
   };
 
+
+  // Phones: the tab bar's hubs and the terminal are drawers over home (components/DrawerHost). The page under a
+  // drawer is home, so closing one lands on it as it was
+  const isPhone = useIsPhone();
+  const drawerView = isLoggedIn && isPhone && isDrawerView(currentView) ? currentView : null;
+  const baseView = drawerView ? 'home' : currentView;
+  const activeDrawer = isLoggedIn ? (isDepartureOpen ? 'terminal' : drawerView) : null;
+  // The grip, the backdrop and the open drawer's own tab all close it: the terminal alone, or a hub back to home
+  const closeDrawer = () => {
+    if (isDepartureOpen) setIsDepartureOpen(false);
+    else navigateTo('home');
+  };
+  // A tab: its drawer opens; the open one's tab closes it
+  const onTab = (view: string) => {
+    if (isDepartureOpen) {
+      // Navigate first: the terminal's history entry is handed to the new page, then the terminal goes
+      if (currentView === view) { setIsDepartureOpen(false); return; }
+      navigateTo(view);
+      setIsDepartureOpen(false);
+      return;
+    }
+    if (currentView === view && isDrawerView(view)) { navigateTo('home'); return; }
+    navigateTo(view);
+  };
+  const onTerminalTab = () => {
+    if (isDepartureOpen) { setIsDepartureOpen(false); return; }
+    // Over home, not over another drawer: the drawers are one family
+    if (isDrawerView(currentView)) navigateTo('home');
+    setDepartureTicketId(undefined);
+    setDepartureTab('counter');
+    setIsDepartureOpen(true);
+  };
+  const drawerLoading = (
+    <div className="h-full min-h-[40vh] flex items-center justify-center">
+      <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin" />
+    </div>
+  );
+  const terminalEl = isDepartureOpen ? (
+    <LayerBoundary name="공항 터미널" onClose={() => setIsDepartureOpen(false)}>
+    <Suspense fallback={null}>
+      <DepartureBoard
+        onClose={() => setIsDepartureOpen(false)}
+        initialTicketId={departureTicketId}
+        initialTab={departureTab}
+        trips={trips}
+        plans={plans}
+        flightsByTrip={flightsByTrip}
+        staysByTrip={staysByTrip}
+        transitByTrip={transitByTrip}
+        onOpenBooking={(tripId, tab, itemId) => { setIsDepartureOpen(false); handleSearchResultClick(tripId, tab, itemId); }}
+        onBoard={async (t) => {
+          const p = t.plan!;
+          await handleCreateJourney(p.title, p.dateRange, p.location, p.tags, p.lat, p.lng, p.members, p.locations, 'NEW', p.country, p.coverImg, p.timeline, 'plan');
+        }}
+        covered={!!newTripPrefill}
+        onPlan={(t) => {
+          // The sheet opens over the terminal, which stays where it is
+          if (!isLoggedIn) return;
+          if (!t) {
+            // A new ticket starts filled in: a Saturday two weeks out, three nights, the latest city
+            void import('./components/departure/departureData').then(({ newTicketPrefill }) => {
+              const latest = [...trips, ...plans].sort((x, y) => y.id - x.id)[0];
+              const fallbackCity = (latest?.locations?.[0]?.name || latest?.locationStr || '').split(',')[0].trim();
+              setNewTripPrefill(newTicketPrefill(fallbackCity));
+            });
+            return;
+          }
+          setNewTripPrefill({
+            country: t.countryEn,
+            city: t.cityEn,
+            cities: t.cities?.map(c => c.en),
+            date: t.startDate ?? departureDate(t.year, t.month),
+            members: t.members,
+            nights: t.nights,
+            replaceTicketId: t.id,
+          });
+        }}
+        isDarkMode={isDarkMode}
+        weatherCode={ambienceOverride?.weatherCode ?? globalWeatherData?.weatherCode}
+        weatherCityName={globalWeatherCity?.name}
+        weatherCityEn={globalWeatherCity?.nameEn}
+        weatherTemp={globalWeatherData?.temp}
+        precipitationProb={ambienceOverride?.precipitationProb ?? (globalWeatherData?.forecast?.[0]?.precipitationProb ?? 0)}
+      />
+    </Suspense>
+    </LayerBoundary>
+  ) : null;
+
+  // The tab bar's hubs: a page on the web, a drawer over home on phones (same element either way)
+  const archiveEl = (
+    <ArchiveHubPage 
+          trips={trips} 
+          plans={plans} 
+          onNavigate={navigateTo} 
+          onAddArchive={() => handleCreateTripForCountry('')}
+          dataReady={tripsLoaded && plansLoaded}
+          isLoggedIn={isLoggedIn}
+          onDeleteTrip={handleDeleteJourney}
+          onEditTrip={(id) => setEditingTripId(id)}
+          onCloneTrip={openRemix}
+          onMoveToPlans={handleMoveToPlans}
+          onMoveToArchive={handleMoveToArchive}
+          onReorderTrips={async (orderedIds) => {
+            if (!isLoggedIn) return;
+            const batch = writeBatch(db);
+            orderedIds.forEach((id, idx) => {
+              batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
+            });
+            await batch.commit();
+          }}
+          initialTagFilter={selectedTagFilter}
+          hubConfig={archiveHubConfig}
+        />
+  );
+  const mapEl = (
+    <MapHubPage
+          trips={trips}
+          plans={plans}
+          onNavigate={navigateTo}
+          onCreateTripForCountry={handleCreateTripForCountry}
+          isDarkMode={isDarkMode}
+          isAdmin={isAdmin}
+          onStartNewTrip={(country, cities) => {
+            if (!isLoggedIn) { notify('로그인 후 이용 가능합니다.'); return; }
+            setNewTripPrefill({ country: country || undefined, city: cities[0], cities });
+          }}
+          currentUserProfile={currentUserProfile}
+        />
+  );
+  const calendarEl = (
+    <CalendarHubPage
+          trips={trips}
+          plans={plans}
+          timelineData={timelineData}
+          onNavigate={navigateTo}
+          onCreateTrip={(dateStr) => handleCreateTripForCountry('', '', dateStr)}
+          isDarkMode={isDarkMode}
+        />
+  );
+  const pocketEl = (
+    <PocketHubPage
+          trips={trips}
+          plans={plans}
+          onNavigate={navigateTo}
+          onCreateTripWithPockets={(selectedPockets) => {
+            const firstCountry = selectedPockets.find(p => p.country)?.country || '';
+            const firstCity = selectedPockets.find(p => p.city)?.city || '';
+            handleCreateTripForCountry(firstCountry, firstCity, undefined, selectedPockets.map(p => p.id));
+          }}
+          onAddTimelineItemToTrip={async (tripId, newItem) => {
+            const date = newItem.date || '2025.04.12';
+            setTimelineData(prev => {
+              const updated = { ...prev };
+              if (!updated[date]) updated[date] = [];
+              updated[date] = [...updated[date], newItem];
+              return updated;
+            });
+
+            // Persist to Firestore
+            try {
+              const uid = 'public';
+              const { originDate: _, ...cleanItem } = newItem as any;
+              await setDoc(doc(db, 'users', uid, 'timeline', String(newItem.id)), cleanForFirestore({ ...cleanItem, tripId }));
+            } catch (e) {
+              console.warn('Failed to persist timeline item to Firestore:', e);
+            }
+
+            // Local storage fallback
+            try {
+              const raw = localStorage.getItem('timeline_data') || '{}';
+              const parsed = JSON.parse(raw);
+              if (!parsed[date]) parsed[date] = [];
+              parsed[date].push(newItem);
+              localStorage.setItem('timeline_data', JSON.stringify(parsed));
+            } catch (_) {}
+          }}
+          isLoggedIn={isLoggedIn}
+          isAdmin={isAdmin}
+          isDarkMode={isDarkMode}
+          currentUserProfile={currentUserProfile}
+          onOpenAuthModal={() => { setAuthModalMode('login'); setIsAuthModalOpen(true); }}
+        />
+  );
+
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-clip w-full`}>
       {/* Toasts (notify) and confirm dialogs (confirmDialog) */}
@@ -216,21 +401,12 @@ function App() {
         <SplashScreen onFinish={handleFinishSplash} />
       )}
 
-      {/* Seamless Top Progress Indicator during route transitions (hidden during flight sweep) */}
-      <TopProgressBar isNavigating={isNavigating && !flightTransition.isActive} />
-
-      {/* Fullscreen Airplane Vector Transition Overlay */}
-      <FlightTransitionOverlay
-        isActive={flightTransition.isActive}
-        onHalfway={handleFlightHalfway}
-        onComplete={handleFlightComplete}
-        isDarkMode={isDarkMode}
-        destinationTitle={flightTransition.destinationTitle}
-      />
+      {/* Seamless Top Progress Indicator during route transitions */}
+      <TopProgressBar isNavigating={isNavigating} />
 
       <div 
         style={appGradientStyle}
-        className={`relative min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-paper dark:bg-paper-dark'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-clip flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen supports-[height:100dvh]:h-dvh overflow-hidden overscroll-none' : ''}`}
+        className={`relative min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-paper dark:bg-paper-dark'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-clip flex flex-col ${(baseView === 'detail' || baseView === 'map') ? 'h-screen supports-[height:100dvh]:h-dvh overflow-hidden overscroll-none' : ''}`}
       >
         {/* Global Live Weather Background Ambience Layer (Home, Trip, Magazine, Pocket, Calendar, Detail) */}
         {isLoggedIn && isGlobalWeatherBgEnabled && globalWeatherData && currentView !== 'map' && (
@@ -286,7 +462,7 @@ function App() {
         )}
 
         {/* Marquee Banner - Only on Home View when logged in (Swiss Minimal Journal Ticker) */}
-        {currentView === 'home' && isLoggedIn && marqueeShow && (
+        {baseView === 'home' && isLoggedIn && marqueeShow && (
           <div className="w-full bg-black/[0.025] dark:bg-white/[0.035] border-y border-black/10 dark:border-white/10 backdrop-blur-xs py-1.5 overflow-hidden flex items-center shrink-0 transition-colors duration-300 select-none text-black dark:text-white">
             <div 
               className="animate-marquee hover:[animation-play-state:paused] text-xs sm:text-[12.5px] font-mono font-bold tracking-wider uppercase flex items-center" 
@@ -340,7 +516,7 @@ function App() {
         )}
 
         {/* View Routing */}
-        <div className={`w-full flex-grow ${(currentView === 'detail' || currentView === 'map') ? 'overflow-hidden flex flex-col h-full flex-1 min-h-0' : ''}`}>
+        <div className={`w-full flex-grow ${(baseView === 'detail' || baseView === 'map') ? 'overflow-hidden flex flex-col h-full flex-1 min-h-0' : ''}`}>
           {!isAuthReady ? (
             <div className="min-h-[60vh] md:min-h-[70vh] flex flex-col items-center justify-center p-8 bg-transparent text-center w-full">
               <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin" />
@@ -367,7 +543,7 @@ function App() {
                 </div>
               )
             }>
-              {currentView === 'home' && (
+              {baseView === 'home' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
                   <HomePage 
                     onNavigate={navigateTo} 
@@ -424,48 +600,14 @@ function App() {
                   />
                 </div>
               )}
-              {currentView === 'archive' && (
+              {baseView === 'archive' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
-                  <ArchiveHubPage 
-                    trips={trips} 
-                    plans={plans} 
-                    onNavigate={navigateTo} 
-                    onAddArchive={() => handleCreateTripForCountry('')}
-                    dataReady={tripsLoaded && plansLoaded}
-                    isLoggedIn={isLoggedIn}
-                    onDeleteTrip={handleDeleteJourney}
-                    onEditTrip={(id) => setEditingTripId(id)}
-                    onCloneTrip={openRemix}
-                    onMoveToPlans={handleMoveToPlans}
-                    onMoveToArchive={handleMoveToArchive}
-                    onReorderTrips={async (orderedIds) => {
-                      if (!isLoggedIn) return;
-                      const batch = writeBatch(db);
-                      orderedIds.forEach((id, idx) => {
-                        batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
-                      });
-                      await batch.commit();
-                    }}
-                    initialTagFilter={selectedTagFilter}
-                    hubConfig={archiveHubConfig}
-                  />
+                  {archiveEl}
                 </div>
               )}
-              {currentView === 'map' && (
+              {baseView === 'map' && (
                 <div className="w-full h-full flex flex-col flex-1 min-h-0 animate-in fade-in duration-300">
-                  <MapHubPage
-                    trips={trips}
-                    plans={plans}
-                    onNavigate={navigateTo}
-                    onCreateTripForCountry={handleCreateTripForCountry}
-                    isDarkMode={isDarkMode}
-                    isAdmin={isAdmin}
-                    onStartNewTrip={(country, cities) => {
-                      if (!isLoggedIn) { notify('로그인 후 이용 가능합니다.'); return; }
-                      setNewTripPrefill({ country: country || undefined, city: cities[0], cities });
-                    }}
-                    currentUserProfile={currentUserProfile}
-                  />
+                  {mapEl}
                 </div>
               )}
               {currentView === 'manage' && (
@@ -543,62 +685,14 @@ function App() {
                   />
                 </div>
               )}
-              {currentView === 'calendar' && (
+              {baseView === 'calendar' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
-                  <CalendarHubPage
-                    trips={trips}
-                    plans={plans}
-                    timelineData={timelineData}
-                    onNavigate={navigateTo}
-                    onCreateTrip={(dateStr) => handleCreateTripForCountry('', '', dateStr)}
-                    isDarkMode={isDarkMode}
-                  />
+                  {calendarEl}
                 </div>
               )}
-              {currentView === 'pocket' && (
+              {baseView === 'pocket' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
-                  <PocketHubPage
-                    trips={trips}
-                    plans={plans}
-                    onNavigate={navigateTo}
-                    onCreateTripWithPockets={(selectedPockets) => {
-                      const firstCountry = selectedPockets.find(p => p.country)?.country || '';
-                      const firstCity = selectedPockets.find(p => p.city)?.city || '';
-                      handleCreateTripForCountry(firstCountry, firstCity, undefined, selectedPockets.map(p => p.id));
-                    }}
-                    onAddTimelineItemToTrip={async (tripId, newItem) => {
-                      const date = newItem.date || '2025.04.12';
-                      setTimelineData(prev => {
-                        const updated = { ...prev };
-                        if (!updated[date]) updated[date] = [];
-                        updated[date] = [...updated[date], newItem];
-                        return updated;
-                      });
-
-                      // Persist to Firestore
-                      try {
-                        const uid = 'public';
-                        const { originDate: _, ...cleanItem } = newItem as any;
-                        await setDoc(doc(db, 'users', uid, 'timeline', String(newItem.id)), cleanForFirestore({ ...cleanItem, tripId }));
-                      } catch (e) {
-                        console.warn('Failed to persist timeline item to Firestore:', e);
-                      }
-
-                      // Local storage fallback
-                      try {
-                        const raw = localStorage.getItem('timeline_data') || '{}';
-                        const parsed = JSON.parse(raw);
-                        if (!parsed[date]) parsed[date] = [];
-                        parsed[date].push(newItem);
-                        localStorage.setItem('timeline_data', JSON.stringify(parsed));
-                      } catch (_) {}
-                    }}
-                    isLoggedIn={isLoggedIn}
-                    isAdmin={isAdmin}
-                    isDarkMode={isDarkMode}
-                    currentUserProfile={currentUserProfile}
-                    onOpenAuthModal={() => { setAuthModalMode('login'); setIsAuthModalOpen(true); }}
-                  />
+                  {pocketEl}
                 </div>
               )}
               {currentView === 'detail' && (
@@ -650,8 +744,8 @@ function App() {
         </div>
         
         {/* Footer: Hidden on JourneyDetail, MapHub, and Guest Landing View */}
-        {(isLoggedIn || isShareMode) && currentView !== 'detail' && currentView !== 'map' && (
-          <Footer className={currentView === 'archive' ? 'mt-0' : 'mt-12'} />
+        {(isLoggedIn || isShareMode) && baseView !== 'detail' && baseView !== 'map' && (
+          <Footer className={baseView === 'archive' ? 'mt-0' : 'mt-12'} />
         )}
 
         {/* Modals with Suspense */}
@@ -841,13 +935,29 @@ function App() {
         {isLoggedIn && ['home', 'archive', 'calendar', 'pocket', 'map'].includes(currentView) && (
           <>
             {/* Room under the page so the bar never sits on its last lines (the map fills the screen instead) */}
-            {currentView !== 'map' && <div className="md:hidden shrink-0" style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }} aria-hidden />}
+            {baseView !== 'map' && <div className="md:hidden shrink-0" style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }} aria-hidden />}
             <TabBar
               currentView={currentView}
-              onNavigate={(view) => navigateTo(view)}
-              onNewTrip={() => handleCreateTripForCountry('', '')}
+              terminalOpen={isDepartureOpen}
+              onNavigate={onTab}
+              onTerminal={onTerminalTab}
             />
           </>
+        )}
+
+        {/* Drawers (v1.3.8): the tab bar's hubs and the airport terminal rise over home */}
+        {isLoggedIn && (
+          <DrawerHost
+            active={activeDrawer}
+            onClose={closeDrawer}
+            panels={{
+              archive: { label: '여정', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={drawerLoading}>{archiveEl}</Suspense> },
+              map: { label: '지도', keepAlive: true, flush: true, dragClose: false, node: <Suspense fallback={drawerLoading}>{mapEl}</Suspense> },
+              calendar: { label: '달력', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={drawerLoading}>{calendarEl}</Suspense> },
+              pocket: { label: '포켓', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={drawerLoading}>{pocketEl}</Suspense> },
+              terminal: { label: '공항 터미널', dragClose: true, node: terminalEl },
+            }}
+          />
         )}
 
 
@@ -949,54 +1059,11 @@ function App() {
         )}
 
         {/* First visit after sign-in: one hint to watch the intro */}
-        {isLoggedIn && !showSplash && !isIntroOpen && currentView === 'home' && <IntroTip />}
+        {isLoggedIn && !showSplash && !isIntroOpen && baseView === 'home' && !activeDrawer && <IntroTip />}
 
-        {/* Airport terminal: the destination picker (v1.3, renamed from Departure Board) */}
-        {isDepartureOpen && (
-          <LayerBoundary name="공항 터미널" onClose={() => setIsDepartureOpen(false)}>
-          <Suspense fallback={null}>
-            <DepartureBoard
-              onClose={() => setIsDepartureOpen(false)}
-              initialTicketId={departureTicketId}
-              initialTab={departureTab}
-              trips={trips}
-              plans={plans}
-              flightsByTrip={flightsByTrip}
-              staysByTrip={staysByTrip}
-              transitByTrip={transitByTrip}
-              onOpenBooking={(tripId, tab, itemId) => { setIsDepartureOpen(false); handleSearchResultClick(tripId, tab, itemId); }}
-              onBoard={async (t) => {
-                const p = t.plan!;
-                await handleCreateJourney(p.title, p.dateRange, p.location, p.tags, p.lat, p.lng, p.members, p.locations, 'NEW', p.country, p.coverImg, p.timeline, 'plan');
-              }}
-              covered={!!newTripPrefill}
-              onPlan={(t) => {
-                // The sheet opens over the terminal, which stays where it is
-                if (!t) { handleCreateTripForCountry(''); return; }
-                if (!isLoggedIn) return;
-                setNewTripPrefill({
-                  country: t.countryEn,
-                  city: t.cityEn,
-                  cities: t.cities?.map(c => c.en),
-                  date: t.startDate ?? departureDate(t.year, t.month),
-                  members: t.members,
-                  nights: t.nights,
-                  replaceTicketId: t.id,
-                });
-              }}
-              isDarkMode={isDarkMode}
-              weatherCode={ambienceOverride?.weatherCode ?? globalWeatherData?.weatherCode}
-              weatherCityName={globalWeatherCity?.name}
-              weatherCityEn={globalWeatherCity?.nameEn}
-              weatherTemp={globalWeatherData?.temp}
-              precipitationProb={ambienceOverride?.precipitationProb ?? (globalWeatherData?.forecast?.[0]?.precipitationProb ?? 0)}
-            />
-          </Suspense>
-          </LayerBoundary>
-        )}
 
         {/* Global Floating Scroll To Top Navigator (Hidden on Detail, Map, and Guest Landing View) */}
-        {(isLoggedIn || isShareMode) && currentView !== 'detail' && currentView !== 'map' && <ScrollToTop />}
+        {(isLoggedIn || isShareMode) && baseView !== 'detail' && baseView !== 'map' && !activeDrawer && <ScrollToTop />}
 
         {/* Swiss Minimal Night Mode 3-Tier Cycle HUD Indicator */}
         <div

@@ -4,6 +4,7 @@
 // published and on its board otherwise.
 import { saveUserPref, type UserPrefs } from './userPrefs';
 import { setDetailIntent } from './detailIntent';
+import { preloadDetailPage } from './prefetchHelper';
 
 export type JourneyOpenMode = 'board' | 'magazine';
 
@@ -52,6 +53,8 @@ export function openJourneyFromCard(
   onNavigate: (view: 'detail', id: number) => void,
 ) {
   if (getJourneyOpenMode(trip) === 'magazine') setDetailIntent('magazine');
+  // No travel animation: the journey opens at once, its page chunk already on the way
+  preloadDetailPage().catch(() => {});
   onNavigate('detail', trip.id);
 }
 

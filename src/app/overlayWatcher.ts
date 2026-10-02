@@ -17,6 +17,8 @@ function targetOpacity(el: HTMLElement, current: string): number {
 
 function covers(el: HTMLElement): boolean {
   if (el.closest(FLOATING)) return false;
+  // The hub drawers keep the tab bar in front on purpose (components/DrawerHost)
+  if (el.hasAttribute('data-drawer')) return false;
   const cs = getComputedStyle(el);
   if (cs.position !== 'fixed' || cs.display === 'none') return false;
   if (cs.pointerEvents === 'none' || targetOpacity(el, cs.opacity) < 0.05) return false;

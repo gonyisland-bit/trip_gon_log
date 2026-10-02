@@ -6,6 +6,7 @@ import {
   MessageSquare, Send, Check, ZoomIn, ChevronDown, Users } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, PocketComment, UserProfile } from '../types';
 import { confirmDialog } from '../utils/feedback';
+import { lockBodyScroll } from '../utils/scrollLock';
 
 interface PocketDetailModalProps {
   isOpen: boolean;
@@ -61,14 +62,8 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
 
   // Lock body scroll when modal is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    if (!isOpen) return;
+    return lockBodyScroll();
   }, [isOpen]);
 
   // ESC key handler

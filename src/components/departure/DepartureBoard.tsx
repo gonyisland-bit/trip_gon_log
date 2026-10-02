@@ -25,6 +25,8 @@ import { Art } from '../../art/Art';
 // black split-flap board (destination, dates, stay, party, gate); every other ticket is kept in
 // storage, with the bookings of journeys still ahead. Raising a kept ticket rolls the board over to it.
 // Boarding creates the journey from the ticket and opens it.
+// It lives in the tab bar's centre drawer (components/DrawerHost, v1.3.8): the board, the buttons, the ticket and
+// the lobby window share the drawer's height without scrolling; the window takes what is left and gives way first.
 // Two tabs: 카운터 (the one ticket being written or just finished, shown as a boarding pass under the
 // boarding button) and 발권표 (tickets written but not at the counter, and 탑승 예정, the bookings of
 // journeys already made). A ticket opens its own sheet, which holds smart booking.
@@ -98,15 +100,12 @@ function FlapRow({ text, cells, rollKey, size = 'md', onFlip, tone = 'ink' }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rollKey, target.join('')]);
 
-  const dims = size === 'lg'
-    ? 'w-[clamp(15px,min(4.6vw,4vh),40px)] h-[clamp(24px,min(7vw,5.8vh),54px)] text-[clamp(14px,min(4vw,3.3vh),32px)] md:w-[clamp(26px,min(4vw,4.4vh),48px)] md:h-[clamp(40px,min(7vw,5.6vh),64px)] md:text-[clamp(20px,min(4vw,4vh),38px)]'
-    : 'w-[clamp(14px,min(3.4vw,2.6vh),22px)] h-[clamp(21px,min(4.8vw,3.5vh),30px)] text-[clamp(12px,min(2.7vw,2.1vh),17px)] md:h-[clamp(30px,3.8vh,38px)] md:text-[clamp(14px,2.3vh,20px)]';
   const color = tone === 'amber' ? 'text-amber-400' : tone === 'red' ? 'text-red-500' : 'text-[#F2F2EE]';
   return (
-    <div className="flex gap-[3px]" aria-label={text}>
+    <div className="grid gap-[2px] w-full" style={{ gridTemplateColumns: `repeat(${cells}, minmax(0, 1fr))` }} aria-label={text}>
       {shown.map((ch, i) => (
-        <span key={i} className={`tgl-flap relative grid place-items-center rounded-[3px] bg-[#1B1B1F] font-mono font-semibold ${dims} ${color}`}>
-          {ch === ' ' ? ' ' : ch}
+        <span key={i} className={`tgl-flap relative block rounded-[3px] bg-[#1B1B1F] font-mono font-semibold ${color}`} style={{ aspectRatio: size === 'lg' ? '3 / 4.4' : '3 / 4' }}>
+          <span className="tgl-flapch">{ch === ' ' ? ' ' : ch}</span>
         </span>
       ))}
     </div>
@@ -188,7 +187,6 @@ export function DepartureBoard({
   const weatherIntensity = precipitationIntensity(weatherCode, precipitationProb);
   const [store, setStore] = useState<TicketStore>(() => readCachedTickets());
   const [rollKey, setRollKey] = useState(0);
-  const [leaving, setLeaving] = useState(false);
   const [boarding, setBoarding] = useState(false);
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [muted, setMuted] = useState(() => { try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return false; } });
@@ -222,11 +220,8 @@ export function DepartureBoard({
   const city = ticket ? ticketCity(ticket) : undefined;
   const status = ticket ? ticketStatus(ticket) : null;
 
-  const requestClose = useCallback(() => {
-    if (prefersReducedMotion()) { onClose(); return; }
-    setLeaving(true);
-    window.setTimeout(onClose, 420);
-  }, [onClose]);
+  // The drawer slides itself away
+  const requestClose = onClose;
 
   // A kept ticket goes to the counter; the one there goes back to storage
   const raise = async (t: DepartureTicket): Promise<boolean> => {
@@ -276,11 +271,6 @@ export function DepartureBoard({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [requestClose, covered]);
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
 
   const board = async (): Promise<boolean> => {
     if (!ticket?.plan || boarding) return false;
@@ -317,192 +307,166 @@ export function DepartureBoard({
   const destination = ticket ? (stops.length > 1 ? `${stops[0].en} +${stops.length - 1}` : ticket.cityEn) : 'WELCOME';
 
   return (
-    <div
-      role="dialog"
-      data-bg-cover
-      aria-label="공항 터미널"
-      className={`fixed inset-0 z-[190] bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark overflow-hidden ${leaving ? 'tgl-lobby-out' : 'tgl-lobby-in'}`}
-    >
-      <div className="h-full flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        {/* Top bar */}
-        <div className="shrink-0 w-full max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
-          <div className="flex flex-col min-w-0">
-            <span className="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-tight">공항 터미널</span>
-            <span className={`${label} ${muted} tabular-nums`}>Terminal 1 · ICN {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <TerminalWeatherPicker name={weatherCityName} nameEn={weatherCityEn} temp={weatherTemp} code={weatherCode} pop={precipitationProb} />
-            <IconButton icon={muted ? VolumeX : Volume2} label={muted ? '소리 켜기' : '소리 끄기'} size="sm" onClick={() => setMuted(m => !m)} />
-            <IconButton icon={X} label="닫기" size="sm" onClick={requestClose} />
+    <div aria-label="공항 터미널" className="relative h-full flex flex-col text-ink dark:text-ink-dark overflow-hidden">
+      {/* Top bar: the drawer's grip and its tab close it, so no close button */}
+      <div className="shrink-0 w-full max-w-[680px] mx-auto px-4 h-12 flex items-center justify-between gap-2">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[17px] font-extrabold tracking-tight leading-tight">공항 터미널</span>
+          <span className={`${label} ${muted} tabular-nums`}>Terminal 1 · ICN {String(clock.getHours()).padStart(2, '0')}:{String(clock.getMinutes()).padStart(2, '0')}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <TerminalWeatherPicker name={weatherCityName} nameEn={weatherCityEn} temp={weatherTemp} code={weatherCode} pop={precipitationProb} />
+          <IconButton icon={muted ? VolumeX : Volume2} label={muted ? '소리 켜기' : '소리 끄기'} size="sm" onClick={() => setMuted(m => !m)} />
+        </div>
+      </div>
+
+      <div className="shrink-0 w-full max-w-[680px] mx-auto px-4 pb-3">
+        <Segment<TerminalTab>
+          block
+          ariaLabel="터미널 보기"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'counter', label: '카운터' },
+            {
+              value: 'storage',
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  발권표
+                  {ticketCount > 0 && (
+                    <span className="min-w-4 h-4 px-1 rounded-full bg-red-600 dark:bg-red-500 text-white font-mono text-[10px] font-bold leading-4 text-center tabular-nums" aria-hidden>
+                      {ticketCount > 9 ? '9+' : ticketCount}
+                    </span>
+                  )}
+                  {ticketCount > 0 && <span className="sr-only">티켓 {ticketCount}개</span>}
+                </span>
+              ),
+            },
+          ]}
+        />
+      </div>
+
+      {tab === 'storage' ? (
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain hide-scrollbar">
+          <div className="w-full max-w-[680px] mx-auto px-4 pb-4 flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[17px] font-extrabold tracking-tight">발권표</span>
+              <button type="button" onClick={newTicket} className="btn btn-secondary">
+                <Plus className="w-4 h-4 shrink-0" aria-hidden />새 티켓
+              </button>
+            </div>
+            <StoredGroup title="작성 중" tickets={drafts} onOpen={t => setSheetId(t.id)} onRaise={raise} onRemove={removeAny} />
+            <StoredGroup title="발권 완료" tickets={finished} onOpen={t => setSheetId(t.id)} onRaise={raise} onRemove={removeAny} />
+            {kept.length === 0 && <EmptyScene kind="storage" mini title="카운터 밖에 둔 티켓이 없어요" />}
+            <div className="flex flex-col gap-2">
+              <span className={`${label} ${muted}`}>탑승 예정 · {upcomingCount}</span>
+              <UpcomingBookings
+                trips={trips}
+                plans={plans}
+                flightsByTrip={flightsByTrip}
+                staysByTrip={staysByTrip}
+                transitByTrip={transitByTrip}
+                onOpenBooking={(id, t, item) => onOpenBooking?.(id, t, item)}
+                onNewTrip={() => newTicket()}
+              />
+            </div>
           </div>
         </div>
+      ) : (
+        /* The counter: board, buttons, the ticket, then the lobby window with whatever height is left. The body is a size
+           container, so the board's cells scale with the drawer; it scrolls only when even the essentials do not fit */
+        <div className="flex-1 min-h-0 relative" style={{ containerType: 'size' }}>
+          <div className="absolute inset-0 overflow-y-auto overscroll-contain hide-scrollbar">
+            <div className={`w-full max-w-[680px] mx-auto px-4 pb-3 min-h-full flex flex-col gap-3 ${boarding ? '' : 'tgl-board-in'}`}>
+              <section aria-label="출발 안내판" className="dark shrink-0 w-full md:max-w-[540px] md:mx-auto rounded-card bg-[#101012] text-[#F2F2EE] p-3.5 flex flex-col gap-2.5 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+                <div className="grid gap-x-3" style={{ gridTemplateColumns: '5fr 11fr' }}>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className={`${label} text-white/55`}>Flight</span>
+                    <FlapRow text={ticket ? ticket.flightNo.replace(' ', '') : 'TG000'} cells={5} rollKey={rollKey} onFlip={flip} />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className={`${label} text-white/55`}>Destination</span>
+                    <FlapRow text={destination} cells={11} rollKey={rollKey} size="lg" onFlip={flip} />
+                  </div>
+                </div>
+                <div className="grid gap-x-2" style={{ gridTemplateColumns: '6fr 6fr 4fr' }}>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className={`${label} text-white/55`}>Departs</span>
+                    <FlapRow text={ticket?.startDate ? boardDate(ticket.startDate) : ticket ? `${MONTHS[ticket.month - 1]} ${String(ticket.year).slice(2)}` : ''} cells={6} rollKey={rollKey} onFlip={flip} />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className={`${label} text-white/55`}>Return</span>
+                    <FlapRow text={boardDate(ticket?.endDate)} cells={6} rollKey={rollKey} onFlip={flip} />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className={`${label} text-white/55`}>Stay</span>
+                    <FlapRow text={ticket?.nights ? `${ticket.nights}N${ticket.nights + 1}D` : ''} cells={4} rollKey={rollKey} onFlip={flip} />
+                  </div>
+                </div>
+                <div className="grid gap-x-2" style={{ gridTemplateColumns: '2fr 3fr 8fr' }}>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className={`${label} text-white/55`}>Pax</span>
+                    <FlapRow text={ticket?.members?.length ? String(ticket.members.length) : ''} cells={2} rollKey={rollKey} onFlip={flip} />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className={`${label} text-white/55`}>Gate</span>
+                    <FlapRow text={ticket?.gate || ''} cells={3} rollKey={rollKey} onFlip={flip} />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className={`${label} text-white/55`}>Status</span>
+                    <FlapRow text={status?.text || ''} cells={8} rollKey={rollKey} onFlip={flip} tone={status?.tone} />
+                  </div>
+                </div>
+              </section>
 
-        <div className="shrink-0 w-full max-w-5xl mx-auto px-4 sm:px-6 pb-3">
-          <Segment<TerminalTab>
-            block
-            ariaLabel="터미널 보기"
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: 'counter', label: '카운터' },
-              {
-                value: 'storage',
-                label: (
-                  <span className="inline-flex items-center gap-1.5">
-                    발권표
-                    {ticketCount > 0 && (
-                      <span className="min-w-4 h-4 px-1 rounded-full bg-red-600 dark:bg-red-500 text-white font-mono text-[10px] font-bold leading-4 text-center tabular-nums" aria-hidden>
-                        {ticketCount > 9 ? '9+' : ticketCount}
-                      </span>
-                    )}
-                    {ticketCount > 0 && <span className="sr-only">티켓 {ticketCount}개</span>}
-                  </span>
-                ),
-              },
-            ]}
-          />
-        </div>
-
-        {/* The counter's ticket and its actions, or storage: two thirds of the height (scrolls inside when short) */}
-        {/* Phones: ticket area two thirds, lobby one third. Web: one scrolling column, the lobby as wide as the board above */}
-        <div className="flex-1 min-h-0 flex flex-col md:overflow-y-auto md:overscroll-contain md:hide-scrollbar">
-        <div className={`flex-[2] md:flex-none min-h-0 overflow-y-auto md:overflow-visible overscroll-contain hide-scrollbar ${leaving ? '' : 'tgl-board-in'}`}>
-          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-2 min-h-full flex flex-col gap-3">
-            {tab === 'storage' ? (
-              <div className="flex flex-col gap-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[17px] font-extrabold tracking-tight">발권표</span>
-                  <button type="button" onClick={newTicket} className="btn btn-secondary">
+              {/* The main action. With no ticket the board says WELCOME and the one thing to do is a new ticket */}
+              {ticket ? (
+                <div className="shrink-0 flex items-center gap-2">
+                  {ticket.plan ? (
+                    <button type="button" className="btn btn-accent btn-lg flex-1 min-w-0" onClick={() => { void board(); }} disabled={boarding}>
+                      <Plane className="w-4 h-4 shrink-0 rotate-45" aria-hidden />
+                      <span className="truncate">{boarding ? '탑승 중' : '탑승 · 여정 만들기'}</span>
+                    </button>
+                  ) : (
+                    <button type="button" className="btn btn-accent btn-lg flex-1 min-w-0" onClick={() => onPlan(ticket)}>
+                      <Ticket className="w-4 h-4 shrink-0" aria-hidden />
+                      <span className="truncate">일정 정하고 발권</span>
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-secondary btn-lg shrink-0" onClick={newTicket} disabled={boarding}>
                     <Plus className="w-4 h-4 shrink-0" aria-hidden />새 티켓
                   </button>
                 </div>
-                <StoredGroup title="작성 중" tickets={drafts} onOpen={t => setSheetId(t.id)} onRaise={raise} onRemove={removeAny} />
-                <StoredGroup title="발권 완료" tickets={finished} onOpen={t => setSheetId(t.id)} onRaise={raise} onRemove={removeAny} />
-                {kept.length === 0 && <EmptyScene kind="storage" mini title="카운터 밖에 둔 티켓이 없어요" />}
-                <div className="flex flex-col gap-2">
-                  <span className={`${label} ${muted}`}>탑승 예정 · {upcomingCount}</span>
-                  <UpcomingBookings
-                    trips={trips}
-                    plans={plans}
-                    flightsByTrip={flightsByTrip}
-                    staysByTrip={staysByTrip}
-                    transitByTrip={transitByTrip}
-                    onOpenBooking={(id, t, item) => onOpenBooking?.(id, t, item)}
-                    onNewTrip={() => newTicket()}
-                  />
-                </div>
-              </div>
-            ) : (<>
-            <section aria-label="출발 안내판" className="dark rounded-card bg-[#101012] text-[#F2F2EE] p-3.5 sm:p-4 flex flex-col gap-3 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
-              <div className="flex items-end gap-x-3 sm:gap-x-4">
-                <div className="flex flex-col gap-1">
-                  <span className={`${label} text-white/55`}>Flight</span>
-                  <FlapRow text={ticket ? ticket.flightNo.replace(' ', '') : 'TG000'} cells={5} rollKey={rollKey} onFlip={flip} />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <span className={`${label} text-white/55`}>Destination</span>
-                  <FlapRow text={destination} cells={11} rollKey={rollKey} size="lg" onFlip={flip} />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-2.5">
-                <div className="flex flex-col gap-1">
-                  <span className={`${label} text-white/55`}>Departs</span>
-                  <FlapRow text={ticket?.startDate ? boardDate(ticket.startDate) : ticket ? `${MONTHS[ticket.month - 1]} ${String(ticket.year).slice(2)}` : ''} cells={6} rollKey={rollKey} onFlip={flip} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className={`${label} text-white/55`}>Return</span>
-                  <FlapRow text={boardDate(ticket?.endDate)} cells={6} rollKey={rollKey} onFlip={flip} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className={`${label} text-white/55`}>Stay</span>
-                  <FlapRow text={ticket?.nights ? `${ticket.nights}N${ticket.nights + 1}D` : ''} cells={4} rollKey={rollKey} onFlip={flip} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className={`${label} text-white/55`}>Pax</span>
-                  <FlapRow text={ticket?.members?.length ? String(ticket.members.length) : ''} cells={2} rollKey={rollKey} onFlip={flip} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className={`${label} text-white/55`}>Gate</span>
-                  <FlapRow text={ticket?.gate || ''} cells={3} rollKey={rollKey} onFlip={flip} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className={`${label} text-white/55`}>Status</span>
-                  <FlapRow text={status?.text || ''} cells={8} rollKey={rollKey} onFlip={flip} tone={status?.tone} />
-                </div>
-              </div>
-
-              {/* The trip in words: title, route, party */}
-              <div className="border-t border-white/10 pt-2.5 flex gap-3 items-center min-h-[48px]">
-                {ticket ? (
-                  <>
-                    {(ticket.plan?.coverImg || city) && (
-                      <img src={getEffectiveImageUrl(ticket.plan?.coverImg && !ticket.plan.coverImg.includes(GENERIC_COVER) ? ticket.plan.coverImg : city ? cityThumb(city) : '')} alt="" loading="lazy" className="w-12 h-12 rounded-thumb object-cover shrink-0" />
-                    )}
-                    <span key={ticket.id} className="tgl-rise flex-1 min-w-0 flex flex-col gap-0.5">
-                      <span className="text-[15px] sm:text-[17px] font-extrabold leading-snug line-clamp-2">{ticket.plan?.title || `${ticket.cityKo} 여행`}</span>
-                      <span className="text-[13px] text-white/65 truncate">
-                        서울 → {stops.map(s => s.ko).join(' → ')}
-                        {ticket.members?.length ? ` · ${ticket.members.join(', ')}` : ''}
-                      </span>
-                      <span className={`${label} text-white/45`}>{formatHours(ticket.hours)} · {ticket.countryKo}</span>
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-[14px] text-white/65">New trip에서 여행을 계획하고 티켓을 발권하면 여기에 표시됩니다.</span>
-                )}
-              </div>
-            </section>
-
-            {/* The ticket's main action and a new ticket, on one line: both the same pill size */}
-            {ticket ? (
-              <div className="flex items-center gap-2">
-                {ticket.plan ? (
-                  <button type="button" className="btn btn-accent btn-lg flex-1 min-w-0" onClick={() => { void board(); }} disabled={boarding}>
-                    <Plane className="w-4 h-4 shrink-0 rotate-45" aria-hidden />
-                    <span className="truncate">{boarding ? '탑승 중' : '탑승 · 여정 만들기'}</span>
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn-accent btn-lg flex-1 min-w-0" onClick={() => onPlan(ticket)}>
-                    <Ticket className="w-4 h-4 shrink-0" aria-hidden />
-                    <span className="truncate">일정 정하고 발권</span>
-                  </button>
-                )}
-                <button type="button" className="btn btn-secondary btn-lg shrink-0" onClick={newTicket} disabled={boarding}>
-                  <Plus className="w-4 h-4 shrink-0" aria-hidden />새 티켓
+              ) : (
+                <button type="button" className="shrink-0 btn btn-accent btn-lg w-full" onClick={() => onPlan()}>
+                  <Plus className="w-4 h-4 shrink-0" aria-hidden />
+                  새 티켓
                 </button>
+              )}
+
+              {/* The counter's ticket, one card wide */}
+              {ticket && (
+                <div className="shrink-0 flex justify-center">
+                  <TicketCard ticket={ticket} onOpen={() => setSheetId(ticket.id)} />
+                </div>
+              )}
+
+              {/* The lobby window: whatever height is left; it hides itself when there is almost none */}
+              <div className="tgl-term-art flex-1 min-h-0 basis-0 relative rounded-card overflow-hidden">
+                <div className="tgl-term-art-scene absolute inset-0">
+                  <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
+                  {skyNote && (
+                    <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      {skyNote}
+                    </div>
+                  )}
+                </div>
               </div>
-            ) : (
-              <button type="button" className="btn btn-accent btn-lg w-full" onClick={() => onPlan()}>
-                <Plus className="w-4 h-4 shrink-0" aria-hidden />
-                New trip
-              </button>
-            )}
-
-            {/* The counter's ticket, one card wide, in the room that is left */}
-            <div className="flex-1 min-h-[132px] flex items-center justify-center py-1">
-              {ticket
-                ? <TicketCard ticket={ticket} onOpen={() => setSheetId(ticket.id)} />
-                : <EmptyScene kind="ticket" mini bare title="발권한 티켓이 없어요" />}
             </div>
-
-            </>)}
           </div>
         </div>
-
-        {/* The lobby below: a third of the height on phones, taller on the web so the departure sign shows, in a rounded window with the page's side margins */}
-        <div className="flex-[1] min-h-[120px] md:flex-none md:min-h-0 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-1" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
-        <div className="tgl-lobby-scene relative h-full rounded-card overflow-hidden md:h-auto md:w-full md:aspect-[7/3]">
-          <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
-          {skyNote && (
-            <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-              {skyNote}
-            </div>
-          )}
-        </div>
-        </div>
-        </div>
-      </div>
+      )}
 
       {boarding && (
         <div role="status" className="absolute inset-0 z-10 bg-paper/90 dark:bg-paper-dark/90 flex flex-col items-center justify-center gap-3 tgl-rise">

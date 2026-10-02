@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, RotateCcw, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useBackToClose } from '../utils/overlayHistory';
 import { prefersReducedMotion } from '../motion';
+import { lockBodyScroll } from '../utils/scrollLock';
 import { PlayerDock, PlayerTopBar, DockButton } from '../components/player/PlayerDock';
 import { IntroStage } from './stage';
 import { onSoundtrackProgress, renderSoundtrack } from './soundtrack';
@@ -146,15 +147,14 @@ export function IntroView({ onClose, onStart, startLabel = '지금 시작하기'
 
     const onHide = () => { if (document.hidden && clock.current.playing) pause(); };
     document.addEventListener('visibilitychange', onHide);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockBodyScroll();
     return () => {
       disposed = true;
       unsub();
       cancelAnimationFrame(raf);
       ro.disconnect();
       document.removeEventListener('visibilitychange', onHide);
-      document.body.style.overflow = prevOverflow;
+      unlock();
       stopAudio();
       ctx?.close().catch(() => {});
       stage.dispose();

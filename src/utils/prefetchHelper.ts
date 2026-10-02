@@ -84,9 +84,37 @@ export function scheduleIdlePrefetch(delayMs: number = 2500): () => void {
       // Preload the most visited page: Detail.tsx
       preloadDetailPage().catch(() => {});
       // Then Pocket, whose first open otherwise waits on its large chunk
-      runIdle(() => { preloadPocketPage().catch(() => {}); });
+      runIdle(() => {
+        preloadPocketPage().catch(() => {});
+        // The drawers the tab bar opens
+        runIdle(() => { preloadCalendarPage().catch(() => {}); preloadMapPage().catch(() => {}); preloadDeparture().catch(() => {}); });
+      });
     });
   }, delayMs);
 
   return () => clearTimeout(timer);
+}
+
+let calendarPromise: Promise<any> | null = null;
+
+/**
+ * Preloads the CalendarHubPage chunk, so its drawer opens without a wait.
+ */
+export function preloadCalendarPage(): Promise<any> {
+  if (!calendarPromise) {
+    calendarPromise = import('../pages/CalendarHub');
+  }
+  return calendarPromise;
+}
+
+let departurePromise: Promise<any> | null = null;
+
+/**
+ * Preloads the airport terminal chunk (the tab bar's centre drawer).
+ */
+export function preloadDeparture(): Promise<any> {
+  if (!departurePromise) {
+    departurePromise = import('../components/departure/DepartureBoard');
+  }
+  return departurePromise;
 }

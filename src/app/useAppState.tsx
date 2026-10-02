@@ -28,6 +28,7 @@ import {
   cleanForFirestore, applyJourneyOrder, SUPER_ADMIN_EMAIL, ADMIN_EMAILS, getInitialNavigationState,
   NightModeSetting, isNightTimeNow, runViewTransition
 } from './appUtils';
+import { isDrawerView, isPhoneViewport } from './drawerViews';
 import { notify } from '../utils/feedback';
 import { completeVerification } from '../utils/emailVerification';
 import { clearOrphanAccount, hasNoProfile, isGhostProfile, isSettledAccount } from '../utils/accountCleanup';
@@ -441,11 +442,6 @@ export function useAppState() {
   const postSaveNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const postSaveNavTargetRef = useRef<{ view: string; tripId: number | null } | null>(null);
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
-  const [flightTransition, setFlightTransition] = useState<{
-    isActive: boolean;
-    targetTripId: number | null;
-    destinationTitle?: string;
-  }>({ isActive: false, targetTripId: null });
   // settingsLoaded: true once Firestore settings/home listener fires (prevents premature hydration)
   const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false);
 
@@ -461,7 +457,6 @@ export function useAppState() {
       if (document.visibilityState === 'visible') {
         // 1. Clear any pending animation or navigation locks
         setIsNavigating(false);
-        setFlightTransition({ isActive: false, targetTripId: null });
 
         // 2. Ensure currentView is valid; fallback to home if corrupted or empty
         setCurrentView(prev => {
@@ -1399,12 +1394,14 @@ export function useAppState() {
     } catch (_) {}
   }, []);
 
+  // The app places the scroll itself on every view change; the browser's own restore lands wrong while a page is swapping
+  useEffect(() => {
+    try { window.history.scrollRestoration = 'manual'; } catch (_) {}
+  }, []);
+
   // Listen to popstate events for browser back/forward navigation
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      // 뒤로가기 시 진행 중인 비행기 전환 즉시 강제 취소 (원복 및 지연 방지)
-      setFlightTransition({ isActive: false, targetTripId: null });
-
       const state = event.state;
       const isUnsaved = (currentView === 'manage' && isManageDirty) || (currentView === 'detail' && isDetailEditing);
       if (isUnsaved) {
@@ -1449,6 +1446,14 @@ export function useAppState() {
           setCurrentView('home');
         }
       }
+
+      // The browser restores its own scroll on a back step, which lands wrong while the page below is
+      // swapping (a magazine or journey closing onto a hub) and only corrects itself on the next scroll
+      const toDrawer = isPhoneViewport() && ['/archive', '/map', '/calendar', '/pocket', '/'].includes(window.location.pathname) && (isDrawerView(currentView) || currentView === 'home');
+      if (!toDrawer) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        window.requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -1483,23 +1488,6 @@ export function useAppState() {
     // Close any residual save complete modal upon navigation
     setShowSaveCompleteModal(false);
 
-    // 트립허브나 다른 화면으로 이동 시 잔여 비행기 전환 즉시 강제 취소 (원복 증상 원천 차단)
-    if (view !== 'detail' || (tripId !== null && tripId !== flightTransition.targetTripId)) {
-      setFlightTransition({ isActive: false, targetTripId: null });
-    }
-
-    // 트립카드 클릭으로 여정 상세 페이지로 진입 시 비행기 활공 전환 애니메이션 실행
-    if (!force && currentView !== 'detail' && view === 'detail' && tripId !== null) {
-      const targetTrip = trips.find(t => t.id === tripId) || plans.find(p => p.id === tripId);
-      const destTitle = targetTrip?.title || '';
-      setFlightTransition({
-        isActive: true,
-        targetTripId: tripId,
-        destinationTitle: destTitle,
-      });
-      return;
-    }
-
     if (view !== 'detail') {
       setIsShareMode(false);
     }
@@ -1512,8 +1500,12 @@ export function useAppState() {
       setCurrentView(effectiveView);
       setSelectedTagFilter(tagFilter);
     };
+    // On phones the tab bar's hubs are drawers over home: they slide on their own, so no cross-fade, and the
+    // page under them keeps its scroll
+    const drawerNav = isPhoneViewport() && isDrawerView(effectiveView) && (currentView === 'home' || isDrawerView(currentView));
+    const leavingDrawer = isPhoneViewport() && effectiveView === 'home' && isDrawerView(currentView);
     // Hub-to-hub changes cross-fade with a View Transition; same-view updates stay a plain transition
-    if (effectiveView !== currentView) {
+    if (effectiveView !== currentView && !drawerNav && !leavingDrawer) {
       runViewTransition(applyView, (fn) => startTransition(fn));
     } else {
       startTransition(applyView);
@@ -1522,8 +1514,8 @@ export function useAppState() {
       setIsNavigating(false);
     }, 280);
 
-    // Always scroll to top when changing views
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    // Scroll to top when changing views (a drawer opening or closing leaves home where it was)
+    if (!drawerNav && !leavingDrawer) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
     try {
       sessionStorage.setItem('lastView', effectiveView);
@@ -1563,16 +1555,6 @@ export function useAppState() {
       }
     }
   };
-
-  const handleFlightHalfway = useCallback(() => {
-    if (flightTransition.isActive && flightTransition.targetTripId) {
-      navigateTo('detail', flightTransition.targetTripId, true, null, true);
-    }
-  }, [flightTransition.isActive, flightTransition.targetTripId]);
-
-  const handleFlightComplete = useCallback(() => {
-    setFlightTransition({ isActive: false, targetTripId: null });
-  }, []);
 
   const handleSearchResultClick = (tripId: number, tabId: string, itemId: number | null) => {
     setActiveTripId(tripId);
@@ -2994,11 +2976,11 @@ export function useAppState() {
     setMarqueeOverrideText, showSaveCompleteModal, setShowSaveCompleteModal, showUnsavedModal,
     setShowUnsavedModal, journeyDeleteConfirm, setJourneyDeleteConfirm, pendingNavigation,
     setPendingNavigation, detailSaveRef, manageSaveRef, postSaveNavTimerRef, postSaveNavTargetRef,
-    isNavigating, setIsNavigating, flightTransition, setFlightTransition, settingsLoaded,
+    isNavigating, setIsNavigating, settingsLoaded,
     setSettingsLoaded, handleCloseSaveCompleteModal, handleSaveAndNavigate, handleDiscardAndNavigate,
     handleCancelUnsavedModal, currentUserEmail, isSuperAdmin, isGuest, isAdmin, canEditTrip,
     canDeleteTrip, activeTrip, displayMarqueeText, marqueeTrips, seedUserData, navigateTo,
-    handleFlightHalfway, handleFlightComplete, handleSearchResultClick, handleUpdateTrip,
+    handleSearchResultClick, handleUpdateTrip,
     handleMoveToArchive, handleMoveToPlans, handleCloneJourney, handleRemixJourney, handleSaveSettings, saveHeroPrefs,
     handleSaveMagazineMoments, handleSaveMagazineHubConfig, handleSaveArchiveHubConfig,
     handleSaveMagazineSections, handleUpdateMagazineSections, handleSaveBgmSettings,

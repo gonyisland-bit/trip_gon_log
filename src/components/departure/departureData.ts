@@ -260,3 +260,17 @@ export async function removeTicket(id: string): Promise<TicketStore> {
 export async function setActiveTicket(id: string): Promise<TicketStore> {
   return updateTickets(store => ({ items: store.items, activeId: store.items.some(t => t.id === id) ? id : store.activeId }));
 }
+
+/**
+ * The terminal's "새 티켓" opens the New trip sheet already filled in: the first Saturday at least two weeks out,
+ * three nights, and the city of the latest ticket (or of the latest journey) as a starting point. Everything is
+ * changed in the sheet; the party defaults to the member themselves there.
+ */
+export function newTicketPrefill(fallbackCity?: string): { city?: string; date: string; nights: number } {
+  const d = new Date();
+  d.setDate(d.getDate() + 14);
+  while (d.getDay() !== 6) d.setDate(d.getDate() + 1);
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const latest = [...readCachedTickets().items].sort((a, b) => b.keptAt - a.keptAt)[0];
+  return { city: latest?.cityEn || fallbackCity || undefined, date, nights: 3 };
+}

@@ -1355,3 +1355,39 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a { color: #EDEBE5; }
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:first-child { border-bottom-color: rgba(255, 255, 255, 0.1); }
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* Hub drawers (components/DrawerHost, v1.3.8): the tab bar's hubs and the terminal rise as one sheet */
+.tgl-hubdrawer {
+  --drawer-grip: 24px;
+  position: absolute; left: 0; right: 0; bottom: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 28px);
+  transform: translateY(100%);
+  transition: transform 300ms var(--ease-emphasized);
+  will-change: transform;
+}
+.tgl-hubdrawer[data-open="true"] { transform: none; will-change: auto; }
+.tgl-hubdrawer-backdrop { opacity: 0; transition: opacity 240ms var(--ease-standard); }
+.tgl-hubdrawer-backdrop[data-open="true"] { opacity: 1; }
+/* Panels inside the sheet: the one on show fades in over the one leaving, so a switch never shows an empty sheet */
+.tgl-hubdrawer-panel { transition: opacity 180ms var(--ease-standard), transform 220ms var(--ease-emphasized), visibility 0s; }
+.tgl-hubdrawer-panel[data-on="false"] { opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(8px); transition: opacity 140ms var(--ease-standard), transform 200ms var(--ease-emphasized), visibility 0s 200ms; }
+@media (min-width: 768px) {
+  .tgl-hubdrawer {
+    --drawer-grip: 0px;
+    left: 50%; right: auto; top: 50%; bottom: auto;
+    width: min(880px, calc(100vw - 48px)); height: min(860px, calc(100dvh - 64px));
+    transform: translate(-50%, -46%) scale(.97); opacity: 0;
+    transition: transform 260ms var(--ease-emphasized), opacity 200ms var(--ease-standard);
+  }
+  .tgl-hubdrawer[data-open="true"] { transform: translate(-50%, -50%); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tgl-hubdrawer, .tgl-hubdrawer-backdrop, .tgl-hubdrawer-panel { transition: none !important; }
+}
+
+/* Terminal board cells scale with their row (components/departure/DepartureBoard): the glyph is sized from the cell's own width */
+.tgl-flap { container-type: inline-size; }
+.tgl-flapch { position: absolute; inset: 0; display: grid; place-items: center; font-size: 88cqw; line-height: 1; }
+/* The lobby window gives way first: a strip too short to show the picture shows nothing */
+.tgl-term-art { container-type: size; container-name: tgl-art; }
+@container tgl-art (max-height: 88px) { .tgl-term-art-scene { display: none; } }

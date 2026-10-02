@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowUpRight, BedDouble, Bus, Car, CarTaxiFront, Copy, Loader2, MapPin, Maximize2, Navigation, Plane, Plus, Share2, TrainFront, X,
+  ArrowUpRight, BedDouble, Bus, Car, CarTaxiFront, ChevronLeft, ChevronRight, Copy, Loader2, MapPin, Maximize2, Navigation, Plane, Plus, Share2, TrainFront, X,
 } from 'lucide-react';
 import type { FlightItem, Plan, StayItem, TimelineData, TimelineItem, TransitItem, Trip } from '../../types';
 import { Sheet } from '../Sheet';
@@ -10,7 +10,7 @@ import { useBackToClose } from '../../utils/overlayHistory';
 import { notify } from '../../utils/feedback';
 import { kindArtUrl, placeKind } from '../../utils/placeArt';
 import { mapSearchUrl } from '../../utils/mapLinks';
-import { boardPlaces, boardStatus, buildBoard, md, openJourneyBoard, placesPerDay, transitEnds, type BoardEntry } from './boardData';
+import { boardPlaces, boardStatus, buildBoard, md, openJourneyBoard, placesPerDay, transitEnds, type BoardEntry, type BoardModel } from './boardData';
 
 // Journey board: a journey's flights, stays, transport and places on one screen, as long and
 // short tiles. Made for the airport counter, the hotel desk and the station: the codes people
@@ -20,11 +20,17 @@ import { boardPlaces, boardStatus, buildBoard, md, openJourneyBoard, placesPerDa
 // stays are sage, transport is butter, places are mist, and only the next stop is red. Kinds are
 // also told apart by icon and label.
 
-type Detail =
+// Every tile opens a drawer (v1.3.8): one booking or place, or a summary of the journey, of its places, or of one kind of booking
+type ItemDetail =
   | { kind: 'flight'; item: FlightItem }
   | { kind: 'stay'; item: StayItem }
   | { kind: 'transit'; item: TransitItem }
   | { kind: 'place'; item: TimelineItem & { dayKey: string } };
+type SummaryDetail =
+  | { kind: 'journey' }
+  | { kind: 'places' }
+  | { kind: 'list'; of: 'flight' | 'stay' | 'transit' };
+type Detail = ItemDetail | SummaryDetail;
 
 const TAB = { flight: 'flights', stay: 'stays', transit: 'transit', place: 'timeline' } as const;
 
@@ -105,7 +111,16 @@ function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] 
 /** The board itself: a share row, then the tiles. Embedded in the journey or inside the full-screen layer. */
 export function BoardView({ trip, timelineData, flights, stays, transits, onOpenItem, embedded }: BoardData & { embedded?: boolean }) {
   const b = useMemo(() => buildBoard(trip, timelineData, flights, stays, transits), [trip, timelineData, flights, stays, transits]);
-  const [detail, setDetail] = useState<Detail | null>(null);
+  const [detail, setDetailState] = useState<Detail | null>(null);
+  // Drawers opened from a summary remember it, so the drawer can step back to it
+  const [trail, setTrail] = useState<Detail[]>([]);
+  const setDetail = (d: Detail | null) => { setTrail([]); setDetailState(d); };
+  const drillDown = (d: Detail) => { if (detail) setTrail(t => [...t, detail]); setDetailState(d); };
+  const stepBack = () => {
+    const prev = trail[trail.length - 1];
+    setTrail(t => t.slice(0, -1));
+    setDetailState(prev ?? null);
+  };
   const [sharing, setSharing] = useState(false);
   const [wrapRef, width] = useWidth<HTMLDivElement>();
   const cols = width >= 720 ? 4 : 2;
@@ -139,7 +154,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
     </Tile>,
   );
   singles.push(
-    <Tile key="places" className="bg-mist text-mist-ink dark:bg-mist-dark dark:text-mist" label="여행지" onOpen={() => onOpenItem('timeline', null)}>
+    <Tile key="places" className="bg-mist text-mist-ink dark:bg-mist-dark dark:text-mist" label="여행지" onOpen={() => setDetail({ kind: 'places' })}>
       <span className={kicker}><Navigation className="w-3.5 h-3.5" aria-hidden />여행지</span>
       <span className="text-[34px] font-extrabold tracking-[-0.03em] leading-none tabular-nums">{b.places.length}</span>
       {perDay.length > 1 && (
@@ -148,7 +163,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
         </span>
       )}
       <span className="font-mono text-meta font-semibold">
-        {b.focusDay.length ? `${b.phase === 'live' ? '오늘' : '첫날'} ${b.focusDay.length}곳` : '일정에서 보기'}
+        {b.focusDay.length ? `${b.phase === 'live' ? '오늘' : '첫날'} ${b.focusDay.length}곳` : '장소 보기'}
       </span>
     </Tile>,
   );
@@ -227,7 +242,7 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
       <div className="flex flex-col gap-2.5">
         <div className={`grid gap-2.5 [grid-auto-flow:dense] ${cols === 4 ? 'grid-cols-4' : 'grid-cols-2'}`}>
           {/* Journey: when, where, how much is ready, with the place drawn flat */}
-          <Tile className="col-span-2 bg-peach text-peach-ink dark:bg-peach-dark dark:text-peach overflow-hidden" label="여정 일정" onOpen={() => onOpenItem('timeline', null)}>
+          <Tile className="col-span-2 bg-peach text-peach-ink dark:bg-peach-dark dark:text-peach overflow-hidden" label="여정 요약" onOpen={() => setDetail({ kind: 'journey' })}>
             <img src={art} alt="" aria-hidden className="absolute right-0 bottom-0 w-28 h-28 sm:w-32 sm:h-32 rounded-tl-[28px] object-cover opacity-95" />
             <span className={kicker}><MapPin className="w-3.5 h-3.5" aria-hidden />{status}{b.nights > 0 && ` · ${b.nights}박 ${b.nights + 1}일`}</span>
             <span className="pr-28 sm:pr-32 text-[28px] sm:text-[32px] font-extrabold tracking-[-0.03em] leading-none tabular-nums">
@@ -301,7 +316,30 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
         </div>
       </div>
 
-      {detail && <BoardDetail detail={detail} onClose={() => setDetail(null)} onOpenItem={(tab, id) => { setDetail(null); onOpenItem(tab, id); }} />}
+      {detail && (detail.kind === 'journey' || detail.kind === 'places' || detail.kind === 'list') && (
+        <BoardSummary
+          summary={detail}
+          b={b}
+          trip={trip}
+          place={place}
+          status={status}
+          perDay={perDay}
+          canBack={trail.length > 0}
+          onBack={stepBack}
+          onDrill={drillDown}
+          onClose={() => setDetail(null)}
+          onOpenItem={(tab, id) => { setDetail(null); onOpenItem(tab, id); }}
+        />
+      )}
+      {detail && detail.kind !== 'journey' && detail.kind !== 'places' && detail.kind !== 'list' && (
+        <BoardDetail
+          detail={detail}
+          canBack={trail.length > 0}
+          onBack={stepBack}
+          onClose={() => setDetail(null)}
+          onOpenItem={(tab, id) => { setDetail(null); onOpenItem(tab, id); }}
+        />
+      )}
     </div>
   );
 }
@@ -361,7 +399,7 @@ function Row({ label, value, copyAs, long }: { label: string; value?: string | n
 
 function mapsUrl(name?: string, address?: string, lat?: number, lng?: number) { return mapSearchUrl(name, address, lat, lng); }
 
-function BoardDetail({ detail, onClose, onOpenItem }: { detail: Detail; onClose: () => void; onOpenItem: (tab: string, id: number | null) => void }) {
+function BoardDetail({ detail, canBack, onBack, onClose, onOpenItem }: { detail: ItemDetail; canBack?: boolean; onBack?: () => void; onClose: () => void; onOpenItem: (tab: string, id: number | null) => void }) {
   const { kind, item } = detail;
   let title = '';
   let kickerText = '';
@@ -418,9 +456,12 @@ function BoardDetail({ detail, onClose, onOpenItem }: { detail: Detail; onClose:
   return (
     <Sheet label={title} onClose={onClose} tone="paper" zIndex={10001} panelClassName="sm:max-w-md max-h-[86dvh]">
       <div className="flex flex-col gap-3 p-4 pt-2 min-h-0 overflow-y-auto overscroll-contain" data-sheet-open>
-        <div className="flex flex-col gap-1 px-1">
-          <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-black/55 dark:text-white/55">{kickerText}</span>
-          <h2 className="text-[22px] font-extrabold tracking-tight leading-tight break-keep">{title}</h2>
+        <div className="flex items-start gap-2 px-1">
+          {canBack && <IconButton icon={ChevronLeft} label="목록으로" size="sm" onClick={onBack} />}
+          <div className="min-w-0 flex flex-col gap-1">
+            <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-black/55 dark:text-white/55">{kickerText}</span>
+            <h2 className="text-[22px] font-extrabold tracking-tight leading-tight break-keep">{title}</h2>
+          </div>
         </div>
         <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-1">{rows}</section>
         <div className="flex flex-wrap gap-2">
@@ -430,6 +471,163 @@ function BoardDetail({ detail, onClose, onOpenItem }: { detail: Detail; onClose:
             </a>
           )}
           <button type="button" className="btn btn-primary btn-sm" onClick={() => onOpenItem(TAB[kind], item.id)}>
+            <ArrowUpRight className="w-3.5 h-3.5" aria-hidden />여정에서 열기
+          </button>
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+// ── Summary drawers: the journey, its places, or one kind of booking, in short lists that open the full drawer ──
+
+/** One tappable line of a summary: leading label, text, chevron */
+function SummaryLine({ lead, text, sub, onClick, accent, dim }: { lead?: React.ReactNode; text: string; sub?: string; onClick: () => void; accent?: boolean; dim?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 min-h-[48px] px-1 py-2 text-left border-b border-black/[0.06] dark:border-white/[0.08] last:border-0 ${dim ? 'opacity-55' : ''}`}
+    >
+      {lead !== undefined && (
+        <span className={`w-12 shrink-0 font-mono text-meta font-semibold tabular-nums ${accent ? 'text-red-600 dark:text-red-400' : 'text-black/55 dark:text-white/55'}`}>{lead}</span>
+      )}
+      <span className="flex-1 min-w-0 flex flex-col">
+        <span className="text-[14px] font-bold break-keep [overflow-wrap:anywhere]">{text}</span>
+        {sub && <span className="text-meta text-black/55 dark:text-white/55 break-keep [overflow-wrap:anywhere]">{sub}</span>}
+      </span>
+      <ChevronRight className="w-4 h-4 shrink-0 text-black/35 dark:text-white/35" aria-hidden />
+    </button>
+  );
+}
+
+function BoardSummary({ summary, b, trip, place, status, perDay, canBack, onBack, onDrill, onClose, onOpenItem }: {
+  summary: SummaryDetail;
+  b: BoardModel;
+  trip: Trip | Plan;
+  place: string[];
+  status: string;
+  perDay: number[];
+  canBack: boolean;
+  onBack: () => void;
+  onDrill: (d: Detail) => void;
+  onClose: () => void;
+  onOpenItem: (tab: string, id: number | null) => void;
+}) {
+  let kickerText = '';
+  let title = '';
+  let body: React.ReactNode = null;
+  let tab: string = 'timeline';
+
+  if (summary.kind === 'journey') {
+    kickerText = [status, b.nights > 0 && `${b.nights}박 ${b.nights + 1}일`].filter(Boolean).join(' · ');
+    title = trip.title;
+    const counts: { icon: React.ReactNode; label: string; n: number; open: () => void }[] = [
+      { icon: <Plane className="w-4 h-4" aria-hidden />, label: '항공', n: b.flights.length, open: () => onDrill({ kind: 'list', of: 'flight' }) },
+      { icon: <BedDouble className="w-4 h-4" aria-hidden />, label: '숙소', n: b.stays.length, open: () => onDrill({ kind: 'list', of: 'stay' }) },
+      { icon: <TrainFront className="w-4 h-4" aria-hidden />, label: '교통', n: b.transits.length, open: () => onDrill({ kind: 'list', of: 'transit' }) },
+      { icon: <Navigation className="w-4 h-4" aria-hidden />, label: '장소', n: b.places.length, open: () => onDrill({ kind: 'places' }) },
+    ];
+    body = (
+      <>
+        <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-1">
+          <Row label="기간" value={b.start ? `${md(b.start)} – ${md(b.end)}` : trip.date} />
+          <Row label="여행지" value={place.slice(0, 3).join(' · ')} />
+          <Row label="동행" value={trip.members?.length ? trip.members.join(', ') : ''} />
+        </section>
+        <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-1">
+          {counts.map(c => (
+            <button
+              key={c.label}
+              type="button"
+              disabled={c.n === 0}
+              onClick={c.open}
+              className="w-full flex items-center gap-3 min-h-[48px] text-left border-b border-black/[0.06] dark:border-white/[0.08] last:border-0 disabled:opacity-45"
+            >
+              <span className="text-black/55 dark:text-white/55">{c.icon}</span>
+              <span className="flex-1 text-[14px] font-bold">{c.label}</span>
+              <span className="font-mono text-[15px] font-semibold tabular-nums">{c.n}</span>
+              <ChevronRight className="w-4 h-4 shrink-0 text-black/35 dark:text-white/35" aria-hidden />
+            </button>
+          ))}
+        </section>
+        {perDay.length > 1 && (
+          <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-3 flex flex-col gap-2">
+            <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50">일자별 장소</span>
+            <span className="flex items-end gap-1 h-8" aria-hidden>
+              {perDay.map((n, i) => <span key={i} className="flex-1 max-w-4 rounded-full bg-mist-dark/60 dark:bg-mist/60" style={{ height: `${Math.max(18, (n / Math.max(1, ...perDay)) * 100)}%` }} />)}
+            </span>
+          </section>
+        )}
+      </>
+    );
+  } else if (summary.kind === 'places') {
+    kickerText = `장소 ${b.places.length}곳`;
+    title = '여행지';
+    const days: { key: string; date: Date | null; items: BoardModel['places'] }[] = [];
+    b.places.forEach(p => {
+      const last = days[days.length - 1];
+      if (last && last.key === p.dayKey) last.items.push(p);
+      else days.push({ key: p.dayKey, date: p.at.date, items: [p] });
+    });
+    body = days.length === 0 ? (
+      <section className="rounded-card bg-surface dark:bg-surface-dark px-4 py-5 text-[14px] text-black/60 dark:text-white/60">아직 정한 장소가 없어요.</section>
+    ) : (
+      <>
+        {days.map((d, i) => (
+          <section key={d.key} className="rounded-card bg-surface dark:bg-surface-dark px-3 pt-3 pb-1 flex flex-col">
+            <span className="px-1 pb-1 font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">Day {i + 1}{d.date ? ` · ${md(d.date)}` : ''}</span>
+            {d.items.map(p => (
+              <SummaryLine
+                key={p.id}
+                lead={p.time ? p.time.replace(/\s?(AM|PM)$/i, '') : '—'}
+                text={p.place}
+                accent={b.next?.id === p.id}
+                dim={b.phase !== 'past' && p.at.past}
+                onClick={() => onDrill({ kind: 'place', item: p })}
+              />
+            ))}
+          </section>
+        ))}
+      </>
+    );
+  } else {
+    const of = summary.of;
+    tab = TAB[of];
+    if (of === 'flight') {
+      kickerText = `항공 ${b.flights.length}`;
+      title = '항공권';
+      body = <section className="rounded-card bg-surface dark:bg-surface-dark px-3 py-1">{b.flights.map(f => (
+        <SummaryLine key={f.id} text={`${f.fromCode || '—'} → ${f.toCode || '—'}`} sub={[when(f.at, f.fromTime), f.flightNo].filter(Boolean).join(' · ')} dim={b.phase !== 'past' && f.at.past} onClick={() => onDrill({ kind: 'flight', item: f })} />
+      ))}</section>;
+    } else if (of === 'stay') {
+      kickerText = `숙소 ${b.stays.length}`;
+      title = '숙소';
+      body = <section className="rounded-card bg-surface dark:bg-surface-dark px-3 py-1">{b.stays.map(st => (
+        <SummaryLine key={st.id} text={st.title} sub={st.dateRange} dim={b.phase !== 'past' && st.at.past} onClick={() => onDrill({ kind: 'stay', item: st })} />
+      ))}</section>;
+    } else {
+      kickerText = `교통 ${b.transits.length}`;
+      title = '교통';
+      body = <section className="rounded-card bg-surface dark:bg-surface-dark px-3 py-1">{b.transits.map(t => (
+        <SummaryLine key={t.id} text={t.title || t.route} sub={when(t.at, t.time)} dim={b.phase !== 'past' && t.at.past} onClick={() => onDrill({ kind: 'transit', item: t })} />
+      ))}</section>;
+    }
+  }
+
+  return (
+    <Sheet label={title} onClose={onClose} tone="paper" zIndex={10001} panelClassName="sm:max-w-md max-h-[86dvh]">
+      <div className="flex flex-col gap-3 p-4 pt-2 min-h-0 overflow-y-auto overscroll-contain" data-sheet-open>
+        <div className="flex items-start gap-2 px-1">
+          {canBack && <IconButton icon={ChevronLeft} label="뒤로" size="sm" onClick={onBack} />}
+          <div className="min-w-0 flex flex-col gap-1">
+            <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-black/55 dark:text-white/55">{kickerText}</span>
+            <h2 className="text-[22px] font-extrabold tracking-tight leading-tight break-keep">{title}</h2>
+          </div>
+        </div>
+        {body}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => onOpenItem(tab, null)}>
             <ArrowUpRight className="w-3.5 h-3.5" aria-hidden />여정에서 열기
           </button>
         </div>

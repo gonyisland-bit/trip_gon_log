@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Suspense } from 'react';
-import { lazyWithRetry } from '../app/appUtils';
 import { createPortal } from 'react-dom';
 import { useBackToClose } from '../utils/overlayHistory';
 import {
@@ -38,9 +36,8 @@ import {
   BgmTrack,
 } from '../utils/audioHelper';
 import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from './player/PlayerDock';
+import { lockBodyScroll } from '../utils/scrollLock';
 
-// The slideshow is the magazine's Memory Reel (v1.3.7)
-const MemoryReel = lazyWithRetry(() => import('./reel/MemoryReel').then(m => ({ default: m.MemoryReel })));
 
 export interface LightboxImageMeta {
   url: string;
@@ -586,13 +583,7 @@ export function Lightbox({
     };
   }, [isOpen, stopSlideshow]);
 
-  // Slideshow (v1.3.7): the photo viewer hands over to the magazine's Memory Reel from this photo,
-  // so there is one slideshow with one set of controls and keys
-  const [reelFrom, setReelFrom] = useState<number | null>(null);
-  const handleStartSlideshow = async () => {
-    setReelFrom(currentIndex);
-  };
-
+  // No slideshow here (v1.3.8): the magazine's Memory Reel is the only one. This viewer shows attachments and notes.
   const handleStopSlideshow = async () => {
     setIsSlideshow(false);
     setIsPaused(false);
@@ -819,18 +810,11 @@ export function Lightbox({
           resetZoom();
         }
       }
-      if (e.key === ' ' || e.code === 'Space') {
-        e.preventDefault();
-        if (!isSlideshow) {
-          handleStartSlideshow();
-        } else {
-          handleTogglePause();
-        }
-      }
     };
 
+    let unlock = () => {};
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      unlock = lockBodyScroll();
       // Clear any remaining focus on clicked thumbnail buttons
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
@@ -840,7 +824,7 @@ export function Lightbox({
     }
 
     return () => {
-      document.body.style.overflow = '';
+      unlock();
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
@@ -849,7 +833,6 @@ export function Lightbox({
     handleNext,
     onClose,
     isSlideshow,
-    handleStartSlideshow,
     handleTogglePause,
     handleStopSlideshow,
     handleVolumeUp,
@@ -870,19 +853,6 @@ export function Lightbox({
   }, [scale]);
 
   if (!isOpen || images.length === 0) return null;
-
-  if (reelFrom !== null) {
-    return (
-      <Suspense fallback={null}>
-        <MemoryReel
-          title={images[reelFrom]?.location || images[reelFrom]?.place || '사진'}
-          shots={images.map(im => ({ src: im.url, place: im.place, location: im.location, date: im.date, line: im.imgNote }))}
-          startIndex={reelFrom}
-          onClose={() => setReelFrom(null)}
-        />
-      </Suspense>
-    );
-  }
 
   const currentMeta = images[currentIndex];
   const prevMeta = images.length > 1 ? images[(currentIndex - 1 + images.length) % images.length] : null;
@@ -1253,18 +1223,6 @@ export function Lightbox({
             </button>
 
             <div className="h-4 w-[1px] bg-white/20 mx-1" />
-
-            {/* Slideshow button */}
-            {images.length > 1 && (
-              <button
-                onClick={handleStartSlideshow}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border border-white/20 hover:bg-white/10 text-white/70 hover:text-white transition"
-                title="슬라이드쇼 시작"
-              >
-                <Play className="w-3 h-3" />
-                Slide
-              </button>
-            )}
 
             {/* BGM Toggle in Normal Mode */}
             <button

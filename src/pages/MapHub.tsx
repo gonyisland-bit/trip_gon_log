@@ -155,7 +155,7 @@ export function MapHubPage(props: MapHubPageProps) {
   }, [selectedCountry]);
 
   return (
-    <main className={`relative w-full h-[calc(100vh-56px)] supports-[height:100dvh]:h-[calc(100dvh-56px)] flex flex-col lg:flex-row bg-paper dark:bg-paper-dark overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
+    <main className={`relative w-full h-[var(--hub-h,calc(100vh-56px))] supports-[height:100dvh]:h-[var(--hub-h,calc(100dvh-56px))] flex flex-col lg:flex-row bg-paper dark:bg-paper-dark overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
       {/* MAP VIEW CONTAINER. isolate keeps Leaflet's z-indexes inside it */}
       <div className="relative isolate w-full h-full overflow-hidden">

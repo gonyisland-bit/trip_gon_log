@@ -4,6 +4,7 @@ import { Maximize2, Minimize2, SkipForward, SlidersHorizontal, Volume2, VolumeX 
 import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from '../player/PlayerDock';
 import { getStoredBgmAutoplay, getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval, saveStoredBgmDefaultVolume, saveStoredSlideshowInterval } from '../../utils/audioHelper';
 import { prefersReducedMotion } from '../../motion';
+import { lockBodyScroll } from '../../utils/scrollLock';
 
 // Memory Reel (v1.3): a full-screen photo film with music.
 //  - Ken Burns drift on every shot, cross-fade between shots
@@ -32,6 +33,8 @@ interface MemoryReelProps {
   onClose: () => void;
   /** Shot to start on (the photo the viewer was looking at) */
   startIndex?: number;
+  /** Opened from a tapped photo: starts still, whole photo in view, and plays when asked (the magazine's viewer) */
+  startPaused?: boolean;
 }
 
 const FADE_MS = 1100;
@@ -58,14 +61,14 @@ function isSameOrigin(url: string): boolean {
   }
 }
 
-export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose, startIndex = 0 }: MemoryReelProps) {
+export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose, startIndex = 0, startPaused = false }: MemoryReelProps) {
   useBackToClose(true, onClose);
   const [index, setIndex] = useState(() => Math.max(0, Math.min(shots.length - 1, startIndex)));
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(!startPaused);
   const [muted, setMuted] = useState(false);
   const [ended, setEnded] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true);
-  const [fit, setFit] = useState<ShotFit>(readFit);
+  const [fit, setFit] = useState<ShotFit>(() => (startPaused ? 'fit' : readFit()));
   const [volume, setVolume] = useState(() => getStoredBgmDefaultVolume());
   const [volumePanel, setVolumePanel] = useState(false);
   const [captions, setCaptions] = useState(true);
@@ -237,11 +240,10 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
       else if (e.key === 'n' || e.key === 'N') { nextTrack(); flash('다음 곡'); }
     };
     window.addEventListener('keydown', onKey, true);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockBodyScroll();
     return () => {
       window.removeEventListener('keydown', onKey, true);
-      document.body.style.overflow = prevOverflow;
+      unlock();
     };
   }, [advance, goBack, onClose, changeVolume, flash, toggleFit, nextTrack]);
 

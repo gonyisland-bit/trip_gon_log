@@ -5,6 +5,7 @@ import { ArrowUpRight, BookCheck, Clock, ImagePlus, Loader2, Play, Trash2, X } f
 import type { Trip } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { useBackToClose } from '../../utils/overlayHistory';
+import { lockBodyScroll } from '../../utils/scrollLock';
 import { confirmDialog } from '../../utils/feedback';
 import { IconButton } from '../ui/IconButton';
 
@@ -40,8 +41,6 @@ interface Props {
   onUnpublish: () => void;
   onClose: () => void;
   onShowRecord: () => void;
-  /** A photo opens full screen */
-  onOpenPhoto?: (url: string) => void;
   /** Photos are added here, now that the record has no photo tab */
   canAddPhotos?: boolean;
   uploading?: boolean;
@@ -62,16 +61,16 @@ function dayLabel(d: string): string {
   return `${String(day).padStart(2, '0')} ${MON[m - 1]} · ${WEEK[w]}`;
 }
 
-export function JourneyMagazine({ trip, photos, days, canPublish, published, onPublish, onUnpublish, onClose, onShowRecord, onOpenPhoto, canAddPhotos, uploading, fileInputRef, onAddPhotos, onRemovePhoto, onJumpToItem }: Props) {
+export function JourneyMagazine({ trip, photos, days, canPublish, published, onPublish, onUnpublish, onClose, onShowRecord, canAddPhotos, uploading, fileInputRef, onAddPhotos, onRemovePhoto, onJumpToItem }: Props) {
   useBackToClose(true, onClose);
-  const [reel, setReel] = useState(false);
+  // The one slideshow: the play button runs it from the first photo; a tapped photo opens it still, on that photo
+  const [reel, setReel] = useState<{ at: number; paused: boolean } | null>(null);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockBodyScroll();
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !reel) onClose(); };
     window.addEventListener('keydown', onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+    return () => { unlock(); window.removeEventListener('keydown', onKey); };
   }, [onClose, reel]);
 
   // Photos by day, in the journey's order; photos without a day close the issue
@@ -97,7 +96,8 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
     e.stopPropagation();
     if (await confirmDialog('이 사진을 여정에서 지울까요?', { title: 'DELETE', confirmLabel: '삭제' })) onRemovePhoto?.(url, e);
   };
-  const photoProps = { onOpen: onOpenPhoto, onRemove: canAddPhotos ? removePhoto : undefined, onJump: onJumpToItem };
+  const openPhoto = (url: string) => setReel({ at: Math.max(0, photos.findIndex(p => p.url === url)), paused: true });
+  const photoProps = { onOpen: openPhoto, onRemove: canAddPhotos ? removePhoto : undefined, onJump: onJumpToItem };
 
   const unpublish = async () => {
     if (await confirmDialog('매거진 발행을 취소할까요? 카드는 다시 기록으로 열립니다.', { title: 'UNPUBLISH', confirmLabel: '발행 취소' })) onUnpublish();
@@ -114,7 +114,7 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
           {addable && (
             <IconButton icon={uploading ? Loader2 : ImagePlus} label="사진 추가" size="sm" onClick={pickPhotos} disabled={uploading} />
           )}
-          {photos.length > 0 && <IconButton icon={Play} label="음악과 함께 넘겨 보기" size="sm" onClick={() => setReel(true)} />}
+          {photos.length > 0 && <IconButton icon={Play} label="음악과 함께 넘겨 보기" size="sm" onClick={() => setReel({ at: 0, paused: false })} />}
           <button type="button" className="btn btn-secondary btn-sm" onClick={onShowRecord}>
             <Clock className="w-3.5 h-3.5" aria-hidden />기록
           </button>
@@ -208,7 +208,9 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
             location={trip.locationStr}
             dateLabel={trip.date}
             shots={photos.map(p => ({ src: getEffectiveImageUrl(p.url), place: p.title, location: p.place, date: p.date }))}
-            onClose={() => setReel(false)}
+            startIndex={reel.at}
+            startPaused={reel.paused}
+            onClose={() => setReel(null)}
           />
         </Suspense>
       )}

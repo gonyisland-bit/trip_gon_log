@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { createPortal } from 'react-dom';
 import { prefersReducedMotion } from '../motion';
 import { useBackToClose } from '../utils/overlayHistory';
+import { lockBodyScroll } from '../utils/scrollLock';
 
 // Sheet (v1.3): one container for app sheets and dialogs so they open and close with the same motion.
 //  - phones: a bottom sheet that slides up, with a grip that drags it down to dismiss
@@ -62,9 +63,8 @@ export function Sheet({ onClose, label, placement = 'center', panelClassName = '
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') void requestClose(); };
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+    const unlock = lockBodyScroll();
+    return () => { window.removeEventListener('keydown', onKey); unlock(); };
   }, [requestClose]);
 
   // Drag the grip down; let go past a quarter of the way (or with a quick flick) to dismiss
