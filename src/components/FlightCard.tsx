@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { TicketTear } from './ui/TicketTear';
 import { Plane, Trash2, RefreshCw, Clock, Paperclip, Loader2, X, ExternalLink, ChevronDown } from 'lucide-react';
 import { FlightItem } from '../types';
 import { dateText } from '../utils/itemDate';
@@ -343,8 +344,8 @@ export function FlightCard({
         )}
       </div>
       
-      {/* Card Body (Unclipped responsive layout) */}
-      <div className="p-2.5 sm:p-4 lg:p-5 flex flex-col lg:flex-row lg:items-center min-w-0 w-full gap-2 lg:gap-0">
+      {/* Route: where, when, and which flight */}
+      <div className="px-3 sm:px-5 pt-3 pb-1 flex flex-col min-w-0 w-full">
         {/* Left Side: Route and Airport Codes */}
         <div className="flex-1 flex items-center justify-between sm:justify-around relative min-w-0 w-full">
           
@@ -665,24 +666,16 @@ export function FlightCard({
           </div>
         </div>
         
-        {/* Desktop Ticket Tear-off Perforation with Top & Bottom Notches */}
-        <div className="hidden lg:flex relative self-stretch items-center mx-3 my-1">
-          <div className="ticket-notch-top -left-[7px]" />
-          <div className="border-l border-dashed border-black/20 dark:border-white/20 h-16" />
-          <div className="ticket-notch-bottom -left-[7px]" />
-        </div>
+      </div>
 
-        {/* Mobile Horizontal Perforation with Left & Right Notches */}
-        <div className="flex lg:hidden relative w-full items-center my-2">
-          <div className="ticket-notch-top -top-[7px] left-0 -translate-x-1/2" />
-          <div className="border-t border-dashed border-black/15 dark:border-white/15 w-full" />
-          <div className="ticket-notch-bottom -bottom-[7px] right-0 translate-x-1/2" />
-        </div>
-        
-        {/* Right Side: Seat, PNR & Minimal Barcode (Boarding Pass Stub) */}
-        <div className="w-full lg:w-28 lg:pl-2 grid grid-cols-2 lg:flex lg:flex-col items-center justify-between lg:justify-center gap-2 lg:gap-0 shrink-0">
-          <div className="w-full text-center lg:text-left lg:mb-1.5">
-            <span className="text-micro font-mono text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
+      {/* Tear line with a half-round punch on each edge (v1.3.8): the same shape at every width */}
+      <TicketTear />
+
+      {/* Stub: seat and booking number. Empty ones stay out of the way when not editing */}
+      {(isEditMode || flight.seat || flight.pnr) && (
+        <div className="px-4 sm:px-5 pt-1 pb-3.5 flex items-end justify-between gap-4">
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <span className="text-micro font-mono text-black/50 dark:text-white/50 uppercase font-bold tracking-widest">SEAT</span>
             {isEditMode ? (
               <input
                 type="text"
@@ -694,17 +687,15 @@ export function FlightCard({
                   onUpdate(flight.id, 'seat', e.target.value.toUpperCase());
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs sm:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full text-center lg:text-left uppercase font-mono"
+                className="bg-black/5 dark:bg-white/10 px-3 h-8 outline-none text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-24 uppercase font-mono"
                 placeholder="00A"
               />
             ) : (
-              <span className="text-xs sm:text-sm font-extrabold text-black/85 dark:text-white/85 block uppercase font-mono tracking-tight">
-                {flight.seat || 'N/A'}
-              </span>
+              <span className="text-[15px] font-extrabold text-black dark:text-white uppercase font-mono tracking-tight">{flight.seat || '—'}</span>
             )}
           </div>
-          <div className="w-full text-center lg:text-left">
-            <span className="text-micro font-mono text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
+          <div className="min-w-0 flex flex-col gap-0.5 items-end">
+            <span className="text-micro font-mono text-black/50 dark:text-white/50 uppercase font-bold tracking-widest">PNR</span>
             {isEditMode ? (
               <input
                 type="text"
@@ -716,43 +707,15 @@ export function FlightCard({
                   onUpdate(flight.id, 'pnr', e.target.value.toUpperCase());
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs sm:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-full text-center lg:text-left uppercase font-mono"
+                className="bg-black/5 dark:bg-white/10 px-3 h-8 outline-none text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full w-32 text-right uppercase font-mono"
                 placeholder="XXXXXX"
               />
             ) : (
-              <span className="text-xs sm:text-sm font-bold text-black/85 dark:text-white/85 tracking-wider block uppercase font-mono">
-                {flight.pnr || 'N/A'}
-              </span>
+              <span className="text-[15px] font-bold text-black/85 dark:text-white/85 tracking-[0.14em] uppercase font-mono">{flight.pnr || '—'}</span>
             )}
           </div>
-
-          {/* Swiss Minimal Barcode Strip */}
-          <div className="col-span-2 w-full mt-2 pt-1.5 border-t border-dotted border-black/15 dark:border-white/15 flex flex-col items-center lg:items-start select-none opacity-50">
-            <div className="flex items-center gap-[1.5px] h-3.5 w-full justify-center lg:justify-start">
-              <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[3px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[1.5px] h-full bg-transparent shrink-0" />
-              <span className="w-[2px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[1.5px] h-full bg-transparent shrink-0" />
-              <span className="w-[3px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[2px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[1px] h-full bg-transparent shrink-0" />
-              <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[2.5px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[1px] h-full bg-transparent shrink-0" />
-              <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[3px] h-full bg-black dark:bg-white shrink-0" />
-              <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
-            </div>
-            <span className="text-micro font-mono tracking-widest text-black/60 dark:text-white/60 uppercase mt-0.5 font-bold">
-              {flight.fromCode || 'DEP'}·{flight.toCode || 'ARR'}
-            </span>
-          </div>
         </div>
-      </div>
+      )}
       
       {/* ── Accordion Expand/Collapse Toggle Bar (Price shown ONLY when expanded) ── */}
       <div 

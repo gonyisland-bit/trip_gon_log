@@ -144,7 +144,7 @@ export function CalendarDayPeek({ s }: { s: CalendarHubState }) {
       {/* Swiss Minimal Quick View Bottom Sheet / Popover (Smooth Slide) */}
       {/* ───────────────────────────────────────────────────────────── */}
       {quickViewDate && (
-        <div className="fixed inset-x-0 bottom-0 z-50 pointer-events-none flex justify-center px-2 sm:px-4" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}>
+        <div className="fixed inset-x-0 bottom-0 z-50 pointer-events-none flex justify-center px-2 sm:px-4" style={{ paddingBottom: 'calc(var(--tabbar-lift, 0px) + 0.5rem)' }}>
           <div
             ref={quickViewRef}
             role="region"

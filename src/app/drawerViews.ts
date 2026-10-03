@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
-// Phone drawers (v1.3.8): on phones the hubs the tab bar reaches slide up over the home page instead of
+// Phone drawers (v1.3.8): on phones the hubs the tab bar reaches, and a journey, slide up over the home page instead of
 // replacing it. The page stays under the drawer, so closing one (the tab again, the grip, back) lands on
 // home exactly as it was.
 
-export const DRAWER_VIEWS = ['archive', 'map', 'calendar', 'pocket'] as const;
+export const DRAWER_VIEWS = ['archive', 'map', 'calendar', 'pocket', 'detail'] as const;
 export type DrawerView = typeof DRAWER_VIEWS[number];
 export const isDrawerView = (v: string): v is DrawerView => (DRAWER_VIEWS as readonly string[]).includes(v);
 

@@ -96,7 +96,7 @@ export function useCalendarHubState({
   const peekTouchYRef = useRef<number | null>(null);
   const isPeekOpen = !!quickViewDate;
 
-  // 하단 피크 바가 열려 있는 동안 다른 하단 플로팅(퀵 독, TOP)은 비켜선다
+  // 하단 피크 바는 탭바 위로 올라오고, TOP과 인트로 팁만 비켜선다
   // (only while the calendar is the hub on screen: a kept-alive calendar must not hide the tab bar from the other drawers)
   const hubVisible = useHubVisible();
   useEffect(() => {

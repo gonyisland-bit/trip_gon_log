@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronUp, ChevronDown, Map as MapIcon, LayoutGrid, Clock, Plane, BedDouble, TrainFront, type LucideIcon } from 'lucide-react';
+import { ChevronUp, ChevronDown, Map as MapIcon, LayoutGrid, Clock, Plane, BedDouble, TrainFront, Undo2, Redo2, Check, Loader2, type LucideIcon } from 'lucide-react';
 import { SettlementView } from '../components/SettlementView';
 import { BoardView } from '../components/board/JourneyBoard';
 import { Lightbox } from '../components/Lightbox';
@@ -46,7 +46,8 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
     draftTrip, setDraftTrip, draftFlights, draftStays, draftTransits, tripToUse, defaultCurrency,
     tabContentRef, mobileSheetSnap, setMobileSheetSnap, handleSheetTouchStart, handleSheetTouchEnd,
     itemRefs, allTripDates, groupedTimelineData, handleDirectAddFromPocket, handleQuickJumpToDate,
-    handleScrollToTop, updateExpenseItem, allGalleryImages
+    handleScrollToTop, updateExpenseItem, allGalleryImages,
+    renderInfoHeader, handleUndo, handleRedo, canUndo, canRedo, handleSave, handleCancel, saving
   } = s;
 
   // ── Magazine (v1.3.6 4-b) ──
@@ -123,10 +124,13 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           e.currentTarget.scrollLeft = 0;
         }
       }}
-      className="flex flex-col md:flex-row h-full w-full max-w-full overflow-hidden overflow-x-hidden overscroll-none relative bg-transparent"
+      className="flex flex-col h-full w-full max-w-full overflow-hidden overflow-x-hidden overscroll-none relative bg-transparent"
     >
-      
-      {/* Left: Map & Info Section (Responsive Height driven by mobileSheetSnap) */}
+      {/* The journey's one-line header (v1.3.8): above the map and the record, so it stays when the map is folded */}
+      {renderInfoHeader()}
+
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 w-full relative">
+      {/* Left: Map Section (Responsive Height driven by mobileSheetSnap) */}
       <DetailMapPanel s={s} />
       
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
@@ -412,6 +416,29 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
           </div>
         )}
       </section>
+      </div>
+
+      {/* Editing: undo, redo, cancel and save together at the bottom (the header only carries the save check) */}
+      {isEditing && (
+        <div
+          className="absolute left-1/2 -translate-x-1/2 z-40 h-12 pl-1.5 pr-1.5 rounded-full bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark shadow-[0_8px_24px_rgba(0,0,0,0.25)] flex items-center gap-0.5 select-none"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+          role="toolbar"
+          aria-label="편집 도구"
+        >
+          <button type="button" onClick={handleUndo} disabled={!canUndo} className="tap-target w-10 h-10 rounded-full grid place-items-center cursor-pointer disabled:opacity-35 hover:bg-white/10" aria-label="실행 취소" title="실행 취소 (Ctrl+Z)">
+            <Undo2 className="w-[18px] h-[18px]" aria-hidden />
+          </button>
+          <button type="button" onClick={handleRedo} disabled={!canRedo} className="tap-target w-10 h-10 rounded-full grid place-items-center cursor-pointer disabled:opacity-35 hover:bg-white/10" aria-label="다시 실행" title="다시 실행 (Ctrl+Y)">
+            <Redo2 className="w-[18px] h-[18px]" aria-hidden />
+          </button>
+          <span className="w-px h-5 bg-white/20 mx-1" aria-hidden />
+          <button type="button" onClick={handleCancel} className="h-10 px-3 rounded-full text-[13px] font-bold cursor-pointer hover:bg-white/10">취소</button>
+          <button type="button" onClick={() => handleSave()} disabled={saving} className="h-10 px-4 rounded-full bg-red-600 text-white text-[13px] font-bold cursor-pointer hover:bg-red-700 inline-flex items-center gap-1.5 disabled:opacity-60">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Check className="w-4 h-4" aria-hidden />}저장
+          </button>
+        </div>
+      )}
 
       {/* Fullscreen Lightbox component */}
       <DetailOverlays s={s} />

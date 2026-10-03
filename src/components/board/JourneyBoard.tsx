@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { TicketTear } from '../ui/TicketTear';
 import type { FlightItem, Plan, StayItem, TimelineData, TimelineItem, TransitItem, Trip } from '../../types';
 import { Sheet } from '../Sheet';
 import { IconButton } from '../ui/IconButton';
@@ -74,6 +75,49 @@ function CodeChip({ value, what, tone = 'light' }: { value?: string; what: strin
       {value}
       <Copy className="w-3 h-3 opacity-60" aria-hidden />
     </button>
+  );
+}
+
+/** "TER 1" / "1" / "T1" → "T1"; anything else is kept as written */
+function terminalLabel(term?: string) {
+  if (!term) return '';
+  const m = String(term).match(/\d+/);
+  return m ? `T${m[0]}` : String(term);
+}
+
+/** A flight on the board (v1.3.8): where, when and which terminal come first; the seat only when it was written; the booking number lives in the detail */
+function FlightFace({ f, wide }: { f: BoardModel['flights'][number]; wide?: boolean }) {
+  const fromT = terminalLabel(f.fromTerminal);
+  const toT = terminalLabel(f.toTerminal);
+  const dep = timeLabel(f.fromTime);
+  const arr = timeLabel(f.toTime);
+  const date = f.at.date ? md(f.at.date) : NO_DATE;
+  return (
+    <>
+      <span className={kicker}><Plane className="w-3.5 h-3.5 shrink-0" aria-hidden /><span className="truncate">{[f.title, f.flightNo].filter(Boolean).join(' · ') || '항공권'}</span></span>
+      <span className="flex items-end justify-between gap-2">
+        <span className="flex flex-col min-w-0">
+          <span className={`${wide ? 'text-[34px] sm:text-[40px]' : 'text-[26px]'} font-extrabold tracking-[-0.02em] leading-none`}>{f.fromCode || '—'}</span>
+          <span className="mt-1.5 font-mono text-[13px] font-semibold tabular-nums leading-none">{dep || '—'}</span>
+          {fromT && <span className="mt-1 font-mono text-micro font-bold tracking-wider opacity-60 leading-none">{fromT}</span>}
+        </span>
+        <span className="flex-1 min-w-3 flex items-center self-start mt-[0.9em] opacity-45" aria-hidden>
+          <span className="flex-1 h-0 border-t-[1.5px] border-dashed border-current" />
+          <Plane className="w-4 h-4 mx-1 shrink-0" />
+          <span className="flex-1 h-0 border-t-[1.5px] border-dashed border-current" />
+        </span>
+        <span className="flex flex-col items-end min-w-0">
+          <span className={`${wide ? 'text-[34px] sm:text-[40px]' : 'text-[26px]'} font-extrabold tracking-[-0.02em] leading-none`}>{f.toCode || '—'}</span>
+          <span className="mt-1.5 font-mono text-[13px] font-semibold tabular-nums leading-none">{arr || '—'}</span>
+          {toT && <span className="mt-1 font-mono text-micro font-bold tracking-wider opacity-60 leading-none">{toT}</span>}
+        </span>
+      </span>
+      <TicketTear className="-mx-4 !w-auto mt-auto" />
+      <span className="flex items-center justify-between gap-2 font-mono text-meta font-semibold tabular-nums opacity-85">
+        <span className="truncate">{date}</span>
+        {f.seat && <span className="shrink-0">좌석 {f.seat}</span>}
+      </span>
+    </>
   );
 }
 
@@ -207,11 +251,8 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
     );
   });
   otherFlights.forEach(f => singles.push(
-    <Tile key={`f${f.id}`} className="bg-ink text-paper dark:bg-ink-dark dark:text-paper-dark" dim={dimPast && f.at.past} label={`항공권 ${f.fromCode} ${f.toCode}`} onOpen={() => setDetail({ kind: 'flight', item: f })}>
-      <span className={kicker}><Plane className="w-3.5 h-3.5" aria-hidden />{f.flightNo || '항공권'}</span>
-      <span className="text-[24px] font-extrabold tracking-tight leading-none">{f.fromCode || '—'} → {f.toCode || '—'}</span>
-      <span className="mt-auto font-mono text-meta tabular-nums opacity-80 truncate">{when(f.at, f.fromTime)}</span>
-      {f.pnr && <CodeChip value={f.pnr} what="예약번호" tone="ink" />}
+    <Tile key={`f${f.id}`} className="bg-ink text-paper dark:bg-ink-dark dark:text-paper-dark overflow-hidden" dim={dimPast && f.at.past} label={`항공권 ${f.fromCode} ${f.toCode}`} onOpen={() => setDetail({ kind: 'flight', item: f })}>
+      <FlightFace f={f} />
     </Tile>,
   ));
   const oddLast = cols === 2 && singles.length % 2 === 1;
@@ -290,21 +331,8 @@ export function BoardView({ trip, timelineData, flights, stays, transits, onOpen
 
           {/* Outbound flight: a wide ink ticket */}
           {outbound ? (
-            <Tile className="col-span-2 bg-ink text-paper dark:bg-ink-dark dark:text-paper-dark gap-3" dim={dimPast && outbound.at.past} label={`항공권 ${outbound.fromCode} ${outbound.toCode}`} onOpen={() => setDetail({ kind: 'flight', item: outbound })}>
-              <span className={kicker}><Plane className="w-3.5 h-3.5" aria-hidden />{outbound.title || '항공권'}{outbound.flightNo && ` · ${outbound.flightNo}`}</span>
-              <span className="flex items-center gap-3 text-[34px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-none">
-                <span>{outbound.fromCode || '—'}</span>
-                <span className="flex-1 h-0 border-t-[1.5px] border-dashed border-current opacity-35" aria-hidden />
-                <Plane className="w-5 h-5 opacity-60 shrink-0" aria-hidden />
-                <span className="flex-1 h-0 border-t-[1.5px] border-dashed border-current opacity-35" aria-hidden />
-                <span>{outbound.toCode || '—'}</span>
-              </span>
-              <span className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-mono text-meta font-semibold tabular-nums opacity-80">
-                  {[outbound.at.date ? md(outbound.at.date) : NO_DATE, outbound.fromTime && outbound.toTime ? `${timeLabel(outbound.fromTime)} → ${timeLabel(outbound.toTime)}` : timeLabel(outbound.fromTime), outbound.seat && `좌석 ${outbound.seat}`].filter(Boolean).join(' · ')}
-                </span>
-                <CodeChip value={outbound.pnr} what="예약번호" tone="ink" />
-              </span>
+            <Tile className="col-span-2 bg-ink text-paper dark:bg-ink-dark dark:text-paper-dark gap-3 overflow-hidden" dim={dimPast && outbound.at.past} label={`항공권 ${outbound.fromCode} ${outbound.toCode}`} onOpen={() => setDetail({ kind: 'flight', item: outbound })}>
+              <FlightFace f={outbound} wide />
             </Tile>
           ) : (
             <Tile className="bg-surface dark:bg-surface-dark" label="항공권 추가" onOpen={() => onOpenItem('flights', null)}>

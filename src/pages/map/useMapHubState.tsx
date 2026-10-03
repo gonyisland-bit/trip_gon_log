@@ -1589,12 +1589,17 @@ export function useMapHubState({
       return tl.x >= maskRect.x && tl.y >= maskRect.y && tl.x + size.x <= maskRect.x + maskRect.w && tl.y + size.y <= maskRect.y + maskRect.h;
     };
 
+    // A mask is being painted and decoded; a flight asks for new ones every frame, so it waits for this one
+    let maskBusy = false;
+
     const applySoftMask = (currentMap: any, nightPane: HTMLElement) => {
       // The frame may land after the map was removed (leaving the Map hub quickly)
       if (mapRef.current !== currentMap || !currentMap._mapPane) return;
       const size = currentMap.getSize();
-      const padX = size.x * 0.5;
-      const padY = size.y * 0.5;
+      // In flight the view runs a long way before the mask can be redone, so it gets a wider margin
+      const margin = isFlyingToCountryRef.current ? 1.5 : 0.5;
+      const padX = size.x * margin;
+      const padY = size.y * margin;
       const cell = 6;
       const cols = Math.max(2, Math.ceil((size.x + padX * 2) / cell));
       const rows = Math.max(2, Math.ceil((size.y + padY * 2) / cell));
@@ -1608,7 +1613,9 @@ export function useMapHubState({
       const oy = Math.round(origin.y);
       const url = `url(${maskCanvas.toDataURL()})`;
       const token = ++maskToken;
+      maskBusy = true;
       const commit = () => {
+        if (token === maskToken) maskBusy = false;
         if (token !== maskToken) return;
         maskRect = { x: ox, y: oy, w: cols * cell, h: rows * cell };
         applyMaskStyles(nightPane, ox, oy, cols * cell, rows * cell, url);
@@ -1642,6 +1649,7 @@ export function useMapHubState({
     const resetNightPaneMask = (nightPane: HTMLElement) => {
       maskRect = null;
       maskToken++;
+      maskBusy = false;
       const s = nightPane.style as any;
       s.maskImage = 'none';
       s.webkitMaskImage = 'none';
@@ -1669,8 +1677,15 @@ export function useMapHubState({
         return;
       }
 
-      // 비행기 활공 중 60fps 불필요한 고비용 마스크 재계산 및 GPU 재래스터화 원천 차단
-      if (isFlyingToCountryRef.current) return;
+      // 비행기 활공 중에는 매 프레임 다시 그리지 않는다. 다만 화면이 그려 둔 마스크 영역을 벗어나면
+      // (비행기가 밤 영역으로 들어갈 때) 밤 타일이 마스크 끝에서 잘리므로, 그때만 한 장씩 새로 그린다.
+      if (isFlyingToCountryRef.current) {
+        if (supportsSoftMask && !maskBusy && !viewInsideMask(currentMap)) {
+          cancelAnimationFrame(maskFrame);
+          maskFrame = requestAnimationFrame(() => applySoftMask(currentMap, nightPane));
+        }
+        return;
+      }
 
       if (supportsSoftMask) {
         // Mid-gesture: keep the painted mask unless the view has run past its margin; pinch zoom waits for zoomend

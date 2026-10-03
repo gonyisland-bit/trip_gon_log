@@ -8,7 +8,7 @@ import { extractCountry, getCountryName } from './detailUtils';
 import type { JourneyDetailState } from './useJourneyDetailState';
 
 // A round, quiet control inside the playlog pill
-const ctl = 'tgl-press w-9 h-9 shrink-0 rounded-full grid place-items-center cursor-pointer hover:bg-black/[0.06] dark:hover:bg-white/10 transition-colors';
+const ctl = 'tgl-press w-8 h-8 shrink-0 rounded-full grid place-items-center cursor-pointer hover:bg-black/[0.06] dark:hover:bg-white/10 transition-colors';
 
 export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
   const {
@@ -20,7 +20,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
     setCinematicIndex, isCinematicPaused, setIsCinematicPaused, cinematicSpeed, setCinematicSpeed,
     playSwipeStartXRef, mobileSheetSnap, setMobileSheetSnap, setIsPlayFabIdle, resetPlayFabIdleTimer,
     cinematicItems, currentCinematicItem, currentCinematicVehicleType, handleDirectAddFromPocket,
-    handleStartPlaylog, mapPoints, handleItemToggle, renderInfoHeader, todayMode
+    handleStartPlaylog, mapPoints, handleItemToggle, todayMode
   } = s;
 
   // 모바일: 레이더 알약은 Playlog 바와 겹치지 않게 한 칸 위로
@@ -40,8 +40,6 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
           }
         }}
       >
-        {renderInfoHeader()}
-
         {/* Dynamic Map Area */}
         <div className="w-full relative flex-1 min-h-0 flex flex-col overflow-hidden" style={{ isolation: 'isolate' }}>
           {/* Magazine Cover Typography Overlay (Only in Summary tab) */}
@@ -155,7 +153,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                 <button
                   type="button"
                   onClick={() => setIsRadarMinimized(false)}
-                  className={`absolute ${hasPlaylog ? 'bottom-[6.25rem]' : 'bottom-4'} left-4 sm:bottom-6 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1 border border-black/20 dark:border-white/20 shadow-lg rounded-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer hover:border-red-500 transition-all`}
+                  className={`absolute ${hasPlaylog ? 'bottom-[4.25rem]' : 'bottom-4'} left-4 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1 border border-black/20 dark:border-white/20 shadow-lg rounded-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer hover:border-red-500 transition-all`}
                   title="근접 레이더 위젯 열기"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
@@ -169,7 +167,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
 
             // 2. Expanded Mode: Ultra-Compact Minimal HUD
             return (
-              <div className={`absolute ${hasPlaylog ? 'bottom-[6.25rem]' : 'bottom-4'} left-4 sm:bottom-6 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1.5 border border-black/20 dark:border-white/20 shadow-xl rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none max-w-[calc(100vw-32px)]`}>
+              <div className={`absolute ${hasPlaylog ? 'bottom-[4.25rem]' : 'bottom-4'} left-4 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1.5 border border-black/20 dark:border-white/20 shadow-xl rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none max-w-[calc(100vw-32px)]`}>
                 {/* Simple Radar Pulse Indicator */}
                 <div className="relative flex items-center justify-center shrink-0 w-3.5 h-3.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping absolute" />
@@ -270,24 +268,24 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                   }
                 }
               }}
-              className={`absolute bottom-8 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden bg-surface/95 dark:bg-surface-dark/95 text-ink dark:text-ink-dark backdrop-blur-md shadow-[0_6px_20px_rgba(0,0,0,0.16)] ${
+              className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden bg-surface/95 dark:bg-surface-dark/95 text-ink dark:text-ink-dark backdrop-blur-md shadow-[0_6px_20px_rgba(0,0,0,0.16)] ${
                 isCinematicMode
-                  ? 'h-14 w-[calc(100%-1.5rem)] max-w-[480px] px-1.5 gap-1'
-                  : 'h-12 w-auto pl-1.5 pr-4 gap-2.5 hover:scale-[1.03] active:scale-95 cursor-pointer'
+                  ? 'h-11 w-[calc(100%-1.5rem)] max-w-[440px] px-1.5 gap-1'
+                  : 'h-10 w-auto pl-1 pr-4 gap-2 hover:scale-[1.03] active:scale-95 cursor-pointer'
               }`}
             >
               {/* Collapsed: a red play circle and its name, the same words as the rest of the app */}
               {!isCinematicMode ? (
                 <button
                   onClick={handleStartPlaylog}
-                  className="w-full h-full flex items-center gap-2.5 cursor-pointer select-none"
+                  className="w-full h-full flex items-center gap-2 cursor-pointer select-none"
                   title="플레이로그 시작 (Space)"
                   aria-label="플레이로그 시작"
                 >
-                  <span className="w-9 h-9 shrink-0 rounded-full bg-red-600 text-white grid place-items-center">
-                    <Play className="w-4 h-4 fill-white ml-0.5" aria-hidden />
+                  <span className="w-8 h-8 shrink-0 rounded-full bg-red-600 text-white grid place-items-center">
+                    <Play className="w-3.5 h-3.5 fill-white ml-0.5" aria-hidden />
                   </span>
-                  <span className="text-[14px] font-extrabold tracking-tight whitespace-nowrap">플레이로그</span>
+                  <span className="text-[14px] font-extrabold tracking-tight whitespace-nowrap">Log</span>
                 </button>
               ) : (
                 /* Expanded: prev · play · next, then the spot with its progress, then speed and close */
@@ -300,7 +298,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                     <button
                       type="button"
                       onClick={() => setIsCinematicPaused(p => !p)}
-                      className="tgl-press w-10 h-10 shrink-0 rounded-full bg-red-600 text-white grid place-items-center cursor-pointer"
+                      className="tgl-press w-9 h-9 shrink-0 rounded-full bg-red-600 text-white grid place-items-center cursor-pointer"
                       aria-label={isCinematicPaused ? '재생' : '일시정지'}
                       title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
                     >
@@ -331,7 +329,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                     <button
                       type="button"
                       onClick={() => setCinematicSpeed(sp => sp === 3600 ? 1800 : (sp === 1800 ? 7200 : 3600))}
-                      className="tgl-press h-8 min-w-10 px-2 shrink-0 rounded-full bg-black/[0.06] dark:bg-white/10 font-mono text-meta font-bold cursor-pointer"
+                      className="tgl-press h-7 min-w-9 px-2 shrink-0 rounded-full bg-black/[0.06] dark:bg-white/10 font-mono text-meta font-bold cursor-pointer"
                       title="재생 속도 (1X / 2X / 0.5X)"
                       aria-label="재생 속도"
                     >

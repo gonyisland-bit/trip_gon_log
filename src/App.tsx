@@ -218,8 +218,14 @@ function App() {
   const baseView = drawerView ? 'home' : currentView;
   const activeDrawer = isLoggedIn ? (isDepartureOpen ? 'terminal' : drawerView) : null;
   // The grip, the backdrop and the open drawer's own tab all close it: the terminal alone, or a hub back to home
+  // A journey drawer closes back to where it was opened from (home, or a hub drawer)
+  const beforeDetail = useRef('home');
+  useEffect(() => {
+    if (currentView !== 'detail' && currentView !== 'manage') beforeDetail.current = currentView;
+  }, [currentView]);
   const closeDrawer = () => {
     if (isDepartureOpen) setIsDepartureOpen(false);
+    else if (currentView === 'detail') navigateTo(beforeDetail.current);
     else navigateTo('home');
   };
   // A tab: its drawer opens; the open one's tab closes it
@@ -341,6 +347,52 @@ function App() {
       />
     </Suspense>
     </LayerBoundary>
+  ) : null;
+
+  // The journey (v1.3.8): a drawer over home on phones, the page itself elsewhere
+  const detailEl = currentView === 'detail' ? (
+    activeTrip ? (() => {
+      const activeTimelineData: TimelineData = {};
+      Object.entries(timelineData).forEach(([date, items]) => {
+        const filtered = items.filter(item => Number(item.tripId) === Number(activeTrip.id));
+        if (filtered.length > 0) {
+          activeTimelineData[date] = filtered;
+        }
+      });
+
+      return (
+        <ErrorBoundary>
+          <div className="w-full h-full animate-in fade-in duration-300">
+            <JourneyDetailPage 
+              isLoggedIn={isLoggedIn} 
+              trip={activeTrip}
+              timelineData={activeTimelineData}
+              flights={activeFlights}
+              stays={activeStays}
+              transits={activeTransits}
+              onSave={handleSaveJourneyDetails}
+              onDelete={handleDeleteJourney}
+              myName={personName(currentUserProfile, auth.currentUser?.displayName) || undefined}
+              isDarkMode={isDarkMode}
+              onNavigate={navigateTo}
+              searchFocusItemId={searchFocusItemId}
+              searchFocusTab={searchFocusTab}
+              onClearSearchFocus={() => {
+                setSearchFocusItemId(null);
+                setSearchFocusTab(null);
+              }}
+              onEditModeChange={setIsDetailEditing}
+              saveRef={detailSaveRef}
+              allTrips={trips}
+              allPlans={plans}
+              staysByTrip={staysByTrip}
+            />
+          </div>
+        </ErrorBoundary>
+      );
+    })() : (
+      tripsLoaded && plansLoaded ? <DetailMissing onBack={() => navigateTo('archive')} /> : <DetailSkeleton />
+    )
   ) : null;
 
   // The tab bar's hubs: a page on the web, a drawer over home on phones (same element either way)
@@ -728,50 +780,7 @@ function App() {
                   {pocketEl}
                 </div>
               )}
-              {currentView === 'detail' && (
-                activeTrip ? (() => {
-                  const activeTimelineData: TimelineData = {};
-                  Object.entries(timelineData).forEach(([date, items]) => {
-                    const filtered = items.filter(item => Number(item.tripId) === Number(activeTrip.id));
-                    if (filtered.length > 0) {
-                      activeTimelineData[date] = filtered;
-                    }
-                  });
-
-                  return (
-                    <ErrorBoundary>
-                      <div className="w-full h-full animate-in fade-in duration-300">
-                        <JourneyDetailPage 
-                          isLoggedIn={isLoggedIn} 
-                          trip={activeTrip}
-                          timelineData={activeTimelineData}
-                          flights={activeFlights}
-                          stays={activeStays}
-                          transits={activeTransits}
-                          onSave={handleSaveJourneyDetails}
-                          onDelete={handleDeleteJourney}
-                          myName={personName(currentUserProfile, auth.currentUser?.displayName) || undefined}
-                          isDarkMode={isDarkMode}
-                          onNavigate={navigateTo}
-                          searchFocusItemId={searchFocusItemId}
-                          searchFocusTab={searchFocusTab}
-                          onClearSearchFocus={() => {
-                            setSearchFocusItemId(null);
-                            setSearchFocusTab(null);
-                          }}
-                          onEditModeChange={setIsDetailEditing}
-                          saveRef={detailSaveRef}
-                          allTrips={trips}
-                          allPlans={plans}
-                          staysByTrip={staysByTrip}
-                        />
-                      </div>
-                    </ErrorBoundary>
-                  );
-                })() : (
-                  tripsLoaded && plansLoaded ? <DetailMissing onBack={() => navigateTo('archive')} /> : <DetailSkeleton />
-                )
-              )}
+              {baseView === 'detail' && detailEl}
             </Suspense>
           )}
         </div>
@@ -983,7 +992,7 @@ function App() {
           <DrawerHost
             active={activeDrawer}
             onClose={closeDrawer}
-            order={['archive', 'map', 'terminal', 'calendar', 'pocket']}
+            order={['archive', 'map', 'terminal', 'calendar', 'pocket', 'detail']}
             warm={warmHubs}
             panels={{
               archive: { label: '여정', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('peach')}>{archiveEl}</Suspense> },
@@ -991,6 +1000,7 @@ function App() {
               calendar: { label: '달력', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('mist')}>{calendarEl}</Suspense> },
               pocket: { label: '포켓', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('sage')}>{pocketEl}</Suspense> },
               terminal: { label: '공항 터미널', narrow: true, dragClose: true, node: terminalEl },
+              detail: { label: '여정', flush: true, dragClose: true, node: drawerView === 'detail' ? <Suspense fallback={<DetailSkeleton />}>{detailEl}</Suspense> : null },
             }}
           />
         )}

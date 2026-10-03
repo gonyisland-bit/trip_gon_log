@@ -33,7 +33,7 @@ export function CalendarHubPage(props: CalendarHubPageProps) {
           setDragAnchorDate(null);
         }
       }}
-      className="relative w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none ${quickViewDate ? 'pb-56' : 'pb-24'} overflow-hidden transition-[padding] duration-300"
+      className={`relative w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none ${quickViewDate ? 'pb-56' : 'pb-24'} overflow-hidden transition-[padding] duration-300`}
     >
 
       <CalendarHeader s={s} />

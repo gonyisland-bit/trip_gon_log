@@ -6,14 +6,11 @@ import {
   ChevronDown,
   MapPin,
   Loader2,
-  ArrowLeft,
   Share2,
   Check,
   Edit3,
   DollarSign,
   X,
-  Undo2,
-  Redo2,
   Calendar,
   Search,
   Users,
@@ -3111,56 +3108,20 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     const range = dStart && dEnd ? `${md(dStart)}–${md(dEnd)}` : (trip!.date || '');
     return (
     <div className="w-full z-20 bg-paper/90 dark:bg-paper-dark/90 backdrop-blur-md transition-colors shrink-0 select-none">
-      {/* Number · dates, the title, and the journey line under it */}
-      <div className="flex items-center justify-between px-2 md:px-4 py-2 gap-2">
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={() => onNavigate('archive')}
-            className={hdrBtn()}
-            aria-label="뒤로"
-            title="뒤로"
-          >
-            <ArrowLeft className="w-[18px] h-[18px]" />
-          </button>
+      {/* One line, always on screen (also when the map is folded away): the title, then magazine, edit and the menu */}
+      <div className="flex items-center justify-between pl-4 pr-2 md:px-4 h-12 gap-2">
+        <h1
+          onClick={() => {
+            setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
+            setExpandedItemId(null);
+          }}
+          className="min-w-0 flex-1 text-[16px] sm:text-[17px] font-extrabold tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
+          title="보드 보기"
+        >
+          {(trip!.title || '').replace(' (Plan)', '')}
+        </h1>
 
-          <div className="flex flex-col min-w-0 flex-1 justify-center gap-0.5 py-0.5">
-            <span className="flex items-center gap-1.5 font-mono text-micro font-bold tracking-wider text-black/50 dark:text-white/50 min-w-0">
-              <span className="text-red-600 dark:text-red-400 shrink-0">NO. {issueNo}</span>
-              <span className="truncate tabular-nums">{range}{generatedDates.length > 0 ? ` · ${generatedDates.length}D` : ''}</span>
-              {destLocalTime && (
-                <span className="hidden min-[400px]:inline shrink-0 tabular-nums" title="현지 시각">· 현지 {destLocalTime}</span>
-              )}
-            </span>
-            <h1
-              onClick={() => {
-                setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
-                setExpandedItemId(null);
-              }}
-              className="text-[15px] sm:text-[17px] font-extrabold tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
-              title="보드 보기"
-            >
-              {(trip!.title || '').replace(' (Plan)', '')}
-            </h1>
-            <span className="text-meta text-black/60 dark:text-white/60 truncate break-keep leading-snug">
-              {generateJourneyMessage(trip!.locationStr, trip!.date, generatedDates.length)}
-            </span>
-          </div>
-        </div>
-
-        {/* Summary, edit, and the journey menu */}
         <div className="flex items-center gap-0.5 shrink-0">
-          {isEditing && (
-            <>
-              <button type="button" onClick={handleUndo} disabled={!canUndo} className={hdrBtn()} aria-label="실행 취소" title="실행 취소 (Ctrl+Z)">
-                <Undo2 className="w-4 h-4" />
-              </button>
-              <button type="button" onClick={handleRedo} disabled={!canRedo} className={hdrBtn()} aria-label="다시 실행" title="다시 실행 (Ctrl+Y)">
-                <Redo2 className="w-4 h-4" />
-              </button>
-            </>
-          )}
-
           {/* Magazine (v1.3.6 4-b): the journey read as an issue; red once published */}
           {!isEditing && (
             <button
@@ -3175,7 +3136,6 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               <BookOpen className="w-4 h-4" />
             </button>
           )}
-
 
           {isLoggedIn && (
             <button
@@ -3209,7 +3169,18 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
       {/* 2. Accordion Dropdown Panel (Shown ONLY when isBannerMenuOpen) */}
       {isBannerMenuOpen && (
-        <div className="border-t border-black/[0.06] dark:border-white/[0.08] px-3 sm:px-4 py-3 animate-in slide-in-from-top-2 duration-200 flex flex-col gap-3">
+        <div className="border-t border-black/[0.06] dark:border-white/[0.08] px-3 sm:px-4 py-3 animate-in slide-in-from-top-2 duration-200 flex flex-col gap-3 max-h-[62dvh] overflow-y-auto overscroll-contain">
+          {/* Number, dates, local time and the journey line: what the old header carried under the title */}
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="flex items-center gap-1.5 font-mono text-micro font-bold tracking-wider text-black/50 dark:text-white/50 min-w-0">
+              <span className="text-red-600 dark:text-red-400 shrink-0">NO. {issueNo}</span>
+              <span className="truncate tabular-nums">{range}{generatedDates.length > 0 ? ` · ${generatedDates.length}D` : ''}</span>
+              {destLocalTime && <span className="shrink-0 tabular-nums" title="현지 시각">· 현지 {destLocalTime}</span>}
+            </span>
+            <span className="text-meta text-black/60 dark:text-white/60 break-keep leading-snug">
+              {generateJourneyMessage(trip!.locationStr, trip!.date, generatedDates.length)}
+            </span>
+          </div>
           {/* Row 1: Title Input (in Edit mode) or Detailed Title Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             {isEditing && draftTrip ? (
