@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackToClose } from '../../utils/overlayHistory';
-import { Maximize2, Minimize2, SkipForward, SlidersHorizontal, Volume2, VolumeX } from 'lucide-react';
+import { Maximize2, Minimize2, SkipForward, SlidersHorizontal, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { PlayerDock, PlayerTopBar, DockButton, DockPanel, DockPanelRow } from '../player/PlayerDock';
 import { getBgmOff, getStoredBgmAutoplay, getStoredBgmDefaultVolume, getStoredBgmShuffle, getStoredBgmTracks, getStoredSlideshowInterval, saveStoredBgmAutoplay, saveStoredBgmDefaultVolume, saveStoredSlideshowInterval } from '../../utils/audioHelper';
 import { saveUserPref } from '../../utils/userPrefs';
@@ -54,6 +54,12 @@ function readFit(): ShotFit {
 /** The tracks this member lets play. Whether the sound is on is a separate switch (`muted`) */
 function playableTracks(): string[] {
   return getStoredBgmTracks().filter(t => t.enabled && t.url).map(t => t.url);
+}
+
+/** The speaker shows the level: off, low, loud */
+function SpeakerIcon({ muted, volume }: { muted: boolean; volume: number }) {
+  if (muted || volume === 0) return <VolumeX className="w-5 h-5 opacity-60" aria-hidden />;
+  return volume < 50 ? <Volume1 className="w-5 h-5" aria-hidden /> : <Volume2 className="w-5 h-5" aria-hidden />;
 }
 
 function isSameOrigin(url: string): boolean {
@@ -121,6 +127,8 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
 
   // Sound on / off: remembered on this device and in the account, the same switch Settings shows
   const setSound = useCallback((on: boolean) => {
+    // iOS starts an audio context only inside a tap
+    ctxRef.current?.resume().catch(() => {});
     setMuted(!on);
     if (on) setArmed(true);
     saveStoredBgmAutoplay(on);
@@ -168,6 +176,12 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+  // True where the music cannot be made quieter (an iOS element without the gain node): sound on / off only
+  const [volumeFixed, setVolumeFixed] = useState(false);
   const shotStartRef = useRef(performance.now());
   const indexRef = useRef(0);
   indexRef.current = index;
@@ -195,48 +209,97 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
     setEnded(false);
   }, []);
 
-  // Music
+  // Music. The sound goes through a Web Audio gain node, the only volume iOS Safari obeys (it ignores the element's
+  // `volume`). A track on another origin (R2) is fetched with CORS for that; if it cannot be, it plays as a plain
+  // element, and where that element's volume is fixed (iOS) the reel offers sound on / off only.
   useEffect(() => {
     const url = trackUrl;
     if (!url || !armed) return;
-    const audio = new Audio(url);
-    audio.loop = true;
-    audio.volume = getStoredBgmDefaultVolume() / 100;
-    audio.muted = mutedRef.current;
-    audioRef.current = audio;
-
-    if (isSameOrigin(url) && !reduced) {
-      try {
-        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-        const ac: AudioContext = new Ctx();
-        const src = ac.createMediaElementSource(audio);
-        const analyser = ac.createAnalyser();
-        analyser.fftSize = 1024;
-        src.connect(analyser);
-        analyser.connect(ac.destination);
-        analyserRef.current = analyser;
-        audio.addEventListener('play', () => { ac.resume().catch(() => {}); });
-      } catch {
-        analyserRef.current = null;
+    let disposed = false;
+    let ac: AudioContext | null = null;
+    const start = (withGraph: boolean) => {
+      const audio = new Audio();
+      audio.loop = true;
+      audio.preload = 'auto';
+      if (withGraph && !isSameOrigin(url)) audio.crossOrigin = 'anonymous';
+      audio.src = url;
+      audioRef.current = audio;
+      gainRef.current = null;
+      analyserRef.current = null;
+      if (withGraph) {
+        try {
+          const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+          ac = new Ctx();
+          const src = ac.createMediaElementSource(audio);
+          const gain = ac.createGain();
+          gain.gain.value = mutedRef.current ? 0 : volumeRef.current / 100;
+          src.connect(gain);
+          if (!reduced) {
+            const analyser = ac.createAnalyser();
+            analyser.fftSize = 1024;
+            gain.connect(analyser);
+            analyser.connect(ac.destination);
+            analyserRef.current = analyser;
+          } else {
+            gain.connect(ac.destination);
+          }
+          gainRef.current = gain;
+          ctxRef.current = ac;
+          audio.addEventListener('play', () => { ac?.resume().catch(() => {}); });
+          // CORS refused: the graph would stay silent, so the track starts again as a plain element
+          audio.addEventListener('error', () => {
+            if (disposed || audioRef.current !== audio) return;
+            audio.src = '';
+            ac?.close().catch(() => {});
+            ac = null;
+            ctxRef.current = null;
+            start(false);
+          }, { once: true });
+        } catch {
+          gainRef.current = null;
+          analyserRef.current = null;
+        }
       }
-    }
-    audio.play().catch(() => setPlaying(false));
+      if (!gainRef.current) {
+        audio.volume = volumeRef.current / 100;
+        audio.muted = mutedRef.current;
+        // iOS keeps an element at full volume whatever it is told; then only on / off is offered
+        setVolumeFixed(Math.abs(audio.volume - volumeRef.current / 100) > 0.01);
+      } else {
+        setVolumeFixed(false);
+      }
+      if (playingRef.current) audio.play().catch(() => setPlaying(false));
+    };
+    start(true);
     return () => {
-      audio.pause();
-      audio.src = '';
+      disposed = true;
+      const audio = audioRef.current;
+      if (audio) { audio.pause(); audio.src = ''; }
       audioRef.current = null;
       analyserRef.current = null;
+      gainRef.current = null;
+      ctxRef.current = null;
+      ac?.close().catch(() => {});
     };
   }, [reduced, trackUrl, armed]);
 
+  // Volume and mute go to the gain node when there is one, glided so a change never clicks
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume / 100;
-  }, [volume]);
+    const target = muted ? 0 : volume / 100;
+    const gain = gainRef.current;
+    const ac = ctxRef.current;
+    if (gain && ac) {
+      gain.gain.cancelScheduledValues(ac.currentTime);
+      gain.gain.setTargetAtTime(target, ac.currentTime, 0.04);
+    } else if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+      audioRef.current.muted = muted;
+    }
+  }, [volume, muted]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.muted = muted;
     if (playing && !ended) audio.play().catch(() => {});
     else audio.pause();
   }, [playing, muted, ended]);
@@ -455,7 +518,7 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
                   className="relative flex items-center"
                   onWheel={(e) => changeVolume(volumeRef.current + (e.deltaY < 0 ? 5 : -5))}
                 >
-                  {gaugeOpen && (
+                  {gaugeOpen && !volumeFixed && (
                     <VolumeGauge
                       className="sm:hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-3"
                       value={volume}
@@ -465,10 +528,19 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
                       onActivity={keepGauge}
                     />
                   )}
-                  <DockButton label={muted ? '소리 켜기 (M)' : '소리 끄기 (M)'} aria-pressed={!muted} onClick={toggleSound}>
-                    {muted || volume === 0 ? <VolumeX className="w-5 h-5 opacity-60" /> : <Volume2 className="w-5 h-5" />}
+                  {/* Phone: the speaker opens the gauge (its own button switches the sound); wider screens and a fixed
+                      volume: the speaker switches the sound and the slider beside it sets the level */}
+                  <DockButton
+                    label={volumeFixed ? (muted ? '소리 켜기 (M)' : '소리 끄기 (M)') : `음량 ${muted ? '꺼짐' : `${volume}%`}`}
+                    aria-pressed={!muted}
+                    onClick={() => {
+                      if (volumeFixed || window.matchMedia('(min-width: 640px)').matches) { toggleSound(); return; }
+                      if (gaugeOpen) hideGauge(); else keepGauge();
+                    }}
+                  >
+                    <SpeakerIcon muted={muted} volume={volume} />
                   </DockButton>
-                  <VolumeSlider className="hidden sm:flex" value={volume} muted={muted} onChange={changeVolume} />
+                  {!volumeFixed && <VolumeSlider className="hidden sm:flex" value={volume} muted={muted} onChange={changeVolume} />}
                 </div>
               )}
               <DockButton label="옵션" onClick={() => { hideGauge(); setVolumePanel(v => !v); }}>

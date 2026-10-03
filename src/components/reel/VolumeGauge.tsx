@@ -1,8 +1,9 @@
 import React, { useCallback, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 
 // Volume controls for the Memory Reel.
 //  - VolumeGauge: a tall dark pill that fills from the bottom with white, like the player dock it rises from (phones).
-//    Drag or tap anywhere on it, up for louder. The number above it is the mute switch.
+//    Drag or tap anywhere on it, up for louder. The button above it (speaker and level) is the sound on / off switch.
 //  - VolumeSlider: the same control laid flat inside the dock (wider screens), always in reach beside the speaker.
 
 interface VolumeGaugeProps {
@@ -57,9 +58,11 @@ export function VolumeGauge({ value, muted, onChange, onToggleMute, onActivity, 
         type="button"
         onClick={() => { onToggleMute(); onActivity?.(); }}
         aria-label={muted ? '소리 켜기 (M)' : '소리 끄기 (M)'}
-        className="tgl-press h-6 min-w-10 px-2 rounded-full bg-black/60 backdrop-blur-md border border-white/15 font-mono text-micro font-bold tabular-nums text-white/90 hover:text-white"
+        aria-pressed={!muted}
+        className="tgl-press h-9 min-w-[3.25rem] px-2.5 rounded-full bg-black/70 border border-white/15 inline-flex items-center justify-center gap-1 font-mono text-meta font-bold tabular-nums text-white"
       >
-        {muted ? 'OFF' : `${value}`}
+        {muted ? <VolumeX className="w-4 h-4" aria-hidden /> : <Volume2 className="w-4 h-4" aria-hidden />}
+        <span>{muted ? 'OFF' : value}</span>
       </button>
       <div
         role="slider"
