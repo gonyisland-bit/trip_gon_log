@@ -15,6 +15,7 @@ import { IconButton } from '../ui/IconButton';
 
 // Retries, then reloads once, when a deploy has replaced the chunk this page was built with
 const MemoryReel = lazyWithRetry(() => import('../reel/MemoryReel').then(m => ({ default: m.MemoryReel })));
+const Lightbox = lazyWithRetry(() => import('../Lightbox').then(m => ({ default: m.Lightbox })));
 
 // A journey's magazine (v1.3.6 4-b): the journey itself, read as an issue. It covers the map and
 // the record, starts on the cover (no title animation) and is built from the journey's own photos,
@@ -78,15 +79,17 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
     if (closeFirst) onClose();
     else window.setTimeout(onClose, 280);
   };
-  // The one slideshow: the play button runs it from the first photo; a tapped photo opens it still, on that photo
-  const [reel, setReel] = useState<{ at: number; paused: boolean } | null>(null);
+  // The one slideshow: the play button runs it from the first photo. A tapped photo opens the viewer (v1.3.8): full
+  // size, zoom, swipe to the others, and the slideshow from there; leaving that slideshow comes back to the viewer.
+  const [reel, setReel] = useState<{ at: number; paused: boolean; fromViewer?: boolean } | null>(null);
+  const [viewer, setViewer] = useState<number | null>(null);
 
   useEffect(() => {
     const unlock = lockBodyScroll();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !reel) slideAway(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !reel && viewer === null) slideAway(); };
     window.addEventListener('keydown', onKey);
     return () => { unlock(); window.removeEventListener('keydown', onKey); };
-  }, [onClose, reel]);
+  }, [onClose, reel, viewer]);
 
   // Photos by day, in the journey's order; photos without a day close the issue
   const byDay = useMemo(() => {
@@ -111,7 +114,8 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
     e.stopPropagation();
     if (await confirmDialog('이 사진을 여정에서 지울까요?', { title: 'DELETE', confirmLabel: '삭제' })) onRemovePhoto?.(url, e);
   };
-  const openPhoto = (url: string) => setReel({ at: Math.max(0, photos.findIndex(p => p.url === url)), paused: true });
+  const openPhoto = (url: string) => setViewer(Math.max(0, photos.findIndex(p => p.url === url)));
+  const viewerImages = useMemo(() => photos.map(p => ({ url: getEffectiveImageUrl(p.url), date: p.date, place: p.title, location: p.place, type: 'timeline' as const })), [photos]);
   const photoProps = { onOpen: openPhoto, onRemove: canAddPhotos ? removePhoto : undefined, onJump: onJumpToItem };
 
   const unpublish = async () => {
@@ -220,7 +224,20 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
             shots={photos.map(p => ({ src: getEffectiveImageUrl(p.url), place: p.title, location: p.place, date: p.date }))}
             startIndex={reel.at}
             startPaused={reel.paused}
-            onClose={() => setReel(null)}
+            onClose={() => { if (reel.fromViewer) setViewer(reel.at); setReel(null); }}
+          />
+        </Suspense>
+      )}
+
+      {viewer !== null && (
+        <Suspense fallback={null}>
+          <Lightbox
+            isOpen
+            images={viewerImages}
+            currentIndex={Math.min(viewer, viewerImages.length - 1)}
+            onNavigate={setViewer}
+            onClose={() => setViewer(null)}
+            onPlay={i => { setViewer(null); setReel({ at: i, paused: false, fromViewer: true }); }}
           />
         </Suspense>
       )}

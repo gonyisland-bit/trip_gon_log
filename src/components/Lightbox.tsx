@@ -12,6 +12,7 @@ import {
   MapPin,
   Volume2,
   VolumeX,
+  Play,
 } from 'lucide-react';
 import { bgmPlayer, BgmTrack } from '../utils/audioHelper';
 import { lockBodyScroll } from '../utils/scrollLock';
@@ -32,6 +33,8 @@ interface LightboxProps {
   currentIndex: number;
   onClose: () => void;
   onNavigate: (index: number) => void;
+  /** Runs the slideshow from the photo on screen (the magazine's viewer, v1.3.8) */
+  onPlay?: (index: number) => void;
 }
 
 export function Lightbox({
@@ -40,6 +43,7 @@ export function Lightbox({
   currentIndex,
   onClose,
   onNavigate,
+  onPlay,
 }: LightboxProps) {
   // The back gesture closes the lightbox instead of leaving the page
   useBackToClose(isOpen, onClose);
@@ -647,6 +651,20 @@ export function Lightbox({
         </span>
 
         <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
+          {onPlay && (
+            <>
+              <button
+                type="button"
+                onClick={() => onPlay(currentIndex)}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-red-600 hover:bg-red-700 text-white text-micro font-bold tracking-wider transition-colors"
+                title="이 사진부터 슬라이드쇼"
+              >
+                <Play className="w-3 h-3 fill-current" aria-hidden />
+                슬라이드쇼
+              </button>
+              <div className="h-4 w-[1px] bg-white/20 mx-1" />
+            </>
+          )}
           {/* Log toggle */}
           <button
             onClick={() => setShowLog(v => !v)}
@@ -661,10 +679,10 @@ export function Lightbox({
             Log {showLog ? 'ON' : 'OFF'}
           </button>
 
-          <div className="h-4 w-[1px] bg-white/20 mx-1" />
+          {!onPlay && <div className="h-4 w-[1px] bg-white/20 mx-1" />}
 
-          {/* BGM Toggle in Normal Mode */}
-          <button
+          {/* BGM Toggle in Normal Mode (the magazine's viewer leaves the music to its slideshow) */}
+          {!onPlay && <button
             onClick={() => bgmPlayer.toggle()}
             className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
               isBgmPlaying
@@ -675,7 +693,7 @@ export function Lightbox({
           >
             {isBgmPlaying ? <Volume2 className="w-3 h-3 text-red-400 animate-pulse" /> : <VolumeX className="w-3 h-3 opacity-60" />}
             BGM
-          </button>
+          </button>}
 
           {/* Desktop Zoom controls */}
           <div className="hidden sm:flex items-center gap-1">
