@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { TRAVELLER_SIZE, travellerHtml } from '../art/bear/kit';
 import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock, Bookmark, Locate, User, Layers } from 'lucide-react';
 import { MAP_STYLES, MAP_STYLE_EVENT, MAP_STYLE_LABEL, MapStyle, applyMapStyle, isMapStyle, mapTileFor, readMapStyle } from '../utils/mapTiles';
 import { Trip, TimelineItem, TransitItem, SpotPocketItem } from '../types';
@@ -50,151 +51,15 @@ function itemMinutes(time?: string): number | null {
   return h * 60 + +m[2];
 }
 
+// The traveller on the journey map is the bear of the illustrations (art/bear/kit): walking, or in a car, a train, a
+// ferry or a plane. Anchored at the middle of its bottom edge.
 const getVehicleDimensions = (type: 'car' | 'train' | 'ship' | 'flight' | null | undefined): { iconSize: [number, number]; iconAnchor: [number, number] } => {
-  if (type === 'train') return { iconSize: [52, 32], iconAnchor: [26, 32] };
-  if (type === 'car') return { iconSize: [48, 32], iconAnchor: [24, 32] };
-  if (type === 'ship') return { iconSize: [50, 32], iconAnchor: [25, 32] };
-  if (type === 'flight') return { iconSize: [48, 30], iconAnchor: [24, 30] };
-  return { iconSize: [40, 46], iconAnchor: [20, 46] }; // walker
+  const [w, h] = TRAVELLER_SIZE[type ?? 'walk'];
+  return { iconSize: [w, h], iconAnchor: [Math.round(w / 2), h] };
 };
 
-const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null | undefined, isWest: boolean, isMoving: boolean) => {
-  const flipStyle = isWest ? 'scaleX(-1)' : 'scaleX(1)';
-  // 자동차 SVG는 기본 상태에서 차 앞머리(보닛)가 왼쪽(x=5)을 향하므로 플립 반전 적용
-  const carFlipStyle = isWest ? 'scaleX(1)' : 'scaleX(-1)';
-
-  if (vehicleType === 'car') {
-    return `
-      <div style="width: 48px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none; contain: layout paint; isolation: isolate;">
-        <style>
-          @keyframes carSuspension {
-            0%, 100% { transform: translateY(0px) ${carFlipStyle}; }
-            50% { transform: translateY(-1.5px) ${carFlipStyle}; }
-          }
-        </style>
-        <div style="${isMoving ? 'animation: carSuspension 0.22s ease-in-out infinite;' : `transform: ${carFlipStyle};`} transform-origin: center center; will-change: transform;">
-          <svg viewBox="0 0 48 28" width="44" height="26" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
-            <path d="M5 19C5 18 6 15 8 13.5C10 12 14 11 16 7.5C17.5 5 21 4.5 28 4.5C35 4.5 37 7.5 40 10.5C43 13 45 15.5 45 18C45 20 44 20.5 42 20.5C41 18 39 16 36.5 16C34 16 32 18 31 20.5H19C18 18 16 16 13.5 16C11 16 9 18 8 20.5C6 20.5 5 20 5 19Z" fill="#18181B" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round" />
-            <path d="M17.5 8C19 6 22 5.5 27 5.5V11H13.5C14.8 9.5 16.2 8.5 17.5 8Z" fill="#FFFFFF" fill-opacity="0.9" />
-            <path d="M29 5.5C34 5.5 35.5 7.5 38 10.5C38.5 11 36 11 30.5 11V5.5H29Z" fill="#FFFFFF" fill-opacity="0.9" />
-            <circle cx="13.5" cy="20.5" r="4.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1.2" />
-            <circle cx="13.5" cy="20.5" r="1.8" fill="#FFFFFF" />
-            <circle cx="36.5" cy="20.5" r="4.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1.2" />
-            <circle cx="36.5" cy="20.5" r="1.8" fill="#FFFFFF" />
-            <path d="M44 14.5L46 16.5H44V14.5Z" fill="#FACC15" />
-          </svg>
-        </div>
-        <div style="width: 36px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; margin-top: -2px;"></div>
-      </div>
-    `;
-  }
-
-  if (vehicleType === 'train') {
-    return `
-      <div style="width: 52px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none; contain: layout paint; isolation: isolate;">
-        <style>
-          @keyframes trainSuspension {
-            0%, 100% { transform: translateY(0px) ${flipStyle}; }
-            50% { transform: translateY(-1.2px) ${flipStyle}; }
-          }
-        </style>
-        <div style="${isMoving ? 'animation: trainSuspension 0.2s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: center center; will-change: transform;">
-          <svg viewBox="0 0 52 28" width="48" height="26" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
-            <path d="M4 8C4 6 5.5 5 8 5H41C46 5 49 9 51 15C52 18 51 19.5 48 20H7C5 20 4 19 4 17V8Z" fill="#18181B" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round" />
-            <path d="M42.5 7.5C45.5 8 47.5 11 49 14.5H40V7.5H42.5Z" fill="#FFFFFF" fill-opacity="0.9" />
-            <rect x="8" y="8" width="5.5" height="4" rx="0.8" fill="#FFFFFF" fill-opacity="0.85" />
-            <rect x="16" y="8" width="5.5" height="4" rx="0.8" fill="#FFFFFF" fill-opacity="0.85" />
-            <rect x="24" y="8" width="5.5" height="4" rx="0.8" fill="#FFFFFF" fill-opacity="0.85" />
-            <rect x="32" y="8" width="5.5" height="4" rx="0.8" fill="#FFFFFF" fill-opacity="0.85" />
-            <rect x="4" y="14" width="46" height="1.8" fill="#E11D48" />
-            <circle cx="12" cy="21" r="3.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
-            <circle cx="20" cy="21" r="3.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
-            <circle cx="34" cy="21" r="3.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
-            <circle cx="42" cy="21" r="3.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
-          </svg>
-        </div>
-        <div style="width: 42px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; margin-top: -2px;"></div>
-      </div>
-    `;
-  }
-
-  if (vehicleType === 'ship') {
-    return `
-      <div style="width: 50px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none; contain: layout paint; isolation: isolate;">
-        <style>
-          @keyframes shipRolling {
-            0%, 100% { transform: translateY(0px) ${flipStyle} rotate(0deg); }
-            50% { transform: translateY(-1.5px) ${flipStyle} rotate(1.5deg); }
-          }
-        </style>
-        <div style="${isMoving ? 'animation: shipRolling 0.28s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: center center; will-change: transform;">
-          <svg viewBox="0 0 50 28" width="46" height="26" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
-            <path d="M19 6V2.5H23V6H19Z" fill="#18181B" stroke="#FFFFFF" stroke-width="0.8" />
-            <rect x="19" y="3.5" width="4" height="1" fill="#E11D48" />
-            <path d="M13 13V7.5C13 6.8 13.8 6.2 14.5 6.2H32.5C33.2 6.2 34 6.8 34.5 7.5L37.5 13H13Z" fill="#18181B" stroke="#FFFFFF" stroke-width="1" stroke-linejoin="round" />
-            <rect x="16" y="8" width="3.2" height="2.2" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
-            <rect x="21" y="8" width="3.2" height="2.2" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
-            <rect x="26" y="8" width="3.2" height="2.2" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
-            <path d="M31 8H33.5L35.5 11H31V8Z" fill="#FFFFFF" fill-opacity="0.9" />
-            <path d="M3.5 13.5C4 16.5 6.8 19.8 11.5 19.8H36.5C41.8 19.8 45.2 16.8 47 13H4C3.8 13.2 3.6 13.3 3.5 13.5Z" fill="#18181B" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round" />
-            <line x1="7" y1="15.5" x2="43" y2="15.5" stroke="#FFFFFF" stroke-width="0.8" stroke-dasharray="2 1.5" stroke-opacity="0.75" />
-          </svg>
-        </div>
-        <div style="width: 44px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; margin-top: -2px;"></div>
-      </div>
-    `;
-  }
-
-  if (vehicleType === 'flight') {
-    return `
-      <div style="width: 48px; height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none; contain: layout paint; isolation: isolate;">
-        <style>
-          @keyframes planeGliding {
-            0%, 100% { transform: translateY(0px) ${flipStyle}; }
-            50% { transform: translateY(-1.5px) ${flipStyle}; }
-          }
-        </style>
-        <div style="${isMoving ? 'animation: planeGliding 0.35s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: center center; will-change: transform;">
-          <svg viewBox="0 0 48 26" width="44" height="24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
-            <path d="M4 7.5L8.5 13H13L7.5 5.5C7 4.8 6 4.8 5.5 5.5L4 7.5Z" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
-            <path d="M10 12.5H35C40.5 12.5 44.5 13.5 45.8 14.5C44.5 15.5 40.5 16.5 35 16.5H11C8.5 16.5 5.5 15.8 4.5 14.5C5.5 13.2 8.5 12.5 10 12.5Z" fill="#18181B" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round" />
-            <path d="M21 14.5L16.5 20.5C16 21 15 21 14.5 20.5L14 20L18.5 14.5H21Z" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
-            <rect x="20.5" y="17.5" width="6.5" height="2.2" rx="1" fill="#18181B" stroke="#FFFFFF" stroke-width="0.8" />
-            <path d="M39 13.2C41.5 13.2 43.2 13.8 43.8 14.2H38V13.2H39Z" fill="#FFFFFF" fill-opacity="0.95" />
-            <line x1="16" y1="13.8" x2="36" y2="13.8" stroke="#FFFFFF" stroke-width="1.2" stroke-dasharray="2 1" stroke-opacity="0.85" />
-          </svg>
-        </div>
-        <div style="width: 38px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; margin-top: -1px;"></div>
-      </div>
-    `;
-  }
-
-  // Default: Walker (사람 걷기)
-  return `
-    <div style="width: 40px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none; contain: layout paint; isolation: isolate;">
-      <style>
-        @keyframes walkerBobbing {
-          0%, 100% { transform: translateY(0px) ${flipStyle} rotate(0deg); }
-          25% { transform: translateY(-4px) ${flipStyle} rotate(2.5deg); }
-          50% { transform: translateY(0px) ${flipStyle} rotate(0deg); }
-          75% { transform: translateY(-4px) ${flipStyle} rotate(-2.5deg); }
-        }
-        @keyframes walkerShadowPulse {
-          0%, 50%, 100% { transform: scale(1); opacity: 0.5; }
-          25%, 75% { transform: scale(0.75); opacity: 0.25; }
-        }
-      </style>
-      <div style="${isMoving ? 'animation: walkerBobbing 0.44s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: bottom center; will-change: transform;">
-        <img
-          src="/art/backpacking.webp"
-          alt=""
-          style="width: 46px; height: 46px; object-fit: contain; display: block; filter: drop-shadow(1.5px 0 0 #FFFFFF) drop-shadow(-1.5px 0 0 #FFFFFF) drop-shadow(0 1.5px 0 #FFFFFF) drop-shadow(0 -1.5px 0 #FFFFFF) drop-shadow(0 2px 4px rgba(0,0,0,0.65));"
-        />
-      </div>
-      <div style="width: 24px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; ${isMoving ? 'animation: walkerShadowPulse 0.44s ease-in-out infinite;' : ''} margin-top: -2px;"></div>
-    </div>
-  `;
-};
+const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null | undefined, isWest: boolean, isMoving: boolean) =>
+  travellerHtml(vehicleType, isWest, isMoving);
 
 const getTransitVehicleType = (transit?: any): 'bus' | 'car' | 'train' => {
   if (!transit) return 'train';

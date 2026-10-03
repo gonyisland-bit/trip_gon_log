@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, LocateFixed, Star, X } from 'lucide-react';
-import type { CityWeatherConfig, Plan, SpotPocketItem, Trip } from '../../../types';
-import { useCurrentPlace } from '../../../utils/currentPlace';
-import { CURRENT_LOCATION_EN } from '../../../utils/userPrefs';
+import type { Plan, SpotPocketItem, Trip } from '../../../types';
 import { SheetCloseButton, useSheetClose } from '../../Sheet';
 import { UserProfileAvatar } from '../../UserProfileAvatar';
 import { cleanCityDisplayName, fetchCityWeather, getWeatherMeta, type CityWeatherData } from '../../../utils/weatherApi';
-import { openSettings, useMyCities } from '../../../utils/myCities';
+import { openSettings } from '../../../utils/myCities';
 import { useExchangeRates } from '../../../utils/exchangeRates';
 import { openJourneyFromCard } from '../../../utils/journeyOpen';
 import { openDepartureBoard } from '../../../app/quickActions';
 import { friendLabel, type Friend } from '../../../utils/friends';
 import { CATEGORY_FORM_ORDER, CATEGORY_META } from '../../pocket/categoryMeta';
 import { spotCity } from './placeNames';
-import { CLOCK_STYLES, ClockFace, ScaledClock, useClockSetup, useNow, zonedTime } from './WorldClock';
+import { useWeatherPlaces } from './weatherPlaces';
+import { CLOCK_STYLES, ClockFace, useClockSetup, useNow } from './WorldClock';
 import { setHomeWidgets, type BentoTileId } from '../../../utils/homeWidgetPrefs';
 import type { DepartureTicket } from '../../departure/departureData';
 import { daysUntil, ticketRange, ticketStatus } from '../../departure/departureData';
@@ -103,33 +102,22 @@ function Forecast({ cityEn, lat, lng, tz, country }: { cityEn: string; lat: numb
 }
 
 function WeatherBody() {
-  const { list } = useMyCities();
-  const { place, busy, locate } = useCurrentPlace();
-  const cities = list.filter(c => c.nameEn !== CURRENT_LOCATION_EN).slice(0, 4);
-  // 'here' is the device's own place, chosen with its icon; the others are the member's cities
-  const [sel, setSel] = useState<'here' | string>(cities[0]?.nameEn ?? 'here');
-  const city = sel === 'here' ? place : cities.find(c => c.nameEn === sel) ?? cities[0];
+  const { cities, place, busy, cur, isHere, choose, chooseHere } = useWeatherPlaces();
+  const pill = (on: boolean) => `h-9 px-3.5 rounded-full inline-flex items-center gap-1.5 text-[13px] font-bold cursor-pointer transition-colors duration-fast ${on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-black/[0.06] dark:bg-white/10 hover:bg-black/[0.1] dark:hover:bg-white/15'}`;
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2.5">
-        <button
-          type="button"
-          aria-label="현재 위치"
-          aria-pressed={sel === 'here'}
-          onClick={async () => { setSel('here'); if (!place) { const found = await locate(); if (!found && cities[0]) setSel(cities[0].nameEn); } }}
-          className={`w-10 h-10 rounded-full grid place-items-center shrink-0 cursor-pointer transition-colors duration-fast ${sel === 'here' ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-black/[0.06] dark:bg-white/10'}`}
-        >
-          <LocateFixed className={`w-[18px] h-[18px] ${busy ? 'animate-pulse' : sel === 'here' ? '' : 'text-red-600 dark:text-red-400'}`} aria-hidden />
+      <div className="flex gap-1.5 flex-wrap" role="radiogroup" aria-label="날씨 도시">
+        <button type="button" role="radio" aria-checked={isHere} onClick={chooseHere} className={pill(isHere)}>
+          <LocateFixed className={`w-3.5 h-3.5 ${busy ? 'animate-pulse' : isHere ? '' : 'text-red-600 dark:text-red-400'}`} aria-hidden />현재 위치
         </button>
-        <span className="w-px h-6 bg-black/10 dark:bg-white/15 shrink-0" aria-hidden />
-        <div className="flex gap-1.5 flex-wrap min-w-0">
-          {cities.map(c => (
-            <button key={c.nameEn} type="button" aria-pressed={sel === c.nameEn} onClick={() => setSel(c.nameEn)} className={`h-8 px-3.5 rounded-full text-[13px] font-bold cursor-pointer ${sel === c.nameEn ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-black/[0.06] dark:bg-white/10'}`}>{cleanCityDisplayName(c.name)}</button>
-          ))}
-        </div>
+        {cities.map(c => {
+          const on = !isHere && cur?.nameEn === c.nameEn;
+          return <button key={c.nameEn} type="button" role="radio" aria-checked={on} onClick={() => choose(c.nameEn)} className={pill(on)}>{cleanCityDisplayName(c.name)}</button>;
+        })}
+        <button type="button" onClick={() => openSettings('cities')} className="h-9 px-3.5 rounded-full inline-flex items-center text-[13px] font-bold border border-black/15 dark:border-white/20 text-black/60 dark:text-white/60 cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">도시 편집</button>
       </div>
-      {sel === 'here' && <span className="text-[12.5px] text-black/55 dark:text-white/55">{place ? '현재 위치의 날씨' : '위치를 찾는 중이거나 허용이 필요해요'}</span>}
-      {city && <Forecast cityEn={city.nameEn} lat={city.lat} lng={city.lng} tz={city.timezone} country={city.country} />}
+      {isHere && !place && <span className="text-[12.5px] text-black/55 dark:text-white/55">위치를 찾는 중이거나 허용이 필요해요</span>}
+      {cur && <Forecast cityEn={cur.nameEn} lat={cur.lat} lng={cur.lng} tz={cur.timezone} country={cur.country} />}
     </div>
   );
 }
@@ -332,7 +320,6 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
       kicker = '날씨';
       title = '내 도시';
       body = <WeatherBody />;
-      action = <Action label="내 도시 편집" onRun={() => openSettings('cities')} icon={false} />;
       break;
     }
     case 'fx': {
@@ -345,7 +332,6 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
       kicker = '세계시간';
       title = '시계 고르기';
       body = <ClockBody nextCity={focus?.cities[0]} />;
-      action = <Action label="내 도시 편집" onRun={() => openSettings('cities')} icon={false} />;
       break;
     }
   }
@@ -444,19 +430,18 @@ function PocketBody({ pockets }: { pockets: SpotPocketItem[] }) {
 }
 
 /**
- * Which cities the world-time cube shows, one or all together, and the face of the clock. Every option is drawn with the
- * cube's own clock, only smaller: a city is its clock in the chosen face, a face is the clock of the chosen city (or
- * cities), so choosing is looking at what the cube will show.
+ * Which cities the world-time cube shows, one or all together, and the face of the clock. The cities are pills (the
+ * member's own list and the current place, in the list's order); the faces are pills too, and one preview under them is
+ * the cube exactly as it will be.
  */
 function ClockBody({ nextCity }: { nextCity?: string }) {
   const setup = useClockSetup(nextCity);
   const now = useNow(1000);
-  const base = setup.main.timezone || 'Asia/Seoul';
   const picked = setup.selected.map(c => c.nameEn);
-  const together = setup.multi && setup.selected.length > 1;
 
-  const toggleMulti = () => {
-    if (setup.multi) { setHomeWidgets({ clockMulti: false, clockCities: picked.slice(0, 1) }); return; }
+  const setMulti = (multi: boolean) => {
+    if (multi === setup.multi) return;
+    if (!multi) { setHomeWidgets({ clockMulti: false, clockCities: picked.slice(0, 1) }); return; }
     const extra = setup.all.find(c => !picked.includes(c.nameEn));
     setHomeWidgets({ clockMulti: true, clockCities: extra && picked.length < 2 ? [...picked, extra.nameEn] : picked });
   };
@@ -467,69 +452,50 @@ function ClockBody({ nextCity }: { nextCity?: string }) {
     if (!on && picked.length >= 4) return;
     setHomeWidgets({ clockCities: on ? picked.filter(n => n !== name) : [...picked, name] });
   };
-  const face = 'w-[174px] h-[174px] rounded-card';
-  const ring = (on: boolean) => `relative block w-full text-left rounded-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${on ? 'ring-2 ring-red-600 dark:ring-red-400 ring-offset-2 ring-offset-surface dark:ring-offset-surface-dark' : ''}`;
   const heading = 'font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50';
+  const pill = (on: boolean) => `h-9 px-3.5 rounded-full inline-flex items-center gap-1.5 text-[13px] font-bold cursor-pointer transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${on ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'bg-black/[0.06] dark:bg-white/10 hover:bg-black/[0.1] dark:hover:bg-white/15'}`;
+  const seg = (on: boolean) => `h-8 px-4 rounded-full text-[13px] font-bold cursor-pointer transition-colors duration-fast ${on ? 'bg-surface dark:bg-surface-dark shadow-sm' : 'text-black/55 dark:text-white/55'}`;
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <span className="block text-[14px] font-bold">동시 표기</span>
-          <span className="block text-[12px] text-black/55 dark:text-white/55">켜면 도시 2~4곳이 큐브에 함께 보여요</span>
+      <div className="flex flex-col gap-2">
+        <span className={heading}>표시 방식</span>
+        <div className="self-start inline-flex p-[3px] rounded-full bg-black/[0.06] dark:bg-white/10" role="radiogroup" aria-label="표시 방식">
+          <button type="button" role="radio" aria-checked={!setup.multi} onClick={() => setMulti(false)} className={seg(!setup.multi)}>한 도시</button>
+          <button type="button" role="radio" aria-checked={setup.multi} onClick={() => setMulti(true)} className={seg(setup.multi)}>함께 보기</button>
         </div>
-        <button type="button" role="switch" aria-checked={setup.multi} aria-label="동시 표기" onClick={toggleMulti} className={`relative w-11 h-7 rounded-full transition-colors duration-fast cursor-pointer shrink-0 ${setup.multi ? 'bg-ink dark:bg-ink-dark' : 'bg-black/15 dark:bg-white/20'}`}>
-          <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-surface dark:bg-paper-dark shadow-sm transition-transform duration-fast ${setup.multi ? 'translate-x-4' : ''}`} />
-        </button>
       </div>
 
-      {/* Here: the device's own time, chosen with its icon, apart from the member's cities below */}
-      {(() => {
-        const here = setup.current;
-        const on = picked.includes(here.nameEn);
-        return (
-          <button type="button" aria-pressed={on} onClick={() => pick(here.nameEn)} className={`w-full h-14 px-3 rounded-card flex items-center gap-3 text-left cursor-pointer transition-colors duration-fast ${on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-black/[0.06] dark:bg-white/10'}`}>
-            <span className="w-9 h-9 rounded-full grid place-items-center shrink-0 bg-red-600 text-white"><LocateFixed className="w-[18px] h-[18px]" aria-hidden /></span>
-            <span className="min-w-0 flex-1">
-              <b className="block text-[14px] font-extrabold leading-tight">현재 위치</b>
-              <span className="block font-mono text-[11.5px] opacity-65 truncate">{here.timezone}</span>
-            </span>
-            <span className="font-mono text-[15px] font-extrabold tabular-nums shrink-0">{zonedTime(here.timezone || 'UTC', now)}</span>
-          </button>
-        );
-      })()}
-
       <div className="flex flex-col gap-2">
-        <span className={heading}>내 도시{setup.multi ? ` · ${picked.length}/4` : ''}</span>
-        <div className="grid grid-cols-3 gap-2.5" role={setup.multi ? 'group' : 'radiogroup'} aria-label="큐브에 보일 도시">
-          {setup.cities.map(c => {
+        <span className={heading}>도시{setup.multi ? ` · ${picked.length}/4` : ''}</span>
+        <div className="flex flex-wrap gap-1.5" role={setup.multi ? 'group' : 'radiogroup'} aria-label="큐브에 보일 도시">
+          {setup.all.map(c => {
             const on = picked.includes(c.nameEn);
+            const here = c.nameEn === setup.current.nameEn;
             const order = picked.indexOf(c.nameEn) + 1;
             return (
-              <button key={c.nameEn} type="button" role={setup.multi ? undefined : 'radio'} aria-checked={setup.multi ? undefined : on} aria-pressed={setup.multi ? on : undefined} aria-label={cleanCityDisplayName(c.name)} onClick={() => pick(c.nameEn)} className={ring(on)}>
-                <ScaledClock><ClockFace className={face} cities={[c]} base={base} style={setup.style} now={now} together={false} /></ScaledClock>
-                {setup.multi && on && <span className={`absolute top-1.5 w-5 h-5 rounded-full bg-red-600 text-white text-[11px] font-bold grid place-items-center ${c.nameEn === setup.nextCityEn ? 'right-9' : 'right-1.5'}`}>{order}</span>}
-                {c.nameEn === setup.nextCityEn && <span className="absolute top-1.5 right-1.5 h-5 px-1.5 rounded-full bg-amber-500 text-black font-mono text-[9.5px] font-bold grid place-items-center">다음</span>}
+              <button key={c.nameEn} type="button" role={setup.multi ? undefined : 'radio'} aria-checked={setup.multi ? undefined : on} aria-pressed={setup.multi ? on : undefined} onClick={() => pick(c.nameEn)} className={pill(on)}>
+                {setup.multi && on && <span className="w-4 h-4 rounded-full bg-red-600 text-white font-mono text-[10px] font-bold grid place-items-center">{order}</span>}
+                {here && <LocateFixed className={`w-3.5 h-3.5 ${on ? '' : 'text-red-600 dark:text-red-400'}`} aria-hidden />}
+                {here ? '현재 위치' : cleanCityDisplayName(c.name)}
+                {c.nameEn === setup.nextCityEn && <span className={`font-mono text-[10px] font-bold ${on ? 'opacity-70' : 'text-amber-700 dark:text-amber-400'}`}>다음</span>}
               </button>
             );
           })}
+          <button type="button" onClick={() => openSettings('cities')} className="h-9 px-3.5 rounded-full inline-flex items-center text-[13px] font-bold border border-black/15 dark:border-white/20 text-black/60 dark:text-white/60 cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">도시 편집</button>
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
         <span className={heading}>시계 모양</span>
-        <div className="grid grid-cols-3 gap-2.5" role="radiogroup" aria-label="시계 모양">
-          {CLOCK_STYLES.map(st => {
-            const on = setup.style === st.id;
-            return (
-              <button key={st.id} type="button" role="radio" aria-checked={on} aria-label={st.label} onClick={() => setHomeWidgets({ clockStyle: st.id })} className={ring(on)}>
-                <ScaledClock><ClockFace className={face} cities={setup.selected} base={base} style={st.id} now={now} together={together} /></ScaledClock>
-                <span className={`block mt-1.5 text-center text-[12.5px] ${on ? 'font-extrabold' : 'font-bold text-black/60 dark:text-white/60'}`}>{st.label}</span>
-              </button>
-            );
-          })}
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="시계 모양">
+          {CLOCK_STYLES.map(st => (
+            <button key={st.id} type="button" role="radio" aria-checked={setup.style === st.id} onClick={() => setHomeWidgets({ clockStyle: st.id })} className={pill(setup.style === st.id)}>{st.label}</button>
+          ))}
         </div>
       </div>
+
+      <ClockFace className="w-full max-w-[260px] aspect-square self-center rounded-card" cities={setup.selected} base={setup.base} style={setup.style} now={now} together={setup.multi} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // Home tiles each member turns on for their own home (v1.3.6, grown into the bento in v1.3.8). Saved with the viewer
 // prefs (users/{uid}/settings/prefs.homeWidgets); the operator's old shared home_widgets doc no longer decides anyone's home.
 import { useEffect, useState } from 'react';
-import { saveUserPref } from './userPrefs';
+import { CURRENT_LOCATION_EN as CURRENT_LOCATION_KEY, saveUserPref } from './userPrefs';
 
 /** The tiles of the home bento, in the order they sit */
 export const BENTO_TILES = [
@@ -38,6 +38,8 @@ export interface HomeWidgetPrefs {
   clockCities: string[];
   clockMulti: boolean;
   clockStyle: ClockStyle;
+  /** Weather cube: the place it shows (English name, or the current location; empty = the first of the member's cities) */
+  wxCity?: string;
 }
 
 export const DEFAULT_HOME_WIDGETS: HomeWidgetPrefs = {
@@ -56,12 +58,13 @@ const LEGACY: Partial<Record<BentoTileId, 'showLiveWeather' | 'showCalendarArchi
 };
 
 const KEY = 'tgl_home_widgets';
+const upper = (n: string) => String(n).trim().toUpperCase();
 const EVENT = 'homeWidgetsChanged';
 
 export function readHomeWidgets(): HomeWidgetPrefs {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (v && typeof v === 'object') return { ...DEFAULT_HOME_WIDGETS, ...v, hiddenTiles: Array.isArray(v.hiddenTiles) ? v.hiddenTiles : [], clockCities: Array.isArray(v.clockCities) ? v.clockCities : [] };
+    if (v && typeof v === 'object') return { ...DEFAULT_HOME_WIDGETS, ...v, hiddenTiles: Array.isArray(v.hiddenTiles) ? v.hiddenTiles : [], clockCities: Array.isArray(v.clockCities) ? v.clockCities.map(upper) : [], wxCity: typeof v.wxCity === 'string' ? upper(v.wxCity) : undefined };
   } catch { /* defaults */ }
   return DEFAULT_HOME_WIDGETS;
 }
@@ -98,4 +101,17 @@ export function useHomeWidgets(): HomeWidgetPrefs {
     return () => window.removeEventListener(EVENT, on);
   }, []);
   return v;
+}
+
+/**
+ * The clock and the weather cube choose from the member's cities; a city taken off that list leaves their choices too,
+ * so neither keeps pointing at a city the member no longer has. The current location always stays.
+ */
+export function pruneHomeCities(keys: string[], save = true) {
+  const cur = readHomeWidgets();
+  const keep = (n: string) => n === CURRENT_LOCATION_KEY || keys.includes(upper(n));
+  const clockCities = cur.clockCities.filter(keep);
+  const wxCity = cur.wxCity && keep(cur.wxCity) ? cur.wxCity : undefined;
+  if (clockCities.length === cur.clockCities.length && wxCity === cur.wxCity) return;
+  setHomeWidgets({ clockCities, wxCity }, save);
 }

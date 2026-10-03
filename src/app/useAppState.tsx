@@ -45,7 +45,7 @@ import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, lo
 import { applyHubMapStyle, applyMapStyle, isHubMapStyle, isMapStyle } from '../utils/mapTiles';
 import { noteRecentJourney } from '../utils/recentJourneys';
 import { orderWithNewFirst } from '../utils/journeyOrderHelper';
-import { applyFavoritePrefs, findCity, readMainCity } from '../utils/myCities';
+import { applyMyCitiesPrefs, findCity, readMainCity, readMyCities } from '../utils/myCities';
 import { setHomeWidgets } from '../utils/homeWidgetPrefs';
 import { setLogoSplash } from '../utils/logoSplash';
 
@@ -258,7 +258,7 @@ export function useAppState() {
         let bg = true;
         try { bg = localStorage.getItem('calendar_weather_bg_enabled') !== 'false'; } catch (_) {}
         saveUserPref({ weatherCity: localStorage.getItem('selected_weather_city_en') || 'SEOUL', weatherBg: bg, nightMode: (localStorage.getItem('nightModeSetting') as NightModeSetting) || 'auto' });
-        applyFavoritePrefs(prefs.favoriteCities);
+        applyMyCitiesPrefs(prefs);
         return;
       }
       if (prefs.nightMode) setNightModeSetting(prefs.nightMode);
@@ -279,13 +279,13 @@ export function useAppState() {
         } else if (here) selectWeatherCity(here);
       } else if (prefs.weatherCity) {
         // Any city of the world catalog, not only the operator's list
-        const found = findCity(prefs.weatherCity);
+        const found = findCity(prefs.weatherCity) ?? prefs.myCities?.find(c => c.nameEn?.toUpperCase() === prefs.weatherCity!.toUpperCase()) ?? readMyCities().find(c => c.nameEn === prefs.weatherCity!.toUpperCase());
         if (found) {
           try { localStorage.setItem('selected_weather_city_en', found.nameEn); } catch (_) {}
           window.dispatchEvent(new CustomEvent('selectedWeatherCityChanged', { detail: found }));
         }
       }
-      applyFavoritePrefs(prefs.favoriteCities);
+      applyMyCitiesPrefs(prefs);
       if (prefs.homeWidgets) setHomeWidgets(prefs.homeWidgets, false);
       if (prefs.backdrop) applyBackdrop(prefs.backdrop, false);
       if (prefs.bgm) {

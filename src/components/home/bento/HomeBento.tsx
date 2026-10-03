@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowRight, ArrowUpRight, BookOpen, Bookmark, CalendarDays, Coins, History, Loader2, LocateFixed, Luggage, Map as MapIcon, Moon, Plus, Sun, Ticket, Users,
+  ArrowRight, BookOpen, Bookmark, CalendarDays, Coins, History, Loader2, LocateFixed, Luggage, Map as MapIcon, Moon, Plus, Sun, Ticket, Users,
 } from 'lucide-react';
 import { auth } from '../../../firebase';
-import type { CityWeatherConfig, Plan, SpotPocketItem, Trip } from '../../../types';
+import type { Plan, SpotPocketItem, Trip } from '../../../types';
 import { Sheet } from '../../Sheet';
 import { Art } from '../../../art/Art';
 import { UserProfileAvatar } from '../../UserProfileAvatar';
@@ -11,7 +11,6 @@ import { useFriends } from '../../friends/useFriends';
 import { useCitiesWeather } from '../../weather/useCitiesWeather';
 import { resolveWeatherEffectType } from '../../WeatherEffectLayer';
 import { cleanCityDisplayName, getWeatherMeta } from '../../../utils/weatherApi';
-import { useMyCities } from '../../../utils/myCities';
 import { useExchangeRates } from '../../../utils/exchangeRates';
 import { getSavedPockets, subscribePockets } from '../../../utils/pocketStorage';
 import { cardCoverUrl } from '../../../utils/journeyThumbs';
@@ -20,10 +19,10 @@ import { isTileOn, useHomeWidgets, type BentoTileId } from '../../../utils/homeW
 import { openJourneyFromCard, warmJourney } from '../../../utils/journeyOpen';
 import { TicketPass } from '../../ui/TicketPass';
 import { DotMap } from './DotMap';
-import { useCurrentPlace } from '../../../utils/currentPlace';
 import { CURRENT_LOCATION_EN } from '../../../utils/userPrefs';
-import { MultiClock, SingleClock, clockGround, useClockSetup, useNow, zoneOf } from './WorldClock';
+import { ClockFace, useClockSetup, useNow } from './WorldClock';
 import { BentoSheet, type BentoCtx } from './BentoSheet';
+import { useWeatherPlaces } from './weatherPlaces';
 import {
   describeJourney, journeyMonth, journeyPoints, journeyStats, monthCells, focusPoints, focusTrip, pickMemory,
   type FocusTrip, type Journey,
@@ -55,7 +54,7 @@ const TINT: Record<Tint, string> = {
 };
 const SPAN: Record<Span, string> = { cube: '', wide: 'col-span-2', hero: 'col-span-2 row-span-2', tall: 'row-span-2' };
 
-const kicker = 'font-mono text-micro font-bold uppercase tracking-[0.13em] opacity-70 flex items-center gap-1.5 pr-8 min-w-0';
+const kicker = 'font-mono text-micro font-bold uppercase tracking-[0.13em] opacity-80 flex items-center gap-1.5 min-w-0';
 const mono = 'font-mono tabular-nums';
 
 function Tile({ tint, span = 'cube', label, onOpen, children, className = '', noGo, style, attrs }: {
@@ -73,14 +72,12 @@ function Tile({ tint, span = 'cube', label, onOpen, children, className = '', no
       className={`tgl-press relative ${SPAN[span]} ${TINT[tint]} rounded-card p-3.5 flex flex-col gap-0.5 min-w-0 min-h-0 overflow-hidden cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${className}`}
     >
       {children}
-      {!noGo && (
-        <span className="absolute top-3 right-3 w-[26px] h-[26px] rounded-full grid place-items-center bg-black/[0.08] dark:bg-white/10 pointer-events-none" aria-hidden>
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </span>
-      )}
     </div>
   );
 }
+
+/** A number with its unit set small and raised beside it (12회, 5곳), so the eye lands on the number */
+const Unit = ({ children }: { children: React.ReactNode }) => <span className="text-[0.42em] font-bold tracking-normal ml-[0.12em] align-[0.95em] opacity-80">{children}</span>;
 
 const Kicker = ({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) => (
   <span className={kicker}><Icon className="w-3 h-3 shrink-0" /><span className="truncate">{children}</span></span>
@@ -195,7 +192,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
               <Kicker icon={Luggage}>첫 여정</Kicker>
               <Art id="itinerary-empty" className="h-[46%] w-auto self-center mt-1" />
               <span className="mt-auto text-[22px] font-extrabold tracking-tight leading-tight">첫 여행을 계획해 보세요</span>
-              <span className="text-[12.5px] opacity-75">도시와 날짜를 고르면 티켓이 발권돼요</span>
+              <span className="text-[12.5px] opacity-80">도시와 날짜를 고르면 티켓이 발권돼요</span>
               <span className="mt-2 self-start h-10 px-4 rounded-full bg-red-600 text-white text-[13px] font-bold inline-flex items-center gap-1.5"><Plus className="w-4 h-4" aria-hidden />새 여행</span>
             </Tile>
           )}
@@ -206,7 +203,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
               <div className="flex flex-col gap-1.5">
                 <Kicker icon={CalendarDays}>{focus?.live ? '여행 중' : '예정'}</Kicker>
                 {focus ? (
-                  <span className={`${mono} text-[44px] font-extrabold tracking-[-0.04em] leading-[0.95]`}>{focus.live ? `Day ${focus.day}` : !focus.start ? 'PLAN' : focus.daysLeft === 0 ? 'D-DAY' : `D-${focus.daysLeft}`}</span>
+                  <span className={`${mono} text-[40px] font-extrabold tracking-[-0.04em] leading-[0.95]`}>{focus.live ? `Day ${focus.day}` : !focus.start ? 'PLAN' : focus.daysLeft === 0 ? 'D-DAY' : `D-${focus.daysLeft}`}</span>
                 ) : (
                   <span className="text-[17px] font-extrabold tracking-tight leading-snug">예정된 여정이 없어요</span>
                 )}
@@ -214,7 +211,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
               {focus ? (
                 <div className="flex flex-col gap-1">
                   <span className="text-[15px] font-extrabold tracking-tight leading-snug line-clamp-2 break-keep">{focus.title}</span>
-                  <span className={`${mono} text-[11.5px] font-semibold opacity-75 truncate`}>{focus.range}{focus.nights ? ` · ${focus.nights}` : ''}</span>
+                  <span className={`${mono} text-[11.5px] font-semibold opacity-80 truncate`}>{focus.range}{focus.nights ? ` · ${focus.nights}` : ''}</span>
                   {!focus.live && !!focus.start && focus.total > 0 && (
                     <span className="h-1.5 rounded-full bg-black/10 dark:bg-white/15 overflow-hidden mt-0.5" aria-hidden>
                       <i className="block h-full rounded-full bg-amber-700 dark:bg-amber-400" style={{ width: `${Math.max(6, Math.min(100, 100 - (focus.daysLeft / 120) * 100))}%` }} />
@@ -222,7 +219,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
                   )}
                 </div>
               ) : (
-                <span className="text-[12px] opacity-75">다음 여행을 정해 보세요</span>
+                <span className="text-[12px] opacity-80">다음 여행을 정해 보세요</span>
               )}
             </Tile>
           )}
@@ -237,24 +234,23 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
               <div className="relative z-[1] p-3.5 flex flex-col h-full pointer-events-none">
                 <Kicker icon={MapIcon}>지도</Kicker>
                 <div className="mt-auto flex items-baseline gap-3 flex-wrap">
-                  <span className="text-[28px] font-extrabold tracking-[-0.02em] leading-none">{stats.countries}개국</span>
-                  <span className="text-[12px] opacity-75">도시 {stats.cities}</span>
+                  <span className={`${mono} text-[32px] font-extrabold tracking-[-0.03em] leading-none`}>{stats.countries}<Unit>개국</Unit></span>
+                  <span className="text-[12px] opacity-80">도시 {stats.cities}</span>
                   {focus?.cities[0] && <span className="text-[12px] font-bold text-amber-700 dark:text-amber-400">다음 · {focus.cities[0]}</span>}
                 </div>
               </div>
-              <span className="absolute top-3 right-3 w-[26px] h-[26px] rounded-full grid place-items-center bg-black/[0.08] dark:bg-white/10 pointer-events-none" aria-hidden><ArrowUpRight className="w-3.5 h-3.5" /></span>
             </Tile>
           )}
 
           {/* ── Calendar: this month, small ── */}
           {on('cal') && (
             <Tile tint="mist" label="이번 달 달력" onOpen={open('cal')}>
-              <span className="flex items-baseline gap-1.5 pr-8">
-                <span className="text-[26px] font-extrabold tracking-tight leading-none">{month.month + 1}월</span>
+              <span className="flex items-baseline gap-1.5">
+                <span className="text-[24px] font-extrabold tracking-tight leading-none">{month.month + 1}월</span>
                 <span className={`${mono} text-[11px] font-bold opacity-60`}>{month.year}</span>
               </span>
-              <div className="flex-1 min-h-0 mt-2 grid grid-cols-7 grid-rows-[12px_repeat(6,1fr)] text-center font-mono text-[10px] font-semibold">
-                {WEEK.map((w, i) => <span key={w} className={`text-[8.5px] opacity-60 ${i === 0 ? 'text-red-600 dark:text-red-400 opacity-100' : i === 6 ? 'text-blue-600 dark:text-blue-400 opacity-100' : ''}`}>{w}</span>)}
+              <div className="flex-1 min-h-0 mt-2 grid grid-cols-7 grid-rows-[13px_repeat(6,1fr)] text-center font-mono text-[10.5px] font-semibold">
+                {WEEK.map((w, i) => <span key={w} className={`text-[10px] leading-none opacity-60 ${i === 0 ? 'text-red-600 dark:text-red-400 opacity-100' : i === 6 ? 'text-blue-600 dark:text-blue-400 opacity-100' : ''}`}>{w}</span>)}
                 {Array.from({ length: month.lead }).map((_, i) => <span key={`l${i}`} />)}
                 {month.cells.map(c => (
                   <span key={c.day} className="relative flex flex-col items-center justify-start">
@@ -270,16 +266,19 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
           {on('sum') && (
             <Tile tint="peach" label="다녀온 여정" onOpen={open('sum')}>
               <Kicker icon={Luggage}>다녀온 여정</Kicker>
-              <span className={`${mono} mt-1 text-[32px] font-extrabold tracking-[-0.03em] leading-none`}>{stats.count}회</span>
+              <span className={`${mono} mt-1 text-[32px] font-extrabold tracking-[-0.03em] leading-none`}>{stats.count}<Unit>회</Unit></span>
               <span className="text-[11.5px] opacity-80 leading-snug">{stats.days}일 · 도시 {stats.cities} · {stats.countries}개국</span>
-              {stats.byYear.length > 0 && (
+              {stats.byYear.length > 0 && stats.byYear.length < 3 && (
+                <span className={`${mono} mt-auto text-[11.5px] font-bold opacity-80 leading-snug`}>{stats.byYear.map(y => `${y.year} · ${y.count}회`).join('  ')}</span>
+              )}
+              {stats.byYear.length >= 3 && (
                 <div className="mt-auto flex items-end gap-1.5 h-[34%] min-h-[28px]" aria-hidden>
                   {stats.byYear.map(y => {
                     const max = Math.max(...stats.byYear.map(v => v.count));
                     return (
                       <span key={y.year} className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full">
                         <i className="w-full rounded-[4px] bg-current opacity-40" style={{ height: `${Math.max(14, (y.count / max) * 100)}%` }} />
-                        <span className="font-mono text-[8.5px] opacity-70 leading-none">{String(y.year).slice(2)}</span>
+                        <span className="font-mono text-[10px] opacity-80 leading-none">{String(y.year).slice(2)}</span>
                       </span>
                     );
                   })}
@@ -302,7 +301,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
                       <span className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <span className="absolute inset-x-0 bottom-0 p-2 text-white">
                         <span className="block text-[11.5px] font-extrabold leading-tight line-clamp-2 break-keep">{j.title.replace(' (Plan)', '')}</span>
-                        <span className="block font-mono text-[9.5px] opacity-85 mt-0.5">{journeyMonth(j)}</span>
+                        <span className="block font-mono text-[10.5px] opacity-90 mt-0.5">{journeyMonth(j)}</span>
                       </span>
                     </span>
                   ))}
@@ -327,7 +326,6 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
                   <span className="mt-auto text-[13px] font-bold opacity-90">다녀온 여정의 사진이 여기에 떠올라요</span>
                 )}
               </div>
-              <span className="absolute top-3 right-3 w-[26px] h-[26px] rounded-full grid place-items-center bg-white/25 pointer-events-none" aria-hidden><ArrowUpRight className="w-3.5 h-3.5" /></span>
             </Tile>
           )}
 
@@ -336,7 +334,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
             <Tile tint="lilac" label="친구" onOpen={open('fri')} className="justify-between">
               <div className="flex flex-col gap-1.5">
                 <Kicker icon={Users}>친구</Kicker>
-                <span className="text-[34px] font-extrabold tracking-[-0.03em] leading-none">{friends.length}명</span>
+                <span className={`${mono} text-[32px] font-extrabold tracking-[-0.03em] leading-none`}>{friends.length}<Unit>명</Unit></span>
                 <span className="text-[12px] opacity-80 leading-snug break-keep">{friends.length ? '함께 보는 여정과 포켓' : '초대하면 여정을 같이 봐요'}</span>
               </div>
               <span className="flex -space-x-2.5 h-9">
@@ -356,8 +354,8 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
                   {published[0].img && (
                     <img src={cardCoverUrl(published[0])} alt="" loading="lazy" decoding="async" draggable={false} className="absolute right-3.5 bottom-3.5 w-[38%] aspect-[3/4] object-cover rounded-[8px] shadow-[0_6px_14px_rgba(0,0,0,0.25)] rotate-[4deg]" />
                   )}
-                  <div className={`flex flex-col gap-1 ${published[0].img ? 'w-[56%]' : ''}`}>
-                    <span className="text-[26px] font-extrabold tracking-tight leading-none">{published.length}권</span>
+                  <div className={`flex flex-col gap-1 ${published[0].img ? 'w-[52%]' : ''}`}>
+                    <span className={`${mono} text-[32px] font-extrabold tracking-[-0.03em] leading-none`}>{published.length}<Unit>권</Unit></span>
                     <span className="text-[11.5px] font-semibold opacity-80 leading-snug line-clamp-3 break-keep">{published[0].title}</span>
                   </div>
                 </>
@@ -375,7 +373,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
             <Tile tint="sage" label="포켓" onOpen={open('pocket')} className="justify-between">
               <div className="flex flex-col gap-1.5">
                 <Kicker icon={Bookmark}>포켓</Kicker>
-                <span className={`${mono} text-[34px] font-extrabold tracking-[-0.03em] leading-none`}>{pockets.length}곳</span>
+                <span className={`${mono} text-[32px] font-extrabold tracking-[-0.03em] leading-none`}>{pockets.length}<Unit>곳</Unit></span>
               </div>
               {pockets.length > 0 ? (
                 <div className="flex flex-col gap-1">
@@ -474,16 +472,12 @@ function TerminalTile({ focus, tickets, onOpen }: { focus: FocusTrip | null; tic
 // Weather: the tile follows the weather of the place it shows. Sun, cloud, fog, rain, snow and storm each have their
 // own sky (css, index.css .tgl-wx), and night turns any of them dark. Tapping another place in the list switches the tile.
 function WeatherTile({ onOpen }: { onOpen: () => void }) {
-  const { list } = useMyCities();
-  const { place, busy, locate } = useCurrentPlace();
-  // The member's places, and "here" first: the current location is a place of its own beside the main city and favourites
-  const key = `${place ? `${place.lat},${place.lng}` : ''}|${list.filter(c => c.nameEn !== CURRENT_LOCATION_EN).slice(0, 4).map(c => c.nameEn).join('|')}`;
-  const cities = useMemo(() => [...(place ? [place] : []), ...list.filter(c => c.nameEn !== CURRENT_LOCATION_EN).slice(0, 4)], [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { cities: mine, place, busy, cur, isHere: here, choose, chooseHere } = useWeatherPlaces();
+  // The member's cities (four fit beside the reading) and "here": the current location is a place of its own
+  const key = `${place ? `${place.lat},${place.lng}` : ''}|${mine.map(c => c.nameEn).join('|')}`;
+  const cities = useMemo(() => [...(place ? [place] : []), ...mine], [key]); // eslint-disable-line react-hooks/exhaustive-deps
   const { now, prefetch } = useCitiesWeather(cities);
   useEffect(() => { prefetch(); }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [picked, setPicked] = useState<string | null>(null);
-  const cur: CityWeatherConfig | undefined = cities.find(c => c.nameEn === picked) ?? cities.find(c => c.nameEn !== CURRENT_LOCATION_EN) ?? cities[0];
-  const here = !!place && cur?.nameEn === place.nameEn;
   const w = cur ? now[cur.nameEn] : undefined;
   const pop = w?.forecast?.[0]?.precipitationProb;
   const mood = w ? resolveWeatherEffectType(w.weatherCode, pop) : 'clear';
@@ -513,7 +507,7 @@ function WeatherTile({ onOpen }: { onOpen: () => void }) {
             <span className="mt-1 text-[12.5px] font-bold flex items-center gap-1.5 flex-wrap">
               {meta.labelKo}
               <span className={`${mono} text-[11.5px] font-semibold`}><span className="text-red-600 dark:text-red-400">{w.tempMax}°</span> / <span className="text-blue-600 dark:text-blue-400">{w.tempMin}°</span></span>
-              {typeof pop === 'number' && pop > 0 && <span className={`${mono} text-[11px] opacity-75`}>강수 {pop}%</span>}
+              {typeof pop === 'number' && pop > 0 && <span className={`${mono} text-[11px] opacity-80`}>강수 {pop}%</span>}
             </span>
             <span className="mt-auto flex items-end justify-between gap-1" aria-label="앞으로의 날씨">
               {w.forecast.slice(1, 5).map(d => {
@@ -534,44 +528,32 @@ function WeatherTile({ onOpen }: { onOpen: () => void }) {
           <span className="mt-auto mb-auto text-[13px] opacity-70">날씨를 불러오는 중</span>
         )}
       </div>
-      {/* The member's places: tap one and the tile becomes its weather */}
-      <div className="relative z-[1] w-[34%] max-w-[150px] shrink-0 flex flex-col justify-end gap-1" role="group" aria-label="내 도시">
-        {cities.filter(c => c.nameEn !== CURRENT_LOCATION_EN).map(c => {
-          const d = now[c.nameEn];
+      {/* The places: "here" first (the first tap asks for location), then the member's cities; tap one and the tile
+          becomes its weather */}
+      <div className="relative z-[1] w-[36%] max-w-[156px] shrink-0 flex flex-col justify-end gap-1" role="radiogroup" aria-label="날씨 도시">
+        {[place ?? null, ...mine.slice(0, 3)].map(c => {
+          const isPlace = !c || c.nameEn === CURRENT_LOCATION_EN;
+          const d = c ? now[c.nameEn] : undefined;
           const m = d ? getWeatherMeta(d.weatherCode, d.forecast?.[0]?.precipitationProb, d.temp) : null;
           const CIcon = m?.icon;
-          const active = cur?.nameEn === c.nameEn;
+          const active = isPlace ? here : !here && cur?.nameEn === c!.nameEn;
           return (
             <button
-              key={c.nameEn}
+              key={c?.nameEn ?? 'here'}
               type="button"
-              aria-pressed={active}
-              onClick={(e) => { e.stopPropagation(); setPicked(c.nameEn); }}
+              role="radio"
+              aria-checked={active}
+              onClick={(e) => { e.stopPropagation(); if (isPlace) chooseHere(); else choose(c!.nameEn); }}
               className={`h-[29px] px-2.5 rounded-full flex items-center gap-1.5 text-left cursor-pointer transition-colors duration-fast ${active ? 'bg-white/80 dark:bg-white/20 shadow-sm' : 'bg-white/35 dark:bg-white/[0.08] hover:bg-white/55 dark:hover:bg-white/[0.14]'}`}
             >
-              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${active ? 'font-extrabold' : 'font-bold'}`}>{cleanCityDisplayName(c.name)}</span>
+              {isPlace && (busy ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" aria-hidden /> : <LocateFixed className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" aria-hidden />)}
+              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${active ? 'font-extrabold' : 'font-bold'}`}>{isPlace ? '현재 위치' : cleanCityDisplayName(c!.name)}</span>
               {CIcon && <CIcon className={`w-3.5 h-3.5 shrink-0 ${m!.colorClass}`} aria-hidden />}
-              <span className={`${mono} text-[11.5px] font-bold shrink-0`}>{d ? `${d.temp}°` : '—'}</span>
+              {c && <span className={`${mono} text-[11.5px] font-bold shrink-0`}>{d ? `${d.temp}°` : '—'}</span>}
             </button>
           );
         })}
       </div>
-      {/* Here: the device's own place, an icon beside the arrow, apart from the member's cities; the first tap asks for location */}
-      <button
-        type="button"
-        aria-label="현재 위치"
-        aria-pressed={here}
-        onClick={async (e) => {
-          e.stopPropagation();
-          if (place) { setPicked(place.nameEn); return; }
-          const found = await locate();
-          if (found) setPicked(found.nameEn);
-        }}
-        className={`absolute top-3 right-[46px] z-[2] w-[26px] h-[26px] rounded-full grid place-items-center cursor-pointer transition-colors duration-fast ${here ? 'bg-white/85 dark:bg-white/25 shadow-sm' : 'bg-black/[0.08] dark:bg-white/10 hover:bg-black/[0.14]'}`}
-      >
-        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" aria-hidden />}
-      </button>
-      <span className="absolute top-3 right-3 z-[2] w-[26px] h-[26px] rounded-full grid place-items-center bg-black/[0.08] dark:bg-white/10 pointer-events-none" aria-hidden><ArrowUpRight className="w-3.5 h-3.5" /></span>
     </div>
   );
 }
@@ -603,25 +585,19 @@ function ExchangeTile({ onOpen }: { onOpen: () => void }) {
           );
         })}
       </div>
-      <span className={`${mono} text-[10px] opacity-55 mt-1.5`}>{date ? `${date.slice(5).replace('-', '.')} 기준 · KRW` : 'KRW'}</span>
+      <span className={`${mono} text-[10.5px] opacity-70 mt-1.5`}>{date ? `${date.slice(5).replace('-', '.')} 기준 · KRW` : 'KRW'}</span>
     </Tile>
   );
 }
 
-// The world-time cube: one city's clock fills it (components/home/bento/WorldClock); the detail sheet picks the cities,
-// "all together" and the face
+// The world-time cube: one city's watch fills it, or two to four cities share it as cells (components/home/bento/
+// WorldClock); the detail sheet picks the cities, one or all together, and the face
 function ClockTile({ nextCity, onOpen }: { nextCity?: string; onOpen: () => void }) {
   const setup = useClockSetup(nextCity);
   const now = useNow(1000);
-  const base = setup.main.timezone || 'Asia/Seoul';
-  const first = setup.selected[0];
-  const together = setup.multi && setup.selected.length > 1;
-  const night = !together && !!first && zoneOf(first.timezone || 'UTC', now).night;
   return (
-    <Tile tint="bare" label="세계시간" onOpen={onOpen} className={`!p-0 tgl-clock ${clockGround(setup.style, night)}`} attrs={{ 'data-night': night ? '' : undefined }}>
-      {together
-        ? <MultiClock cities={setup.selected} base={base} style={setup.style} now={now} />
-        : first && <SingleClock city={first} base={base} style={setup.style} now={now} />}
+    <Tile tint="bare" label="세계시간" onOpen={onOpen} noGo className="!p-0">
+      <ClockFace className="absolute inset-0" cities={setup.selected} base={setup.base} style={setup.style} now={now} together={setup.multi} />
     </Tile>
   );
 }

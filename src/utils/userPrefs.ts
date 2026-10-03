@@ -16,8 +16,10 @@ export interface UserPrefs {
   mapStyle?: 'normal' | 'terrain' | 'simple';
   /** How each journey opens from its card, by journey id (see journeyOpen.ts) */
   journeyOpenBy?: Record<string, 'board' | 'magazine'>;
-  /** Up to four more cities next to weatherCity (see myCities.ts), by English name */
+  /** The member's cities other than weatherCity, by English name (the shape before v1.3.9; still written for older apps) */
   favoriteCities?: string[];
+  /** The member's cities, whole and in their order (see myCities.ts) */
+  myCities?: CityWeatherConfig[];
   /** Page backdrop template id (see backdrop.ts) */
   backdrop?: string;
   /** Slideshow music: plays on its own, shuffled, volume 0–100, track ids switched off */
@@ -34,23 +36,41 @@ export interface UserPrefs {
   logoSplash?: boolean;
 }
 
-// Writes wait until this account's prefs have been read, so the cache never overwrites the cloud
+// Writes made before this account's prefs have been read wait in `pending`: once the read is in, they are laid over what
+// the cloud had (the newer choice wins) and saved, so a change made in the first seconds after opening is never lost and
+// the cache never overwrites the cloud with anything older.
 let loadedFor: string | null = null;
+let pending: { uid: string; patch: UserPrefs } | null = null;
+// Only what a member chooses by hand waits; settings an effect writes on start (the screen mode) would otherwise win
+// over the account's own choice
+const WAITS: (keyof UserPrefs)[] = ['weatherCity', 'favoriteCities', 'myCities', 'homeWidgets'];
 
 export async function loadUserPrefs(uid: string): Promise<UserPrefs> {
+  let prefs: UserPrefs = {};
   try {
     const snap = await getDoc(doc(db, 'users', uid, 'settings', 'prefs'));
-    return (snap.exists() ? snap.data() : {}) as UserPrefs;
+    prefs = (snap.exists() ? snap.data() : {}) as UserPrefs;
   } catch {
-    return {};
-  } finally {
-    loadedFor = uid;
+    prefs = {};
   }
+  loadedFor = uid;
+  if (pending && pending.uid === uid) {
+    const patch = pending.patch;
+    pending = null;
+    prefs = { ...prefs, ...patch };
+    setDoc(doc(db, 'users', uid, 'settings', 'prefs'), { ...patch, updatedAt: Date.now() }, { merge: true }).catch(() => {});
+  }
+  return prefs;
 }
 
 export function saveUserPref(patch: UserPrefs) {
   const uid = auth.currentUser?.uid;
-  if (!uid || loadedFor !== uid) return;
+  if (!uid) return;
+  if (loadedFor !== uid) {
+    const waiting = Object.fromEntries(Object.entries(patch).filter(([k]) => WAITS.includes(k as keyof UserPrefs))) as UserPrefs;
+    if (Object.keys(waiting).length) pending = { uid, patch: { ...(pending?.uid === uid ? pending.patch : {}), ...waiting } };
+    return;
+  }
   setDoc(doc(db, 'users', uid, 'settings', 'prefs'), { ...patch, updatedAt: Date.now() }, { merge: true }).catch(() => {});
 }
 

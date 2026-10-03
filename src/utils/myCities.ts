@@ -1,18 +1,26 @@
-// My cities (v1.3.6): one main city (or the current location) and up to four favourites per account.
-// The main city drives the header weather pill, the mini widget and the weather ambience; main and
-// favourites together are the list the calendar, the home weather widget and the terminal show.
-// Saved in users/{uid}/settings/prefs with the other viewer prefs; localStorage is only the cache.
+// My cities (v1.3.6, one ordered list since v1.3.9): up to five cities per account in the order the member set, and
+// one of them (or the current location) is the main city. Choosing the main city only points at a city; it never adds,
+// drops or reorders the list, so a city picked in the header or the terminal leaves the member's list as it was.
+// The main city drives the header weather pill, the terminal window and the weather ambience; the list is what the
+// calendar, the home weather and the world clock show. Saved in users/{uid}/settings/prefs with the other viewer prefs
+// (whole cities, so another device never has to look a name up); localStorage is only the cache.
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { CityWeatherConfig } from '../types';
 import { WORLD_CITIES, type DestinationCity } from '../data/worldDestinations';
 import { CURRENT_LOCATION_EN, cachedCurrentLocation, saveUserPref, selectWeatherCity } from './userPrefs';
+import { pruneHomeCities } from './homeWidgetPrefs';
 
-export const MAX_FAVORITES = 4;
+export const MAX_CITIES = 5;
+const LIST_KEY = 'tgl_my_cities';
 const FAV_KEY = 'tgl_favorite_cities';
 const CATALOG_KEY = 'cached_calendar_weather_cities';
 export const MY_CITIES_EVENT = 'myCitiesChanged';
+
+/** One spelling per city: the operator's list writes "Fukuoka", the world catalog "FUKUOKA" */
+export const cityKey = (nameEn?: string) => (nameEn || '').trim().toUpperCase();
+const normal = (c: CityWeatherConfig): CityWeatherConfig => ({ ...c, nameEn: cityKey(c.nameEn) });
 
 export const SEOUL: CityWeatherConfig = { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.978, country: 'KR', timezone: 'Asia/Seoul' };
 
@@ -50,11 +58,12 @@ export function cityFromDestination(c: DestinationCity): CityWeatherConfig {
 function catalog(): CityWeatherConfig[] {
   try {
     const list = JSON.parse(localStorage.getItem(CATALOG_KEY) || '[]');
-    return Array.isArray(list) ? list : [];
+    return Array.isArray(list) ? list.filter(c => c?.nameEn).map(normal) : [];
   } catch { return []; }
 }
 
-const same = (a?: string, b?: string) => !!a && !!b && a.toUpperCase() === b.toUpperCase();
+export const sameCity = (a?: string, b?: string) => !!a && !!b && cityKey(a) === cityKey(b);
+const same = sameCity;
 
 /** A city by its English name: the operator's list first (exact settings), then the world catalog */
 export function findCity(nameEn: string): CityWeatherConfig | null {
@@ -82,80 +91,140 @@ export function searchCities(query: string, limit = 8): CityWeatherConfig[] {
 export function readMainCity(): CityWeatherConfig {
   try {
     const en = localStorage.getItem('selected_weather_city_en') || 'SEOUL';
-    return findCity(en) || SEOUL;
+    return findCity(en) || readMyCities().find(c => same(c.nameEn, en)) || SEOUL;
   } catch { return SEOUL; }
 }
 
-export function readFavorites(): CityWeatherConfig[] {
+/** One city once, in the order given, at most five, never the current location (it is not a city of the list) */
+function clean(list: CityWeatherConfig[]): CityWeatherConfig[] {
+  const out: CityWeatherConfig[] = [];
+  list.forEach(c => {
+    if (!c?.nameEn || same(c.nameEn, CURRENT_LOCATION_EN) || out.some(x => same(x.nameEn, c.nameEn))) return;
+    out.push(normal(c));
+  });
+  return out.slice(0, MAX_CITIES);
+}
+
+/** The member's cities on this device, in their order (an older device kept the main city and four favourites apart) */
+export function readMyCities(): CityWeatherConfig[] {
   try {
-    const list = JSON.parse(localStorage.getItem(FAV_KEY) || 'null');
-    if (Array.isArray(list)) return list.slice(0, MAX_FAVORITES);
-  } catch { /* fall through */ }
-  return [];
+    const list = JSON.parse(localStorage.getItem(LIST_KEY) || 'null');
+    if (Array.isArray(list)) return clean(list);
+  } catch { /* the older keys below */ }
+  let favs: CityWeatherConfig[] = [];
+  try {
+    const v = JSON.parse(localStorage.getItem(FAV_KEY) || 'null');
+    if (Array.isArray(v)) favs = v;
+  } catch { /* none */ }
+  let main: CityWeatherConfig | null = null;
+  try {
+    const en = localStorage.getItem('selected_weather_city_en') || 'SEOUL';
+    main = same(en, CURRENT_LOCATION_EN) ? null : findCity(en);
+  } catch { /* none */ }
+  return clean([...(main ? [main] : []), ...favs]);
 }
 
 function announce() { window.dispatchEvent(new Event(MY_CITIES_EVENT)); }
 
-/** Replace this member's favourites (at most four) here and on the account */
-export function setFavorites(list: CityWeatherConfig[], save = true) {
-  const clean = list.filter((c, i, a) => a.findIndex(x => same(x.nameEn, c.nameEn)) === i && !same(c.nameEn, CURRENT_LOCATION_EN)).slice(0, MAX_FAVORITES);
-  try { localStorage.setItem(FAV_KEY, JSON.stringify(clean)); } catch { /* cache only */ }
+/**
+ * Replace this member's cities here and, with `save`, on the account. The whole cities are saved (myCities) and, for an
+ * app that has not updated yet, the old shape too (favoriteCities: the names other than the main city). A city that
+ * leaves the list leaves the home clock and weather choices with it.
+ */
+export function setMyCities(list: CityWeatherConfig[], save = true) {
+  const next = clean(list);
+  try {
+    localStorage.setItem(LIST_KEY, JSON.stringify(next));
+    localStorage.setItem(FAV_KEY, JSON.stringify(next));
+  } catch { /* cache only */ }
   announce();
-  if (save) saveUserPref({ favoriteCities: clean.map(c => c.nameEn) });
+  pruneHomeCities(next.map(c => c.nameEn), save);
+  if (save) {
+    const mainEn = (() => { try { return localStorage.getItem('selected_weather_city_en') || ''; } catch { return ''; } })();
+    saveUserPref({ myCities: next, favoriteCities: next.filter(c => !same(c.nameEn, mainEn)).map(c => c.nameEn) });
+  }
+}
+
+/** A name from an account saved before whole cities were: this device's copy, the catalogs, or a search by name */
+function resolveName(name: string, local: CityWeatherConfig[]): CityWeatherConfig | null {
+  return local.find(c => same(c.nameEn, name)) ?? findCity(name) ?? searchCities(name, 1).find(c => same(c.nameEn, name)) ?? null;
+}
+
+async function ensureCatalog() {
+  if (catalog().length) return;
+  try {
+    const snap = await getDoc(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'));
+    const cities = snap.exists() ? snap.data()?.cities : null;
+    if (Array.isArray(cities)) localStorage.setItem(CATALOG_KEY, JSON.stringify(cities));
+  } catch { /* the world catalog is enough */ }
 }
 
 /**
- * On sign-in: the account's favourites replace this device's. A member who has none yet starts with
- * the operator's first cities (or a few well-known ones), saved to their account.
+ * On sign-in: the account's cities replace this device's. Whole cities (myCities) are taken as they are. An account from
+ * before keeps its main city and favourites, looked up by name; a name no catalog knows yet waits for the operator's list
+ * before it is given up, and the list is then saved whole so the next device needs no lookup. A member with no cities
+ * yet starts with the operator's first ones (or a few well-known ones).
  */
-export async function applyFavoritePrefs(names: string[] | undefined) {
-  if (Array.isArray(names)) {
-    setFavorites(names.map(findCity).filter((c): c is CityWeatherConfig => !!c), false);
+export async function applyMyCitiesPrefs(prefs: { myCities?: CityWeatherConfig[]; favoriteCities?: string[]; weatherCity?: string }) {
+  if (Array.isArray(prefs.myCities)) {
+    setMyCities(prefs.myCities, false);
     return;
   }
-  let list = catalog();
-  if (!list.length) {
-    try {
-      const snap = await getDoc(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'));
-      const cities = snap.exists() ? snap.data()?.cities : null;
-      if (Array.isArray(cities)) { list = cities; localStorage.setItem(CATALOG_KEY, JSON.stringify(cities)); }
-    } catch { /* defaults below */ }
+  const local = readMyCities();
+  const main = prefs.weatherCity && !same(prefs.weatherCity, CURRENT_LOCATION_EN) ? prefs.weatherCity : undefined;
+  if (Array.isArray(prefs.favoriteCities)) {
+    const names = [...(main ? [main] : []), ...prefs.favoriteCities];
+    if (names.some(n => !resolveName(n, local))) await ensureCatalog();
+    setMyCities(names.map(n => resolveName(n, local)).filter((c): c is CityWeatherConfig => !!c), true);
+    return;
   }
-  const main = readMainCity();
-  const defaults = (list.length ? list : ['TOKYO', 'PARIS', 'NEW YORK', 'BANGKOK'].map(findCity).filter((c): c is CityWeatherConfig => !!c))
-    .filter(c => !same(c.nameEn, main.nameEn));
-  setFavorites(defaults.slice(0, MAX_FAVORITES), true);
-}
-
-/** Main city plus favourites, kept current as either changes anywhere in the app */
-export function useMyCities() {
-  const [main, setMain] = useState<CityWeatherConfig>(readMainCity);
-  const [favorites, setFavs] = useState<CityWeatherConfig[]>(readFavorites);
-  useEffect(() => {
-    const onMain = (e: Event) => { const c = (e as CustomEvent<CityWeatherConfig>).detail; if (c?.nameEn) setMain(c); };
-    const onFavs = () => setFavs(readFavorites());
-    window.addEventListener('selectedWeatherCityChanged', onMain);
-    window.addEventListener(MY_CITIES_EVENT, onFavs);
-    return () => { window.removeEventListener('selectedWeatherCityChanged', onMain); window.removeEventListener(MY_CITIES_EVENT, onFavs); };
-  }, []);
-  const list = [main, ...favorites.filter(f => !same(f.nameEn, main.nameEn))];
-  return { main, favorites, list };
+  await ensureCatalog();
+  const first = main ? resolveName(main, local) : readMainCity();
+  const defaults = catalog().length ? catalog() : ['TOKYO', 'PARIS', 'NEW YORK', 'BANGKOK'].map(findCity).filter((c): c is CityWeatherConfig => !!c);
+  setMyCities([...(first && !same(first.nameEn, CURRENT_LOCATION_EN) ? [first] : []), ...defaults], true);
 }
 
 /**
- * Picks the main city from the list. A favourite that becomes main trades places with the old
- * main, so switching back and forth never loses a city.
+ * The main city and the member's cities, kept current as either changes anywhere in the app.
+ * `cities` is the list in the member's order; `list` is the same with the main city in front when it is not one of them
+ * (the current location, or a city an older device chose); `favorites` is the list without the main city.
+ */
+export function useMyCities() {
+  const [main, setMain] = useState<CityWeatherConfig>(readMainCity);
+  const [cities, setCities] = useState<CityWeatherConfig[]>(readMyCities);
+  useEffect(() => {
+    const onMain = (e: Event) => { const c = (e as CustomEvent<CityWeatherConfig>).detail; if (c?.nameEn) setMain(normal(c)); };
+    const onList = () => setCities(readMyCities());
+    window.addEventListener('selectedWeatherCityChanged', onMain);
+    window.addEventListener(MY_CITIES_EVENT, onList);
+    return () => { window.removeEventListener('selectedWeatherCityChanged', onMain); window.removeEventListener(MY_CITIES_EVENT, onList); };
+  }, []);
+  const inList = cities.some(c => same(c.nameEn, main.nameEn));
+  const list = inList ? cities : [main, ...cities];
+  const favorites = cities.filter(c => !same(c.nameEn, main.nameEn));
+  return { main, cities, favorites, list };
+}
+
+/**
+ * Makes a city the main one. It only points at the city: the list keeps its cities and their order. A city not in the
+ * list yet joins it at the end while there is room.
  */
 export function makeMain(city: CityWeatherConfig) {
-  const old = readMainCity();
-  const favs = readFavorites();
-  const i = favs.findIndex(f => same(f.nameEn, city.nameEn));
-  if (i >= 0) {
-    const next = [...favs];
-    if (!same(old.nameEn, CURRENT_LOCATION_EN) && !same(old.nameEn, city.nameEn)) next[i] = old; else next.splice(i, 1);
-    setFavorites(next);
+  if (!same(city.nameEn, CURRENT_LOCATION_EN)) {
+    const list = readMyCities();
+    if (!list.some(c => same(c.nameEn, city.nameEn)) && list.length < MAX_CITIES) setMyCities([...list, city]);
   }
-  selectWeatherCity(city);
+  selectWeatherCity(same(city.nameEn, CURRENT_LOCATION_EN) ? city : normal(city));
+  // The old shape follows the main city (the names other than it)
+  const mainEn = city.nameEn;
+  saveUserPref({ favoriteCities: readMyCities().filter(c => !same(c.nameEn, mainEn)).map(c => c.nameEn) });
+}
+
+/** Takes a city off the list; when it was the main city, the first city left becomes the main one */
+export function removeMyCity(city: CityWeatherConfig) {
+  const next = readMyCities().filter(c => !same(c.nameEn, city.nameEn));
+  setMyCities(next);
+  if (same(readMainCity().nameEn, city.nameEn)) selectWeatherCity(next[0] ?? SEOUL);
 }
 
 export const OPEN_SETTINGS_EVENT = 'tgl:open-settings';
