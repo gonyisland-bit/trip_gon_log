@@ -143,12 +143,16 @@ ${[18, 23, 28, 33, 38].map(x => `<circle cx="${x}" cy="19.8" r="1.3" fill="${BEA
   return svg(60, 38, body, moving);
 }
 
+/** Which way each drawing faces as drawn. The walking bear is traced from city-walk, which steps to the left */
+const FACES_WEST: Record<Vehicle | 'walk', boolean> = { walk: true, car: false, train: false, ship: false, flight: false };
+
 /**
- * The traveller on the journey map: the bear walking, or the bear in a car, a train, a ferry or a plane. Drawn facing
- * east; `west` mirrors it so it always faces where it is going.
+ * The traveller on the journey map: the bear walking, or the bear in a car, a train, a ferry or a plane. `west` is the
+ * way it is going; the drawing is mirrored when it faces the other way, so it never walks backwards.
  */
 export function travellerHtml(kind: Vehicle | null | undefined, west: boolean, moving: boolean): string {
   const art = kind === 'car' ? carSvg(moving) : kind === 'train' ? trainSvg(moving) : kind === 'ship' ? shipSvg(moving) : kind === 'flight' ? flightSvg(moving) : bearSvg('walk', moving, 46);
   const [w, h] = TRAVELLER_SIZE[kind ?? 'walk'];
-  return `<div style="width:${w}px;height:${h}px;pointer-events:none;contain:layout paint;transform:${west ? 'scaleX(-1)' : 'none'};filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))">${art}</div>`;
+  const flip = west !== FACES_WEST[kind ?? 'walk'];
+  return `<div style="width:${w}px;height:${h}px;pointer-events:none;contain:layout paint;transform:${flip ? 'scaleX(-1)' : 'none'};filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))">${art}</div>`;
 }

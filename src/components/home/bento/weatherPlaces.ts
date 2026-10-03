@@ -1,7 +1,7 @@
 import type { CityWeatherConfig } from '../../../types';
 import { useCurrentPlace } from '../../../utils/currentPlace';
 import { setHomeWidgets, useHomeWidgets } from '../../../utils/homeWidgetPrefs';
-import { cityKey, useMyCities } from '../../../utils/myCities';
+import { canonicalCityEn, cityKey, useMyCities } from '../../../utils/myCities';
 import { CURRENT_LOCATION_EN } from '../../../utils/userPrefs';
 
 /**
@@ -14,7 +14,7 @@ export function useWeatherPlaces() {
   const { place, busy, locate } = useCurrentPlace();
   const picked = useHomeWidgets().wxCity;
   const here = picked === CURRENT_LOCATION_EN;
-  const cur: CityWeatherConfig | undefined = (here ? place : cities.find(c => cityKey(c.nameEn) === picked)) ?? cities[0] ?? place ?? undefined;
+  const cur: CityWeatherConfig | undefined = (here ? place : cities.find(c => !!picked && cityKey(c.nameEn) === canonicalCityEn(picked))) ?? cities[0] ?? place ?? undefined;
   const isHere = !!cur && cur.nameEn === CURRENT_LOCATION_EN;
   const choose = (nameEn: string) => setHomeWidgets({ wxCity: nameEn });
   /** The current place: chosen at once when it is known, otherwise asked for first */

@@ -20,7 +20,41 @@ export const MY_CITIES_EVENT = 'myCitiesChanged';
 
 /** One spelling per city: the operator's list writes "Fukuoka", the world catalog "FUKUOKA" */
 export const cityKey = (nameEn?: string) => (nameEn || '').trim().toUpperCase();
-const normal = (c: CityWeatherConfig): CityWeatherConfig => ({ ...c, nameEn: cityKey(c.nameEn) });
+
+// A city added from a map search could carry its Korean place name as the English one ("후쿠오카시"), so it never
+// matched the world catalog's FUKUOKA and showed up twice. Such names are put back to the catalog's spelling.
+const HANGUL = /[\u3131-\uD79D]/;
+/** "후쿠오카시" → "후쿠오카": the place name without a trailing administrative word, for comparing names */
+export const bareKo = (name?: string) => (name || '').trim().replace(/\s+/g, '').replace(/(특별시|광역시|특별자치시|특별자치도|시|도|현|부|군|구)$/, '');
+const NEAR_KM = 30;
+function km(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const r = Math.PI / 180;
+  const x = (bLng - aLng) * r * Math.cos(((aLat + bLat) / 2) * r);
+  const y = (bLat - aLat) * r;
+  return Math.sqrt(x * x + y * y) * 6371;
+}
+const near = (a: { lat?: number; lng?: number }, b: { lat?: number; lng?: number }) =>
+  typeof a.lat === 'number' && typeof a.lng === 'number' && typeof b.lat === 'number' && typeof b.lng === 'number' && !!(a.lat || a.lng) && km(a.lat, a.lng, b.lat, b.lng) <= NEAR_KM;
+
+/** The world catalog's spelling for a city whose English name is really a Korean one (by name, then by place) */
+export function canonicalCityEn(nameEn: string, hint?: { name?: string; lat?: number; lng?: number }): string {
+  const key = cityKey(nameEn);
+  if (!HANGUL.test(key)) return key;
+  const ko = bareKo(hint?.name || key);
+  const byName = WORLD_CITIES.find(c => bareKo(c.nameKo) === ko || bareKo(c.nameKo) === bareKo(key));
+  if (byName) return byName.nameEn.toUpperCase();
+  const byPlace = hint ? WORLD_CITIES.find(c => near(c, hint)) : undefined;
+  return byPlace ? byPlace.nameEn.toUpperCase() : key;
+}
+
+/** Two entries are the same city: one English name, one bare Korean name, or within 30 km of each other */
+export function sameCityEntry(a: CityWeatherConfig, b: CityWeatherConfig): boolean {
+  if (cityKey(a.nameEn) === cityKey(b.nameEn)) return true;
+  if (a.name && b.name && bareKo(a.name) === bareKo(b.name)) return true;
+  return near(a, b);
+}
+
+const normal = (c: CityWeatherConfig): CityWeatherConfig => ({ ...c, nameEn: canonicalCityEn(c.nameEn, c) });
 
 export const SEOUL: CityWeatherConfig = { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.978, country: 'KR', timezone: 'Asia/Seoul' };
 
@@ -68,6 +102,7 @@ const same = sameCity;
 /** A city by its English name: the operator's list first (exact settings), then the world catalog */
 export function findCity(nameEn: string): CityWeatherConfig | null {
   if (nameEn === CURRENT_LOCATION_EN) return cachedCurrentLocation();
+  nameEn = canonicalCityEn(nameEn);
   const fromCatalog = catalog().find(c => same(c.nameEn, nameEn));
   if (fromCatalog) return fromCatalog;
   if (same(nameEn, 'SEOUL')) return SEOUL;
@@ -79,9 +114,9 @@ export function findCity(nameEn: string): CityWeatherConfig | null {
 export function searchCities(query: string, limit = 8): CityWeatherConfig[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  const seen = new Set<string>();
   const out: CityWeatherConfig[] = [];
-  const push = (c: CityWeatherConfig) => { const k = c.nameEn.toUpperCase(); if (!seen.has(k)) { seen.add(k); out.push(c); } };
+  // The operator's entry comes first and wins over the world catalog's copy of the same city
+  const push = (c: CityWeatherConfig) => { if (!out.some(x => sameCityEntry(x, c))) out.push(c); };
   catalog().filter(c => c.name.toLowerCase().includes(q) || c.nameEn.toLowerCase().includes(q)).forEach(push);
   WORLD_CITIES.filter(c => c.nameKo.toLowerCase().includes(q) || c.nameEn.toLowerCase().includes(q) || c.countryKo.includes(q))
     .forEach(c => push(cityFromDestination(c)));
@@ -99,8 +134,10 @@ export function readMainCity(): CityWeatherConfig {
 function clean(list: CityWeatherConfig[]): CityWeatherConfig[] {
   const out: CityWeatherConfig[] = [];
   list.forEach(c => {
-    if (!c?.nameEn || same(c.nameEn, CURRENT_LOCATION_EN) || out.some(x => same(x.nameEn, c.nameEn))) return;
-    out.push(normal(c));
+    if (!c?.nameEn || same(c.nameEn, CURRENT_LOCATION_EN)) return;
+    const n = normal(c);
+    if (out.some(x => same(x.nameEn, n.nameEn))) return;
+    out.push(n);
   });
   return out.slice(0, MAX_CITIES);
 }
@@ -138,7 +175,7 @@ export function setMyCities(list: CityWeatherConfig[], save = true) {
     localStorage.setItem(FAV_KEY, JSON.stringify(next));
   } catch { /* cache only */ }
   announce();
-  pruneHomeCities(next.map(c => c.nameEn), save);
+  pruneHomeCities(next.map(c => c.nameEn), save, n => canonicalCityEn(n));
   if (save) {
     const mainEn = (() => { try { return localStorage.getItem('selected_weather_city_en') || ''; } catch { return ''; } })();
     saveUserPref({ myCities: next, favoriteCities: next.filter(c => !same(c.nameEn, mainEn)).map(c => c.nameEn) });

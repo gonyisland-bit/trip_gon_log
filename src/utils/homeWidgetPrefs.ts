@@ -32,7 +32,9 @@ export interface HomeWidgetPrefs {
   showUpcomingDDay: boolean;
   showExchangeRates: boolean;
   widgetOrder?: 'calendar-first' | 'weather-first';
-  /** The ticket the member picked as the trip the home shows; empty = the nearest one */
+  /** The trip the member picked for the home (`j:<journey id>` or `t:<ticket id>`); empty = the nearest one */
+  focusId?: string;
+  /** Before journeys could be picked: the ticket picked (read as `t:<id>`, cleared when a new pick is made) */
   focusTicketId?: string;
   /** World-time cube: the cities it shows (English names; empty = the main city), all together or one, and the face */
   clockCities: string[];
@@ -107,11 +109,14 @@ export function useHomeWidgets(): HomeWidgetPrefs {
  * The clock and the weather cube choose from the member's cities; a city taken off that list leaves their choices too,
  * so neither keeps pointing at a city the member no longer has. The current location always stays.
  */
-export function pruneHomeCities(keys: string[], save = true) {
+export function pruneHomeCities(keys: string[], save = true, canon: (n: string) => string = upper) {
   const cur = readHomeWidgets();
-  const keep = (n: string) => n === CURRENT_LOCATION_KEY || keys.includes(upper(n));
-  const clockCities = cur.clockCities.filter(keep);
-  const wxCity = cur.wxCity && keep(cur.wxCity) ? cur.wxCity : undefined;
-  if (clockCities.length === cur.clockCities.length && wxCity === cur.wxCity) return;
+  // An older choice may hold a city by a Korean "English" name; it is read in the list's spelling
+  const name = (n: string) => (n === CURRENT_LOCATION_KEY ? n : canon(n));
+  const keep = (n: string) => n === CURRENT_LOCATION_KEY || keys.map(upper).includes(n);
+  const clockCities = [...new Set(cur.clockCities.map(name))].filter(keep);
+  const wx = cur.wxCity ? name(cur.wxCity) : undefined;
+  const wxCity = wx && keep(wx) ? wx : undefined;
+  if (clockCities.join('|') === cur.clockCities.join('|') && wxCity === cur.wxCity) return;
   setHomeWidgets({ clockCities, wxCity }, save);
 }

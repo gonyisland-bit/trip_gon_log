@@ -5,6 +5,7 @@ import { db } from '../../../firebase';
 import { CityWeatherConfig } from '../../../types';
 import { cleanAdministrativeDistricts } from '../../../components/SummaryView';
 import { notify } from '../../../utils/feedback';
+import { canonicalCityEn } from '../../../utils/myCities';
 import type { DirtyDomain } from './dirtyDomain';
 
 // Shared calendar weather cities (SYSTEM › starting setup), users/public/settings/calendar_weather_cities
@@ -68,7 +69,9 @@ export function useWeatherCitiesAdmin() {
     const rawName = cityName || placeName || '도시';
     const cleaned = cleanAdministrativeDistricts(rawName);
     const finalName = cleaned || rawName;
-    const finalEn = (cityName || placeName || 'CITY').toUpperCase().replace(/,\s*(SOUTH KOREA|KOREA|JAPAN|FRANCE|USA|VIETNAM|THAILAND|UK|SPAIN).*$/i, '').trim();
+    const rawEn = (cityName || placeName || 'CITY').toUpperCase().replace(/,\s*(SOUTH KOREA|KOREA|JAPAN|FRANCE|USA|VIETNAM|THAILAND|UK|SPAIN).*$/i, '').trim();
+    // A Korean place name is stored under the world catalog's English name, so the city is never listed twice
+    const finalEn = canonicalCityEn(rawEn, { name: finalName, lat: coords.lat, lng: coords.lng });
     const finalCountry = countryName || 'WORLD';
     let tz = 'UTC';
     try {

@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { LocateFixed, Moon, Sun, Sunrise, Sunset } from 'lucide-react';
 import type { CityWeatherConfig } from '../../../types';
-import { cityKey, searchCities, useMyCities } from '../../../utils/myCities';
+import { canonicalCityEn, cityKey, searchCities, useMyCities } from '../../../utils/myCities';
 import { cleanCityDisplayName } from '../../../utils/weatherApi';
 import { useHomeWidgets, type ClockStyle } from '../../../utils/homeWidgetPrefs';
 import { CURRENT_LOCATION_EN, cachedCurrentLocation } from '../../../utils/userPrefs';
@@ -129,7 +129,7 @@ export function useClockSetup(nextCity?: string) {
 
   const multi = !!w.clockMulti;
   const selected = useMemo(() => {
-    const picked = (w.clockCities || []).map(n => all.find(c => cityKey(c.nameEn) === cityKey(n))).filter((c): c is CityWeatherConfig => !!c);
+    const picked = (w.clockCities || []).map(n => all.find(c => cityKey(c.nameEn) === canonicalCityEn(n))).filter((c): c is CityWeatherConfig => !!c);
     const fallback = main.nameEn === CURRENT_LOCATION_EN ? current : timed.find(c => cityKey(c.nameEn) === cityKey(main.nameEn)) ?? timed[0] ?? current;
     const base = picked.length ? picked : [fallback];
     if (!multi) return base.slice(0, 1);

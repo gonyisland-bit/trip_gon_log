@@ -24,7 +24,7 @@ import { ClockFace, useClockSetup, useNow } from './WorldClock';
 import { BentoSheet, type BentoCtx } from './BentoSheet';
 import { useWeatherPlaces } from './weatherPlaces';
 import {
-  describeJourney, journeyMonth, journeyPoints, journeyStats, monthCells, focusPoints, focusTrip, pickMemory,
+  describeJourney, journeyMonth, journeyPoints, journeyStats, monthCells, focusPoints, focusTrip, focusKeyOf, upcomingTrips, pickMemory,
   type FocusTrip, type Journey,
 } from './bentoData';
 import type { DepartureTicket } from '../../departure/departureData';
@@ -135,12 +135,15 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
   const { friends } = useFriends(auth.currentUser?.uid);
 
   const visited = useMemo(() => stats.past.flatMap(journeyPoints), [stats.past]);
-  // One trip for the "next" tile and the terminal tile: the nearest of journeys, plans and tickets (or the ticket picked)
-  const focus = useMemo(() => focusTrip(liveTrips, plans, tickets ?? [], widgets.focusTicketId || undefined), [liveTrips, plans, tickets, widgets.focusTicketId]);
+  // One trip for the "next" tile and the terminal tile: the one the member picked, else the nearest of journeys, plans
+  // and tickets
+  const pinnedKey = focusKeyOf(widgets);
+  const upcoming = useMemo(() => upcomingTrips(liveTrips, plans, tickets ?? [], pinnedKey), [liveTrips, plans, tickets, pinnedKey]);
+  const focus = useMemo(() => focusTrip(upcoming, pinnedKey), [upcoming, pinnedKey]);
   const ahead = useMemo(() => focusPoints(focus), [focus]);
 
   const ctx: BentoCtx = {
-    trips: liveTrips, plans, focus, pinnedTicketId: widgets.focusTicketId || undefined, stats, memory, month, recent, published, tickets: tickets ?? [], pockets, friends,
+    trips: liveTrips, plans, focus, upcoming, pinnedKey: pinnedKey || undefined, stats, memory, month, recent, published, tickets: tickets ?? [], pockets, friends,
     onNavigate, onNewTrip, close: () => setSheet(null),
   };
 

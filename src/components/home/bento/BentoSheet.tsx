@@ -28,7 +28,9 @@ export interface BentoCtx {
   trips: Trip[];
   plans: Plan[];
   focus: FocusTrip | null;
-  pinnedTicketId?: string;
+  /** Every trip ahead, nearest first (the list the member picks the home's trip from) */
+  upcoming: FocusTrip[];
+  pinnedKey?: string;
   stats: BentoStats;
   memory: Memory | null;
   month: CalMonth;
@@ -122,45 +124,48 @@ function WeatherBody() {
   );
 }
 
-/** The tickets, nearest first. The one shown on the home is marked; tapping another one makes it the trip both tiles show */
-function TicketPicker({ ctx }: { ctx: BentoCtx }) {
-  const items = [...ctx.tickets].sort((a, b) => {
-    const da = a.startDate ? daysUntil(a.startDate) : 9999;
-    const db = b.startDate ? daysUntil(b.startDate) : 9999;
-    return da - db;
-  });
-  const shownId = ctx.focus?.ticket?.id;
+/**
+ * The trips ahead, nearest first: journeys and plans (with the ticket issued for them) and tickets of their own. The
+ * one the home shows is marked; tapping another makes it the trip both the "next" tile and the terminal tile show.
+ */
+function TripPicker({ ctx }: { ctx: BentoCtx }) {
+  const shown = ctx.focus?.key;
+  const pastTickets = new Set(ctx.tickets.filter(t => t.startDate && daysUntil(t.startDate) < 0).map(t => t.id)).size;
+  if (ctx.upcoming.length < 2 && !ctx.pinnedKey) {
+    return pastTickets ? <p className="text-[12.5px] text-black/55 dark:text-white/55">지난 티켓 {pastTickets}장은 터미널에서 볼 수 있어요.</p> : null;
+  }
   return (
     <div className="flex flex-col gap-2">
+      <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50">홈에 보일 일정</span>
       <div className="flex flex-col rounded-card bg-paper dark:bg-paper-dark px-2 py-1" role="radiogroup" aria-label="홈에 보일 일정">
-        {items.map(t => {
-          const st = ticketStatus(t);
-          const on = shownId === t.id;
+        {ctx.upcoming.map(f => {
+          const on = shown === f.key;
+          const when = f.live ? `Day ${f.day}` : !f.start ? 'PLAN' : f.daysLeft === 0 ? 'D-DAY' : `D-${f.daysLeft}`;
           return (
             <button
-              key={t.id}
+              key={f.key}
               type="button"
               role="radio"
               aria-checked={on}
-              onClick={() => setHomeWidgets({ focusTicketId: t.id })}
+              onClick={() => setHomeWidgets({ focusId: f.key, focusTicketId: '' })}
               className="min-h-[56px] px-2 py-2 flex items-center gap-3 text-left cursor-pointer border-t border-black/[0.07] dark:border-white/10 first:border-t-0"
             >
               <span className={`w-5 h-5 rounded-full border-2 shrink-0 grid place-items-center ${on ? 'border-red-600 dark:border-red-400' : 'border-black/25 dark:border-white/30'}`}>
                 {on && <i className="w-2.5 h-2.5 rounded-full bg-red-600 dark:bg-red-400" />}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[14px] font-bold truncate">{t.plan?.title || `${t.cityKo} 여행`}</span>
-                <span className="block font-mono text-[11.5px] text-black/55 dark:text-white/55 truncate">{ticketRange(t)} · {t.flightNo}</span>
+                <span className="block text-[14px] font-bold truncate">{f.title}</span>
+                <span className="block font-mono text-[11.5px] text-black/55 dark:text-white/55 truncate">{f.range}{f.ticket ? ` · ${f.ticket.flightNo}` : f.journey ? ' · 발권 전' : ''}</span>
               </span>
-              <span className={`font-mono text-[12px] font-bold shrink-0 ${st.tone === 'amber' ? 'text-amber-700 dark:text-amber-400' : st.tone === 'red' ? 'text-red-600 dark:text-red-400' : ''}`}>{st.text}</span>
+              <span className={`font-mono text-[12px] font-bold shrink-0 ${f.live ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>{when}</span>
             </button>
           );
         })}
       </div>
-      {ctx.pinnedTicketId && (
-        <button type="button" onClick={() => setHomeWidgets({ focusTicketId: '' })} className="self-start h-8 px-3.5 rounded-full bg-black/[0.06] dark:bg-white/10 text-[12.5px] font-bold cursor-pointer">가장 가까운 일정으로</button>
+      {ctx.pinnedKey && (
+        <button type="button" onClick={() => setHomeWidgets({ focusId: '', focusTicketId: '' })} className="self-start h-8 px-3.5 rounded-full bg-black/[0.06] dark:bg-white/10 text-[12.5px] font-bold cursor-pointer">가장 가까운 일정으로</button>
       )}
-      {!ctx.focus?.ticket && ctx.focus && <p className="text-[12.5px] text-amber-700 dark:text-amber-400">가장 가까운 일정 "{ctx.focus.title}"은 아직 발권 전이에요.</p>}
+      {pastTickets > 0 && <p className="text-[12.5px] text-black/55 dark:text-white/55">지난 티켓 {pastTickets}장은 터미널에서 볼 수 있어요.</p>}
     </div>
   );
 }
@@ -190,12 +195,15 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
         const j = focus.journey;
         title = focus.title;
         body = (
+          <>
           <Rows>
             <Row label={focus.live ? '오늘' : '남은 날'} value={focus.live ? `${focus.day}일째 / ${focus.total}일` : !focus.start ? '날짜 미정' : focus.daysLeft === 0 ? '오늘 출발' : `${focus.daysLeft}일`} tone="amber" />
             <Row label="기간" value={`${focus.range}${focus.nights ? ` · ${focus.nights}` : ''}`} />
             <Row label="도시" value={focus.cities.join(', ') || '—'} />
             <Row label="티켓" value={focus.ticket ? `${focus.ticket.flightNo} · GATE ${focus.ticket.gate}` : '발권 전'} tone={focus.ticket ? undefined : 'amber'} />
           </Rows>
+          <TripPicker ctx={ctx} />
+          </>
         );
         action = j
           ? <Action label="여정 열기" onRun={() => openJourneyFromCard(j as Trip, ctx.onNavigate)} />
@@ -209,8 +217,15 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
     }
     case 'term': {
       kicker = '공항 터미널';
-      title = tickets.length ? `티켓 ${tickets.length}장` : '발권한 티켓이 없어요';
-      body = tickets.length ? <TicketPicker ctx={ctx} /> : <p className="text-[14px] text-black/60 dark:text-white/60">터미널에서 도시와 날짜를 고르면 티켓이 발권돼요.</p>;
+      title = tickets.length ? `티켓 ${new Set(tickets.map(t => t.id)).size}장` : '발권한 티켓이 없어요';
+      // Several trips ahead: pick the one the home shows. One or none: the tickets as they are, nearest first
+      body = ctx.upcoming.length > 1 || ctx.pinnedKey ? <TripPicker ctx={ctx} /> : tickets.length ? (
+        <Rows>
+          {[...new Map(tickets.map(t => [t.id, t])).values()]
+            .sort((a, b) => (a.startDate ? daysUntil(a.startDate) : 9999) - (b.startDate ? daysUntil(b.startDate) : 9999))
+            .map(t => <Row key={t.id} label={`${t.plan?.title || `${t.cityKo} 여행`} · ${t.flightNo}`} value={`${ticketRange(t)} · ${ticketStatus(t).text}`} />)}
+        </Rows>
+      ) : <p className="text-[14px] text-black/60 dark:text-white/60">터미널에서 도시와 날짜를 고르면 티켓이 발권돼요.</p>;
       action = <Action label="터미널 열기" onRun={openDepartureBoard} />;
       break;
     }

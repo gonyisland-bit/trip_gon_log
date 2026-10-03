@@ -220,6 +220,8 @@ export interface FocusTrip {
   nights: string;
   journey?: Journey;
   ticket?: DepartureTicket;
+  /** `j:<journey id>` or `t:<ticket id>`: what the member picks when several trips are ahead */
+  key: string;
 }
 
 const sameDay = (a: Date | null, b: Date | null) => !!a && !!b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -242,11 +244,15 @@ function ticketRangeLabel(t: DepartureTicket): string {
   return t.endDate && t.endDate !== t.startDate ? `${f(t.startDate)}–${f(t.endDate)}` : f(t.startDate);
 }
 
+/** The pick saved in the home prefs: `focusId`, or an older `focusTicketId` from when only tickets could be picked */
+export const focusKeyOf = (w: { focusId?: string; focusTicketId?: string }) => w.focusId || (w.focusTicketId ? `t:${w.focusTicketId}` : '');
+
 /**
- * The trip the home shows as "next": the journey under way, else the nearest one ahead, counting plans and tickets.
- * `pinnedTicketId` is the ticket the member picked at the counter, which overrides the nearest.
+ * Every trip ahead, the one under way first, then the nearest: journeys and plans, with the ticket issued for the same
+ * day and place riding on its journey, and tickets with no journey of their own. One ticket appears once.
+ * `pinnedKey` keeps a picked ticket in the list even when it has no dates yet.
  */
-export function focusTrip(trips: Trip[], plans: Plan[], tickets: DepartureTicket[], pinnedTicketId?: string): FocusTrip | null {
+export function upcomingTrips(trips: Trip[], plans: Plan[], tickets: DepartureTicket[], pinnedKey?: string): FocusTrip[] {
   type Entry = { journey?: Journey; ticket?: DepartureTicket; live: boolean; day: number; total: number; daysLeft: number; start: Date | null };
   const entries: Entry[] = [];
   [...trips, ...plans].forEach(j => {
@@ -256,37 +262,51 @@ export function focusTrip(trips: Trip[], plans: Plan[], tickets: DepartureTicket
     const info = getUpcomingPlanInfo(j);
     if (info.isUpcoming) entries.push({ journey: j, live: false, day: 0, total: journeyDays(j), daysLeft: info.daysLeft, start: parseTripStartDate(j.date || '') });
   });
+  const seen = new Set<string>();
   tickets.forEach(t => {
+    if (seen.has(t.id)) return;
+    seen.add(t.id);
     const start = ticketStart(t);
     if (!start || !t.startDate || daysUntil(t.startDate) < 0) return;
     const keys = ticketPlaceKeys(t);
-    const mate = entries.find(e => !e.live && !e.ticket && e.journey && sameDay(e.start, start) && journeyPlaceKeys(e.journey).some(k => keys.includes(k)));
-    if (mate) { mate.ticket = t; return; }
+    // A second ticket for a journey that already has one is the same trip, not another row
+    const mate = entries.find(e => !e.live && e.journey && sameDay(e.start, start) && journeyPlaceKeys(e.journey).some(k => keys.includes(k)));
+    if (mate) { if (!mate.ticket) mate.ticket = t; return; }
     entries.push({ ticket: t, live: false, day: 0, total: (t.nights ?? 0) + 1, daysLeft: daysUntil(t.startDate), start });
   });
-  // A ticket picked on purpose stays the focus even when it has no dates yet
-  if (pinnedTicketId && !entries.some(e => e.ticket?.id === pinnedTicketId)) {
-    const t = tickets.find(x => x.id === pinnedTicketId);
+  const pinnedTicket = pinnedKey?.startsWith('t:') ? pinnedKey.slice(2) : '';
+  if (pinnedTicket && !entries.some(e => e.ticket?.id === pinnedTicket)) {
+    const t = tickets.find(x => x.id === pinnedTicket);
     if (t && (!t.startDate || daysUntil(t.startDate) >= 0)) entries.push({ ticket: t, live: false, day: 0, total: (t.nights ?? 0) + 1, daysLeft: t.startDate ? daysUntil(t.startDate) : 9999, start: ticketStart(t) });
   }
-  if (!entries.length) return null;
-  const pinned = pinnedTicketId ? entries.find(e => e.ticket?.id === pinnedTicketId) : undefined;
-  const e = pinned ?? [...entries].sort((a, b) => (a.live === b.live ? a.daysLeft - b.daysLeft : a.live ? -1 : 1))[0];
-  const j = e.journey;
-  const t = e.ticket;
-  return {
-    title: j ? j.title.replace(' (Plan)', '') : t!.plan?.title || `${t!.cityKo} 여행`,
-    cities: j ? journeyCities(j) : ticketStops(t!).map(s => s.ko),
-    start: e.start,
-    daysLeft: e.daysLeft,
-    live: e.live,
-    day: e.day,
-    total: e.total,
-    range: j ? rangeLabel(j) : ticketRangeLabel(t!),
-    nights: j ? nightsLabel(j) : t!.nights ? `${t!.nights}박 ${t!.nights + 1}일` : '',
-    journey: j,
-    ticket: t,
-  };
+  return [...entries]
+    .sort((a, b) => (a.live === b.live ? a.daysLeft - b.daysLeft : a.live ? -1 : 1))
+    .map(e => {
+      const j = e.journey;
+      const t = e.ticket;
+      return {
+        title: j ? j.title.replace(' (Plan)', '') : t!.plan?.title || `${t!.cityKo} 여행`,
+        cities: j ? journeyCities(j) : ticketStops(t!).map(s => s.ko),
+        start: e.start,
+        daysLeft: e.daysLeft,
+        live: e.live,
+        day: e.day,
+        total: e.total,
+        range: j ? rangeLabel(j) : ticketRangeLabel(t!),
+        nights: j ? nightsLabel(j) : t!.nights ? `${t!.nights}박 ${t!.nights + 1}일` : '',
+        journey: j,
+        ticket: t,
+        key: j ? `j:${j.id}` : `t:${t!.id}`,
+      };
+    });
+}
+
+/** Whether a trip of the list is the one picked (a journey also answers to the ticket riding on it) */
+export const isPicked = (f: FocusTrip, pinnedKey?: string) => !!pinnedKey && (f.key === pinnedKey || (!!f.ticket && pinnedKey === `t:${f.ticket.id}`));
+
+/** The trip the home shows as "next": the one picked, else the one under way, else the nearest ahead */
+export function focusTrip(list: FocusTrip[], pinnedKey?: string): FocusTrip | null {
+  return list.find(f => isPicked(f, pinnedKey)) ?? list[0] ?? null;
 }
 
 /** Where the focus trip goes, as map points */
