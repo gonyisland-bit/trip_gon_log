@@ -1,0 +1,116 @@
+"""Traces the teal bear of assets/illust into the vector kit (src/art/bear/shapes.ts).
+
+    python3 -m venv .venv && .venv/bin/pip install pillow numpy scipy vtracer
+    .venv/bin/python scripts/art/bear_trace.py
+
+Each pose is one continuous silhouette, as in the drawings: the head runs into the body with no neck, the limbs are
+part of the same curve, and the dark lines inside the body (arms, belly) are left out. The teal is picked by hue,
+holes are filled and the largest shape is kept, then VTracer fits splines to it. The face is traced once, from the
+standing bear, and set on every pose at that pose's own eye positions, so the bear has one face everywhere.
+"""
+import json, os, re, tempfile
+import numpy as np
+import vtracer
+from PIL import Image
+from scipy import ndimage as nd
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC = os.path.join(ROOT, 'assets', 'illust')
+OUT = os.path.join(ROOT, 'src', 'art', 'bear', 'shapes.ts')
+WATERMARK = 80  # the bottom strip of every source has a faint mark
+
+POSES = {
+    'stand': 'Bear_holding_green_checkmark_20261002174915.jpg',   # the green card is filled in as body
+    'wave': 'Teal_bear_waving_goodbye_20261002205803.jpg',
+    'walk': 'city-walk.jpg',
+    'suitcase': 'luggage-travel.jpg',
+}
+
+
+def hsv(a):
+    r, g, b = (a[..., i] / 255.0 for i in range(3))
+    mx, mn = a.max(-1) / 255.0, a.min(-1) / 255.0
+    d = mx - mn + 1e-9
+    h = np.where(mx == r, (g - b) / d % 6, np.where(mx == g, (b - r) / d + 2, (r - g) / d + 4)) * 60
+    return h, np.where(mx > 0, d / (mx + 1e-9), 0), mx
+
+
+def largest(m):
+    lab, n = nd.label(m)
+    return lab == (np.argmax(nd.sum(m, lab, range(1, n + 1))) + 1)
+
+
+def trace(mask, speckle=12):
+    """A binary mask to [(path, x, y)] (VTracer writes each path with its own offset)"""
+    with tempfile.TemporaryDirectory() as tmp:
+        src, dst = os.path.join(tmp, 'm.png'), os.path.join(tmp, 'm.svg')
+        Image.fromarray(np.where(mask, 0, 255).astype(np.uint8)).convert('RGB').save(src)
+        vtracer.convert_image_to_svg_py(src, dst, colormode='binary', mode='spline', filter_speckle=speckle,
+                                        corner_threshold=80, length_threshold=6.0, splice_threshold=45, path_precision=1)
+        svg = open(dst).read()
+    return [{'d': d, 'x': round(float(x), 1), 'y': round(float(y), 1)}
+            for d, x, y in re.findall(r'<path d="([^"]+)"[^>]*transform="translate\(([-\d.]+),([-\d.]+)\)"', svg)]
+
+
+def eyes(feats):
+    """The two eye dots: the highest small parts of the face that sit apart from each other"""
+    lab, n = nd.label(nd.binary_dilation(feats, iterations=1))
+    parts = []
+    for i in range(1, n + 1):
+        ys, xs = np.nonzero(lab == i)
+        if 15 < len(xs) < 900:
+            parts.append((ys.mean(), xs.mean()))
+    parts.sort()
+    first = parts[0]
+    second = next(p for p in parts[1:] if abs(p[1] - first[1]) > 25 and abs(p[0] - first[0]) < 20)
+    return [(float(x), float(y)) for y, x in sorted([first, second], key=lambda p: p[1])]
+
+
+poses, face = {}, None
+for pose, name in POSES.items():
+    a = np.asarray(Image.open(os.path.join(SRC, name)).convert('RGB')).astype(float)[:-WATERMARK]
+    h, s, v = hsv(a)
+    teal = (h > 150) & (h < 195) & (s > 0.25) & (v > 0.25) & (v < 0.8)
+    if pose == 'stand':
+        teal |= (h > 90) & (h < 150) & (s > 0.4)
+    body = nd.binary_fill_holes(nd.binary_closing(largest(nd.binary_opening(teal, iterations=2)), iterations=6))
+    ys, xs = np.nonzero(body)
+    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    dark = (v < 0.42) & (s < 0.6) & body
+    lab, n = nd.label(dark)
+    feats = np.zeros_like(body)
+    for i in range(1, n + 1):
+        part = lab == i
+        if nd.center_of_mass(part)[0] < y0 + (y1 - y0) * 0.36 and part.sum() > 8:
+            feats |= part
+    frame = [y0, y1, x0, x1]
+    case = None
+    if pose == 'suitcase':
+        case = nd.binary_fill_holes(largest((h > 35) & (h < 60) & (s > 0.45) & (v > 0.6)))
+        cy, cx = np.nonzero(case)
+        frame = [min(y0, cy.min()), max(y1, cy.max()), min(x0, cx.min()), max(x1, cx.max())]
+    pad = 6
+    Y0, Y1, X0, X1 = frame
+    crop = lambda m: m[Y0 - pad:Y1 + pad, X0 - pad:X1 + pad]
+    entry = {'w': int(X1 - X0 + 2 * pad), 'h': int(Y1 - Y0 + 2 * pad), 'body': trace(crop(body)), 'eyes': eyes(crop(feats))}
+    if case is not None:
+        entry['case'] = trace(crop(case))
+    if pose == 'stand':
+        face = trace(nd.binary_dilation(crop(feats), iterations=1))
+    poses[pose] = entry
+
+e = poses['stand']['eyes']
+origin = {'x': (e[0][0] + e[1][0]) / 2, 'y': (e[0][1] + e[1][1]) / 2, 'gap': e[1][0] - e[0][0]}
+for p in poses.values():
+    (ax, ay), (bx, by) = p.pop('eyes')
+    p['face'] = {'x': round((ax + bx) / 2, 1), 'y': round((ay + by) / 2, 1), 's': round((bx - ax) / origin['gap'], 3)}
+
+with open(OUT, 'w') as f:
+    f.write('// Generated by scripts/art/bear_trace.py from assets/illust. Do not edit by hand.\n\n')
+    f.write('export interface TracedPath { d: string; x: number; y: number }\n')
+    f.write('export interface BearShape { w: number; h: number; body: readonly TracedPath[]; case?: readonly TracedPath[]; face: { x: number; y: number; s: number } }\n\n')
+    f.write(f'/** The face of the standing bear; it is set on each pose at face.x/y (the middle of the eyes), scaled by face.s */\n')
+    f.write(f'export const FACE_ORIGIN = {json.dumps({k: round(v, 1) for k, v in origin.items()})};\n')
+    f.write(f'export const FACE: readonly TracedPath[] = {json.dumps(face)};\n\n')
+    f.write(f'export const BEAR_SHAPES = {json.dumps(poses)} as const satisfies Record<string, BearShape>;\n')
+print('wrote', OUT, {k: (v['w'], v['h'], v['face']) for k, v in poses.items()})

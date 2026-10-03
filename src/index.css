@@ -1476,7 +1476,7 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 .tgl-clock[data-night], .dark .tgl-clock[data-night] { --clock-ground: #1B2438; }
 
 /* The terminal window's motion (TerminalScene): a bear crossing the floor with its case, a plane climbing beyond the glass */
-.tgl-term-walker { height: 23%; aspect-ratio: 40 / 46; bottom: 4%; left: -14%; animation: tglTermWalk 22s linear infinite; }
+.tgl-term-walker { height: 23%; aspect-ratio: 556 / 676; bottom: 4%; left: -14%; animation: tglTermWalk 22s linear infinite; }
 .tgl-term-plane { width: 9%; aspect-ratio: 60 / 38; top: 47%; left: -12%; opacity: 0.92; animation: tglTermTakeoff 26s cubic-bezier(.45, 0, .7, 1) infinite 4s; }
 @keyframes tglTermWalk { from { left: -14%; } to { left: 112%; } }
 @keyframes tglTermTakeoff {
