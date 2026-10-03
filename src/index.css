@@ -1368,6 +1368,23 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:first-child { border-bottom-color: rgba(255, 255, 255, 0.1); }
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:hover { background: rgba(255, 255, 255, 0.08); }
 
+/* Place map and quick spots (v1.3.8): round pins that name their kind by icon, the member's own spot, name tips.
+   Phones pinch to zoom, so the place map shows no zoom buttons there. */
+@media (max-width: 639px) { .tgl-place-map .leaflet-top.leaflet-right { display: none; } }
+.tgl-qs-icon { background: transparent !important; border: 0 !important; }
+.tgl-qs-pin {
+  --qs-pin-bg: #FFFDF9; --qs-pin-fg: #1B1B18;
+  display: grid; place-items: center; border-radius: 9999px; background: var(--qs-pin-bg); color: var(--qs-pin-fg);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.16); transition: transform 150ms ease;
+}
+.tgl-qs-pin-ink { --qs-pin-bg: #1B1B18; --qs-pin-fg: #FFFDF9; }
+.dark .tgl-qs-pin { --qs-pin-bg: #1A1A17; --qs-pin-fg: #EDEBE5; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 2px 6px rgba(0, 0, 0, 0.4); }
+.dark .tgl-qs-pin-ink { --qs-pin-bg: #EDEBE5; --qs-pin-fg: #11110F; }
+.leaflet-marker-icon:hover .tgl-qs-pin { transform: scale(1.08); }
+.tgl-place-me { width: 22px; height: 22px; border-radius: 9999px; background: #DC2626; border: 3px solid #FFFFFF; box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.18), 0 2px 6px rgba(0, 0, 0, 0.25); }
+.leaflet-tooltip.tgl-place-tip { border: 0; border-radius: 9999px; padding: 3px 10px; font-weight: 700; font-size: 12px; background: #1B1B18; color: #FFFDF9; box-shadow: none; }
+.leaflet-tooltip.tgl-place-tip::before { display: none; }
+
 /* Hub drawers (components/DrawerHost, v1.3.8): the tab bar's hubs and the terminal rise as one sheet. Every drawer has
    the same shape: it fills the screen to a small gap under the status bar and keeps its rounded top corners, so the
    dimmed page shows above it and it reads as a drawer, not a new page */

@@ -1,10 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { getPosition, locationProblem } from '../utils/location';
 import { TRAVELLER_SIZE, travellerHtml } from '../art/bear/kit';
-import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock, Bookmark, Locate, User, Layers } from 'lucide-react';
+import { Plus, Minus, Loader2, Menu, Lock, Unlock, Bookmark, Locate, Layers } from 'lucide-react';
 import { MAP_STYLES, MAP_STYLE_EVENT, MAP_STYLE_LABEL, MapStyle, applyMapStyle, isMapStyle, mapTileFor, readMapStyle } from '../utils/mapTiles';
 import { Trip, TimelineItem, TransitItem, SpotPocketItem } from '../types';
 import { getSavedPockets, calculateDistanceInMeters } from '../utils/pocketStorage';
+import { useQuickSpots } from './map/useQuickSpots';
+import { QuickSpotBar, QuickSpotCard, QuickSpotList } from './map/QuickSpots';
 
 const dayColors = [
   '#dc2626', // Day 1: Red
@@ -541,14 +543,19 @@ export function MapArea({
     return `${activeTab}|${expandedItemId}|${startLat}|${startLng}|${endLat}|${endLng}|${src}`;
   })();
 
-  // POI Features
-  const [poiItems, setPoiItems] = useState<any[]>([]);
-  const [poiLoading, setPoiLoading] = useState(false);
-  const [showConvenience, setShowConvenience] = useState(false);
-  const [showSupermarket, setShowSupermarket] = useState(false);
-  const [showStation, setShowStation] = useState(false);
-  const [isPoiExpanded, setIsPoiExpanded] = useState(true);
-  const poiMarkersRef = useRef<any[]>([]);
+  // Quick spots around the stay (v1.3.8, shared with the place map): around the picked stay, else the first one
+  const stayAnchor = (() => {
+    if (activeTab !== 'stays') return null;
+    const picked = expandedItemId !== null ? mapPoints.find(p => p.id === expandedItemId) : undefined;
+    const first = mapPoints.find(p => typeof p.lat === 'number' && typeof p.lng === 'number' && !isNaN(Number(p.lat)) && !isNaN(Number(p.lng)));
+    const at = picked && picked.lat && picked.lng ? picked : first;
+    if (at) return { lat: Number(at.lat), lng: Number(at.lng) };
+    const lat = Number(trip.lat), lng = Number(trip.lng);
+    return isNaN(lat) || isNaN(lng) ? null : { lat, lng };
+  })();
+  const stayAnchorMemo = React.useMemo(() => stayAnchor, [stayAnchor?.lat, stayAnchor?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+  const qs = useQuickSpots({ map: mapReady && activeTab === 'stays' ? mapRef.current : null, anchor: stayAnchorMemo });
+  const [qsListOpen, setQsListOpen] = useState(false);
 
   // ─── Effect 1: Initialize Leaflet map (once per trip.id) ───────────────────
   useEffect(() => {
@@ -1288,285 +1295,6 @@ export function MapArea({
 
   }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate, isCinematicMode, cinematicSpeed, cinematicVehicleType]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Effect 3b: Google Places POIs Fetcher ──────────────────────────────────
-  useEffect(() => {
-    if (activeTab !== 'stays') {
-      setPoiItems([]);
-      return;
-    }
-
-    // Determine reference lat/lng
-    let lat = Number(trip.lat);
-    let lng = Number(trip.lng);
-
-    if (expandedItemId !== null) {
-      // Prioritize actively selected stay item coordinates
-      const activePoint = mapPoints.find(p => p.id === expandedItemId);
-      if (activePoint && activePoint.lat && activePoint.lng) {
-        lat = Number(activePoint.lat);
-        lng = Number(activePoint.lng);
-      }
-    } else if (mapPoints.length > 0) {
-      // If no stay card is selected, use the first stay in the mapPoints list
-      const firstStay = mapPoints.find(p => p.lat !== undefined && p.lng !== undefined && !isNaN(Number(p.lat)) && !isNaN(Number(p.lng)));
-      if (firstStay) {
-        lat = Number(firstStay.lat);
-        lng = Number(firstStay.lng);
-      }
-    }
-
-    if (isNaN(lat) || isNaN(lng)) {
-      setPoiItems([]);
-      return;
-    }
-
-    // Define localized fallback POIs representing typical amenities depending on country
-    const isJapan = (lat > 30 && lat < 46 && lng > 128 && lng < 146) || (trip.locationStr || '').toLowerCase().includes('japan') || (trip.locationStr || '').toLowerCase().includes('일본') || (trip.locationStr || '').toLowerCase().includes('kyoto') || (trip.locationStr || '').toLowerCase().includes('tokyo') || (trip.locationStr || '').toLowerCase().includes('osaka');
-    const isKorea = (lat > 33 && lat < 39 && lng > 124 && lng < 131) || (trip.locationStr || '').toLowerCase().includes('korea') || (trip.locationStr || '').toLowerCase().includes('한국') || (trip.locationStr || '').toLowerCase().includes('seoul');
-
-    const fallbackPois = isJapan
-      ? [
-          { id: 900001, lat: lat + 0.0018, lng: lng + 0.0015, name: 'Lawson (ローソン)', type: 'convenience' },
-          { id: 900002, lat: lat - 0.0012, lng: lng - 0.0018, name: '7-Eleven (セブン-イレブン)', type: 'convenience' },
-          { id: 900003, lat: lat + 0.0009, lng: lng - 0.0022, name: 'FamilyMart (ファミリー마ート)', type: 'convenience' },
-          { id: 900004, lat: lat + 0.0025, lng: lng - 0.0011, name: 'Fresco Supermarket (フ레스コ)', type: 'supermarket' },
-          { id: 900005, lat: lat - 0.0019, lng: lng + 0.0010, name: 'Life Supermarket (ライフ)', type: 'supermarket' },
-          { id: 900006, lat: lat - 0.0028, lng: lng + 0.0022, name: 'Subway Station (지하철역)', type: 'station' },
-          { id: 900007, lat: lat + 0.0022, lng: lng - 0.0020, name: 'JR Station (JR역)', type: 'station' }
-        ]
-      : isKorea
-      ? [
-          { id: 900001, lat: lat + 0.0018, lng: lng + 0.0015, name: 'GS25 편의점', type: 'convenience' },
-          { id: 900002, lat: lat - 0.0012, lng: lng - 0.0018, name: 'CU 편의점', type: 'convenience' },
-          { id: 900003, lat: lat + 0.0009, lng: lng - 0.0022, name: '세븐일레븐 편의점', type: 'convenience' },
-          { id: 900004, lat: lat + 0.0025, lng: lng - 0.0011, name: '이마트 에브리데이', type: 'supermarket' },
-          { id: 900005, lat: lat - 0.0019, lng: lng + 0.0010, name: '홈플러스 익스프레스', type: 'supermarket' },
-          { id: 900006, lat: lat - 0.0028, lng: lng + 0.0022, name: '지하철역', type: 'station' },
-          { id: 900007, lat: lat + 0.0022, lng: lng - 0.0020, name: '버스 정류장', type: 'station' }
-        ]
-      : [
-          { id: 900001, lat: lat + 0.0018, lng: lng + 0.0015, name: 'Convenience Store', type: 'convenience' },
-          { id: 900002, lat: lat - 0.0012, lng: lng - 0.0018, name: 'Convenience Store', type: 'convenience' },
-          { id: 900003, lat: lat + 0.0009, lng: lng - 0.0022, name: 'Convenience Store', type: 'convenience' },
-          { id: 900004, lat: lat + 0.0025, lng: lng - 0.0011, name: 'Supermarket', type: 'supermarket' },
-          { id: 900005, lat: lat - 0.0019, lng: lng + 0.0010, name: 'Grocery Store', type: 'supermarket' },
-          { id: 900006, lat: lat - 0.0028, lng: lng + 0.0022, name: 'Subway Station', type: 'station' },
-          { id: 900007, lat: lat + 0.0022, lng: lng - 0.0020, name: 'Bus Station', type: 'station' }
-        ];
-
-    // Synchronously preload fallback POIs so toggling shows pins immediately
-    setPoiItems(fallbackPois);
-
-    let isMounted = true;
-    setPoiLoading(true);
-
-    const google = (window as any).google;
-    if (google && google.maps && google.maps.places && containerRef.current) {
-      try {
-        const dummyDiv = document.createElement('div');
-        const service = new google.maps.places.PlacesService(dummyDiv);
-
-        const searchType = (googleType: string, poiType: string): Promise<any[]> => {
-          return new Promise((resolve) => {
-            service.nearbySearch(
-              {
-                location: new google.maps.LatLng(lat, lng),
-                radius: 1500,
-                type: googleType
-              },
-              (results: any, status: any) => {
-                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                  const mapped = results.slice(0, 15).map((place: any) => {
-                    if (!place.geometry || !place.geometry.location) return null;
-                    return {
-                      id: place.place_id || `${poiType}-${Math.random()}`,
-                      lat: place.geometry.location.lat(),
-                      lng: place.geometry.location.lng(),
-                      name: place.name || '',
-                      type: poiType
-                    };
-                  }).filter(Boolean);
-                  resolve(mapped);
-                } else {
-                  resolve([]);
-                }
-              }
-            );
-          });
-        };
-
-        Promise.all([
-          searchType('convenience_store', 'convenience'),
-          searchType('supermarket', 'supermarket'),
-          searchType('subway_station', 'station'),
-          searchType('train_station', 'station')
-        ]).then((resultsArray) => {
-          if (!isMounted) return;
-          const allPois = resultsArray.flat();
-          // Filter duplicates by id
-          const uniquePoisMap: { [id: string]: any } = {};
-          allPois.forEach((p: any) => {
-            uniquePoisMap[p.id] = p;
-          });
-          const uniquePois = Object.values(uniquePoisMap);
-
-          if (uniquePois.length > 0) {
-            setPoiItems(uniquePois);
-          } else {
-            setPoiItems(fallbackPois);
-          }
-          setPoiLoading(false);
-        }).catch((err) => {
-          console.error("Google PlacesService failed, keeping fallback POIs:", err);
-          if (isMounted) {
-            setPoiItems(fallbackPois);
-            setPoiLoading(false);
-          }
-        });
-      } catch (err) {
-        console.error("Failed to initialize PlacesService:", err);
-        setPoiItems(fallbackPois);
-        setPoiLoading(false);
-      }
-    } else {
-      setPoiItems(fallbackPois);
-      setPoiLoading(false);
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [expandedItemId, activeTab, mapPoints, trip.lat, trip.lng, trip.locationStr]);
-
-  // ─── Effect 3c: Render POI markers on map ──────────────────────────────────
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-    const L = (window as any).L;
-    if (!L) return;
-
-    // Clear previous POIs
-    poiMarkersRef.current.forEach(m => map.removeLayer(m));
-    poiMarkersRef.current = [];
-
-    if (activeTab !== 'stays') return;
-
-    poiItems.forEach(poi => {
-      const isVisible =
-        (poi.type === 'convenience' && showConvenience) ||
-        (poi.type === 'supermarket' && showSupermarket) ||
-        (poi.type === 'station' && showStation);
-
-      if (!isVisible) return;
-
-      let accentColor = '#DC2626'; // station (Swiss Red)
-      let typeLabel = 'METRO';
-      let svgIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><path d="m8 19-2 3"/><path d="m18 22-2-3"/></svg>';
-
-      if (poi.type === 'convenience') {
-        accentColor = '#2563EB'; // convenience (Royal Blue)
-        typeLabel = 'CONV';
-        svgIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>';
-      } else if (poi.type === 'supermarket') {
-        accentColor = '#059669'; // supermarket (Emerald Green)
-        typeLabel = 'MART';
-        svgIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>';
-      }
-
-      const htmlContent = `
-        <div class="poi-pin-wrapper">
-          <!-- Circular Core Pin (Identical to high-contrast pocket pin) -->
-          <div class="poi-pin-core" style="background-color: ${accentColor};">
-            ${svgIcon}
-          </div>
-          <!-- Swiss Minimal Label with category tag and title -->
-          <div class="poi-pin-label">
-            <span class="poi-type-tag" style="background-color: ${accentColor};">${typeLabel}</span>
-            <span class="poi-name-text" title="${poi.name || ''}">${poi.name || ''}</span>
-          </div>
-        </div>
-      `;
-
-      const icon = L.divIcon({
-        className: 'custom-poi-pin-icon',
-        html: htmlContent,
-        iconSize: [140, 52],
-        iconAnchor: [70, 12],
-      });
-
-      const marker = L.marker([poi.lat, poi.lng], { icon, zIndexOffset: 500 }).addTo(map);
-
-      // Mouseover / Mouseout: Elevate z-index so overlapping names jump to the top
-      marker.on('mouseover', () => {
-        marker.setZIndexOffset(10000);
-        const el = marker.getElement();
-        if (el) el.classList.add('poi-marker-hovered');
-      });
-
-      marker.on('mouseout', () => {
-        marker.setZIndexOffset(500);
-        const el = marker.getElement();
-        if (el) el.classList.remove('poi-marker-hovered');
-      });
-
-      const googleSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}`;
-
-      const popupContainer = document.createElement('div');
-      popupContainer.style.fontFamily = 'sans-serif';
-      popupContainer.style.fontSize = '11px';
-      popupContainer.style.padding = '4px';
-      popupContainer.style.color = '#111';
-      popupContainer.style.minWidth = '140px';
-
-      const title = document.createElement('strong');
-      title.style.fontSize = '12px';
-      title.style.display = 'block';
-      title.style.marginBottom = '2px';
-      title.textContent = poi.name || '';
-      popupContainer.appendChild(title);
-
-      const subText = document.createElement('span');
-      subText.style.color = '#666';
-      subText.style.fontSize = '9px';
-      subText.style.display = 'block';
-      subText.style.marginBottom = '6px';
-      subText.textContent = 'Double-click to open Google Maps';
-      popupContainer.appendChild(subText);
-
-      const button = document.createElement('button');
-      button.style.background = '#e11d48';
-      button.style.color = '#fff';
-      button.style.border = 'none';
-      button.style.padding = '5px 8px';
-      button.style.fontSize = '10px';
-      button.style.fontWeight = 'bold';
-      button.style.cursor = 'pointer';
-      button.style.borderRadius = '2px';
-      button.style.width = '100%';
-      button.style.transition = 'background 0.2s';
-      button.textContent = 'Google Maps 이동';
-
-      button.onmouseover = () => { button.style.background = '#be123c'; };
-      button.onmouseout = () => { button.style.background = '#e11d48'; };
-
-      button.addEventListener('click', (e) => {
-        e.stopPropagation();
-        window.open(googleSearchUrl, '_blank');
-      });
-      popupContainer.appendChild(button);
-
-      marker.bindPopup(popupContainer, { closeButton: false });
-
-      // Double click listener to navigate to Google Maps
-      marker.on('dblclick', (e: any) => {
-        L.DomEvent.stopPropagation(e);
-        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}`, '_blank');
-      });
-
-      poiMarkersRef.current.push(marker);
-    });
-  }, [poiItems, showConvenience, showSupermarket, showStation, mapReady, activeTab, expandedItemId]);
-
   // ─── Effect 3d: Flight route plane animation ──────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
@@ -1839,84 +1567,17 @@ export function MapArea({
         className="absolute inset-0 w-full h-full z-0"
       />
 
-      {/* ── Nearby POI Toggles Overlay (Stays tab only: Minimal Icon Bar) ── */}
+      {/* ── Quick spots around the stay (Stays tab only) ── */}
       {isStayTab && (
-        <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20 flex items-center gap-1 bg-surface/95 dark:bg-surface-dark/95 p-1 rounded-full shadow-lg transition duration-300">
-          {isPoiExpanded ? (
-            <div className="flex items-center gap-1 animate-in fade-in duration-200">
-              {/* 편의점 */}
-              <button
-                type="button"
-                onClick={() => setShowConvenience(!showConvenience)}
-                title={`편의점 (${poiItems.filter(p => p.type === 'convenience').length})`}
-                className={`relative flex items-center justify-center px-1.5 py-1 rounded transition-all cursor-pointer ${
-                  showConvenience
-                    ? 'bg-blue-600 text-white shadow-sm font-bold'
-                    : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10'
-                }`}
-              >
-                <Store className="w-3.5 h-3.5" />
-                <span className="ml-1 text-micro font-mono">
-                  {poiItems.filter(p => p.type === 'convenience').length}
-                </span>
-              </button>
-
-              {/* 슈퍼마켓 */}
-              <button
-                type="button"
-                onClick={() => setShowSupermarket(!showSupermarket)}
-                title={`슈퍼마켓 (${poiItems.filter(p => p.type === 'supermarket').length})`}
-                className={`relative flex items-center justify-center px-1.5 py-1 rounded transition-all cursor-pointer ${
-                  showSupermarket
-                    ? 'bg-emerald-600 text-white shadow-sm font-bold'
-                    : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10'
-                }`}
-              >
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span className="ml-1 text-micro font-mono">
-                  {poiItems.filter(p => p.type === 'supermarket').length}
-                </span>
-              </button>
-
-              {/* 역 */}
-              <button
-                type="button"
-                onClick={() => setShowStation(!showStation)}
-                title={`지하철/기차역 (${poiItems.filter(p => p.type === 'station').length})`}
-                className={`relative flex items-center justify-center px-1.5 py-1 rounded transition-all cursor-pointer ${
-                  showStation
-                    ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark shadow-sm font-bold'
-                    : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10'
-                }`}
-              >
-                <Train className="w-3.5 h-3.5" />
-                <span className="ml-1 text-micro font-mono">
-                  {poiItems.filter(p => p.type === 'station').length}
-                </span>
-              </button>
-            </div>
-          ) : null}
-
-          {/* 접기/펼치기 토글 버튼 */}
-          <button
-            type="button"
-            onClick={() => setIsPoiExpanded(!isPoiExpanded)}
-            title={isPoiExpanded ? "아이콘 바 접기" : "주변 편의시설 (편의점/슈퍼/역) 보기"}
-            className="p-1 rounded text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center cursor-pointer"
-          >
-            {poiLoading ? (
-              <Loader2 className="w-3.5 h-3.5 text-red-600 animate-spin" />
-            ) : isPoiExpanded ? (
-              <ChevronLeft className="w-3.5 h-3.5" />
-            ) : (
-              <div className="flex items-center gap-1 px-0.5">
-                <Store className="w-3.5 h-3.5 text-blue-600" />
-                <ShoppingBag className="w-3.5 h-3.5 text-emerald-600" />
-                <Train className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
-                <ChevronRight className="w-3 h-3 text-black/60 dark:text-white/60 ml-0.5" />
-              </div>
-            )}
-          </button>
+        <div className="absolute top-2 left-2 right-2 md:top-4 md:left-4 md:right-auto md:max-w-[min(420px,calc(100%-6rem))] z-20 flex flex-col gap-2 pointer-events-none">
+          <QuickSpotBar s={qs} onOpenList={() => { qs.setSelected(null); setQsListOpen(o => !o); }} className="pointer-events-auto" />
+          <div className="pointer-events-auto w-full max-w-[360px]">
+            {qs.selected ? (
+              <QuickSpotCard spot={qs.selected} onClose={() => qs.setSelected(null)} tripId={trip.id} />
+            ) : qsListOpen ? (
+              <QuickSpotList s={qs} onClose={() => setQsListOpen(false)} onPick={spot => { setQsListOpen(false); qs.setSelected(spot); mapRef.current?.panTo([spot.lat, spot.lng]); }} />
+            ) : null}
+          </div>
         </div>
       )}
 

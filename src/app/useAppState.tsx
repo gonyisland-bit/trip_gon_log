@@ -44,6 +44,7 @@ import { applyJourneyOpenBy } from '../utils/journeyOpen';
 import { setLocationSwitchedOff } from '../utils/location';
 import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
 import { applyHubMapStyle, applyMapStyle, isHubMapStyle, isMapStyle } from '../utils/mapTiles';
+import { cachePlaceMapPrefs } from '../utils/placeMapPrefs';
 import { noteRecentJourney } from '../utils/recentJourneys';
 import { orderWithNewFirst } from '../utils/journeyOrderHelper';
 import { applyMyCitiesPrefs, findCity, readMainCity, readMyCities } from '../utils/myCities';
@@ -266,6 +267,7 @@ export function useAppState() {
       if (typeof prefs.logoSplash === 'boolean') setLogoSplash(prefs.logoSplash, false);
       if (isMapStyle(prefs.mapStyle)) applyMapStyle(prefs.mapStyle, false);
       if (isHubMapStyle(prefs.hubMapStyle)) applyHubMapStyle(prefs.hubMapStyle, false);
+      if (prefs.placeMap) cachePlaceMapPrefs(prefs.placeMap);
       applyJourneyOpenBy(prefs.journeyOpenBy);
       if (prefs.weatherBg !== undefined) {
         setIsGlobalWeatherBgEnabled(prefs.weatherBg);

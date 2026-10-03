@@ -3,7 +3,7 @@ import { HubMapStyle, hubTileFor, isHubMapStyle, readHubMapStyle } from '../../u
 import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Moon, Droplets, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
-import { Trip, Plan, UserProfile } from '../../types';
+import { Trip, Plan, UserProfile, StayItem } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../../components/SummaryView';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../../data/worldDestinations';
@@ -39,6 +39,8 @@ export interface MapHubPageProps {
   isDarkMode: boolean;
   isAdmin?: boolean;
   currentUserProfile?: UserProfile | null;
+  /** Stays by journey, for the place map */
+  staysByTrip?: Record<number, StayItem[]>;
 }
 
 export function useMapHubState({

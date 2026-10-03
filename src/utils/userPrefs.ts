@@ -29,6 +29,8 @@ export interface UserPrefs {
   slideshow?: { interval?: number; fit?: 'fit' | 'fill' };
   /** World map style on the map hub (see mapTiles.ts) */
   hubMapStyle?: 'gray' | 'normal' | 'terrain' | 'simple';
+  /** The place map's tiles and quick spot kinds left on (see placeMapPrefs.ts) */
+  placeMap?: import('./placeMapPrefs').PlaceMapPrefs;
   /** The member switched current location off: no screen reads it on its own (see location.ts) */
   locationOff?: boolean;
   /** Which home widgets show (see homeWidgetPrefs.ts) */

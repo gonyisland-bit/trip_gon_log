@@ -19,9 +19,18 @@ import { useMapHubState, MapHubPageProps } from './map/useMapHubState';
 import { MapTopBar } from './map/MapTopBar';
 import { SelectedCountryCard } from './map/SelectedCountryCard';
 import { MapModals } from './map/MapModals';
+import { PlaceMap } from './map/PlaceMap';
+import { Segment } from '../components/ui/Segment';
+import { Globe2, MapPinned } from 'lucide-react';
 
 // Map hub (v1.3): the page shell. State lives in useMapHubState; the top bar, the country card
 // and the modals are sections that read it through `s`.
+// v1.3.8: two tabs. The world map is for choosing where to go and ticking off where one has been; the place map
+// (made the first time it is opened, then kept) is for being there: stays, saved spots and quick spots nearby.
+
+type MapMode = 'world' | 'place';
+const MODE_KEY = 'tgl_map_mode';
+const readMode = (): MapMode => { try { return localStorage.getItem(MODE_KEY) === 'place' ? 'place' : 'world'; } catch { return 'world'; } };
 
 export function MapHubPage(props: MapHubPageProps) {
   const s = useMapHubState(props);
@@ -152,10 +161,17 @@ export function MapHubPage(props: MapHubPageProps) {
   // The phone tab bar floats over the map; it steps aside while a country card is open
   // (only while this is the hub on screen: a kept-alive map must not hide the tab bar from the other drawers)
   const hubVisible = useHubVisible();
+  const [mode, setMode] = useState<MapMode>(readMode);
+  const [placeMade, setPlaceMade] = useState(mode === 'place');
+  const changeMode = (m: MapMode) => {
+    setMode(m);
+    if (m === 'place') { setPlaceMade(true); if (selectedCountry) handleCloseCountry(); }
+    try { localStorage.setItem(MODE_KEY, m); } catch { /* a view convenience */ }
+  };
   useEffect(() => {
-    document.documentElement.toggleAttribute('data-map-sheet', hubVisible && !!selectedCountry);
+    document.documentElement.toggleAttribute('data-map-sheet', hubVisible && mode === 'world' && !!selectedCountry);
     return () => document.documentElement.removeAttribute('data-map-sheet');
-  }, [selectedCountry, hubVisible]);
+  }, [selectedCountry, hubVisible, mode]);
 
   return (
     <main className={`relative w-full h-[var(--hub-h,calc(100vh-56px))] supports-[height:100dvh]:h-[var(--hub-h,calc(100dvh-56px))] flex flex-col lg:flex-row bg-paper dark:bg-paper-dark overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
@@ -172,6 +188,24 @@ export function MapHubPage(props: MapHubPageProps) {
       />
 
       <SelectedCountryCard s={s} />
+
+      {placeMade && (
+        <div className={`absolute inset-0 z-[550] bg-paper dark:bg-paper-dark ${mode === 'place' ? '' : 'hidden'}`}>
+          <PlaceMap trips={trips} plans={plans} staysByTrip={props.staysByTrip} isDarkMode={isDarkMode} />
+        </div>
+      )}
+
+      {/* World or place: under the top bar on the left */}
+      <div className={`absolute z-[560] top-[52px] left-3 sm:top-16 sm:left-6 ${mode === 'world' && selectedCountry ? 'max-sm:hidden' : ''}`}>
+        <Segment<MapMode>
+          size="sm"
+          ariaLabel="지도 보기"
+          value={mode}
+          onChange={changeMode}
+          options={[{ value: 'world', label: '세계', icon: Globe2 }, { value: 'place', label: '장소', icon: MapPinned }]}
+          className="!bg-surface/95 dark:!bg-surface-dark/95 shadow-lg"
+        />
+      </div>
 
       </div>
 

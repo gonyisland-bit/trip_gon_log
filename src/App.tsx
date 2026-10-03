@@ -434,6 +434,7 @@ function App() {
             setNewTripPrefill({ country: country || undefined, city: cities[0], cities });
           }}
           currentUserProfile={currentUserProfile}
+          staysByTrip={staysByTrip}
         />
   );
   const calendarEl = (
