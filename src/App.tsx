@@ -214,15 +214,19 @@ function App() {
   // Phones: the tab bar's hubs and the terminal are drawers over home (components/DrawerHost). The page under a
   // drawer is home, so closing one lands on it as it was
   const isPhone = useIsPhone();
-  const drawerView = isLoggedIn && isPhone && isDrawerView(currentView) ? currentView : null;
-  const baseView = drawerView ? 'home' : currentView;
-  const activeDrawer = isLoggedIn ? (isDepartureOpen ? 'terminal' : drawerView) : null;
+  // The journey is not one of the drawers: on a phone it is a sheet laid over the drawer it was opened from (or over
+  // home), so dragging it down shows that place again
+  const drawerView = isLoggedIn && isPhone && isDrawerView(currentView) && currentView !== 'detail' ? currentView : null;
+  const detailOverlay = isLoggedIn && isPhone && currentView === 'detail';
+  const baseView = drawerView || detailOverlay ? 'home' : currentView;
   // The grip, the backdrop and the open drawer's own tab all close it: the terminal alone, or a hub back to home
   // A journey drawer closes back to where it was opened from (home, or a hub drawer)
   const beforeDetail = useRef('home');
   useEffect(() => {
     if (currentView !== 'detail' && currentView !== 'manage') beforeDetail.current = currentView;
   }, [currentView]);
+  const underlay = detailOverlay && isDrawerView(beforeDetail.current) && beforeDetail.current !== 'detail' ? beforeDetail.current : null;
+  const activeDrawer = isLoggedIn ? (isDepartureOpen ? 'terminal' : drawerView ?? underlay) : null;
   const closeDrawer = () => {
     if (isDepartureOpen) setIsDepartureOpen(false);
     else if (currentView === 'detail') navigateTo(beforeDetail.current);
@@ -644,7 +648,7 @@ function App() {
             }>
               {baseView === 'home' && (
                 <div className="w-full h-full animate-in fade-in duration-300">
-                  <Freeze frozen={!!activeDrawer}>
+                  <Freeze frozen={!!activeDrawer || detailOverlay}>
                   <HomePage 
                     onNavigate={navigateTo} 
                     trips={trips} 
@@ -992,7 +996,9 @@ function App() {
           <DrawerHost
             active={activeDrawer}
             onClose={closeDrawer}
-            order={['archive', 'map', 'terminal', 'calendar', 'pocket', 'detail']}
+            order={['archive', 'map', 'terminal', 'calendar', 'pocket']}
+            overlay={detailOverlay ? { id: 'detail', label: '여정', node: detailEl ? <Suspense fallback={<DetailSkeleton />}>{detailEl}</Suspense> : null, placeholder: <DetailSkeleton /> } : null}
+            onCloseOverlay={closeDrawer}
             warm={warmHubs}
             panels={{
               archive: { label: '여정', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('peach')}>{archiveEl}</Suspense> },
@@ -1000,7 +1006,6 @@ function App() {
               calendar: { label: '달력', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('mist')}>{calendarEl}</Suspense> },
               pocket: { label: '포켓', keepAlive: true, scroll: true, dragClose: true, node: <Suspense fallback={hubFallback('sage')}>{pocketEl}</Suspense> },
               terminal: { label: '공항 터미널', narrow: true, dragClose: true, node: terminalEl },
-              detail: { label: '여정', flush: true, dragClose: true, node: drawerView === 'detail' ? <Suspense fallback={<DetailSkeleton />}>{detailEl}</Suspense> : null },
             }}
           />
         )}
@@ -1104,7 +1109,7 @@ function App() {
         )}
 
         {/* First visit after sign-in: one hint to watch the intro */}
-        {isLoggedIn && !showSplash && !isIntroOpen && baseView === 'home' && !activeDrawer && <IntroTip />}
+        {isLoggedIn && !showSplash && !isIntroOpen && baseView === 'home' && !activeDrawer && !detailOverlay && <IntroTip />}
 
 
         {/* Global Floating Scroll To Top Navigator (Hidden on Detail, Map, and Guest Landing View) */}

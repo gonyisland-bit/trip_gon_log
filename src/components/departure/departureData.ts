@@ -142,9 +142,15 @@ export interface TicketStore {
   activeId?: string;
 }
 
-/** The ticket at the counter: the chosen one, else the newest */
+/** The ticket that leaves soonest (not yet departed); tickets without dates come after those with one */
+export function nearestTicket(items: DepartureTicket[]): DepartureTicket | null {
+  const ahead = items.filter(t => t.startDate && daysUntil(t.startDate) >= 0).sort((a, b) => daysUntil(a.startDate!) - daysUntil(b.startDate!));
+  return ahead[0] ?? null;
+}
+
+/** The ticket at the counter: the chosen one, else the one leaving soonest (v1.3.8; it used to be the newest) */
 export function activeTicketOf(store: TicketStore): DepartureTicket | null {
-  return store.items.find(t => t.id === store.activeId) ?? store.items[0] ?? null;
+  return store.items.find(t => t.id === store.activeId) ?? nearestTicket(store.items) ?? store.items[0] ?? null;
 }
 
 const idOf = (data: { activeId?: unknown }) => (typeof data.activeId === 'string' && data.activeId ? data.activeId : undefined);

@@ -20,10 +20,11 @@ import { isTileOn, useHomeWidgets, type BentoTileId } from '../../../utils/homeW
 import { openJourneyFromCard, warmJourney } from '../../../utils/journeyOpen';
 import { TicketPass } from '../../ui/TicketPass';
 import { DotMap } from './DotMap';
+import { MultiClock, SingleClock, clockGround, useClockSetup, useNow, zoneOf } from './WorldClock';
 import { BentoSheet, type BentoCtx } from './BentoSheet';
 import {
-  describeJourney, journeyCities, journeyMonth, journeyPoints, journeyStats, monthCells, nextJourney, nightsLabel, pickMemory, rangeLabel,
-  type Journey,
+  describeJourney, journeyCities, journeyMonth, journeyPoints, journeyStats, monthCells, focusPoints, focusTrip, pickMemory, rangeLabel,
+  type FocusTrip, type Journey,
 } from './bentoData';
 import type { DepartureTicket } from '../../departure/departureData';
 
@@ -32,7 +33,7 @@ import type { DepartureTicket } from '../../departure/departureData';
 // turns off closes up instead of leaving a hole. The journey tiles come first, the tools (weather, exchange rates,
 // world time) sit below their own line. Tapping a tile opens its detail sheet, which also carries the way into its hub.
 
-type Tint = 'peach' | 'butter' | 'coral' | 'sage' | 'mist' | 'lilac' | 'surface' | 'photo' | 'ink';
+type Tint = 'peach' | 'butter' | 'coral' | 'sage' | 'mist' | 'lilac' | 'surface' | 'photo' | 'ink' | 'bare';
 type Span = 'cube' | 'wide' | 'hero' | 'tall';
 
 const TINT: Record<Tint, string> = {
@@ -47,6 +48,8 @@ const TINT: Record<Tint, string> = {
   photo: 'bg-mist-ink/40 text-white',
   // The boarding pass ground, as on the journey board's flight tile
   ink: 'bg-ink text-paper dark:bg-ink-dark dark:text-paper-dark',
+  // The tile brings its own ground (the clocks)
+  bare: '',
 };
 const SPAN: Record<Span, string> = { cube: '', wide: 'col-span-2', hero: 'col-span-2 row-span-2', tall: 'row-span-2' };
 
@@ -102,7 +105,6 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
   const open = (id: BentoTileId) => () => setSheet(id);
 
   const liveTrips = useMemo(() => trips.filter(t => !t.deletedAt), [trips]);
-  const next = useMemo(() => nextJourney(liveTrips, plans), [liveTrips, plans]);
   const stats = useMemo(() => journeyStats(liveTrips), [liveTrips]);
   const memory = useMemo(() => pickMemory(liveTrips), [liveTrips]);
   const month = useMemo(() => monthCells(liveTrips, plans), [liveTrips, plans]);
@@ -133,10 +135,12 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
   const { friends } = useFriends(auth.currentUser?.uid);
 
   const visited = useMemo(() => stats.past.flatMap(journeyPoints), [stats.past]);
-  const ahead = useMemo(() => (next ? journeyPoints(next.journey) : []), [next]);
+  // One trip for the "next" tile and the terminal tile: the nearest of journeys, plans and tickets (or the ticket picked)
+  const focus = useMemo(() => focusTrip(liveTrips, plans, tickets ?? [], widgets.focusTicketId || undefined), [liveTrips, plans, tickets, widgets.focusTicketId]);
+  const ahead = useMemo(() => focusPoints(focus), [focus]);
 
   const ctx: BentoCtx = {
-    trips: liveTrips, plans, next, stats, memory, month, recent, published, tickets: tickets ?? [], pockets, friends,
+    trips: liveTrips, plans, focus, pinnedTicketId: widgets.focusTicketId || undefined, stats, memory, month, recent, published, tickets: tickets ?? [], pockets, friends,
     onNavigate, onNewTrip, close: () => setSheet(null),
   };
 
@@ -193,24 +197,24 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
             </Tile>
           )}
 
-          {/* ── Next journey ── */}
+          {/* ── Next journey: the nearest plan, the same trip the terminal tile shows ── */}
           {on('dday') && (
             <Tile tint="butter" label="예정 여정" onOpen={open('dday')} className="justify-between">
               <div className="flex flex-col gap-1.5">
-                <Kicker icon={CalendarDays}>{next?.live ? '여행 중' : '예정'}</Kicker>
-                {next ? (
-                  <span className={`${mono} text-[44px] font-extrabold tracking-[-0.04em] leading-[0.95]`}>{next.live ? `Day ${next.day}` : next.daysLeft === 0 ? 'D-DAY' : `D-${next.daysLeft}`}</span>
+                <Kicker icon={CalendarDays}>{focus?.live ? '여행 중' : '예정'}</Kicker>
+                {focus ? (
+                  <span className={`${mono} text-[44px] font-extrabold tracking-[-0.04em] leading-[0.95]`}>{focus.live ? `Day ${focus.day}` : !focus.start ? 'PLAN' : focus.daysLeft === 0 ? 'D-DAY' : `D-${focus.daysLeft}`}</span>
                 ) : (
                   <span className="text-[17px] font-extrabold tracking-tight leading-snug">예정된 여정이 없어요</span>
                 )}
               </div>
-              {next ? (
+              {focus ? (
                 <div className="flex flex-col gap-1">
-                  <span className="text-[15px] font-extrabold tracking-tight leading-snug line-clamp-2 break-keep">{next.journey.title.replace(' (Plan)', '')}</span>
-                  <span className={`${mono} text-[11.5px] font-semibold opacity-75 truncate`}>{rangeLabel(next.journey)}{nightsLabel(next.journey) ? ` · ${nightsLabel(next.journey)}` : ''}</span>
-                  {!next.live && next.total > 0 && (
+                  <span className="text-[15px] font-extrabold tracking-tight leading-snug line-clamp-2 break-keep">{focus.title}</span>
+                  <span className={`${mono} text-[11.5px] font-semibold opacity-75 truncate`}>{focus.range}{focus.nights ? ` · ${focus.nights}` : ''}</span>
+                  {!focus.live && !!focus.start && focus.total > 0 && (
                     <span className="h-1.5 rounded-full bg-black/10 dark:bg-white/15 overflow-hidden mt-0.5" aria-hidden>
-                      <i className="block h-full rounded-full bg-amber-700 dark:bg-amber-400" style={{ width: `${Math.max(6, Math.min(100, 100 - (next.daysLeft / 120) * 100))}%` }} />
+                      <i className="block h-full rounded-full bg-amber-700 dark:bg-amber-400" style={{ width: `${Math.max(6, Math.min(100, 100 - (focus.daysLeft / 120) * 100))}%` }} />
                     </span>
                   )}
                 </div>
@@ -221,7 +225,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
           )}
 
           {/* ── Terminal ── */}
-          {on('term') && <TerminalTile tickets={tickets} onOpen={open('term')} />}
+          {on('term') && <TerminalTile focus={focus} tickets={tickets} onOpen={open('term')} />}
 
           {/* ── Map ── */}
           {on('map') && (
@@ -232,7 +236,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
                 <div className="mt-auto flex items-baseline gap-3 flex-wrap">
                   <span className="text-[28px] font-extrabold tracking-[-0.02em] leading-none">{stats.countries}개국</span>
                   <span className="text-[12px] opacity-75">도시 {stats.cities}</span>
-                  {next && journeyCities(next.journey)[0] && <span className="text-[12px] font-bold text-amber-700 dark:text-amber-400">다음 · {journeyCities(next.journey)[0]}</span>}
+                  {focus?.cities[0] && <span className="text-[12px] font-bold text-amber-700 dark:text-amber-400">다음 · {focus.cities[0]}</span>}
                 </div>
               </div>
               <span className="absolute top-3 right-3 w-[26px] h-[26px] rounded-full grid place-items-center bg-black/[0.08] dark:bg-white/10 pointer-events-none" aria-hidden><ArrowUpRight className="w-3.5 h-3.5" /></span>
@@ -394,7 +398,7 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
             <div className="tgl-bento-grid">
               {on('wx') && <WeatherTile onOpen={open('wx')} />}
               {on('fx') && <ExchangeTile onOpen={open('fx')} />}
-              {on('time') && <TimeTile nextCity={next ? journeyCities(next.journey)[0] : undefined} onOpen={open('time')} />}
+              {on('time') && <ClockTile nextCity={focus?.cities[0]} onOpen={open('time')} />}
             </div>
           </>
         )}
@@ -422,8 +426,9 @@ function BentoSkeleton() {
 
 // The terminal's ticket on the journey board's boarding pass (ui/TicketPass): ICN to the first stop, the gate and the
 // flying time on the two ends, the dates and the days left under the tear line.
-function TerminalTile({ tickets, onOpen }: { tickets: DepartureTicket[] | null; onOpen: () => void }) {
-  const t = tickets?.[0];
+function TerminalTile({ focus, tickets, onOpen }: { focus: FocusTrip | null; tickets: DepartureTicket[] | null; onOpen: () => void }) {
+  // The ticket of the trip the "next" tile shows; a trip without a ticket says so instead of showing another trip's
+  const t = focus ? focus.ticket : tickets?.[0];
   const [loaded, setLoaded] = useState<{ id: string; to: string; status: string; range: string; hours: string } | null>(null);
   useEffect(() => {
     if (!t) return;
@@ -438,13 +443,20 @@ function TerminalTile({ tickets, onOpen }: { tickets: DepartureTicket[] | null; 
     <Tile tint="ink" label="공항 터미널" onOpen={onOpen} className="gap-2">
       {t ? (
         <TicketPass
-          kicker={`${t.flightNo}${tickets!.length > 1 ? ` · ${tickets!.length}장` : ''}`}
+          kicker={`${t.flightNo}${tickets && tickets.length > 1 ? ` · ${tickets.length}장` : ''}`}
           from={{ code: 'ICN', time: d?.range.split(' ')[0] ?? '', note: `GATE ${t.gate}` }}
           to={{ code: d?.to ?? '···', time: d?.hours ?? '', note: t.cityKo }}
           foot={d?.range ?? ''}
           footEnd={d?.status}
           bleed="-mx-3.5"
         />
+      ) : focus ? (
+        <>
+          <Kicker icon={Ticket}>터미널</Kicker>
+          <span className="mt-auto text-[17px] font-extrabold tracking-tight leading-snug">발권 전</span>
+          <span className="text-[11.5px] opacity-70 leading-snug line-clamp-2 break-keep">{focus.title}</span>
+          <span className="mt-1 self-start h-7 px-3 rounded-full bg-white/15 dark:bg-black/10 text-[12px] font-bold inline-flex items-center">티켓 만들기</span>
+        </>
       ) : (
         <>
           <Kicker icon={Ticket}>터미널</Kicker>
@@ -575,53 +587,20 @@ function ExchangeTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-function offsetHours(tz: string, base: string): number {
-  const at = (z: string) => new Date(new Date().toLocaleString('en-US', { timeZone: z })).getTime();
-  return Math.round((at(tz) - at(base)) / 3600000);
-}
-
-function TimeTile({ nextCity, onOpen }: { nextCity?: string; onOpen: () => void }) {
-  const { main, favorites } = useMyCities();
-  const [, tick] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => tick(n => n + 1), 30000);
-    return () => clearInterval(t);
-  }, []);
-  const rows = useMemo(() => {
-    const list: { city: CityWeatherConfig; ahead: boolean }[] = [{ city: main, ahead: false }];
-    const add = (c: CityWeatherConfig | undefined, ahead = false) => {
-      if (c && c.timezone && list.length < 4 && !list.some(r => r.city.nameEn === c.nameEn)) list.push({ city: c, ahead });
-    };
-    add(nextCity ? searchCities(nextCity, 1)[0] : undefined, true);
-    favorites.forEach(f => add(f));
-    // Four rows always, so the tile is never mostly empty: the cities travellers ask the time of
-    ['TOKYO', 'PARIS', 'NEW YORK', 'LONDON'].forEach(n => add(searchCities(n, 1)[0]));
-    return list;
-  }, [main, favorites, nextCity]);
-  const fmt = (tz: string) => new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+// The world-time cube: one city's clock fills it (components/home/bento/WorldClock); the detail sheet picks the cities,
+// "all together" and the face
+function ClockTile({ nextCity, onOpen }: { nextCity?: string; onOpen: () => void }) {
+  const setup = useClockSetup(nextCity);
+  const now = useNow(1000);
+  const base = setup.main.timezone || 'Asia/Seoul';
+  const first = setup.selected[0];
+  const together = setup.multi && setup.selected.length > 1;
+  const night = !together && !!first && zoneOf(first.timezone || 'UTC', now).night;
   return (
-    <Tile tint="surface" label="세계시간" onOpen={onOpen}>
-      <Kicker icon={Clock}>세계시간</Kicker>
-      <div className="mt-auto flex flex-col gap-1.5">
-        {rows.map(({ city, ahead }) => {
-          const tz = city.timezone || 'UTC';
-          const hh = parseInt(fmt(tz).slice(0, 2), 10);
-          const dark = hh >= 19 || hh < 6;
-          const diff = main.timezone ? offsetHours(tz, main.timezone) : 0;
-          return (
-            <span key={city.nameEn} className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1 min-w-0">
-                {dark ? <Moon className="w-3 h-3 shrink-0 text-black/45 dark:text-white/50" aria-hidden /> : <Sun className="w-3 h-3 shrink-0 text-orange-600 dark:text-orange-400" aria-hidden />}
-                <span className={`truncate text-[12px] font-bold ${ahead ? 'text-amber-700 dark:text-amber-400' : ''}`}>{cleanCityDisplayName(city.name)}</span>
-              </span>
-              <span className="flex items-baseline gap-1 shrink-0">
-                {diff !== 0 && <span className="font-mono text-[9.5px] opacity-50">{diff > 0 ? `+${diff}` : diff}h</span>}
-                <span className={`${mono} text-[15px] font-extrabold tracking-tight`}>{fmt(tz)}</span>
-              </span>
-            </span>
-          );
-        })}
-      </div>
+    <Tile tint="bare" label="세계시간" onOpen={onOpen} className={`!p-0 ${clockGround(setup.style, night)}`}>
+      {together
+        ? <MultiClock cities={setup.selected} base={base} style={setup.style} now={now} />
+        : first && <SingleClock city={first} base={base} style={setup.style} now={now} />}
     </Tile>
   );
 }

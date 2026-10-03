@@ -1,6 +1,8 @@
 import type { Plan, Trip } from '../../../types';
 import { getLiveTripStatus, getUpcomingPlanInfo, isJourneyOver, parseTripDateRange, parseTripStartDate } from '../../../utils/tripPlanHelper';
 import { getKoreanHolidays } from '../../../utils/koreanHolidays';
+import { daysUntil, ticketCity, ticketRange, ticketStops, type DepartureTicket } from '../../departure/departureData';
+import { canonicalPlace, normalizeCountry, placesOf } from './placeNames';
 
 // Numbers behind the home bento tiles (v1.3.8). Everything is derived from the journey lists the home page already
 // has, so a tile never waits on its own request.
@@ -13,21 +15,24 @@ export function journeyDays(j: Pick<Journey, 'date'>): number {
   return r ? Math.round((r.end.getTime() - r.start.getTime()) / 86400000) + 1 : 0;
 }
 
-const first = (s: string) => s.split(',')[0].trim();
-
-/** City names of a journey, in order, without repeats */
+/** City names of a journey, in order, without repeats (a street or a market after a city name is the same city) */
 export function journeyCities(j: Journey): string[] {
-  const names = j.locations?.length
-    ? j.locations.map(l => first(l.name || ''))
-    : (j.locationStr || '').split(/[,/·]/).map(s => s.trim());
-  return Array.from(new Set(names.filter(Boolean)));
+  return placesOf(j).filter(p => !p.countryOnly).map(p => p.city);
+}
+
+/** The countries of a journey, told once each (한국, 대한민국 and KR are one) */
+export function journeyCountries(j: Journey): { key: string; label: string }[] {
+  const seen = new Map<string, string>();
+  placesOf(j).forEach(p => { if (p.countryKey && !seen.has(p.countryKey)) seen.set(p.countryKey, p.country); });
+  if (seen.size === 0) {
+    const own = normalizeCountry(j.country);
+    if (own) seen.set(own.key, own.label);
+  }
+  return [...seen.entries()].map(([key, label]) => ({ key, label }));
 }
 
 export function journeyCountry(j: Journey): string {
-  const own = (j.country || '').trim();
-  if (own) return own;
-  const fromLoc = j.locations?.find(l => l.country)?.country;
-  return (fromLoc || '').trim();
+  return journeyCountries(j)[0]?.label ?? '';
 }
 
 /** "2025.08" of a journey's first day */
@@ -91,9 +96,8 @@ export function journeyStats(trips: Trip[]): BentoStats {
   let days = 0;
   past.forEach(t => {
     days += journeyDays(t);
-    journeyCities(t).forEach(c => cities.add(c.toLowerCase()));
-    const country = journeyCountry(t);
-    if (country) countries.add(country.toLowerCase());
+    placesOf(t).forEach(p => { if (!p.countryOnly) cities.add(p.cityKey); });
+    journeyCountries(t).forEach(c => countries.add(c.key));
     const d = parseTripStartDate(t.date || '');
     if (d) years.set(d.getFullYear(), (years.get(d.getFullYear()) || 0) + 1);
   });
@@ -198,4 +202,97 @@ export function describeJourney(j: Journey): { chip: string; meta: string } {
         : `다녀온 여정${month ? ` · ${month}` : ''}`;
   const meta = [rangeLabel(j), nightsLabel(j), journeyCities(j).slice(0, 2).join(', ')].filter(Boolean).join(' · ');
   return { chip, meta };
+}
+
+// ── The nearest plan (v1.3.8) ──
+// The "next" tile and the terminal tile show one and the same trip: the nearest of every journey, plan and ticket.
+// A ticket and a journey that start the same day and share a city are one trip.
+
+export interface FocusTrip {
+  title: string;
+  cities: string[];
+  start: Date | null;
+  daysLeft: number;
+  live: boolean;
+  day: number;
+  total: number;
+  range: string;
+  nights: string;
+  journey?: Journey;
+  ticket?: DepartureTicket;
+}
+
+const sameDay = (a: Date | null, b: Date | null) => !!a && !!b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+function ticketStart(t: DepartureTicket): Date | null {
+  return t.startDate ? parseTripStartDate(t.startDate) : null;
+}
+
+function ticketPlaceKeys(t: DepartureTicket): string[] {
+  return ticketStops(t).map(s => canonicalPlace(s.ko || s.en)?.cityKey || '').filter(Boolean);
+}
+
+function journeyPlaceKeys(j: Journey): string[] {
+  return placesOf(j).filter(p => !p.countryOnly).map(p => p.cityKey);
+}
+
+function ticketRangeLabel(t: DepartureTicket): string {
+  const f = (s: string) => s.slice(5).replace('-', '.');
+  if (!t.startDate) return ticketRange(t);
+  return t.endDate && t.endDate !== t.startDate ? `${f(t.startDate)}–${f(t.endDate)}` : f(t.startDate);
+}
+
+/**
+ * The trip the home shows as "next": the journey under way, else the nearest one ahead, counting plans and tickets.
+ * `pinnedTicketId` is the ticket the member picked at the counter, which overrides the nearest.
+ */
+export function focusTrip(trips: Trip[], plans: Plan[], tickets: DepartureTicket[], pinnedTicketId?: string): FocusTrip | null {
+  type Entry = { journey?: Journey; ticket?: DepartureTicket; live: boolean; day: number; total: number; daysLeft: number; start: Date | null };
+  const entries: Entry[] = [];
+  [...trips, ...plans].forEach(j => {
+    if ((j as Trip).deletedAt) return;
+    const live = getLiveTripStatus(j.date);
+    if (live.isLive) { entries.push({ journey: j, live: true, day: live.currentDay, total: live.totalDays, daysLeft: 0, start: parseTripStartDate(j.date || '') }); return; }
+    const info = getUpcomingPlanInfo(j);
+    if (info.isUpcoming) entries.push({ journey: j, live: false, day: 0, total: journeyDays(j), daysLeft: info.daysLeft, start: parseTripStartDate(j.date || '') });
+  });
+  tickets.forEach(t => {
+    const start = ticketStart(t);
+    if (!start || !t.startDate || daysUntil(t.startDate) < 0) return;
+    const keys = ticketPlaceKeys(t);
+    const mate = entries.find(e => !e.live && !e.ticket && e.journey && sameDay(e.start, start) && journeyPlaceKeys(e.journey).some(k => keys.includes(k)));
+    if (mate) { mate.ticket = t; return; }
+    entries.push({ ticket: t, live: false, day: 0, total: (t.nights ?? 0) + 1, daysLeft: daysUntil(t.startDate), start });
+  });
+  // A ticket picked on purpose stays the focus even when it has no dates yet
+  if (pinnedTicketId && !entries.some(e => e.ticket?.id === pinnedTicketId)) {
+    const t = tickets.find(x => x.id === pinnedTicketId);
+    if (t && (!t.startDate || daysUntil(t.startDate) >= 0)) entries.push({ ticket: t, live: false, day: 0, total: (t.nights ?? 0) + 1, daysLeft: t.startDate ? daysUntil(t.startDate) : 9999, start: ticketStart(t) });
+  }
+  if (!entries.length) return null;
+  const pinned = pinnedTicketId ? entries.find(e => e.ticket?.id === pinnedTicketId) : undefined;
+  const e = pinned ?? [...entries].sort((a, b) => (a.live === b.live ? a.daysLeft - b.daysLeft : a.live ? -1 : 1))[0];
+  const j = e.journey;
+  const t = e.ticket;
+  return {
+    title: j ? j.title.replace(' (Plan)', '') : t!.plan?.title || `${t!.cityKo} 여행`,
+    cities: j ? journeyCities(j) : ticketStops(t!).map(s => s.ko),
+    start: e.start,
+    daysLeft: e.daysLeft,
+    live: e.live,
+    day: e.day,
+    total: e.total,
+    range: j ? rangeLabel(j) : ticketRangeLabel(t!),
+    nights: j ? nightsLabel(j) : t!.nights ? `${t!.nights}박 ${t!.nights + 1}일` : '',
+    journey: j,
+    ticket: t,
+  };
+}
+
+/** Where the focus trip goes, as map points */
+export function focusPoints(f: FocusTrip | null): MapPoint[] {
+  if (!f) return [];
+  if (f.journey) return journeyPoints(f.journey);
+  const c = f.ticket ? ticketCity(f.ticket) : undefined;
+  return c ? [{ lat: c.lat, lng: c.lng }] : [];
 }

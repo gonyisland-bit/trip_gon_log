@@ -25,8 +25,19 @@ export interface DrawerPanel {
   dragClose?: boolean;
 }
 
+export interface DrawerOverlay {
+  id: string;
+  label: string;
+  node: React.ReactNode;
+  /** Shown while the sheet slides in; the real node replaces it once the motion is over */
+  placeholder?: React.ReactNode;
+}
+
 interface DrawerHostProps {
   active: string | null;
+  /** A sheet over the drawers (the phone's journey) */
+  overlay?: DrawerOverlay | null;
+  onCloseOverlay?: () => void;
   panels: Record<string, DrawerPanel>;
   /** Panel ids in tab bar order, so a switch knows which way to slide */
   order: string[];
@@ -36,6 +47,8 @@ interface DrawerHostProps {
 }
 
 const EXIT_MS = 300;
+/** How long the overlay waits before its heavy page replaces the placeholder (the slide-in is 420ms) */
+const OVERLAY_DEFER_MS = 440;
 
 /** What a hub shows for the moment before its page exists: a tinted head and a few cards, never a spinner */
 export function HubSkeleton({ tint }: { tint: 'peach' | 'mist' | 'sage' | 'butter' }) {
@@ -51,7 +64,7 @@ export function HubSkeleton({ tint }: { tint: 'peach' | 'mist' | 'sage' | 'butte
   );
 }
 
-export function DrawerHost({ active, panels, order, warm = [], onClose }: DrawerHostProps) {
+export function DrawerHost({ active, overlay = null, onCloseOverlay, panels, order, warm = [], onClose }: DrawerHostProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [visited, setVisited] = useState<string[]>([]);
@@ -63,6 +76,60 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
   const dragRef = useRef<{ y: number; t: number; lastY: number; lastT: number } | null>(null);
   // How long the sheet takes to leave after a flick: the rest of the way at the speed of the hand
   const [exitMs, setExitMs] = useState<number | null>(null);
+
+  // ── The overlay sheet ──
+  const hasOverlay = !!overlay;
+  const [ovMounted, setOvMounted] = useState(false);
+  const [ovOpen, setOvOpen] = useState(false);
+  const [ovReady, setOvReady] = useState(false);
+  const [ovDrag, setOvDrag] = useState(0);
+  const [ovExitMs, setOvExitMs] = useState<number | null>(null);
+  const ovExitRef = useRef<number | null>(null);
+  const ovDragRef = useRef<{ y: number; t: number } | null>(null);
+  const ovCache = useRef<DrawerOverlay | null>(null);
+  if (overlay) ovCache.current = overlay;
+
+  useEffect(() => {
+    if (hasOverlay) {
+      ovExitRef.current = null;
+      setOvExitMs(null);
+      setOvMounted(true);
+      setOvReady(false);
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(() => setOvOpen(true)); });
+      const defer = window.setTimeout(() => setOvReady(true), OVERLAY_DEFER_MS);
+      return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); window.clearTimeout(defer); };
+    }
+    setOvOpen(false);
+    setOvDrag(0);
+    const t = window.setTimeout(() => { setOvMounted(false); setOvReady(false); ovCache.current = null; }, ovExitRef.current ?? EXIT_MS);
+    return () => window.clearTimeout(t);
+  }, [hasOverlay]);
+
+  const onOvDown = (e: React.PointerEvent) => {
+    ovDragRef.current = { y: e.clientY, t: performance.now() };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onOvMove = (e: React.PointerEvent) => {
+    if (ovDragRef.current) setOvDrag(Math.max(0, e.clientY - ovDragRef.current.y));
+  };
+  const onOvUp = (e: React.PointerEvent) => {
+    const start = ovDragRef.current;
+    ovDragRef.current = null;
+    if (!start) return;
+    const dy = Math.max(0, e.clientY - start.y);
+    const speed = dy / Math.max(1, performance.now() - start.t);
+    const h = (e.currentTarget as HTMLElement).closest('[data-drawer-sheet]')?.getBoundingClientRect().height || 500;
+    if (dy > h * 0.22 || speed > 0.6) {
+      const v = Math.max(0.9, speed);
+      const ms = Math.round(Math.min(EXIT_MS, Math.max(140, (h - dy) / v)));
+      ovExitRef.current = ms;
+      setOvExitMs(ms);
+      onCloseOverlay?.();
+    } else {
+      setOvDrag(0);
+    }
+  };
 
   useEffect(() => {
     if (active) {
@@ -93,7 +160,7 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
 
   // The page behind stops scrolling once the slide is under way: locking it costs the page a layout pass, and
   // doing that in the frame of the tap is what stalled the first frames of the slide
-  const hasActive = !!active;
+  const hasActive = !!active || hasOverlay;
   useEffect(() => {
     if (!hasActive) return;
     let unlock: (() => void) | undefined;
@@ -136,12 +203,12 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
 
   // Hubs keep their place in the DOM once visited or warmed; the terminal exists only while it is on screen
   const ids = Object.keys(panels).filter(id => id === shown || (panels[id].keepAlive && (visited.includes(id) || warm.includes(id))));
-  if (!mounted && ids.length === 0) return null;
+  if (!mounted && !ovMounted && ids.length === 0) return null;
 
   const shownIdx = shown ? order.indexOf(shown) : -1;
 
   return (
-    <div data-drawer className="fixed inset-0 z-[35] pointer-events-none" style={mounted ? undefined : { visibility: 'hidden' }}>
+    <div data-drawer className="fixed inset-0 z-[35] pointer-events-none" style={mounted || ovMounted ? undefined : { visibility: 'hidden' }}>
       <div
         className="tgl-hubdrawer-backdrop absolute inset-0 bg-black/30 pointer-events-auto"
         data-open={open}
@@ -213,6 +280,38 @@ export function DrawerHost({ active, panels, order, warm = [], onClose }: Drawer
           })}
         </div>
       </section>
+
+      {/* The journey: a second sheet over the drawer below it */}
+      {ovMounted && ovCache.current && (
+        <>
+          <div className="tgl-hubdrawer-backdrop absolute inset-0 bg-black/30 pointer-events-auto" data-open={ovOpen} onClick={onCloseOverlay} aria-hidden />
+          <section
+            data-drawer-sheet
+            data-open={ovOpen}
+            aria-label={ovCache.current.label}
+            className="tgl-hubdrawer tgl-hubdrawer-over pointer-events-auto bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark rounded-t-sheet shadow-[0_-12px_48px_rgba(0,0,0,0.28)] overflow-clip"
+            style={{
+              ...(ovDrag > 0 ? { transform: `translateY(${ovDrag}px)`, transition: 'none' } : null),
+              ...(ovExitMs !== null ? { ['--motion-sheet-out' as any]: `${ovExitMs}ms` } : null),
+            }}
+          >
+            <div
+              className="absolute inset-x-0 top-0 z-10 flex items-end justify-center touch-none cursor-grab active:cursor-grabbing"
+              style={{ height: 'var(--drawer-grip)', paddingBottom: 8 }}
+              onPointerDown={onOvDown}
+              onPointerMove={onOvMove}
+              onPointerUp={onOvUp}
+              onPointerCancel={onOvUp}
+              aria-hidden
+            >
+              <span className="w-10 h-1 rounded-full bg-black/20 dark:bg-white/25" />
+            </div>
+            <div className="absolute inset-0" style={{ paddingTop: 'var(--drawer-grip)' }}>
+              {ovReady ? (ovCache.current.node ?? ovCache.current.placeholder) : ovCache.current.placeholder}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }

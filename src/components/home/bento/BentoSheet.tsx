@@ -9,12 +9,16 @@ import { useExchangeRates } from '../../../utils/exchangeRates';
 import { openJourneyFromCard } from '../../../utils/journeyOpen';
 import { openDepartureBoard } from '../../../app/quickActions';
 import { friendLabel, type Friend } from '../../../utils/friends';
-import type { BentoTileId } from '../../../utils/homeWidgetPrefs';
+import { CATEGORY_FORM_ORDER, CATEGORY_META } from '../../pocket/categoryMeta';
+import { getCardThumbUrl } from '../../../utils/pocketStorage';
+import { spotCity } from './placeNames';
+import { CLOCK_STYLES, MultiClock, SingleClock, clockGround, useClockSetup, useNow, zoneOf } from './WorldClock';
+import { setHomeWidgets, type BentoTileId } from '../../../utils/homeWidgetPrefs';
 import type { DepartureTicket } from '../../departure/departureData';
-import { ticketRange, ticketStatus } from '../../departure/departureData';
+import { daysUntil, ticketRange, ticketStatus } from '../../departure/departureData';
 import {
   journeyCities, journeyDays, journeyMonth, nightsLabel, rangeLabel,
-  type BentoStats, type CalMonth, type Journey, type Memory, type NextJourney,
+  type BentoStats, type CalMonth, type FocusTrip, type Journey, type Memory,
 } from './bentoData';
 
 // The detail sheet a bento tile opens (v1.3.8): the tile's numbers laid out in full, and, for a tile that has a hub,
@@ -23,7 +27,8 @@ import {
 export interface BentoCtx {
   trips: Trip[];
   plans: Plan[];
-  next: NextJourney | null;
+  focus: FocusTrip | null;
+  pinnedTicketId?: string;
   stats: BentoStats;
   memory: Memory | null;
   month: CalMonth;
@@ -112,6 +117,49 @@ function WeatherBody() {
   );
 }
 
+/** The tickets, nearest first. The one shown on the home is marked; tapping another one makes it the trip both tiles show */
+function TicketPicker({ ctx }: { ctx: BentoCtx }) {
+  const items = [...ctx.tickets].sort((a, b) => {
+    const da = a.startDate ? daysUntil(a.startDate) : 9999;
+    const db = b.startDate ? daysUntil(b.startDate) : 9999;
+    return da - db;
+  });
+  const shownId = ctx.focus?.ticket?.id;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col rounded-card bg-paper dark:bg-paper-dark px-2 py-1" role="radiogroup" aria-label="홈에 보일 일정">
+        {items.map(t => {
+          const st = ticketStatus(t);
+          const on = shownId === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => setHomeWidgets({ focusTicketId: t.id })}
+              className="min-h-[56px] px-2 py-2 flex items-center gap-3 text-left cursor-pointer border-t border-black/[0.07] dark:border-white/10 first:border-t-0"
+            >
+              <span className={`w-5 h-5 rounded-full border-2 shrink-0 grid place-items-center ${on ? 'border-red-600 dark:border-red-400' : 'border-black/25 dark:border-white/30'}`}>
+                {on && <i className="w-2.5 h-2.5 rounded-full bg-red-600 dark:bg-red-400" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-bold truncate">{t.plan?.title || `${t.cityKo} 여행`}</span>
+                <span className="block font-mono text-[11.5px] text-black/55 dark:text-white/55 truncate">{ticketRange(t)} · {t.flightNo}</span>
+              </span>
+              <span className={`font-mono text-[12px] font-bold shrink-0 ${st.tone === 'amber' ? 'text-amber-700 dark:text-amber-400' : st.tone === 'red' ? 'text-red-600 dark:text-red-400' : ''}`}>{st.text}</span>
+            </button>
+          );
+        })}
+      </div>
+      {ctx.pinnedTicketId && (
+        <button type="button" onClick={() => setHomeWidgets({ focusTicketId: '' })} className="self-start h-8 px-3.5 rounded-full bg-black/[0.06] dark:bg-white/10 text-[12.5px] font-bold cursor-pointer">가장 가까운 일정으로</button>
+      )}
+      {!ctx.focus?.ticket && ctx.focus && <p className="text-[12.5px] text-amber-700 dark:text-amber-400">가장 가까운 일정 "{ctx.focus.title}"은 아직 발권 전이에요.</p>}
+    </div>
+  );
+}
+
 function Action({ label, onRun, icon = true }: { label: string; onRun: () => void; icon?: boolean }) {
   const close = useSheetClose();
   return (
@@ -122,7 +170,7 @@ function Action({ label, onRun, icon = true }: { label: string; onRun: () => voi
 }
 
 export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
-  const { next, stats, memory, month, recent, published, tickets, pockets, friends } = ctx;
+  const { focus, stats, memory, month, recent, published, tickets, pockets, friends } = ctx;
   const go = (view: string) => () => ctx.onNavigate(view);
 
   let kicker = '';
@@ -132,18 +180,21 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
 
   switch (id) {
     case 'dday': {
-      kicker = next?.live ? '여행 중' : '예정 여정';
-      if (next) {
-        const j = next.journey;
-        title = j.title.replace(' (Plan)', '');
+      kicker = focus?.live ? '여행 중' : '예정 여정';
+      if (focus) {
+        const j = focus.journey;
+        title = focus.title;
         body = (
           <Rows>
-            <Row label={next.live ? '오늘' : '남은 날'} value={next.live ? `${next.day}일째 / ${next.total}일` : next.daysLeft === 0 ? '오늘 출발' : `${next.daysLeft}일`} tone="amber" />
-            <Row label="기간" value={`${rangeLabel(j)}${nightsLabel(j) ? ` · ${nightsLabel(j)}` : ''}`} />
-            <Row label="도시" value={journeyCities(j).join(', ') || '—'} />
+            <Row label={focus.live ? '오늘' : '남은 날'} value={focus.live ? `${focus.day}일째 / ${focus.total}일` : !focus.start ? '날짜 미정' : focus.daysLeft === 0 ? '오늘 출발' : `${focus.daysLeft}일`} tone="amber" />
+            <Row label="기간" value={`${focus.range}${focus.nights ? ` · ${focus.nights}` : ''}`} />
+            <Row label="도시" value={focus.cities.join(', ') || '—'} />
+            <Row label="티켓" value={focus.ticket ? `${focus.ticket.flightNo} · GATE ${focus.ticket.gate}` : '발권 전'} tone={focus.ticket ? undefined : 'amber'} />
           </Rows>
         );
-        action = <Action label="여정 열기" onRun={() => openJourneyFromCard(j as Trip, ctx.onNavigate)} />;
+        action = j
+          ? <Action label="여정 열기" onRun={() => openJourneyFromCard(j as Trip, ctx.onNavigate)} />
+          : <Action label="터미널 열기" onRun={openDepartureBoard} />;
       } else {
         title = '예정된 여정이 없어요';
         body = <p className="text-[14px] text-black/60 dark:text-white/60">다음 여행을 정하면 남은 날이 여기에 보여요.</p>;
@@ -154,14 +205,7 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
     case 'term': {
       kicker = '공항 터미널';
       title = tickets.length ? `티켓 ${tickets.length}장` : '발권한 티켓이 없어요';
-      body = tickets.length ? (
-        <Rows>
-          {tickets.slice(0, 5).map(t => {
-            const st = ticketStatus(t);
-            return <Row key={t.id} label={`${t.cityKo}`} value={`${ticketRange(t)} · ${st.text}`} tone={st.tone === 'amber' ? 'amber' : st.tone === 'red' ? 'red' : undefined} />;
-          })}
-        </Rows>
-      ) : <p className="text-[14px] text-black/60 dark:text-white/60">터미널에서 도시와 날짜를 고르면 티켓이 발권돼요.</p>;
+      body = tickets.length ? <TicketPicker ctx={ctx} /> : <p className="text-[14px] text-black/60 dark:text-white/60">터미널에서 도시와 날짜를 고르면 티켓이 발권돼요.</p>;
       action = <Action label="터미널 열기" onRun={openDepartureBoard} />;
       break;
     }
@@ -173,7 +217,7 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
         <>
           <Rows>
             <Row label="도시" value={`${stats.cities}곳`} />
-            <Row label="다음 여정" value={next ? journeyCities(next.journey).slice(0, 2).join(', ') || next.journey.title : '—'} tone="amber" />
+            <Row label="다음 여정" value={focus ? focus.cities.slice(0, 2).join(', ') || focus.title : '—'} tone="amber" />
           </Rows>
           {cities.length > 0 && <div className="flex flex-wrap gap-1.5">{cities.map(c => <span key={c} className="h-7 px-3 rounded-full bg-black/[0.06] dark:bg-white/10 text-[12.5px] font-bold inline-flex items-center">{c}</span>)}</div>}
         </>
@@ -263,13 +307,7 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
     case 'pocket': {
       kicker = '포켓';
       title = `저장한 곳 ${pockets.length}`;
-      const latest = [...pockets].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
-      body = (
-        <Rows>
-          <Row label="즐겨찾기" value={`${pockets.filter(p => p.isFavorite).length}곳`} />
-          {latest.map(p => <Row key={p.id} label={p.city || '—'} value={p.title} />)}
-        </Rows>
-      );
+      body = <PocketBody pockets={pockets} />;
       action = <Action label="포켓으로 이동" onRun={go('pocket')} />;
       break;
     }
@@ -288,8 +326,8 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
     }
     case 'time': {
       kicker = '세계시간';
-      title = '내 도시와 다음 여정';
-      body = <p className="text-[14px] text-black/60 dark:text-white/60">내 도시와 다음 여정의 도시 시각이 함께 보여요. 도시는 설정의 도시에서 바꿀 수 있어요.</p>;
+      title = '시계 고르기';
+      body = <ClockBody nextCity={focus?.cities[0]} />;
       action = <Action label="내 도시 편집" onRun={() => openSettings('cities')} icon={false} />;
       break;
     }
@@ -306,6 +344,168 @@ export function BentoSheet({ id, ctx }: { id: BentoTileId; ctx: BentoCtx }) {
       </div>
       {body}
       {action && <div className="flex gap-2 pt-1">{action}</div>}
+    </div>
+  );
+}
+
+const dateOf = (ms: number) => {
+  const d = new Date(ms);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/**
+ * The pocket, read as a whole (v1.3.8): how much and in how many cities, what kind of places, the cities saved most,
+ * the latest saves as pictures and the favourites. The district a spot is in is folded into its city, so a run of
+ * the same ward name never fills the list.
+ */
+function PocketBody({ pockets }: { pockets: SpotPocketItem[] }) {
+  if (pockets.length === 0) return <p className="text-[14px] text-black/60 dark:text-white/60">링크나 사진으로 가고 싶은 곳을 저장하면 여기에 모여요.</p>;
+  const cities = new Map<string, { label: string; n: number }>();
+  const kinds = new Map<string, number>();
+  pockets.forEach(p => {
+    const c = spotCity(p);
+    if (c) cities.set(c.key, { label: c.label, n: (cities.get(c.key)?.n ?? 0) + 1 });
+    kinds.set(p.category, (kinds.get(p.category) ?? 0) + 1);
+  });
+  const topCities = [...cities.values()].sort((a, b) => b.n - a.n).slice(0, 4);
+  const favorites = pockets.filter(p => p.isFavorite);
+  const latest = [...pockets].sort((a, b) => b.createdAt - a.createdAt).slice(0, 4);
+  const maxKind = Math.max(...kinds.values());
+  const stat = 'rounded-card bg-paper dark:bg-paper-dark px-3 py-2.5 flex flex-col gap-0.5';
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-3 gap-2">
+        <div className={stat}><span className="font-mono text-[22px] font-extrabold leading-none tabular-nums">{pockets.length}</span><span className="text-[11.5px] text-black/55 dark:text-white/55">저장</span></div>
+        <div className={stat}><span className="font-mono text-[22px] font-extrabold leading-none tabular-nums">{cities.size}</span><span className="text-[11.5px] text-black/55 dark:text-white/55">도시</span></div>
+        <div className={stat}><span className="font-mono text-[22px] font-extrabold leading-none tabular-nums">{favorites.length}</span><span className="text-[11.5px] text-black/55 dark:text-white/55">즐겨찾기</span></div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        {CATEGORY_FORM_ORDER.filter(k => kinds.has(k)).map(k => {
+          const meta = CATEGORY_META[k];
+          const Icon = meta.icon;
+          const n = kinds.get(k) ?? 0;
+          return (
+            <div key={k} className="flex items-center gap-2.5">
+              <Icon className="w-4 h-4 shrink-0 opacity-70" aria-hidden />
+              <span className="w-12 font-mono text-[11px] font-bold tracking-wider opacity-70">{meta.label}</span>
+              <span className="flex-1 h-2 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden"><i className="block h-full rounded-full bg-ink dark:bg-ink-dark opacity-70" style={{ width: `${Math.max(8, (n / maxKind) * 100)}%` }} /></span>
+              <span className="w-6 text-right font-mono text-[12px] font-bold tabular-nums">{n}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {topCities.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50">자주 저장한 도시</span>
+          <div className="flex flex-wrap gap-1.5">
+            {topCities.map(c => <span key={c.label} className="h-8 px-3 rounded-full bg-black/[0.06] dark:bg-white/10 text-[13px] font-bold inline-flex items-center gap-1.5">{c.label}<b className="font-mono text-[11.5px] opacity-60 tabular-nums">{c.n}</b></span>)}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50">최근 저장</span>
+        <div className="grid grid-cols-2 gap-2">
+          {latest.map((p, i) => {
+            const meta = CATEGORY_META[p.category];
+            const Icon = meta.icon;
+            const thumb = getCardThumbUrl(p) || p.thumbnailUrl;
+            const city = spotCity(p)?.label;
+            const prev = i > 0 ? spotCity(latest[i - 1])?.label : undefined;
+            return (
+              <div key={p.id} className="rounded-card bg-paper dark:bg-paper-dark overflow-hidden flex flex-col min-w-0">
+                <div className="relative aspect-[16/10] bg-black/[0.06] dark:bg-white/10 grid place-items-center">
+                  {thumb ? <img src={thumb} alt="" loading="lazy" decoding="async" draggable={false} className="absolute inset-0 w-full h-full object-cover" /> : <Icon className="w-7 h-7 opacity-35" aria-hidden />}
+                  <span className="absolute left-1.5 bottom-1.5 h-6 px-2 rounded-full bg-black/55 text-white font-mono text-[10px] font-bold inline-flex items-center gap-1"><Icon className="w-3 h-3" aria-hidden />{meta.label}</span>
+                </div>
+                <div className="px-2.5 py-2 flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[13px] font-bold leading-snug line-clamp-2 break-keep">{p.title}</span>
+                  <span className="font-mono text-[10.5px] text-black/50 dark:text-white/50 truncate">{dateOf(p.createdAt)}{city && city !== prev ? ` · ${city}` : ''}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {favorites.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50">즐겨찾기</span>
+          <div className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 [scrollbar-width:none]">
+            {favorites.slice(0, 10).map(p => <span key={p.id} className="h-8 px-3 rounded-full bg-black/[0.06] dark:bg-white/10 text-[12.5px] font-bold inline-flex items-center shrink-0 max-w-[60%] truncate">{p.title}</span>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Which cities the world-time cube shows, one or all together, and the face of the clock; the preview is the cube itself */
+function ClockBody({ nextCity }: { nextCity?: string }) {
+  const setup = useClockSetup(nextCity);
+  const now = useNow(1000);
+  const base = setup.main.timezone || 'Asia/Seoul';
+  const picked = setup.selected.map(c => c.nameEn);
+  const together = setup.multi && setup.selected.length > 1;
+  const first = setup.selected[0];
+  const night = !together && !!first && zoneOf(first.timezone || 'UTC', now).night;
+
+  const toggleMulti = () => {
+    if (setup.multi) { setHomeWidgets({ clockMulti: false, clockCities: picked.slice(0, 1) }); return; }
+    const extra = setup.all.find(c => !picked.includes(c.nameEn));
+    setHomeWidgets({ clockMulti: true, clockCities: extra && picked.length < 2 ? [...picked, extra.nameEn] : picked });
+  };
+  const pick = (name: string) => {
+    if (!setup.multi) { setHomeWidgets({ clockCities: [name] }); return; }
+    const on = picked.includes(name);
+    if (on && picked.length <= 2) return; // all together needs at least two
+    if (!on && picked.length >= 4) return;
+    setHomeWidgets({ clockCities: on ? picked.filter(n => n !== name) : [...picked, name] });
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className={`relative self-center w-[220px] max-w-full aspect-square rounded-card overflow-hidden ${clockGround(setup.style, night)}`}>
+        {together
+          ? <MultiClock cities={setup.selected} base={base} style={setup.style} now={now} />
+          : first && <SingleClock city={first} base={base} style={setup.style} now={now} />}
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span className="block text-[14px] font-bold">동시 표기</span>
+          <span className="block text-[12px] text-black/55 dark:text-white/55">켜면 도시 2~4곳이 큐브에 함께 보여요</span>
+        </div>
+        <button type="button" role="switch" aria-checked={setup.multi} aria-label="동시 표기" onClick={toggleMulti} className={`relative w-11 h-7 rounded-full transition-colors duration-fast cursor-pointer shrink-0 ${setup.multi ? 'bg-ink dark:bg-ink-dark' : 'bg-black/15 dark:bg-white/20'}`}>
+          <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-surface dark:bg-paper-dark shadow-sm transition-transform duration-fast ${setup.multi ? 'translate-x-4' : ''}`} />
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50">도시{setup.multi ? ` · ${picked.length}/4` : ''}</span>
+        <div className="flex flex-wrap gap-1.5" role={setup.multi ? 'group' : 'radiogroup'} aria-label="큐브에 보일 도시">
+          {setup.all.map(c => {
+            const on = picked.includes(c.nameEn);
+            return (
+              <button key={c.nameEn} type="button" role={setup.multi ? undefined : 'radio'} aria-checked={setup.multi ? undefined : on} aria-pressed={setup.multi ? on : undefined} onClick={() => pick(c.nameEn)} className={`h-9 px-3.5 rounded-full text-[13px] font-bold cursor-pointer inline-flex items-center gap-1.5 ${on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-black/[0.06] dark:bg-white/10'}`}>
+                {cleanCityDisplayName(c.name)}
+                {c.nameEn === setup.nextCityEn && <span className={`font-mono text-[9.5px] ${on ? 'opacity-70' : 'text-amber-700 dark:text-amber-400'}`}>다음</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-black/50 dark:text-white/50">시계 모양</span>
+        <div className="flex gap-1.5" role="radiogroup" aria-label="시계 모양">
+          {CLOCK_STYLES.map(st => (
+            <button key={st.id} type="button" role="radio" aria-checked={setup.style === st.id} onClick={() => setHomeWidgets({ clockStyle: st.id })} className={`h-9 px-4 rounded-full text-[13px] font-bold cursor-pointer ${setup.style === st.id ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-black/[0.06] dark:bg-white/10'}`}>{st.label}</button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

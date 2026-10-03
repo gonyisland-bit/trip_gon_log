@@ -21,6 +21,8 @@ export const BENTO_TILES = [
 ] as const;
 export type BentoTileId = typeof BENTO_TILES[number]['id'];
 
+export type ClockStyle = 'analog' | 'digital' | 'dial';
+
 export interface HomeWidgetPrefs {
   /** Tiles the member turned off (the hero is always there) */
   hiddenTiles: string[];
@@ -30,6 +32,12 @@ export interface HomeWidgetPrefs {
   showUpcomingDDay: boolean;
   showExchangeRates: boolean;
   widgetOrder?: 'calendar-first' | 'weather-first';
+  /** The ticket the member picked as the trip the home shows; empty = the nearest one */
+  focusTicketId?: string;
+  /** World-time cube: the cities it shows (English names; empty = the main city), all together or one, and the face */
+  clockCities: string[];
+  clockMulti: boolean;
+  clockStyle: ClockStyle;
 }
 
 export const DEFAULT_HOME_WIDGETS: HomeWidgetPrefs = {
@@ -38,6 +46,9 @@ export const DEFAULT_HOME_WIDGETS: HomeWidgetPrefs = {
   showCalendarArchive: true,
   showUpcomingDDay: true,
   showExchangeRates: true,
+  clockCities: [],
+  clockMulti: false,
+  clockStyle: 'analog',
 };
 
 const LEGACY: Partial<Record<BentoTileId, 'showLiveWeather' | 'showCalendarArchive' | 'showUpcomingDDay' | 'showExchangeRates'>> = {
@@ -50,7 +61,7 @@ const EVENT = 'homeWidgetsChanged';
 export function readHomeWidgets(): HomeWidgetPrefs {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (v && typeof v === 'object') return { ...DEFAULT_HOME_WIDGETS, ...v, hiddenTiles: Array.isArray(v.hiddenTiles) ? v.hiddenTiles : [] };
+    if (v && typeof v === 'object') return { ...DEFAULT_HOME_WIDGETS, ...v, hiddenTiles: Array.isArray(v.hiddenTiles) ? v.hiddenTiles : [], clockCities: Array.isArray(v.clockCities) ? v.clockCities : [] };
   } catch { /* defaults */ }
   return DEFAULT_HOME_WIDGETS;
 }
