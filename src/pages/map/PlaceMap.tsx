@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, LocateFixed, Loader2 } from 'lucide-react';
+import { ChevronDown, LocateFixed, Loader2, Search, X } from 'lucide-react';
 import type { Plan, StayItem, Trip } from '../../types';
 import { IconButton } from '../../components/ui/IconButton';
 import { Segment } from '../../components/ui/Segment';
 import { useQuickSpots } from '../../components/map/useQuickSpots';
-import { QuickSpotBar, QuickSpotCard, QuickSpotList, QuickSpotSearchHere } from '../../components/map/QuickSpots';
+import { QuickSpotCard, QuickSpotLauncher, QuickSpotList, QuickSpotSearchHere } from '../../components/map/QuickSpots';
+import { PlaceAutocompleteInput } from '../../components/PlaceAutocompleteInput';
 import { mapTileFor } from '../../utils/mapTiles';
 import { readPlaceMapPrefs, savePlaceMapPrefs, type PlaceMapStyle } from '../../utils/placeMapPrefs';
 import { parseTripDateRange } from '../../utils/tripPlanHelper';
@@ -31,14 +32,16 @@ const PLACE_ZOOM = 15;
 const NEAR_TRIP_M = 150000;
 
 const PIN_PATHS = {
+  found: ['M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0', 'M12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6'],
   stay: ['M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8', 'M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4', 'M12 4v6', 'M2 18h20'],
   pocket: ['M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z'],
 };
 
-function pinHtml(kind: 'stay' | 'pocket'): string {
-  const ink = kind === 'stay';
-  return `<div class="tgl-qs-pin${ink ? ' tgl-qs-pin-ink' : ''}" style="width:30px;height:30px">`
-    + `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
+function pinHtml(kind: 'stay' | 'pocket' | 'found'): string {
+  const ink = kind !== 'pocket';
+  const size = kind === 'found' ? 34 : 30;
+  return `<div class="tgl-qs-pin${ink ? ' tgl-qs-pin-ink' : ''}" style="width:${size}px;height:${size}px">`
+    + `<svg viewBox="0 0 24 24" width="${kind === 'found' ? 17 : 15}" height="${kind === 'found' ? 17 : 15}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
     + PIN_PATHS[kind].map(d => `<path d="${d}"/>`).join('') + '</svg></div>';
 }
 
@@ -84,6 +87,10 @@ export function PlaceMap({ trips, plans, staysByTrip = {}, isDarkMode }: PlaceMa
   const [pickerOpen, setPickerOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [locating, setLocating] = useState(false);
+  // Place search: phones open it from the magnifier, wider screens keep it in the top row
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const foundRef = useRef<any>(null);
 
   const qs = useQuickSpots({ map, initial: prefs.spots, onKindsChange: spots => savePlaceMapPrefs({ spots }) });
 
@@ -187,6 +194,28 @@ export function PlaceMap({ trips, plans, staysByTrip = {}, isDarkMode }: PlaceMa
     map?.flyTo([f.lat, f.lng], PLACE_ZOOM, { duration: 0.8 });
   };
 
+  const clearFound = () => {
+    if (foundRef.current && map) map.removeLayer(foundRef.current);
+    foundRef.current = null;
+  };
+
+  /** A searched place: go there, mark it, and look for the quick spots that are on around it */
+  const goToPlace = (name: string, at: { lat: number; lng: number } | null) => {
+    const L = (window as any).L;
+    if (!at || !map || !L) return;
+    clearFound();
+    foundRef.current = L.marker([at.lat, at.lng], {
+      icon: L.divIcon({ className: 'tgl-qs-icon', html: pinHtml('found'), iconSize: [34, 34], iconAnchor: [17, 17] }),
+      zIndexOffset: 3500, keyboard: false,
+    }).bindTooltip(name, { direction: 'top', offset: [0, -18], className: 'tgl-place-tip', permanent: true }).addTo(map);
+    qs.setSelected(null);
+    setListOpen(false);
+    map.flyTo([at.lat, at.lng], 16, { duration: 0.8 });
+    qs.searchAt(at);
+    setSearchOpen(false);
+    (document.activeElement as HTMLElement | null)?.blur?.();
+  };
+
   const changeStyle = (v: PlaceMapStyle) => { setStyle(v); savePlaceMapPrefs({ style: v }); };
 
   return (
@@ -226,6 +255,20 @@ export function PlaceMap({ trips, plans, staysByTrip = {}, isDarkMode }: PlaceMa
             </>
           )}
         </div>
+        {/* Place search: inline from sm up; on phones the magnifier opens it over the top row */}
+        <div className={`pointer-events-auto sm:relative sm:block sm:w-64 sm:shrink ${searchOpen ? 'max-sm:absolute max-sm:inset-x-0 max-sm:top-0 max-sm:z-10 max-sm:flex max-sm:items-center max-sm:gap-2' : 'max-sm:hidden'}`}>
+          <div className="flex-1 min-w-0">
+            <PlaceAutocompleteInput
+              value={query}
+              onChange={v => { setQuery(v); if (!v) clearFound(); }}
+              onSelectPlace={(name, at) => goToPlace(name, at)}
+              placeholder="장소 검색"
+              className="w-full h-9 pl-4 pr-14 rounded-full bg-surface/95 dark:bg-surface-dark/95 text-ink dark:text-ink-dark shadow-lg text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-red-600 placeholder:text-black/45 dark:placeholder:text-white/45"
+            />
+          </div>
+          <IconButton icon={X} label="검색 닫기" size="sm" onClick={() => setSearchOpen(false)} className="sm:hidden shadow-lg !border-0" />
+        </div>
+        {!searchOpen && <IconButton icon={Search} label="장소 검색" size="sm" onClick={() => setSearchOpen(true)} className="sm:hidden pointer-events-auto shrink-0 shadow-lg !border-0" />}
         <div className="ml-auto flex items-center gap-2 pointer-events-auto shrink-0 max-sm:mt-12">
           <Segment<PlaceMapStyle>
             size="sm"
@@ -244,7 +287,7 @@ export function PlaceMap({ trips, plans, staysByTrip = {}, isDarkMode }: PlaceMa
         <QuickSpotSearchHere s={qs} />
       </div>
 
-      {/* Bottom: the picked spot or the list, over the chips */}
+      {/* Bottom: the picked spot or the list, over the quick spot launcher */}
       <div className="absolute inset-x-3 sm:left-6 sm:right-auto sm:w-[400px] z-[500] flex flex-col gap-2" style={{ bottom: 'calc(var(--tabbar-lift, 0px) + 12px)' }}>
         {qs.selected ? (
           <QuickSpotCard spot={qs.selected} onClose={() => qs.setSelected(null)} tripId={focus?.trip.id} />
@@ -255,7 +298,7 @@ export function PlaceMap({ trips, plans, staysByTrip = {}, isDarkMode }: PlaceMa
             onPick={spot => { setListOpen(false); qs.setSelected(spot); map?.panTo([spot.lat, spot.lng]); }}
           />
         ) : null}
-        <QuickSpotBar s={qs} onOpenList={() => { qs.setSelected(null); setListOpen(o => !o); }} />
+        <QuickSpotLauncher s={qs} opens="up" className="self-start" onOpenList={() => { qs.setSelected(null); setListOpen(o => !o); }} />
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { Coffee, Landmark, List, Loader2, Navigation, Pill, RotateCw, ShoppingBasket, Star, Store, TrainFront, Utensils, X, BookmarkPlus, type LucideIcon } from 'lucide-react';
-import { Chip } from '../ui/Chip';
+import { useEffect, useRef, useState } from 'react';
+import { Coffee, Landmark, List, Loader2, MapPinned, Navigation, Pill, RotateCw, ShoppingBasket, Star, Store, TrainFront, Utensils, X, BookmarkPlus, type LucideIcon } from 'lucide-react';
 import { IconButton } from '../ui/IconButton';
 import { QUICK_SPOTS, QUICK_SPOT_META, directionsUrl, formatDistance, type QuickSpot, type QuickSpotKind } from '../../utils/quickSpots';
 import { getSavedPockets, savePockets } from '../../utils/pocketStorage';
@@ -15,30 +14,104 @@ export const QUICK_SPOT_ICON: Record<QuickSpotKind, LucideIcon> = {
   restaurant: Utensils, cafe: Coffee, attraction: Landmark,
 };
 
-/** The chips: one per kind, the count once searched, a spinner while searching */
-export function QuickSpotBar({ s, onOpenList, size = 'sm', className = '' }: { s: QuickSpotsState; onOpenList?: () => void; size?: 'sm' | 'md'; className?: string }) {
+/**
+ * The quick spot launcher (v1.3.8): one pill that holds them all, so it fits any width and never covers the map's other
+ * buttons. Folded it names what is on (up to three icons) and how many were found; open, a 4 × 2 panel switches the
+ * seven kinds on and off (it stays open for several taps), opens the list and switches everything off.
+ */
+export function QuickSpotLauncher({ s, onOpenList, opens = 'up', className = '' }: { s: QuickSpotsState; onOpenList?: () => void; opens?: 'up' | 'down'; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: PointerEvent) => { if (!rootRef.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } };
+    document.addEventListener('pointerdown', off);
+    window.addEventListener('keydown', esc, true);
+    return () => { document.removeEventListener('pointerdown', off); window.removeEventListener('keydown', esc, true); };
+  }, [open]);
+
+  const on = s.kinds.length > 0;
+  const busy = s.loading.length > 0;
+  const total = s.kinds.reduce((n, k) => n + (s.counts[k] ?? 0), 0);
+
+  const panel = open && (
+    <div
+      role="dialog"
+      aria-label="퀵스팟 고르기"
+      className={`tgl-rise absolute left-0 ${opens === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} w-[min(320px,calc(100vw-24px))] rounded-card bg-surface dark:bg-surface-dark shadow-[0_10px_30px_rgba(0,0,0,0.18)] p-3 flex flex-col gap-2.5`}
+    >
+      <div className="grid grid-cols-4 gap-1.5">
+        {QUICK_SPOTS.map(({ kind, label }) => {
+          const Icon = QUICK_SPOT_ICON[kind];
+          const sel = s.kinds.includes(kind);
+          const loading = s.loading.includes(kind);
+          return (
+            <button
+              key={kind}
+              type="button"
+              aria-pressed={sel}
+              onClick={() => s.toggle(kind)}
+              className={`h-[68px] min-w-0 rounded-thumb flex flex-col items-center justify-center gap-1 text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
+                sel ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark font-bold' : 'border border-black/10 dark:border-white/15 font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+              }`}
+            >
+              {loading ? <Loader2 className="w-[18px] h-[18px] animate-spin" aria-hidden /> : <Icon className="w-[18px] h-[18px]" aria-hidden />}
+              <span className="leading-none">{label}</span>
+              <span className={`font-mono text-[10px] leading-none tabular-nums ${sel && !loading ? 'opacity-70' : 'opacity-0'}`}>{s.counts[kind] ?? 0}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          disabled={!on || !onOpenList}
+          onClick={() => { setOpen(false); onOpenList?.(); }}
+          className="h-[68px] min-w-0 rounded-thumb flex flex-col items-center justify-center gap-1 text-[12px] font-medium border border-black/10 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-35 disabled:hover:bg-transparent"
+        >
+          <List className="w-[18px] h-[18px]" aria-hidden />
+          <span className="leading-none">목록</span>
+          <span className="font-mono text-[10px] leading-none opacity-0">0</span>
+        </button>
+      </div>
+      <div className="flex items-center justify-between gap-2 px-1">
+        <span className="text-micro text-black/55 dark:text-white/55">세 가지까지 켤 수 있어요</span>
+        <button type="button" onClick={s.clearAll} disabled={!on} className="text-meta font-bold disabled:opacity-35">모두 끄기</button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={`flex items-center gap-1.5 overflow-x-auto hide-scrollbar ${className}`} role="group" aria-label="퀵스팟">
-      {QUICK_SPOTS.map(({ kind, label }) => {
-        const on = s.kinds.includes(kind);
-        const busy = s.loading.includes(kind);
-        return (
-          <Chip
-            key={kind}
-            size={size}
-            selected={on}
-            icon={busy ? Loader2 : QUICK_SPOT_ICON[kind]}
-            count={on && !busy ? s.counts[kind] : undefined}
-            onClick={() => s.toggle(kind)}
-            className={`${on ? 'shadow-sm' : 'bg-surface/95 dark:bg-surface-dark/95'} ${busy ? '[&>svg]:animate-spin' : ''}`}
-          >
-            {label}
-          </Chip>
-        );
-      })}
-      {onOpenList && s.kinds.length > 0 && (
-        <IconButton icon={List} label="찾은 곳 목록" size="sm" onClick={onOpenList} className="shadow-sm" />
-      )}
+    <div ref={rootRef} className={`relative ${className}`}>
+      {opens === 'up' && panel}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-label={on ? `퀵스팟, ${s.kinds.map(k => QUICK_SPOT_META[k].label).join(' · ')} 켜짐` : '퀵스팟'}
+        className={`h-9 pl-3 pr-3.5 rounded-full inline-flex items-center gap-2 text-[13px] font-bold shadow-lg transition-colors ${
+          on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface/95 dark:bg-surface-dark/95 text-ink dark:text-ink-dark'
+        }`}
+      >
+        {busy ? (
+          <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+        ) : on ? (
+          <span className="inline-flex -space-x-1">
+            {s.kinds.map(k => {
+              const Icon = QUICK_SPOT_ICON[k];
+              return (
+                <span key={k} className="w-5 h-5 rounded-full grid place-items-center bg-surface dark:bg-paper-dark text-ink dark:text-ink-dark ring-2 ring-ink dark:ring-ink-dark">
+                  <Icon className="w-3 h-3" aria-hidden />
+                </span>
+              );
+            })}
+          </span>
+        ) : (
+          <MapPinned className="w-4 h-4" aria-hidden />
+        )}
+        퀵스팟
+        {on && !busy && <span className="font-mono text-meta tabular-nums opacity-70">{total}</span>}
+      </button>
+      {opens === 'down' && panel}
     </div>
   );
 }

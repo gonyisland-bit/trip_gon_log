@@ -100,6 +100,20 @@ export function useQuickSpots({ map, anchor = null, initial = [], onKindsChange 
     if (at) run(kindsRef.current, at);
   }, [map, here, run]);
 
+  /** Switch every kind off */
+  const clearAll = useCallback(() => {
+    setKinds([]);
+    onKindsChange?.([]);
+    setSelected(null);
+    setMovedAway(false);
+    setTooWide(false);
+  }, [onKindsChange]);
+
+  /** Search the kinds that are on around a point the member picked (a searched place) */
+  const searchAt = useCallback((at: LatLng) => {
+    if (kindsRef.current.length) run(kindsRef.current, at);
+  }, [run]);
+
   // The stay map: search again when the anchor moves to another stay
   const anchorKey = anchor ? `${anchor.lat.toFixed(5)},${anchor.lng.toFixed(5)}` : '';
   useEffect(() => {
@@ -176,7 +190,7 @@ export function useQuickSpots({ map, anchor = null, initial = [], onKindsChange 
   const counts = Object.fromEntries(kinds.map(k => [k, spots[k]?.length ?? 0])) as Partial<Record<QuickSpotKind, number>>;
   const list = kinds.flatMap(k => spots[k] || []).sort((a, b) => a.distance - b.distance);
 
-  return { kinds, toggle, counts, loading, selected, setSelected, list, searchHere, movedAway, tooWide, searchedAt };
+  return { kinds, toggle, clearAll, counts, loading, selected, setSelected, list, searchHere, searchAt, movedAway, tooWide, searchedAt };
 }
 
 export type QuickSpotsState = ReturnType<typeof useQuickSpots>;

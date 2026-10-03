@@ -6,7 +6,7 @@ import { MAP_STYLES, MAP_STYLE_EVENT, MAP_STYLE_LABEL, MapStyle, applyMapStyle, 
 import { Trip, TimelineItem, TransitItem, SpotPocketItem } from '../types';
 import { getSavedPockets, calculateDistanceInMeters } from '../utils/pocketStorage';
 import { useQuickSpots } from './map/useQuickSpots';
-import { QuickSpotBar, QuickSpotCard, QuickSpotList } from './map/QuickSpots';
+import { QuickSpotCard, QuickSpotLauncher, QuickSpotList } from './map/QuickSpots';
 
 const dayColors = [
   '#dc2626', // Day 1: Red
@@ -1569,8 +1569,8 @@ export function MapArea({
 
       {/* ── Quick spots around the stay (Stays tab only) ── */}
       {isStayTab && (
-        <div className="absolute top-2 left-2 right-2 md:top-4 md:left-4 md:right-auto md:max-w-[min(420px,calc(100%-6rem))] z-20 flex flex-col gap-2 pointer-events-none">
-          <QuickSpotBar s={qs} onOpenList={() => { qs.setSelected(null); setQsListOpen(o => !o); }} className="pointer-events-auto" />
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 w-[min(360px,calc(100%-6rem))] z-20 flex flex-col gap-2 pointer-events-none">
+          <QuickSpotLauncher s={qs} opens="down" onOpenList={() => { qs.setSelected(null); setQsListOpen(o => !o); }} className="pointer-events-auto self-start z-10" />
           <div className="pointer-events-auto w-full max-w-[360px]">
             {qs.selected ? (
               <QuickSpotCard spot={qs.selected} onClose={() => qs.setSelected(null)} tripId={trip.id} />
