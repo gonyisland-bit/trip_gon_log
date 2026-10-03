@@ -9,7 +9,7 @@ import { cleanAdministrativeDistricts } from '../../components/SummaryView';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../../utils/weatherApi';
 import { resolveMarkerOverlaps, clusterByPixel } from '../../utils/mapMarkerOverlap';
-import { getNightTerminatorPolygon, shiftPolygonCoordinates, getContinuousNightPolygon, getSolarAltitude, nightAlphaForAltitude, paintNightMask, getSubsolarPoint } from '../../utils/solarTerminator';
+import { getContinuousNightPolygon, getSubsolarPoint } from '../../utils/solarTerminator';
 import { notify } from '../../utils/feedback';
 
 import { COUNTRIES_DATA, KNOWN_CITY_COORDS, CITY_KO_MAP, findCountryForGroup, COUNTRY_TIMEZONE_MAP, getCountryLiveTime, getOptimalCurrencyUnit, shiftGeoJsonCoordinates } from './mapData';
@@ -348,7 +348,7 @@ export function useMapHubState({
 
     if (selectedPoints.length === 0) return;
 
-    // Render amber pulse pin for each selected city
+    // An amber pin for each selected city (a still ring; v1.3.8 dropped the endless ping)
     selectedPoints.forEach((pt, idx) => {
       const numBadge = selectedPoints.length > 1
         ? `<span class="mr-1 text-amber-400 font-bold">${String(idx + 1).padStart(2, '0')}</span>`
@@ -356,7 +356,7 @@ export function useMapHubState({
 
       const pinHtml = `
         <div class="relative flex flex-col items-center pointer-events-none select-none">
-          <span class="absolute w-8 h-8 rounded-full bg-amber-500/30 animate-ping"></span>
+          <span class="absolute w-7 h-7 -top-1.5 rounded-full bg-amber-500/25"></span>
           <div class="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow-lg flex items-center justify-center">
             <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
           </div>
@@ -989,158 +989,141 @@ export function useMapHubState({
     const ctrlLat = midLat + perpLat;
     const ctrlLng = midLng + perpLng;
 
-    // SVG sleek minimal white airliner icon with drop shadow
-    const createAirplaneIcon = (angleDeg: number, scaleVal: number = 1) => {
-      const iconHtml = `
-        <div style="transform: rotate(${angleDeg}deg) scale(${scaleVal}); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; transition: transform 0.04s linear;">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 44px; height: 44px; filter: drop-shadow(0px 6px 12px rgba(0,0,0,0.55));">
-            <!-- Fuselage & Wings (Clean White with sleek border) -->
-            <path d="M24 2C22.6 2 21.5 3.5 21.5 5.5V17L6 26.5V30.5L21.5 25.5V37.5L16 41.5V44.5L24 42.5L32 44.5V41.5L26.5 37.5V25.5L42 30.5V26.5L26.5 17V5.5C26.5 3.5 25.4 2 24 2Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.3" stroke-linejoin="round" />
-            <!-- Cockpit Windows -->
-            <ellipse cx="24" cy="7.5" rx="1.5" ry="2.6" fill="#1E293B" />
-            <!-- Jet Engines -->
-            <rect x="13.5" y="21.5" width="2.4" height="6.5" rx="1.2" fill="#E2E8F0" stroke="#475569" stroke-width="0.8" />
-            <rect x="32.1" y="21.5" width="2.4" height="6.5" rx="1.2" fill="#E2E8F0" stroke="#475569" stroke-width="0.8" />
-            <!-- Tail Accent Line -->
-            <line x1="24" y1="35" x2="24" y2="42" stroke="#CBD5E1" stroke-width="1" />
-          </svg>
-        </div>
-      `;
-      return L.divIcon({
-        className: 'sleek-flight-plane-marker',
-        html: iconHtml,
-        iconSize: [44, 44],
-        iconAnchor: [22, 22]
-      });
-    };
+    // The plane is made once; each frame only moves the marker and turns the inner element (no new HTML per frame)
+    const planeIcon = L.divIcon({
+      className: 'sleek-flight-plane-marker',
+      html: `<div class="tgl-flight-plane" style="width:40px;height:40px;will-change:transform">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:40px;height:40px">
+          <path d="M24 2C22.6 2 21.5 3.5 21.5 5.5V17L6 26.5V30.5L21.5 25.5V37.5L16 41.5V44.5L24 42.5L32 44.5V41.5L26.5 37.5V25.5L42 30.5V26.5L26.5 17V5.5C26.5 3.5 25.4 2 24 2Z" fill="#FFFFFF" stroke="#1B1B18" stroke-width="1.4" stroke-linejoin="round" />
+          <ellipse cx="24" cy="7.5" rx="1.5" ry="2.6" fill="#1B1B18" />
+        </svg>
+      </div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+    });
 
-    // Session safety: 새로운 비행 시작 시 이전 세션 취소
+    // Session safety: a new flight cancels the one before
     flightSessionIdRef.current++;
     const currentSessionId = flightSessionIdRef.current;
 
-    // 비행 중 우발적 드래그/휠 줌 잠금 및 맵 바운드 일시 해제 (비행/착륙 바운스 방지)
+    // No dragging or wheel zoom in flight, and no bounds to bounce against
     try {
       map.setMaxBounds(null);
       map.dragging.disable();
       map.scrollWheelZoom.disable();
     } catch (_) {}
 
-    // Calculate initial bearing
-    const initialAngle = Math.atan2(effectiveEndLng - startLng, endLat - startLat) * 180 / Math.PI;
+    // The whole route, sampled once along its curve
+    const STEPS = 90;
+    const route: [number, number][] = [];
+    for (let i = 0; i <= STEPS; i++) {
+      const t = i / STEPS, inv = 1 - t;
+      route.push([
+        inv * inv * startLat + 2 * inv * t * ctrlLat + t * t * endLat,
+        inv * inv * startLng + 2 * inv * t * ctrlLng + t * t * effectiveEndLng,
+      ]);
+    }
 
-    // Flight trail polyline (subtle dashed flight path)
-    const trailLine = L.polyline([], {
-      color: '#DC2626',
-      weight: 2.2,
-      opacity: 0.7,
-      dashArray: '5, 7',
-      lineCap: 'round',
-    }).addTo(map);
+    // The camera frames the whole route first and then stays still, so no tile is fetched while the plane flies
+    const isMobile = window.innerWidth < 640;
+    const routeBounds = L.latLngBounds(route);
+    const sheetPad = isMobile ? Math.round(window.innerHeight * 0.3) : 80;
+    map.flyToBounds(routeBounds, {
+      paddingTopLeft: [48, 96],
+      paddingBottomRight: [48, sheetPad],
+      maxZoom: 5,
+      duration: 0.7,
+    });
+
+    // The route is drawn whole and faint; the plane flies along it
+    const trailLine = L.polyline(route, { color: '#DC2626', weight: 2, opacity: 0, dashArray: '5, 7', lineCap: 'round', interactive: false }).addTo(map);
     flightTrailPolylineRef.current = trailLine;
 
-    // Plane marker with zIndexOffset 500000 (above spot pins)
-    const planeMarker = L.marker([startLat, startLng], {
-      icon: createAirplaneIcon(initialAngle, 0.8),
-      zIndexOffset: 500000,
-    }).addTo(map);
-    if (planeMarker.bringToFront) planeMarker.bringToFront();
+    const planeMarker = L.marker([startLat, startLng], { icon: planeIcon, zIndexOffset: 500000, interactive: false }).addTo(map);
     flightPlaneMarkerRef.current = planeMarker;
+    const planeEl = (): HTMLElement | null => planeMarker.getElement()?.querySelector('.tgl-flight-plane') ?? null;
 
-    // 비행 시작 전 비행기를 중심으로 안정적인 크루즈 줌 설정 (비행기 중심 추종 모션)
-    const isMobile = window.innerWidth < 640;
-    const cruiseZoom = isMobile ? 3.4 : 3.7;
-    map.setView([startLat, startLng], cruiseZoom, { animate: false });
-
-    // Smooth duration between 2000ms ~ 2800ms
-    const duration = Math.min(2800, Math.max(2000, dist * 24));
+    const duration = Math.min(2600, Math.max(1800, dist * 22));
     let startTime: number | null = null;
-    const trailPoints: [number, number][] = [];
 
     // EaseInOutCubic: gradual takeoff, cruise, gradual landing
     const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
     const animateFlight = (timestamp: number) => {
-      // 세션 검증: 이미 취소되었거나 다른 비행이 시작된 경우 즉각 중단
       if (currentSessionId !== flightSessionIdRef.current) return;
 
       if (!startTime) startTime = timestamp;
-      const elapsed = timestamp - startTime;
-      const rawProgress = Math.min(1, elapsed / duration);
+      const rawProgress = Math.min(1, (timestamp - startTime) / duration);
       const ease = easeInOutCubic(rawProgress);
-
       const inv = 1 - ease;
       const curLat = inv * inv * startLat + 2 * inv * ease * ctrlLat + ease * ease * endLat;
       const curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * effectiveEndLng;
 
-      // Tangent bearing
+      // Heading on screen: the tangent in projected pixels, so it matches the map's own north
       const dLat = 2 * inv * (ctrlLat - startLat) + 2 * ease * (endLat - ctrlLat);
       const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (effectiveEndLng - ctrlLng);
-      const curAngle = Math.atan2(dLng, dLat) * 180 / Math.PI;
-
-      // Elevation Scale: Takeoff (0.8) -> Cruise (1.2) -> Landing (0.85)
-      const curScale = 0.8 + Math.sin(ease * Math.PI) * 0.4;
+      const p0 = map.latLngToLayerPoint([curLat, curLng]);
+      const p1 = map.latLngToLayerPoint([curLat + dLat * 0.01, curLng + dLng * 0.01]);
+      const angle = Math.atan2(p1.x - p0.x, -(p1.y - p0.y)) * 180 / Math.PI;
+      // Climb (0.8) → cruise (1.15) → descent (0.85)
+      const scale = 0.8 + Math.sin(ease * Math.PI) * 0.35;
 
       planeMarker.setLatLng([curLat, curLng]);
-      planeMarker.setIcon(createAirplaneIcon(curAngle, curScale));
-
-      // 비행기를 항상 카메라 중심으로 이동 (부드러운 추종)
-      map.panTo([curLat, curLng], { animate: false });
-
-      // Append to flight trail
-      trailPoints.push([curLat, curLng]);
-      trailLine.setLatLngs(trailPoints);
+      const el = planeEl();
+      if (el) el.style.transform = `rotate(${angle}deg) scale(${scale})`;
 
       if (rawProgress < 1) {
         flightAnimRef.current = requestAnimationFrame(animateFlight);
-      } else {
-        // 비행기 터치다운 완료
-        flightAnimRef.current = null;
-
-        // 모바일 하단 시트를 고려한 착륙 중심점 계산 (경도 연속성 유지)
-        const isMobile = window.innerWidth < 640;
-        let landingCoords: [number, number] = [targetCountry.center[0], effectiveEndLng];
-        let targetCenter: [number, number] = landingCoords;
-        if (isMobile) {
-          const targetPoint = map.project(landingCoords, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
-          targetCenter = [map.unproject(targetPoint, targetCountry.zoom).lat, map.unproject(targetPoint, targetCountry.zoom).lng];
-        }
-
-        // 목적지에 다 와서 부드럽게 착륙 줌인 실행 (내장 flyTo로 깜박임 없이 자연스럽게 확대)
-        // 미국/남미 등 우측 지도 경계에서의 튕김(bounce) 방지를 위해 일시 해제 후 착륙 시 재설정
-        try { map.setMaxBounds(null); } catch (_) {}
-        map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.9 });
-
-        // 착륙 줌인 완료 후 비행기 마커 정리 및 모달 오픈
-        flightLandingTimeoutRef.current = setTimeout(() => {
-          flightLandingTimeoutRef.current = null;
-          if (currentSessionId !== flightSessionIdRef.current) return;
-
-          if (flightPlaneMarkerRef.current && mapRef.current) {
-            try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
-            flightPlaneMarkerRef.current = null;
-          }
-          if (flightTrailPolylineRef.current && mapRef.current) {
-            try { mapRef.current.removeLayer(flightTrailPolylineRef.current); } catch (_) {}
-            flightTrailPolylineRef.current = null;
-          }
-
-          // 지도 드래그 및 줌 다시 활성화 및 바운드 복원
-          try {
-            mapRef.current?.setMaxBounds([[-62, -35], [82, 385]]);
-            mapRef.current?.dragging?.enable();
-            mapRef.current?.scrollWheelZoom?.enable();
-          } catch (_) {}
-
-          setIsFlyingToCountry(false);
-          // 비행 완료 후 낮/밤 명암 경계선 최종 위치 즉각 1회 동기화
-          updateNightClipRef.current?.();
-          setSelectedCountry(targetCountry);
-          setSearchQuery(targetCountry.name);
-        }, 920);
+        return;
       }
+      flightAnimRef.current = null;
+
+      // Touchdown: zoom into the country (on phones a little above centre, clear of the sheet)
+      let landingCoords: [number, number] = [targetCountry.center[0], effectiveEndLng];
+      let targetCenter: [number, number] = landingCoords;
+      if (isMobile) {
+        const targetPoint = map.project(landingCoords, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
+        targetCenter = [map.unproject(targetPoint, targetCountry.zoom).lat, map.unproject(targetPoint, targetCountry.zoom).lng];
+      }
+      map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.9 });
+      const planeNode = planeMarker.getElement();
+      if (planeNode) { planeNode.style.transition = 'opacity .5s'; planeNode.style.opacity = '0'; }
+      const trailNode = (trailLine as any)._path as SVGPathElement | undefined;
+      if (trailNode) { trailNode.style.transition = 'opacity .5s'; trailNode.style.opacity = '0'; }
+
+      flightLandingTimeoutRef.current = setTimeout(() => {
+        flightLandingTimeoutRef.current = null;
+        if (currentSessionId !== flightSessionIdRef.current) return;
+        if (flightPlaneMarkerRef.current && mapRef.current) {
+          try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
+          flightPlaneMarkerRef.current = null;
+        }
+        if (flightTrailPolylineRef.current && mapRef.current) {
+          try { mapRef.current.removeLayer(flightTrailPolylineRef.current); } catch (_) {}
+          flightTrailPolylineRef.current = null;
+        }
+        try {
+          mapRef.current?.setMaxBounds([[-62, -35], [82, 385]]);
+          mapRef.current?.dragging?.enable();
+          mapRef.current?.scrollWheelZoom?.enable();
+        } catch (_) {}
+        setIsFlyingToCountry(false);
+        setSelectedCountry(targetCountry);
+        setSearchQuery(targetCountry.name);
+      }, 920);
     };
 
-    flightAnimRef.current = requestAnimationFrame(animateFlight);
+    // Take off once the route is framed (or soon after, should the framing be cut short)
+    let launched = false;
+    const launch = () => {
+      if (launched || currentSessionId !== flightSessionIdRef.current) return;
+      launched = true;
+      map.off('moveend', launch);
+      trailLine.setStyle({ opacity: 0.7 });
+      flightAnimRef.current = requestAnimationFrame(animateFlight);
+    };
+    map.once('moveend', launch);
+    flightPreTimeoutRef.current = setTimeout(launch, 900);
   };
 
   // Updates boundary highlight (exact GeoJSON polygon if available, or fallback circle) & pulse pin on map
@@ -1216,10 +1199,9 @@ export function useMapHubState({
 
     highlightLayerRef.current = L.featureGroup(highlightLayers).addTo(map);
 
-    // Selected country pulse pin
+    // Selected country pin
     const selectHtml = `
       <div class="relative w-10 h-10 flex items-center justify-center select-none pointer-events-none">
-        <span class="absolute w-12 h-12 rounded-full bg-red-600/30 animate-ping"></span>
         <span class="absolute w-8 h-8 rounded-full bg-red-600/35"></span>
         <span class="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-lg"></span>
       </div>
@@ -1475,9 +1457,9 @@ export function useMapHubState({
     L.control.zoom({ position: 'topright', zoomInTitle: '확대', zoomOutTitle: '축소' }).addTo(map);
     map.getContainer().classList.add('tgl-hub-map');
 
-    // Dedicated pane for clipped night-time tiles (above base tilePane 200, below overlayPane 400)
-    const nightPane = map.createPane('nightTilePane');
-    nightPane.style.zIndex = '205';
+    // The night shade sits right above the tiles, under every pin and line
+    const nightPane = map.createPane('nightShadePane');
+    nightPane.style.zIndex = '250';
     nightPane.style.pointerEvents = 'none';
 
     // Direct map click to select country
@@ -1508,300 +1490,65 @@ export function useMapHubState({
     };
   }, []);
 
-  // Sync dark mode, mapTileStyle & Day/Night Dual-Tile mode dynamically
+  // One tile layer in the chosen style (v1.3.8: the second night layer and its moving mask are gone)
   useEffect(() => {
     const map = mapRef.current;
     const L = (window as any).L;
     if (!map || !L) return;
-
     if (tileLayerRef.current) {
       try { map.removeLayer(tileLayerRef.current); } catch (_) {}
       tileLayerRef.current = null;
     }
-    if (nightTileLayerRef.current) {
-      try { map.removeLayer(nightTileLayerRef.current); } catch (_) {}
-      nightTileLayerRef.current = null;
-    }
+    const t = hubTileFor(mapTileStyle, isDarkMode);
+    // Keep a wide ring of tiles around the view so a pan or a flight finds them already there
+    tileLayerRef.current = L.tileLayer(t.url, { ...t.options, updateWhenIdle: false, updateWhenZooming: false, keepBuffer: 8, crossOrigin: true }).addTo(map);
+  }, [isDarkMode, mapTileStyle]);
 
-    const common = { updateWhenIdle: false, updateWhenZooming: false, crossOrigin: true };
-    if (isDayNightEnabled) {
-      // Day tiles everywhere, night tiles of the same style clipped to the dark side
-      const day = hubTileFor(mapTileStyle, false), night = hubTileFor(mapTileStyle, true);
-      tileLayerRef.current = L.tileLayer(day.url, { ...day.options, ...common }).addTo(map);
-      nightTileLayerRef.current = L.tileLayer(night.url, { ...night.options, ...common, pane: 'nightTilePane' }).addTo(map);
-    } else {
-      const nightPane = map.getPane('nightTilePane');
-      if (nightPane) {
-        nightPane.style.clipPath = 'none';
-        nightPane.style.webkitClipPath = 'none';
-      }
-      const t = hubTileFor(mapTileStyle, isDarkMode);
-      tileLayerRef.current = L.tileLayer(t.url, { ...t.options, ...common }).addTo(map);
-    }
-    // Re-align the night mask with the freshly added night tile layer
-    updateNightClipRef.current?.();
-  }, [isDarkMode, mapTileStyle, isDayNightEnabled]);
-
-  // Render Day/Night Solar Terminator Layer & Night City Lights (controlled by isDayNightEnabled)
+  // Day and night (v1.3.8): the night side is one translucent shape over the tiles, plus the point under the sun.
+  // It is redrawn once a minute or when the preview time changes, never while the map moves.
   useEffect(() => {
     const L = (window as any).L;
     const map = mapRef.current;
     if (!map || !L) return;
-
-    if (terminatorLayerRef.current) {
-      try { map.removeLayer(terminatorLayerRef.current); } catch (_) {}
-      terminatorLayerRef.current = null;
-    }
-    if (nightLightsLayerRef.current) {
-      try { map.removeLayer(nightLightsLayerRef.current); } catch (_) {}
-      nightLightsLayerRef.current = null;
-    }
-
+    const clear = () => {
+      if (terminatorLayerRef.current) {
+        try { map.removeLayer(terminatorLayerRef.current); } catch (_) {}
+        terminatorLayerRef.current = null;
+      }
+    };
+    clear();
+    updateNightClipRef.current = null;
     if (!isDayNightEnabled) return;
 
-    // Major global metropolitan hubs with enhanced night lighting glow
-    const MAJOR_NIGHT_HUBS = new Set([
-      '도쿄', '서울', '뉴욕', '런던', '파리', '싱가포르', '상하이', '베이징', '홍콩',
-      '로스앤젤레스', '샌프란시스코', '시카고', '시드니', '방콕', '두바이', '로마',
-      '마드리드', '베를린', '토론토', '밴쿠버', '이스탄불', '타이베이', '오사카'
-    ]);
-
-    // 1. Night tiles are revealed through a soft twilight mask (v1.3). The mask is a small canvas of
-    //    night opacity per cell, placed in layer coordinates and upscaled by the browser, so the day/night
-    //    edge fades over the twilight band instead of cutting sharply. A mask only paints inside its element's
-    //    box, so the pane is moved and sized to the mask area and its layers are shifted back by the same amount.
-    //    Browsers without CSS masks fall back to the previous hard clip-path polygon.
-    const supportsSoftMask = typeof CSS !== 'undefined' && (CSS.supports('mask-image', 'url("a.png")') || CSS.supports('-webkit-mask-image', 'url("a.png")'));
-    const maskCanvas = document.createElement('canvas');
-    let cachedContinuousPoints: [number, number][] | null = null;
-    let cachedPointsMinute = -1;
-    let maskFrame = 0;
-
-    // The mask is painted with half a screen of margin around the view and pinned in layer coordinates,
-    // so a pan inside that margin needs no repaint. Repainting on every move frame made phones flash
-    // the night side bright while each new mask image decoded.
-    let maskRect: { x: number; y: number; w: number; h: number } | null = null;
-    let maskToken = 0;
-    const viewInsideMask = (currentMap: any) => {
-      if (!maskRect) return false;
-      const size = currentMap.getSize();
-      const tl = currentMap.containerPointToLayerPoint([0, 0]);
-      return tl.x >= maskRect.x && tl.y >= maskRect.y && tl.x + size.x <= maskRect.x + maskRect.w && tl.y + size.y <= maskRect.y + maskRect.h;
-    };
-
-    // A mask is being painted and decoded; a flight asks for new ones every frame, so it waits for this one
-    let maskBusy = false;
-
-    const applySoftMask = (currentMap: any, nightPane: HTMLElement) => {
-      // The frame may land after the map was removed (leaving the Map hub quickly)
-      if (mapRef.current !== currentMap || !currentMap._mapPane) return;
-      const size = currentMap.getSize();
-      // In flight the view runs a long way before the mask can be redone, so it gets a wider margin
-      const margin = isFlyingToCountryRef.current ? 1.5 : 0.5;
-      const padX = size.x * margin;
-      const padY = size.y * margin;
-      const cell = 6;
-      const cols = Math.max(2, Math.ceil((size.x + padX * 2) / cell));
-      const rows = Math.max(2, Math.ceil((size.y + padY * 2) / cell));
-      const lats: number[] = [];
-      const lngs: number[] = [];
-      for (let r = 0; r < rows; r++) lats.push(currentMap.containerPointToLatLng([0, -padY + (r + 0.5) * cell]).lat);
-      for (let c = 0; c < cols; c++) lngs.push(currentMap.containerPointToLatLng([-padX + (c + 0.5) * cell, 0]).lng);
-      paintNightMask(maskCanvas, lats, lngs, sceneNow());
-      const origin = currentMap.containerPointToLayerPoint([-padX, -padY]);
-      const ox = Math.round(origin.x);
-      const oy = Math.round(origin.y);
-      const url = `url(${maskCanvas.toDataURL()})`;
-      const token = ++maskToken;
-      maskBusy = true;
-      const commit = () => {
-        if (token === maskToken) maskBusy = false;
-        if (token !== maskToken) return;
-        maskRect = { x: ox, y: oy, w: cols * cell, h: rows * cell };
-        applyMaskStyles(nightPane, ox, oy, cols * cell, rows * cell, url);
-      };
-      // Decode first so the old mask stays until the new one can paint
-      const img = new Image();
-      img.src = url.slice(4, -1);
-      (img.decode ? img.decode() : Promise.resolve()).then(commit, commit);
-    };
-
-    const applyMaskStyles = (nightPane: HTMLElement, ox: number, oy: number, w: number, h: number, url: string) => {
-      const s = nightPane.style as any;
-      s.left = `${ox}px`;
-      s.top = `${oy}px`;
-      s.width = `${w}px`;
-      s.height = `${h}px`;
-      Array.from(nightPane.children).forEach(child => {
-        (child as HTMLElement).style.left = `${-ox}px`;
-        (child as HTMLElement).style.top = `${-oy}px`;
-      });
-      for (const prefix of ['mask', 'webkitMask']) {
-        s[`${prefix}Image`] = url;
-        s[`${prefix}Size`] = '100% 100%';
-        s[`${prefix}Position`] = '0 0';
-        s[`${prefix}Repeat`] = 'no-repeat';
-      }
-      s.clipPath = 'none';
-      s.webkitClipPath = 'none';
-    };
-
-    const resetNightPaneMask = (nightPane: HTMLElement) => {
-      maskRect = null;
-      maskToken++;
-      maskBusy = false;
-      const s = nightPane.style as any;
-      s.maskImage = 'none';
-      s.webkitMaskImage = 'none';
-      s.left = '';
-      s.top = '';
-      s.width = '';
-      s.height = '';
-      Array.from(nightPane.children).forEach(child => {
-        (child as HTMLElement).style.left = '';
-        (child as HTMLElement).style.top = '';
-      });
-    };
-
-    const updateNightClip = (e?: { type?: string }) => {
+    const renderer = L.svg({ padding: 1, pane: 'nightShadePane' });
+    const draw = () => {
       const currentMap = mapRef.current;
       if (!currentMap) return;
-      const live = e?.type === 'move' || e?.type === 'zoom';
-      const nightPane = currentMap.getPane('nightTilePane');
-      if (!nightPane) return;
-
-      if (!isDayNightEnabled) {
-        nightPane.style.clipPath = 'none';
-        nightPane.style.webkitClipPath = 'none';
-        resetNightPaneMask(nightPane);
-        return;
-      }
-
-      // 비행기 활공 중에는 매 프레임 다시 그리지 않는다. 다만 화면이 그려 둔 마스크 영역을 벗어나면
-      // (비행기가 밤 영역으로 들어갈 때) 밤 타일이 마스크 끝에서 잘리므로, 그때만 한 장씩 새로 그린다.
-      if (isFlyingToCountryRef.current) {
-        if (supportsSoftMask && !maskBusy && !viewInsideMask(currentMap)) {
-          cancelAnimationFrame(maskFrame);
-          maskFrame = requestAnimationFrame(() => applySoftMask(currentMap, nightPane));
-        }
-        return;
-      }
-
-      if (supportsSoftMask) {
-        // Mid-gesture: keep the painted mask unless the view has run past its margin; pinch zoom waits for zoomend
-        if (live && (e?.type === 'zoom' || viewInsideMask(currentMap))) return;
-        cancelAnimationFrame(maskFrame);
-        maskFrame = requestAnimationFrame(() => applySoftMask(currentMap, nightPane));
-        return;
-      }
-
       const now = sceneNow();
-      const currentMinute = Math.floor(now.getTime() / 60000);
-      if (!cachedContinuousPoints || cachedPointsMinute !== currentMinute) {
-        cachedContinuousPoints = getContinuousNightPolygon(now, 2, -540, 540);
-        cachedPointsMinute = currentMinute;
-      }
-      const layerPoints = cachedContinuousPoints.map(([lat, lng]) => {
-        const pt = currentMap.latLngToLayerPoint([lat, lng]);
-        return `${Math.round(pt.x)}px ${Math.round(pt.y)}px`;
-      });
-      const polygonCss = `polygon(${layerPoints.join(', ')})`;
-      nightPane.style.clipPath = polygonCss;
-      nightPane.style.webkitClipPath = polygonCss;
-    };
-    updateNightClipRef.current = updateNightClip;
-
-    // One canvas renderer for the terminator line, the sun point and the city lights (no DOM marker per light)
-    const lightRenderer = L.canvas({ padding: 0.5 });
-
-    const renderTerminatorAndLights = () => {
-      const currentMap = mapRef.current;
-      if (!currentMap) return;
-
-      const now = sceneNow();
-      // Drop the two pole-closing points: only the terminator line itself is drawn
-      const linePoints = getNightTerminatorPolygon(now, 2).slice(0, -2);
-      const wraps = [linePoints, shiftPolygonCoordinates(linePoints, 360), shiftPolygonCoordinates(linePoints, -360)];
-
-      // 2. Terminator: a crisp hairline with a light halo so it reads on both the day and the night side
-      const layers: any[] = [];
-      wraps.forEach(points => {
-        layers.push(L.polyline(points, { renderer: lightRenderer, color: '#FFFFFF', weight: 3, opacity: 0.55, interactive: false }));
-        layers.push(L.polyline(points, { renderer: lightRenderer, color: '#111111', weight: 1, opacity: 0.85, interactive: false }));
-      });
-
-      // 3. Subsolar point: where the sun is overhead right now
+      const night = getContinuousNightPolygon(now, 3, -540, 540);
       const [sunLat, sunLng] = getSubsolarPoint(now);
+      const layers: any[] = [
+        L.polygon(night, { renderer, stroke: false, fillColor: isDarkMode ? '#000000' : '#1B2340', fillOpacity: isDarkMode ? 0.38 : 0.2, interactive: false, smoothFactor: 1.5 }),
+      ];
       [-360, 0, 360].forEach(offset => {
-        layers.push(L.circleMarker([sunLat, sunLng + offset], { renderer: lightRenderer, radius: 9, stroke: false, fillColor: '#F59E0B', fillOpacity: 0.18, interactive: false }));
-        layers.push(L.circleMarker([sunLat, sunLng + offset], { renderer: lightRenderer, radius: 4, color: '#FFFFFF', weight: 1.5, fillColor: '#F59E0B', fillOpacity: 1, interactive: false }));
+        layers.push(L.circleMarker([sunLat, sunLng + offset], { renderer, radius: 4, color: '#FFFFFF', weight: 1.5, fillColor: '#F59E0B', fillOpacity: 1, interactive: false }));
       });
-
       if (terminatorLayerRef.current) {
         try { currentMap.removeLayer(terminatorLayerRef.current); } catch (_) {}
       }
       terminatorLayerRef.current = L.layerGroup(layers).addTo(currentMap);
-
-      // 4. City lights fade in through twilight (opacity follows the same night curve as the mask)
-      const lightLayers: any[] = [];
-      WORLD_CITIES.forEach(city => {
-        if (!(Math.abs(city.lat) > 0.1 || Math.abs(city.lng) > 0.1) || city.lat < -90 || city.lat > 90) return;
-        const alpha = nightAlphaForAltitude(getSolarAltitude(city.lat, city.lng, now));
-        if (alpha < 0.05) return;
-        const isHub = MAJOR_NIGHT_HUBS.has(city.nameKo);
-        [-360, 0, 360].forEach(offsetLng => {
-          const at: [number, number] = [city.lat, city.lng + offsetLng];
-          lightLayers.push(L.circleMarker(at, { renderer: lightRenderer, radius: isHub ? 7 : 4.5, stroke: false, fillColor: '#F59E0B', fillOpacity: 0.22 * alpha, interactive: false }));
-          lightLayers.push(L.circleMarker(at, { renderer: lightRenderer, radius: isHub ? 2.6 : 1.8, stroke: false, fillColor: '#FDE047', fillOpacity: 0.95 * alpha, interactive: false }));
-        });
-      });
-
-      if (nightLightsLayerRef.current) {
-        try { currentMap.removeLayer(nightLightsLayerRef.current); } catch (_) {}
-      }
-      nightLightsLayerRef.current = L.layerGroup(lightLayers).addTo(currentMap);
     };
-
-    renderTerminatorAndLights();
-    updateNightClip();
-    redrawDayNightRef.current = () => { maskRect = null; renderTerminatorAndLights(); updateNightClip(); };
-
-    // Bind real-time viewport projection listeners
-    map.on('move', updateNightClip);
-    map.on('moveend', updateNightClip);
-    map.on('zoomend', updateNightClip);
-    map.on('zoom', updateNightClip);
-    map.on('viewreset', updateNightClip);
-    map.on('resize', updateNightClip);
-
-    const interval = setInterval(() => {
-      maskRect = null;
-      renderTerminatorAndLights();
-      updateNightClip();
-    }, 60000); // 1분마다 태양 위치 및 밤 조명 갱신
-
+    draw();
+    redrawDayNightRef.current = draw;
+    const interval = setInterval(draw, 60000);
     return () => {
       redrawDayNightRef.current = () => {};
       clearInterval(interval);
-      cancelAnimationFrame(maskFrame);
-      map.off('move', updateNightClip);
-      map.off('moveend', updateNightClip);
-      map.off('zoomend', updateNightClip);
-      map.off('zoom', updateNightClip);
-      map.off('viewreset', updateNightClip);
-      map.off('resize', updateNightClip);
-      if (terminatorLayerRef.current && mapRef.current) {
-        try { mapRef.current.removeLayer(terminatorLayerRef.current); } catch (_) {}
-        terminatorLayerRef.current = null;
-      }
-      if (nightLightsLayerRef.current && mapRef.current) {
-        try { mapRef.current.removeLayer(nightLightsLayerRef.current); } catch (_) {}
-        nightLightsLayerRef.current = null;
-      }
+      clear();
     };
   }, [isDayNightEnabled, isDarkMode]);
 
-  // Redraw the terminator, twilight mask and city lights for the previewed time
+  // Redraw the night side for the previewed time
   useEffect(() => {
     const id = requestAnimationFrame(() => redrawDayNightRef.current());
     return () => cancelAnimationFrame(id);
@@ -1890,7 +1637,7 @@ export function useMapHubState({
               </span>
             </div>
           ` : ''}
-          <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
+          <div class="relative w-full h-full transition-transform duration-150 group-hover:scale-110 origin-bottom">
             <svg viewBox="0 0 24 34" width="26" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" class="block">
               <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#DC2626"/>
               <circle cx="12" cy="11" r="4.5" fill="#FFFFFF"/>
@@ -1962,7 +1709,7 @@ export function useMapHubState({
             </div>
           ` : ''}
           <!-- Yellow SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
-          <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
+          <div class="relative w-full h-full transition-transform duration-150 group-hover:scale-110 origin-bottom">
             <svg viewBox="0 0 24 34" width="26" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" class="block">
               <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#D97706"/>
               <polygon points="12,6.5 13.6,9.8 17.2,10.3 14.6,12.8 15.2,16.5 12,14.8 8.8,16.5 9.4,12.8 6.8,10.3 10.4,9.8" fill="#FFFFFF"/>

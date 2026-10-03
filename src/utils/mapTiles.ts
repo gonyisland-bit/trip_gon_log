@@ -99,15 +99,15 @@ export function mapTileFor(style: MapStyle, isDark: boolean): { url: string; opt
   };
 }
 
-// World map (map hub) styles (v1.3.7): the light grey world plus the journey map's three.
-// Picked on the map itself and saved per account (prefs.hubMapStyle).
-export type HubMapStyle = 'gray' | MapStyle;
-export const HUB_MAP_STYLES: HubMapStyle[] = ['gray', 'normal', 'terrain', 'simple'];
-export const HUB_MAP_STYLE_LABEL: Record<HubMapStyle, string> = { gray: '라이트', ...MAP_STYLE_LABEL };
+// World map (map hub) styles (v1.3.8): the light grey world or the Google road map; terrain and simple were dropped
+// to keep the world map light. Picked on the map itself and saved per account (prefs.hubMapStyle).
+export type HubMapStyle = 'gray' | 'normal';
+export const HUB_MAP_STYLES: HubMapStyle[] = ['gray', 'normal'];
+export const HUB_MAP_STYLE_LABEL: Record<HubMapStyle, string> = { gray: '라이트', normal: '일반' };
 const HUB_KEY = 'tgl_hub_map_style';
 
 export function isHubMapStyle(v: unknown): v is HubMapStyle {
-  return v === 'gray' || isMapStyle(v);
+  return v === 'gray' || v === 'normal';
 }
 
 export function readHubMapStyle(): HubMapStyle {
