@@ -7,7 +7,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>여정에 바로 찍은 사진을 올리려면 카메라를 사용해야 합니다.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>현재 위치의 날씨를 보여 주려면 대략적인 위치가 필요합니다.</string>
+	<string>현재 위치의 날씨와 지도의 내 위치, 여행 중 가까운 일정 알림에 위치를 사용합니다.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

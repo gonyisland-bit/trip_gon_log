@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { getPosition } from '../../utils/location';
 import { openJourneyActions } from '../../components/cards/JourneyActionsSheet';
 import {
   Trash2,
@@ -1346,13 +1347,14 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     // If user snoozed radar, skip
     if (Date.now() < radarSnoozedUntil) return;
 
-    if (!('geolocation' in navigator)) return;
-
+    // Opening a journey never asks for location: the radar reads it only where it is already allowed (utils/location)
+    let stopped = false;
     const checkRadar = () => {
-      navigator.geolocation.getCurrentPosition(
+      getPosition({ precise: true, maxAgeMs: 20 * 1000 }).then(
         (pos) => {
-          const userLat = pos.coords.latitude;
-          const userLng = pos.coords.longitude;
+          if (stopped) return;
+          const userLat = pos.lat;
+          const userLng = pos.lng;
 
           // 여정 지역과의 거리 검사 (반경 50km 이내에 실제 사용자가 있을 때만 가동)
           const currentTimelinePoints = (isEditing ? draftTimeline : baseTimeline)
@@ -1376,16 +1378,15 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
           setActiveRadarIndex(0);
         },
         () => {
-          // GPS 실패 시 가상 좌표 fallback 금지 (현재 위치 기준 원칙)
+          // GPS 실패 · 권한 없음: 가상 좌표 fallback 금지 (현재 위치 기준 원칙)
         },
-        { timeout: 8000, enableHighAccuracy: true }
       );
     };
 
     checkRadar();
     // 30초 주기로 현장 도보 이동 갱신
     const intervalId = setInterval(checkRadar, 30000);
-    return () => clearInterval(intervalId);
+    return () => { stopped = true; clearInterval(intervalId); };
   }, [trip?.id, baseTimeline, draftTimeline, isEditing, radarSnoozedUntil]);
 
   const handleFocusRadarItemOnMap = (item: RadarItem) => {

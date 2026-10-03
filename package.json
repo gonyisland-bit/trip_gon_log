@@ -22,6 +22,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1141.0",
     "@capacitor/android": "^7.6.9",
     "@capacitor/core": "^7.6.9",
+    "@capacitor/geolocation": "^7.1.8",
     "@capacitor/ios": "^7.6.9",
     "firebase": "^12.14.0",
     "html2canvas": "^1.4.1",

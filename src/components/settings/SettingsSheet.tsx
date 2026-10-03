@@ -10,7 +10,7 @@ import { confirmDialog } from '../../utils/feedback';
 import { FriendsSection } from '../friends/FriendsSection';
 import { NotificationSettings } from '../notifications/NotificationSettings';
 import { IosShortcutGuide } from '../pocket/IosShortcutGuide';
-import { MyCitiesEditor, WeatherBgSwitch } from './MyCitiesEditor';
+import { LocationSwitch, MyCitiesEditor, WeatherBgSwitch } from './MyCitiesEditor';
 import { HomeWidgetPrefs } from './HomeWidgetPrefs';
 import { BackdropPicker, SlideshowPrefs } from './PlayPrefs';
 import type { PersonCard } from '../../utils/friends';
@@ -147,6 +147,7 @@ export function SettingsSheet({ onClose, profile, displayName, email, nightMode,
           <section className={card}>
             <span className={label}>Weather</span>
             <WeatherBgSwitch value={weatherBg} onChange={setWeatherBg} />
+            <LocationSwitch />
           </section>
         </>)}
 

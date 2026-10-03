@@ -3,6 +3,7 @@
 // person's choice never changes another person's screen; localStorage is only the instant cache.
 // Coordinates are never stored: "current location" is saved as a mode and resolved on the device.
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { canReadLocationQuietly, getPosition } from './location';
 import { auth, db } from '../firebase';
 import type { CityWeatherConfig } from '../types';
 
@@ -28,6 +29,8 @@ export interface UserPrefs {
   slideshow?: { interval?: number; fit?: 'fit' | 'fill' };
   /** World map style on the map hub (see mapTiles.ts) */
   hubMapStyle?: 'gray' | 'normal' | 'terrain' | 'simple';
+  /** The member switched current location off: no screen reads it on its own (see location.ts) */
+  locationOff?: boolean;
   /** Which home widgets show (see homeWidgetPrefs.ts) */
   homeWidgets?: import('./homeWidgetPrefs').HomeWidgetPrefs;
   /** The welcome notice version this member closed (see notice.ts) */
@@ -88,33 +91,25 @@ export function isCurrentLocation(city?: { nameEn?: string } | null) {
   return !!city && city.nameEn === CURRENT_LOCATION_EN;
 }
 
-/** Ask the device where it is. Only call from a user action, or when permission is already granted. */
-export function locateMe(): Promise<CityWeatherConfig> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) { reject(new Error('unsupported')); return; }
-    navigator.geolocation.getCurrentPosition(
-      pos => resolve({
-        name: '현재 위치',
-        nameEn: CURRENT_LOCATION_EN,
-        country: '',
-        lat: Math.round(pos.coords.latitude * 100) / 100,
-        lng: Math.round(pos.coords.longitude * 100) / 100,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-      }),
-      err => reject(err),
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 10 * 60 * 1000 },
-    );
-  });
+/**
+ * Ask the device where it is (utils/location: the OS in the app, the browser on the web). `ask` comes from a tap and may
+ * show the permission prompt; without it the call is refused unless location is already allowed.
+ */
+export async function locateMe(ask = true): Promise<CityWeatherConfig> {
+  const pos = await getPosition({ ask });
+  return {
+    name: '현재 위치',
+    nameEn: CURRENT_LOCATION_EN,
+    country: '',
+    lat: Math.round(pos.lat * 100) / 100,
+    lng: Math.round(pos.lng * 100) / 100,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  };
 }
 
-/** True when the browser already allows location, so it can be resolved without a prompt */
+/** True when location is allowed and not switched off, so it can be read without a prompt */
 export async function locationGranted(): Promise<boolean> {
-  try {
-    const st = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
-    return st?.state === 'granted';
-  } catch {
-    return false;
-  }
+  return canReadLocationQuietly();
 }
 
 /** Switch this user's weather location everywhere (header, background, terminal) and remember it */

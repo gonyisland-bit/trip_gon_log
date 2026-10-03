@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CityWeatherConfig } from '../types';
 import { cachedCurrentLocation, locateMe, locationGranted } from './userPrefs';
 import { notify } from './feedback';
+import { locationProblem } from './location';
 
 // The member's current location (v1.3.8) for the home weather and world-time cubes. It is known from the last time it
 // was found on this device (the same copy the header weather uses); when the browser already allows location it is
@@ -25,7 +26,7 @@ export function useCurrentPlace() {
     window.addEventListener(EVENT, on);
     if (!refreshed) {
       refreshed = true;
-      locationGranted().then(ok => { if (ok) locateMe().then(remember).catch(() => {}); });
+      locationGranted().then(ok => { if (ok) locateMe(false).then(remember).catch(() => {}); });
     }
     return () => window.removeEventListener(EVENT, on);
   }, []);
@@ -38,8 +39,7 @@ export function useCurrentPlace() {
       remember(found);
       return found;
     } catch (err) {
-      const denied = !!err && typeof err === 'object' && 'code' in err && (err as GeolocationPositionError).code === 1;
-      notify(denied ? '위치 권한이 꺼져 있어 현재 위치를 찾을 수 없어요. 브라우저 설정에서 위치를 허용해 주세요.' : '현재 위치를 찾지 못했어요. 잠시 후 다시 시도해 주세요.', 'error');
+      notify(locationProblem(err), 'error');
       return null;
     } finally {
       setBusy(false);

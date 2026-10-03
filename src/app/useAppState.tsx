@@ -41,6 +41,7 @@ import { afterLayerBack, isLayerBackPending, popBelongsToLayer, takeOverLayerEnt
 import { noteAppScroll } from '../utils/scrollLock';
 import { TOGGLE_PALETTE_EVENT } from './layerEvents';
 import { applyJourneyOpenBy } from '../utils/journeyOpen';
+import { setLocationSwitchedOff } from '../utils/location';
 import { CURRENT_LOCATION_EN, cachedCurrentLocation, loadUserPrefs, locateMe, locationGranted, saveUserPref, selectWeatherCity } from '../utils/userPrefs';
 import { applyHubMapStyle, applyMapStyle, isHubMapStyle, isMapStyle } from '../utils/mapTiles';
 import { noteRecentJourney } from '../utils/recentJourneys';
@@ -271,11 +272,12 @@ export function useAppState() {
         try { localStorage.setItem('calendar_weather_bg_enabled', String(prefs.weatherBg)); } catch (_) {}
         window.dispatchEvent(new CustomEvent('weatherBgToggled', { detail: prefs.weatherBg }));
       }
+      if (typeof prefs.locationOff === 'boolean') setLocationSwitchedOff(prefs.locationOff);
       if (prefs.weatherCity === CURRENT_LOCATION_EN) {
         // Resolve on this device without prompting; otherwise keep the last known spot
         const here = cachedCurrentLocation();
         if (await locationGranted()) {
-          locateMe().then(selectWeatherCity).catch(() => { if (here) selectWeatherCity(here); });
+          locateMe(false).then(selectWeatherCity).catch(() => { if (here) selectWeatherCity(here); });
         } else if (here) selectWeatherCity(here);
       } else if (prefs.weatherCity) {
         // Any city of the world catalog, not only the operator's list

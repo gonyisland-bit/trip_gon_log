@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, LocateFixed, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2, LocateFixed, Search, X } from 'lucide-react';
 import type { CityWeatherConfig } from '../../types';
 import { CURRENT_LOCATION_EN, saveUserPref } from '../../utils/userPrefs';
 import { MAX_CITIES, cityKey, makeMain, removeMyCity, searchCities, setMyCities, useMyCities } from '../../utils/myCities';
 import { CurrentLocationRow } from '../weather/CurrentLocationRow';
+import { LOCATION_EVENT, getPosition, locationPermission, locationProblem, locationSwitchedOff, setLocationSwitchedOff, type LocationPermission } from '../../utils/location';
+import { notify } from '../../utils/feedback';
 import { useCitiesWeather } from '../weather/useCitiesWeather';
 import { WeatherReading } from '../weather/WeatherReading';
 
@@ -138,6 +140,64 @@ export function WeatherBgSwitch({ value, onChange }: { value: boolean; onChange:
       >
         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface dark:bg-paper-dark shadow-sm transition-transform duration-fast ${value ? 'translate-x-4' : ''}`} />
       </button>
+    </div>
+  );
+}
+
+/**
+ * Current location on or off for this account. On: screens use the place wherever the OS or browser already allows it
+ * (switching on asks once if it has not been allowed). Off: no screen reads it on its own; a tap on a "current
+ * location" button still can.
+ */
+export function LocationSwitch() {
+  const [off, setOff] = useState(locationSwitchedOff);
+  const [perm, setPerm] = useState<LocationPermission | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const read = () => { setOff(locationSwitchedOff()); locationPermission().then(setPerm); };
+    read();
+    window.addEventListener(LOCATION_EVENT, read);
+    return () => window.removeEventListener(LOCATION_EVENT, read);
+  }, []);
+  const on = !off && perm === 'granted';
+  const toggle = async () => {
+    if (busy) return;
+    if (on) {
+      setLocationSwitchedOff(true);
+      saveUserPref({ locationOff: true });
+      return;
+    }
+    setBusy(true);
+    try {
+      await getPosition({ ask: true });
+      setLocationSwitchedOff(false);
+      saveUserPref({ locationOff: false });
+    } catch (err) {
+      notify(locationProblem(err), 'error');
+    } finally {
+      setBusy(false);
+      locationPermission().then(setPerm);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[14px] font-bold inline-flex items-center gap-1.5">
+          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" aria-hidden />}
+          현재 위치 사용
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          aria-label="현재 위치 사용"
+          onClick={toggle}
+          className={`relative w-10 h-6 rounded-full transition-colors duration-fast cursor-pointer shrink-0 ${on ? 'bg-ink dark:bg-ink-dark' : 'bg-black/15 dark:bg-white/20'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface dark:bg-paper-dark shadow-sm transition-transform duration-fast ${on ? 'translate-x-4' : ''}`} />
+        </button>
+      </div>
+      {perm === 'denied' && <span className="text-[12px] text-amber-700 dark:text-amber-400 leading-snug">{locationProblem({ code: 1 })}</span>}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { getPosition, locationProblem } from '../utils/location';
 import { TRAVELLER_SIZE, travellerHtml } from '../art/bear/kit';
 import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock, Bookmark, Locate, User, Layers } from 'lucide-react';
 import { MAP_STYLES, MAP_STYLE_EVENT, MAP_STYLE_LABEL, MapStyle, applyMapStyle, isMapStyle, mapTileFor, readMapStyle } from '../utils/mapTiles';
@@ -134,18 +135,13 @@ export function MapArea({
   const [locationToast, setLocationToast] = useState<{ show: boolean; message: string } | null>(null);
 
   const handleLocateUser = () => {
-    if (!('geolocation' in navigator)) {
-      setLocationToast({ show: true, message: '이 브라우저는 위치 서비스를 지원하지 않습니다.' });
-      setTimeout(() => setLocationToast(null), 3000);
-      return;
-    }
-
+    // A tap: may ask for permission once (the app keeps the OS answer, the browser keeps the site's)
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
+    getPosition({ ask: true, precise: true, maxAgeMs: 30 * 1000 }).then(
       (pos) => {
         setIsLocating(false);
-        const userLat = pos.coords.latitude;
-        const userLng = pos.coords.longitude;
+        const userLat = pos.lat;
+        const userLng = pos.lng;
 
         // 여정 중심 좌표 또는 지도 포인트들과의 거리 계산
         const validPoints = mapPoints.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
@@ -211,10 +207,9 @@ export function MapArea({
       },
       (err) => {
         setIsLocating(false);
-        setLocationToast({ show: true, message: '현재 위치를 가져올 수 없습니다.' });
-        setTimeout(() => setLocationToast(null), 3000);
+        setLocationToast({ show: true, message: locationProblem(err) });
+        setTimeout(() => setLocationToast(null), 3500);
       },
-      { timeout: 8000, enableHighAccuracy: true }
     );
   };
 
