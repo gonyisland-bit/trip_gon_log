@@ -1,23 +1,16 @@
 import { useState } from 'react';
-import {
-  Save, RotateCcw, ArrowLeft, ArrowUp, Calendar, Check, X, Image as ImageIcon, Search, Eye, Layout,
-  Edit, Users
-} from 'lucide-react';
-import { Trip, Plan } from '../types';
+import { Save, ArrowLeft, ArrowUp, Check, X, Eye } from 'lucide-react';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ProfileEditModal } from '../components/ProfileEditModal';
-import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { useManageHubState, type ManageHubPageProps } from './manage/useManageHubState';
 import { HomeMode } from './manage/HomeMode';
 import { CalendarMode } from './manage/CalendarMode';
-import { MagazineMode } from './manage/MagazineMode';
 import { UtilMode } from './manage/UtilMode';
 import { UsersMode } from './manage/UsersMode';
 import { NoticeEditor, WelcomeEditor } from './manage/NoticeEditor';
 import { Segment } from '../components/ui/Segment';
 
 type SystemTab = 'landing' | 'notice' | 'setup' | 'system';
-import { notify } from '../utils/feedback';
 
 export function ManageHubPage(props: ManageHubPageProps) {
   const s = useManageHubState(props);
@@ -29,20 +22,12 @@ export function ManageHubPage(props: ManageHubPageProps) {
     setEditingUser, isUserEditModalOpen, setIsUserEditModalOpen, delegatingUser, setDelegatingUser,
     isDelegatingModalOpen, setIsDelegatingModalOpen, handleSaveUserEdit,
     handleToggleTripAllowedEditor, handleSavePresetModal, handleConfirmDeletePreset,
-    handleConfirmRestorePresets, setMobileArchiveTab, localJourneys, setSelectedJourneyId,
-    selectedTripForMoments, setSelectedTripForMoments, momentSearchQuery, setMomentSearchQuery,
-    isSavingMagazine, magazineSaveSuccess, showRestoreModal, setShowRestoreModal, availableBackups,
-    handleRestoreDefaultSections, handleApplyBackup, firestoreMagSections, isLoadingFirestoreMag,
-    firestoreMagLoadedAt, currentMagSection, title, subtitle, isSavingHome, homeSaveSuccess,
-    isSavingTrip, tripSaveSuccess, showUnsavedModal, setShowUnsavedModal, pendingJourneyId,
-    setPendingJourneyId, pendingAction, setPendingAction, showSaveSuccessModal,
-    setShowSaveSuccessModal, showQuickPhotoPicker, setShowQuickPhotoPicker, showScrollTop,
+    handleConfirmRestorePresets, isSavingHome, homeSaveSuccess, showUnsavedModal, setShowUnsavedModal,
+    pendingAction, setPendingAction, showSaveSuccessModal, setShowSaveSuccessModal, showScrollTop,
     scrollToTop, trashDeleteModal, setTrashDeleteModal, showCleanSuccessModal,
     setShowCleanSuccessModal, cleanupSummary, isCalendarDirty, syncAllSnapshotsToCurrent,
-    handleResetAllState, navigateSafely, executeWithGuard, handleSaveJourney, handleSaveHome,
-    safeStr, candidateTimelineItems, handleAddItemToCurrentSection, handleSaveMagazine, isSavingAll,
-    saveAllSuccess, handleSaveAllChanges, saveActiveOrAllSettings,
-    handleLoadFirestoreMagazineSections, handleForceRestoreSectionsFromFirestore, getReturnView
+    handleResetAllState, navigateSafely, executeWithGuard, handleSaveHome, isSavingAll,
+    saveAllSuccess, handleSaveAllChanges, saveActiveOrAllSettings, getReturnView
   } = s;
 
   return (
@@ -139,25 +124,6 @@ export function ManageHubPage(props: ManageHubPageProps) {
             {systemTab === 'system' && <UtilMode s={s} only="system" />}
           </div>
         )}
-        {activeMode === 'HOME' && <HomeMode s={s} />}
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* MODE: CALENDAR (Calendar & Weather Cities Management)               */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'CALENDAR' && <CalendarMode s={s} />}
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* MODE: MAGAZINE (Sections, Hero, Layout & Moments Management)        */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'MAGAZINE' && <MagazineMode s={s} />}
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* MODE: UTIL (System Utilities: Visuals, Audio, Map, Presets, Trash) */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'UTIL' && <UtilMode s={s} />}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* MODE: USERS (Registered Users & Role/Permission Management)        */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'USERS' && <UsersMode s={s} />}
 
       </div>
@@ -263,21 +229,19 @@ export function ManageHubPage(props: ManageHubPageProps) {
         <button
           type="button"
           onClick={async () => {
-            if (activeMode === 'HOME' || (activeMode === 'SYSTEM' && systemTab === 'landing')) await handleSaveHome();
-            else if (activeMode === 'ARCHIVE') await handleSaveJourney();
-            else if (activeMode === 'MAGAZINE') await handleSaveMagazine();
+            if (activeMode === 'SYSTEM' && systemTab === 'landing') await handleSaveHome();
             else await handleSaveAllChanges(true);
             syncAllSnapshotsToCurrent();
           }}
-          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : isSavingAll))}
+          disabled={isSavingHome || isSavingAll}
           className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer border ${
-            (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess)
+            (homeSaveSuccess || saveAllSuccess)
               ? 'bg-emerald-600 text-white border-emerald-600 scale-105'
               : 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
           }`}
           title="변경사항 저장 (단축키: Ctrl + S)"
         >
-          {(homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess) ? (
+          {(homeSaveSuccess || saveAllSuccess) ? (
             <Check className="w-5 h-5 animate-in zoom-in" />
           ) : (
             <Save className="w-5 h-5" />
@@ -325,9 +289,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           setShowSaveSuccessModal(false);
           if (onDirtyChange) onDirtyChange(false);
           const act = pendingAction;
-          const targetJourneyId = pendingJourneyId;
           setPendingAction(null);
-          setPendingJourneyId(null);
 
           try {
             await saveActiveOrAllSettings(false);
@@ -338,9 +300,6 @@ export function ManageHubPage(props: ManageHubPageProps) {
           if (act) {
             // Immediately execute navigation action (e.g. view mode) without showing modal
             act();
-          } else if (targetJourneyId !== null) {
-            setSelectedJourneyId(targetJourneyId);
-            setMobileArchiveTab('EDIT');
           } else {
             setShowSaveSuccessModal(true);
           }
@@ -350,20 +309,14 @@ export function ManageHubPage(props: ManageHubPageProps) {
           setShowUnsavedModal(false);
           if (onDirtyChange) onDirtyChange(false);
           const act = pendingAction;
-          const targetJourneyId = pendingJourneyId;
           setPendingAction(null);
-          setPendingJourneyId(null);
           if (act) {
             act();
-          } else if (targetJourneyId !== null) {
-            setSelectedJourneyId(targetJourneyId);
-            setMobileArchiveTab('EDIT');
           }
         }}
         onCancel={() => {
           setShowUnsavedModal(false);
           setPendingAction(null);
-          setPendingJourneyId(null);
         }}
       />
 
@@ -385,152 +338,6 @@ export function ManageHubPage(props: ManageHubPageProps) {
           setTrashDeleteModal(prev => ({ ...prev, isOpen: false }));
         }}
       />
-
-      {/* Quick Photo Picker Floating Modal */}
-      {showQuickPhotoPicker && (
-        <div 
-          className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-          onClick={() => setShowQuickPhotoPicker(false)}
-        >
-          <div 
-            className="w-full max-w-3xl max-h-[85vh] bg-surface dark:bg-surface-dark border border-black dark:border-white shadow-2xl flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
-              <div className="flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <h3 className="text-xs sm:text-sm font-mono font-extrabold uppercase tracking-wider text-black dark:text-white">
-                  QUICK PHOTO PICKER (+ INSERT AFTER SELECTED CARD)
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowQuickPhotoPicker(false)}
-                className="tap-target p-1 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white cursor-pointer"
-                title="닫기"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Filter / Search Bar */}
-            <div className="p-3 border-b border-black/10 dark:border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-black/[0.01] dark:bg-white/[0.01]">
-              <select
-                value={selectedTripForMoments === null ? '' : selectedTripForMoments}
-                onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
-                className="px-2.5 py-1.5 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-              >
-                <option value="">-- Select journey --</option>
-                {localJourneys.map(j => (
-                  <option key={j.id} value={j.id}>
-                    {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
-                  </option>
-                ))}
-              </select>
-
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60" />
-                <input
-                  type="text"
-                  value={momentSearchQuery}
-                  onChange={e => setMomentSearchQuery(e.target.value)}
-                  placeholder="장소, 메모, 날짜 검색..."
-                  className="w-full pl-8 pr-2.5 py-1.5 text-xs font-mono font-bold bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-                />
-              </div>
-            </div>
-
-            {/* Photo Candidates Grid */}
-            <div className="flex-1 overflow-y-auto p-3">
-              {candidateTimelineItems.length === 0 ? (
-                <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-black/60 dark:text-white/60 font-mono text-xs">
-                  <ImageIcon className="w-8 h-8 opacity-40" />
-                  <span>선택된 여정의 사진이 없거나 검색 결과가 없습니다. 상단에서 여정을 선택해주세요.</span>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                  {candidateTimelineItems.map((photoItem, pIdx) => {
-                    const pName = safeStr(photoItem.place);
-                    const jTitle = safeStr(photoItem.journeyTitle);
-                    const displayTitle = pName || jTitle || 'MOMENT';
-                    const itemDate = safeStr(photoItem.date);
-
-                    const isAttached = (currentMagSection?.items || []).some(m =>
-                      (m.timelineItemId !== undefined && Number(m.timelineItemId) === Number(photoItem.id)) ||
-                      (m.img && photoItem.img && (m.img === photoItem.img || m.img.split('?')[0] === photoItem.img.split('?')[0]))
-                    );
-
-                    return (
-                      <div
-                        key={`quick-picker-${photoItem.id || pIdx}-${pIdx}`}
-                        onClick={() => {
-                          if (isAttached) {
-                            notify("이미 현재 매거진 섹션에 등록된 사진입니다.");
-                            return;
-                          }
-                          handleAddItemToCurrentSection(photoItem);
-                          setShowQuickPhotoPicker(false);
-                        }}
-                        className={`group relative aspect-[3/4] bg-black/5 dark:bg-white/5 border overflow-hidden flex flex-col justify-end transition-all select-none ${
-                          isAttached
-                            ? 'border-black/20 dark:border-white/20 opacity-40 grayscale cursor-not-allowed'
-                            : 'border-black/15 dark:border-white/15 cursor-pointer active:scale-95 hover:border-black dark:hover:border-white shadow-xs'
-                        }`}
-                        title={isAttached ? '이미 등록된 사진' : '클릭하여 다음 위치에 삽입'}
-                      >
-                        <img
-                          src={getEffectiveImageUrl(photoItem.img || '')}
-                          alt={displayTitle}
-                          loading="lazy"
-                          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-300 ${
-                            !isAttached ? 'group-hover:scale-105' : ''
-                          }`}
-                        />
-                        {isAttached ? (
-                          <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-micro font-mono font-extrabold uppercase">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                            <span>ATTACHED</span>
-                          </div>
-                        ) : (
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-extrabold p-2 text-center z-10">
-                            + INSERT HERE
-                          </div>
-                        )}
-
-                        <div className="relative z-10 w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent p-2 pt-3 flex flex-col gap-0.5">
-                          <span className="text-[11px] font-bold text-white truncate leading-tight">
-                            {displayTitle}
-                          </span>
-                          {itemDate && (
-                            <span className="text-micro font-mono text-white/70 truncate">
-                              {itemDate}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-3 border-t border-black/15 dark:border-white/15 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
-              <span className="text-meta font-mono text-black/60 dark:text-white/60">
-                * 사진을 클릭하면 현재 선택된 카드의 바로 다음 위치에 삽입됩니다.
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowQuickPhotoPicker(false)}
-                className="btn btn-secondary btn-sm"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Save Success Auto-Dismiss Modal */}
       <ConfirmModal
@@ -724,127 +531,6 @@ export function ManageHubPage(props: ManageHubPageProps) {
         onCancel={() => setShowRestorePresetsConfirm(false)}
       />
 
-      {/* Restore Magazine Sections Modal */}
-      {showRestoreModal && (
-        <div className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150" onClick={() => setShowRestoreModal(false)}>
-          <div className="w-full max-w-lg bg-surface dark:bg-surface-dark border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-black/70 dark:text-white/70" />
-                <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                  Restore magazine sections
-                </h3>
-              </div>
-              <button type="button" onClick={() => setShowRestoreModal(false)} className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-black/70 dark:text-white/70 font-sans leading-relaxed">
-              기존에 누락되었거나 실수로 지워진 매거진 섹션들을 안전하게 복구할 수 있습니다.
-            </p>
-
-            {/* Option 1: Restore Default Magazine Home */}
-            <div className="p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
-                  1. 기본 매거진 홈 & 누락 섹션 복구
-                </span>
-                <button
-                  type="button"
-                  onClick={handleRestoreDefaultSections}
-                  className="btn btn-primary btn-sm"
-                >
-                  기본 홈 복구 실행
-                </button>
-              </div>
-              <span className="text-[11px] text-black/60 dark:text-white/60 leading-relaxed">
-                메인 기본 매거진(MAGAZINE HOME) 및 주요 여정 섹션이 목록에서 누락된 경우 즉시 복원합니다.
-              </span>
-            </div>
-
-            {/* Option 2: Local Backups */}
-            <div className="flex flex-col gap-2 pt-2">
-              <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
-                2. 로컬 백업 스냅샷에서 불러오기 ({availableBackups.length}개 발견)
-              </span>
-              {availableBackups.length === 0 ? (
-                <div className="p-4 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/15 dark:border-white/15">
-                  저장된 로컬 백업 스냅샷이 없습니다.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                  {availableBackups.map(b => (
-                    <div key={b.key} className="p-2.5 border border-black/15 dark:border-white/15 flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                      <div className="min-w-0">
-                        <div className="text-xs font-mono font-bold text-black dark:text-white truncate">
-                          {b.label}
-                        </div>
-                        <div className="text-meta font-mono text-black/60 dark:text-white/60 truncate">
-                          섹션: {b.sections.map(s => s.title).join(', ')}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleApplyBackup(b.sections)}
-                        className="btn btn-secondary btn-sm shrink-0"
-                      >
-                        불러오기
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Option 3: Firestore Data Restore */}
-            <div className="p-3.5 border border-black/20 dark:border-white/20 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-extrabold uppercase text-black dark:text-white">
-                  3. 서버(Firestore) 저장본 확인 및 복원
-                </span>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await handleLoadFirestoreMagazineSections();
-                  }}
-                  disabled={isLoadingFirestoreMag}
-                  className="btn btn-primary btn-sm"
-                >
-                  {isLoadingFirestoreMag ? '조회 중...' : '서버 데이터 조회'}
-                </button>
-              </div>
-              {firestoreMagSections && (
-                <div className="flex items-center justify-between pt-2 border-t border-black/10 dark:border-white/10">
-                  <span className="text-micro font-mono text-black/70 dark:text-white/70">
-                    서버 저장본: 총 {firestoreMagSections.length}개 섹션 ({firestoreMagLoadedAt})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleForceRestoreSectionsFromFirestore();
-                      setShowRestoreModal(false);
-                    }}
-                    className="btn btn-primary btn-sm"
-                  >
-                    이 데이터로 복원
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-3 border-t border-black/10 dark:border-white/10 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowRestoreModal(false)}
-                className="btn btn-secondary"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

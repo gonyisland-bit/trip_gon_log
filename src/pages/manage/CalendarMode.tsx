@@ -7,7 +7,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
     calendarWeatherCities, searchCalendarCityQuery, setSearchCalendarCityQuery, calendarCityMovedEn,
     isSavingCalendar, calendarSaveSuccess, handleAddCalendarWeatherCity,
     handleMoveCalendarWeatherCity, handleRemoveCalendarWeatherCity, handleSaveCalendarSettings,
-    title, handleContainerScroll, isCalendarDirty
+    handleContainerScroll, isCalendarDirty
   } = s;
 
   return (

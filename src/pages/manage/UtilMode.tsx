@@ -1,29 +1,24 @@
 import {
-  Trash2, RotateCcw, ArrowUp, ArrowDown, Upload, MapPin, Check, Sliders, Globe, X, Play, Search,
-  Loader2, Plus, Sparkles, Database, Music, Pause, Edit
+  Trash2, RotateCcw, Sliders, Globe, X, Search,
+  Loader2, Plus, Sparkles, Database, Edit
 } from 'lucide-react';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import type { ManageHubState } from './useManageHubState';
 
 // v1.3.7: rendered inside SYSTEM one part at a time (`only`): the ticker, trip presets, or the
 // database tools and trash. Backdrop, music and map style are each member's own settings now.
-export function UtilMode({ s, only }: { s: ManageHubState; only?: 'ui' | 'map' | 'system' }) {
+export function UtilMode({ s, only }: { s: ManageHubState; only: 'ui' | 'map' | 'system' }) {
   const {
-    trips, trashedJourneys, trashedSections, onRestoreJourney, onRestoreMagazineSection, utilSubTab,
-    setUtilSubTab, presetsList, presetSearchQuery, setPresetSearchQuery, presetThemeFilter,
-    setPresetThemeFilter, setShowRestorePresetsConfirm, bgmTracks, bgmAutoplay, bgmDefaultVolume,
-    setBgmDefaultVolume, bgmShuffle, setBgmShuffle, isUploadingBgm, previewTrackId,
-    isDraggingBgmFile, setIsDraggingBgmFile, bgmFileInputRef, handleToggleBgmTrack,
-    handleMoveBgmTrack, handleDeleteBgmTrack, handleRestoreDefaultBgm, handleToggleBgmAutoplay,
-    handleTogglePreviewTrack, handleBgmFileUpload, handleOpenNewPreset, handleOpenEditPreset,
-    handleDeletePresetClick, gradientEnabled, setGradientEnabled, gradientFrom, setGradientFrom,
-    gradientTo, setGradientTo, title, showMarquee, setShowMarquee, homeMarquee, setHomeMarquee,
-    homeSpeed, setHomeSpeed, mapTileStyle, setMapTileStyle, handleContainerScroll,
-    selectedTrashJourneyIds, selectedTrashSectionIds, handleToggleSelectAllTrash,
-    handleToggleTrashJourney, handleToggleTrashSection, requestPermanentDeleteSingleJourney,
-    requestPermanentDeleteSingleSection, handleBatchRestoreSelectedTrash, requestBatchDeleteSelected,
-    diagReport, isScanning, isCleaning, cleanLog, setCleanLog, handleOneTouchOptimize,
-    isPresetsDirty
+    trashedJourneys, trashedSections, onRestoreJourney, onRestoreMagazineSection,
+    presetsList, presetSearchQuery, setPresetSearchQuery, presetThemeFilter,
+    setPresetThemeFilter, setShowRestorePresetsConfirm, handleOpenNewPreset, handleOpenEditPreset,
+    handleDeletePresetClick, showMarquee, setShowMarquee, homeMarquee, setHomeMarquee,
+    homeSpeed, setHomeSpeed, handleContainerScroll, selectedTrashJourneyIds,
+    selectedTrashSectionIds, handleToggleSelectAllTrash, handleToggleTrashJourney,
+    handleToggleTrashSection, requestPermanentDeleteSingleJourney,
+    requestPermanentDeleteSingleSection, handleBatchRestoreSelectedTrash,
+    requestBatchDeleteSelected, diagReport, isScanning, isCleaning, cleanLog, setCleanLog,
+    handleOneTouchOptimize, isPresetsDirty
   } = s;
 
   return (
@@ -31,66 +26,9 @@ export function UtilMode({ s, only }: { s: ManageHubState; only?: 'ui' | 'map' |
       onScroll={handleContainerScroll}
       className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-6 pb-32 flex flex-col gap-8 overflow-y-auto h-full flex-1 animate-in fade-in duration-200"
     >
-      {!only && (<>
-      {/* Header Title */}
-      <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
-        <div className="flex items-center justify-between">
-          <span className="text-micro font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
-            SYSTEM UTILITIES & GLOBAL CONFIGURATION
-          </span>
-          {(trashedJourneys.length + trashedSections.length) > 0 && (
-            <span className="text-meta font-mono px-2 py-0.5 bg-red-600 text-white uppercase font-bold">
-              TRASH: {trashedJourneys.length + trashedSections.length}
-            </span>
-          )}
-        </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white font-sans">
-          UTILITIES
-        </h2>
-        <p className="text-xs text-black/60 dark:text-white/60 font-mono truncate">
-          [UI 비주얼, 마퀴 배너, BGM 음원, 지도 타일 및 여정 프리셋, 시스템 진단/휴지통]
-        </p>
-      </div>
-
-      {/* Swiss Minimal Sub-Nav Bar (4-Col Grid: Single row on both Mobile & Desktop) */}
-      <div className="sticky top-0 z-20 bg-[#FAF9F6] dark:bg-[#11110F] py-2.5 -mx-4 sm:-mx-8 px-4 sm:px-8 border-b border-black/15 dark:border-white/15">
-        <div className="grid grid-cols-4 gap-1 sm:gap-2 w-full">
-          {([
-            { id: 'ui', label: 'UI' },
-            { id: 'bgm', label: 'BGM' },
-            { id: 'map', label: 'MAP', count: presetsList.length, isDirty: isPresetsDirty },
-            { id: 'system', label: 'SYSTEM', count: trashedJourneys.length + trashedSections.length, alert: (trashedJourneys.length + trashedSections.length) > 0 },
-          ] as const).map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setUtilSubTab(tab.id)}
-              className={`py-2 px-1 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center justify-center gap-1 sm:gap-1.5 shrink-0 ${
-                utilSubTab === tab.id
-                  ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark border-black dark:border-white shadow-xs'
-                  : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-black/[0.02] dark:bg-white/[0.02]'
-              }`}
-            >
-              <span>{tab.label}</span>
-              {'count' in tab && typeof tab.count === 'number' && (
-                <span className={`text-micro sm:text-micro px-1 py-0.2 font-mono font-bold shrink-0 ${
-                  'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark'
-                }`}>
-                  {tab.count}
-                </span>
-              )}
-              {'isDirty' in tab && tab.isDirty && (
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      </>)}
 
       {/* 1. UI (홈 화면 비주얼 & 마퀴 설정) */}
-      {(only || utilSubTab) === 'ui' && (
+      {only === 'ui' && (
         <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
           <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
             <div className="flex items-center gap-2">
@@ -170,7 +108,7 @@ export function UtilMode({ s, only }: { s: ManageHubState; only?: 'ui' | 'map' |
       )}
 
       {/* 4. TRIP PRESETS (여정 추천 템플릿 관리 - MAP 탭에 통합) */}
-      {(only || utilSubTab) === 'map' && (
+      {only === 'map' && (
         <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/15 dark:border-white/15 pb-2">
             <div className="flex items-center gap-2">
@@ -350,7 +288,7 @@ export function UtilMode({ s, only }: { s: ManageHubState; only?: 'ui' | 'map' |
       )}
 
       {/* 5. SYSTEM (DB 최적화 및 휴지통) */}
-      {(only || utilSubTab) === 'system' && (
+      {only === 'system' && (
         <section className="flex flex-col gap-6 pt-2 pb-6">
           <div className="flex items-baseline justify-between flex-wrap gap-2 border-b border-black/15 dark:border-white/15 pb-2">
             <div className="flex items-center gap-2">

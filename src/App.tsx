@@ -87,12 +87,12 @@ function App() {
     nightModeHud, showSplash, handleFinishSplash, triggerNightModeHud, isLoggedIn, setIsLoggedIn,
     isEmailVerified, setIsEmailVerified,
     isAuthReady, superAdminEmail, magazineMoments, magazineSections, homeMagazineSectionId,
-    homeMagazineLimit, magazineHubConfig, archiveHubConfig, showSettings, setShowSettings,
+    homeMagazineLimit, archiveHubConfig, showSettings, setShowSettings,
     isAuthModalOpen, setIsAuthModalOpen, isShareMode, isManageModalOpen, setIsManageModalOpen,
     authModalMode,
     setAuthModalMode, isSigningUpRef, globalWeatherData, globalWeatherCity, isGlobalWeatherBgEnabled, ambienceOverride,
     canWriteContent, myCard,
-    trips, setTrips, plans, setPlans, trashedJourneys, trashedSections, selectedTagFilter, dbError,
+    trips, plans, trashedJourneys, trashedSections, selectedTagFilter, dbError,
     tripsLoaded, plansLoaded,
     timelineData, setTimelineData, flightsByTrip, staysByTrip,
     transitByTrip, homeTitle, homeSubtitle, heroJourneyIds, setHeroJourneyIds, editingTripId, setEditingTripId,
@@ -102,15 +102,13 @@ function App() {
     setSearchFocusItemId, searchFocusTab, setSearchFocusTab, setIsDetailEditing, setIsManageDirty,
     showSaveCompleteModal, showUnsavedModal, journeyDeleteConfirm, setJourneyDeleteConfirm,
     detailSaveRef, manageSaveRef, isNavigating, handleCloseSaveCompleteModal,
-    handleSaveAndNavigate, handleDiscardAndNavigate, handleCancelUnsavedModal, isSuperAdmin, isAdmin,
+    handleSaveAndNavigate, handleDiscardAndNavigate, handleCancelUnsavedModal, isAdmin,
     activeTrip, displayMarqueeText, marqueeTrips, navigateTo,
     handleSearchResultClick, handleMoveToArchive,
-    handleMoveToPlans, handleSaveSettings, saveHeroPrefs, handleSaveMagazineMoments,
-    handleSaveMagazineHubConfig, handleSaveArchiveHubConfig, handleSaveMagazineSections,
-    handleUpdateMagazineSections, handleSaveBgmSettings, handleEditTripSave,
+    handleMoveToPlans, handleSaveSettings, saveHeroPrefs, handleSaveMagazineSections, handleEditTripSave,
     handleCreateTripForCountry, newTripPrefill, setNewTripPrefill, handleCreateJourney, handleSaveJourneyDetails, handleDeleteJourney,
     handleConfirmDeleteJourney, handleRestoreJourney, handlePermanentDeleteJourney,
-    handleDeleteMagazineSection, handleRestoreMagazineSection, handlePermanentDeleteMagazineSection,
+    handleRestoreMagazineSection, handlePermanentDeleteMagazineSection,
     handleBatchPermanentDelete, activeFlights, activeStays, activeTransits, existingTags,
     isHomeGradientActive, appGradientStyle, handleCycleNightMode, handleRemixJourney
   } = s;
@@ -706,71 +704,28 @@ function App() {
                     plans={plans}
                     onNavigate={navigateTo}
                     onSaveTrip={handleEditTripSave}
-                    onDeleteTrip={handleDeleteJourney}
-                    onCloneTrip={async (id: number) => openRemix(id)}
-                    onMoveToPlans={handleMoveToPlans}
-                    onMoveToArchive={handleMoveToArchive}
-                    onReorderTrips={async (orderedIds) => {
-                      const idMap = new Map(orderedIds.map((id, idx) => [id, idx]));
-                      setTrips(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
-                      setPlans(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
-
-                      if (isLoggedIn) {
-                        try {
-                          const batch = writeBatch(db);
-                          orderedIds.forEach((id, idx) => {
-                            const isPlan = plans.some(p => p.id === id);
-                            const col = isPlan ? 'plans' : 'trips';
-                            batch.update(doc(db, 'users', 'public', col, String(id)), { displayOrder: idx });
-                          });
-                          await batch.commit();
-                        } catch (e) {
-                          console.warn('Background Firestore order update skipped/failed:', e);
-                        }
-                      }
-                    }}
                     homeTitle={homeTitle}
                     homeSubtitle={homeSubtitle}
                     heroJourneyIds={heroJourneyIds}
-                    heroAutoSlide={heroAutoSlide}
-                    heroMediaType={heroMediaType}
-                    heroSlideDuration={heroSlideDuration}
                     marqueeShow={marqueeShow}
                     marqueeMessage={marqueeMessage}
                     marqueeSpeed={marqueeSpeed}
-                    homeGradientEnabled={homeGradientEnabled}
-                    homeGradientFrom={homeGradientFrom}
-                    homeGradientTo={homeGradientTo}
-                    homeMagazineSectionId={homeMagazineSectionId}
-                    homeMagazineLimit={homeMagazineLimit}
                     landingHeroImage={landingHeroImage}
                     landingHeroMedia={landingHeroMedia}
-                    currentUserProfile={currentUserProfile}
-                    isSuperAdmin={isSuperAdmin}
                     onSaveAllHomeSettings={handleSaveSettings}
-                    magazineMoments={magazineMoments}
                     magazineSections={magazineSections}
-                    magazineHubConfig={magazineHubConfig}
-                    onSaveMagazineHubConfig={handleSaveMagazineHubConfig}
-                    archiveHubConfig={archiveHubConfig}
-                    onSaveArchiveHubConfig={handleSaveArchiveHubConfig}
                     timelineData={timelineData}
-                    onSaveMagazineMoments={handleSaveMagazineMoments}
                     onSaveMagazineSections={handleSaveMagazineSections}
-                    onUpdateMagazineSections={handleUpdateMagazineSections}
                     trashedJourneys={trashedJourneys}
                     trashedSections={trashedSections}
                     onRestoreJourney={handleRestoreJourney}
                     onPermanentDeleteJourney={handlePermanentDeleteJourney}
-                    onDeleteMagazineSection={handleDeleteMagazineSection}
                     onRestoreMagazineSection={handleRestoreMagazineSection}
                     onPermanentDeleteMagazineSection={handlePermanentDeleteMagazineSection}
                     onBatchPermanentDelete={handleBatchPermanentDelete}
                     isLoggedIn={isLoggedIn}
-                    isDarkMode={isDarkMode}
                     onDirtyChange={setIsManageDirty}
                     saveRef={manageSaveRef}
-                    onSaveBgmSettings={handleSaveBgmSettings}
                   />
                 </div>
               )}

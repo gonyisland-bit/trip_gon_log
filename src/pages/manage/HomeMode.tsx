@@ -1,28 +1,18 @@
 import {
-  ChevronUp, ChevronDown, Trash2, Upload, Calendar, Check, Globe, X, Film, Image as ImageIcon,
-  Search, Loader2, Plus, BookOpen, Layout, RefreshCw
+  ChevronUp, ChevronDown, Upload, X, Film, Image as ImageIcon,
+  Loader2, RefreshCw
 } from 'lucide-react';
 import { LandingHeroMediaItem } from '../../types';
-import { PlaceAutocompleteInput } from '../../components/PlaceAutocompleteInput';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import type { ManageHubState } from './useManageHubState';
 
 export function HomeMode({ s }: { s: ManageHubState }) {
   const {
-    setActiveMode, setLocalLandingHeroImage, localLandingHeroMedia, setLocalLandingHeroMedia,
+    setLocalLandingHeroImage, localLandingHeroMedia, setLocalLandingHeroMedia,
     isUploadingLandingHero, isDraggingLandingHero, setIsDraggingLandingHero,
     replacingLandingHeroIndex, dragOverLandingHeroIndex, setDragOverLandingHeroIndex,
-    isHeroJourneysAccordionOpen, setIsHeroJourneysAccordionOpen, handleLandingHeroUpload,
-    handleReplaceLandingHeroMedia, handleRemoveLandingHeroMedia, handleMoveLandingHeroMedia,
-    handleMoveHeroOrder, handleToggleHero, localJourneys, sectionsList, setActiveMagSectionId, title,
-    setTitle, selectedHeroIds, autoSlide, setAutoSlide, slideDuration, setSlideDuration,
-    playVideoOnActivate, setPlayVideoOnActivate, heroSearchQuery, setHeroSearchQuery,
-    homeMagSectionId, setHomeMagSectionId, homeJourneyLimit, setHomeJourneyLimit,
-    handleContainerScroll, widgetShowCalendar, setWidgetShowCalendar, widgetShowWeather,
-    setWidgetShowWeather, widgetOrder, setWidgetOrder, widgetShowExchange, setWidgetShowExchange,
-    widgetShowDDay, setWidgetShowDDay, widgetCities, isAddingWeatherCity, setIsAddingWeatherCity,
-    newCitySearchQuery, setNewCitySearchQuery, handleAddHomeWeatherCity, handleRemoveHomeWeatherCity,
-    handleMoveHomeWeatherCity, filteredHeroCandidates
+    handleLandingHeroUpload, handleReplaceLandingHeroMedia, handleRemoveLandingHeroMedia,
+    handleMoveLandingHeroMedia, title, setTitle, handleContainerScroll
   } = s;
 
   return (

@@ -1,5 +1,4 @@
-import { Save, Trash2, Check, Search, ShieldCheck, Edit, Users, Mail, KeyRound } from 'lucide-react';
-import { Trip } from '../../types';
+import { Save, Check, ShieldCheck, Edit, Mail } from 'lucide-react';
 import { UserProfileAvatar } from '../../components/UserProfileAvatar';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import type { ManageHubState } from './useManageHubState';
@@ -8,13 +7,10 @@ import { MembersTable } from './MembersTable';
 
 export function UsersMode({ s }: { s: ManageHubState }) {
   const {
-    usersList, userSearchQuery, setUserSearchQuery, setEditingUser, setIsUserEditModalOpen,
-    setDelegatingUser, setIsDelegatingModalOpen, userActionToast, currentAdminEmail,
-    newAdminEmailInput, setNewAdminEmailInput, adminEmailSaving, userFilterStatus,
-    setUserFilterStatus, userCurrentPage, setUserCurrentPage, USERS_PER_PAGE, isTargetAdminAccount,
-    handleUpdateAdminEmail, handleApproveUser, handleVerifyUser, handleRejectUser, handleDeleteUserByAdmin,
-    handleToggleUserPermission, title, handleContainerScroll,
-    passwordResetTarget, setPasswordResetTarget, handleSendPasswordReset
+    usersList, setEditingUser, setIsUserEditModalOpen, userActionToast, currentAdminEmail,
+    newAdminEmailInput, setNewAdminEmailInput, adminEmailSaving, isTargetAdminAccount,
+    handleUpdateAdminEmail, handleContainerScroll, passwordResetTarget,
+    setPasswordResetTarget, handleSendPasswordReset
   } = s;
 
   return (
