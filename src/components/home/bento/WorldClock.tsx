@@ -450,6 +450,8 @@ const BOX = 176;
 export function ClockFace({ cities, base, style, now, together, className = '' }: {
   cities: CityWeatherConfig[]; base: string; style: ClockStyle; now: Date; together: boolean; className?: string;
 }) {
+  // Position comes from the caller only: a fixed `relative` here beat the tile's `absolute inset-0`, the box
+  // collapsed to no height and its overflow hid the whole clock
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   useLayoutEffect(() => {
@@ -463,7 +465,7 @@ export function ClockFace({ cities, base, style, now, together, className = '' }
   }, []);
   const first = cities[0];
   return (
-    <div ref={ref} className={`relative overflow-hidden ${className}`}>
+    <div ref={ref} className={`overflow-hidden ${/\b(absolute|fixed|sticky)\b/.test(className) ? '' : 'relative'} ${className}`}>
       <div className="absolute left-0 top-0" style={{ width: BOX, height: BOX, transform: `scale(${scale})`, transformOrigin: '0 0' }}>
         {together && cities.length > 1
           ? <SeveralCities cities={cities} base={base} style={style} now={now} />
