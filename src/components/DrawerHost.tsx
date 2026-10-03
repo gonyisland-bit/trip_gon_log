@@ -102,8 +102,18 @@ export function DrawerHost({ active, overlay = null, onCloseOverlay, panels, ord
     }
     setOvOpen(false);
     setOvDrag(0);
-    const t = window.setTimeout(() => { setOvMounted(false); setOvReady(false); ovCache.current = null; }, ovExitRef.current ?? EXIT_MS);
-    return () => window.clearTimeout(t);
+    // The journey under the sheet (its map, its state) is taken down once the sheet has gone and the page is idle, so
+    // tearing it down never lands on the last frames of the slide
+    let idle = 0;
+    const unmount = () => { setOvMounted(false); setOvReady(false); ovCache.current = null; };
+    const t = window.setTimeout(() => {
+      const ric = (window as any).requestIdleCallback as ((cb: () => void, o?: { timeout: number }) => number) | undefined;
+      if (ric) idle = ric(unmount, { timeout: 400 }); else unmount();
+    }, ovExitRef.current ?? EXIT_MS);
+    return () => {
+      window.clearTimeout(t);
+      if (idle) (window as any).cancelIdleCallback?.(idle);
+    };
   }, [hasOverlay]);
 
   const onOvDown = (e: React.PointerEvent) => {

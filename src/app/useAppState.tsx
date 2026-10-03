@@ -1511,8 +1511,15 @@ export function useAppState() {
     // page under them keeps its scroll
     const drawerNav = isPhoneViewport() && isDrawerView(effectiveView) && (currentView === 'home' || isDrawerView(currentView));
     const leavingDrawer = isPhoneViewport() && effectiveView === 'home' && isDrawerView(currentView);
+    // A signed-in phone opens a journey as a sheet over home or a hub drawer (App's detailOverlay) and closes it back
+    // there: the sheet slides on its own. A View Transition on top froze the screen for a snapshot and cross-faded
+    // under the sliding sheet (the stall when a journey closed), and the jump to the top lost home's scroll.
+    const overlayNav = isPhoneViewport() && isLoggedIn && (
+      (effectiveView === 'detail' && (currentView === 'home' || isDrawerView(currentView))) ||
+      (currentView === 'detail' && (effectiveView === 'home' || isDrawerView(effectiveView)))
+    );
     // Hub-to-hub changes cross-fade with a View Transition; same-view updates stay a plain transition
-    if (effectiveView !== currentView && !drawerNav && !leavingDrawer) {
+    if (effectiveView !== currentView && !drawerNav && !leavingDrawer && !overlayNav) {
       runViewTransition(applyView, (fn) => startTransition(fn));
     } else {
       startTransition(applyView);
@@ -1522,7 +1529,7 @@ export function useAppState() {
     }, 280);
 
     // Scroll to top when changing views (a drawer opening or closing leaves home where it was)
-    if (!drawerNav && !leavingDrawer) { noteAppScroll(); window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
+    if (!drawerNav && !leavingDrawer && !overlayNav) { noteAppScroll(); window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
 
     try {
       sessionStorage.setItem('lastView', effectiveView);
