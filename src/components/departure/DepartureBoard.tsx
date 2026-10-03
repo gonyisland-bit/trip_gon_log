@@ -450,7 +450,7 @@ export function DepartureBoard({
 
               {/* The lobby window keeps the picture's own proportions, so nothing of it is cut */}
               <div className="relative w-full aspect-[1200/896] rounded-card overflow-hidden">
-                <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} />
+                <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} tickets={tickets} activeId={ticket?.id} />
                 {skyNote && (
                   <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none whitespace-nowrap">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
