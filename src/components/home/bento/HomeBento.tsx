@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowRight, ArrowUpRight, BookOpen, Bookmark, CalendarDays, Clock, Coins, History, Luggage, Map as MapIcon, Moon, Plus, Sun, Ticket, Users,
+  ArrowRight, ArrowUpRight, BookOpen, Bookmark, CalendarDays, Coins, History, Loader2, LocateFixed, Luggage, Map as MapIcon, Moon, Plus, Sun, Ticket, Users,
 } from 'lucide-react';
 import { auth } from '../../../firebase';
 import type { CityWeatherConfig, Plan, SpotPocketItem, Trip } from '../../../types';
@@ -11,7 +11,7 @@ import { useFriends } from '../../friends/useFriends';
 import { useCitiesWeather } from '../../weather/useCitiesWeather';
 import { resolveWeatherEffectType } from '../../WeatherEffectLayer';
 import { cleanCityDisplayName, getWeatherMeta } from '../../../utils/weatherApi';
-import { searchCities, useMyCities } from '../../../utils/myCities';
+import { useMyCities } from '../../../utils/myCities';
 import { useExchangeRates } from '../../../utils/exchangeRates';
 import { getSavedPockets, subscribePockets } from '../../../utils/pocketStorage';
 import { cardCoverUrl } from '../../../utils/journeyThumbs';
@@ -20,10 +20,12 @@ import { isTileOn, useHomeWidgets, type BentoTileId } from '../../../utils/homeW
 import { openJourneyFromCard, warmJourney } from '../../../utils/journeyOpen';
 import { TicketPass } from '../../ui/TicketPass';
 import { DotMap } from './DotMap';
+import { useCurrentPlace } from '../../../utils/currentPlace';
+import { CURRENT_LOCATION_EN } from '../../../utils/userPrefs';
 import { MultiClock, SingleClock, clockGround, useClockSetup, useNow, zoneOf } from './WorldClock';
 import { BentoSheet, type BentoCtx } from './BentoSheet';
 import {
-  describeJourney, journeyCities, journeyMonth, journeyPoints, journeyStats, monthCells, focusPoints, focusTrip, pickMemory, rangeLabel,
+  describeJourney, journeyMonth, journeyPoints, journeyStats, monthCells, focusPoints, focusTrip, pickMemory,
   type FocusTrip, type Journey,
 } from './bentoData';
 import type { DepartureTicket } from '../../departure/departureData';
@@ -56,8 +58,8 @@ const SPAN: Record<Span, string> = { cube: '', wide: 'col-span-2', hero: 'col-sp
 const kicker = 'font-mono text-micro font-bold uppercase tracking-[0.13em] opacity-70 flex items-center gap-1.5 pr-8 min-w-0';
 const mono = 'font-mono tabular-nums';
 
-function Tile({ tint, span = 'cube', label, onOpen, children, className = '', noGo, style }: {
-  tint: Tint; span?: Span; label: string; onOpen: () => void; children: React.ReactNode; className?: string; noGo?: boolean; style?: React.CSSProperties;
+function Tile({ tint, span = 'cube', label, onOpen, children, className = '', noGo, style, attrs }: {
+  tint: Tint; span?: Span; label: string; onOpen: () => void; children: React.ReactNode; className?: string; noGo?: boolean; style?: React.CSSProperties; attrs?: Record<string, string | undefined>;
 }) {
   return (
     <div
@@ -67,6 +69,7 @@ function Tile({ tint, span = 'cube', label, onOpen, children, className = '', no
       onClick={onOpen}
       onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); onOpen(); } }}
       style={style}
+      {...attrs}
       className={`tgl-press relative ${SPAN[span]} ${TINT[tint]} rounded-card p-3.5 flex flex-col gap-0.5 min-w-0 min-h-0 overflow-hidden cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${className}`}
     >
       {children}
@@ -472,12 +475,15 @@ function TerminalTile({ focus, tickets, onOpen }: { focus: FocusTrip | null; tic
 // own sky (css, index.css .tgl-wx), and night turns any of them dark. Tapping another place in the list switches the tile.
 function WeatherTile({ onOpen }: { onOpen: () => void }) {
   const { list } = useMyCities();
-  const key = list.slice(0, 4).map(c => c.nameEn).join('|');
-  const cities = useMemo(() => list.slice(0, 4), [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { place, busy, locate } = useCurrentPlace();
+  // The member's places, and "here" first: the current location is a place of its own beside the main city and favourites
+  const key = `${place ? `${place.lat},${place.lng}` : ''}|${list.filter(c => c.nameEn !== CURRENT_LOCATION_EN).slice(0, 4).map(c => c.nameEn).join('|')}`;
+  const cities = useMemo(() => [...(place ? [place] : []), ...list.filter(c => c.nameEn !== CURRENT_LOCATION_EN).slice(0, 4)], [key]); // eslint-disable-line react-hooks/exhaustive-deps
   const { now, prefetch } = useCitiesWeather(cities);
   useEffect(() => { prefetch(); }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
   const [picked, setPicked] = useState<string | null>(null);
-  const cur: CityWeatherConfig | undefined = cities.find(c => c.nameEn === picked) ?? cities[0];
+  const cur: CityWeatherConfig | undefined = cities.find(c => c.nameEn === picked) ?? cities.find(c => c.nameEn !== CURRENT_LOCATION_EN) ?? cities[0];
+  const here = !!place && cur?.nameEn === place.nameEn;
   const w = cur ? now[cur.nameEn] : undefined;
   const pop = w?.forecast?.[0]?.precipitationProb;
   const mood = w ? resolveWeatherEffectType(w.weatherCode, pop) : 'clear';
@@ -497,7 +503,7 @@ function WeatherTile({ onOpen }: { onOpen: () => void }) {
       className="tgl-wx tgl-press relative col-span-2 rounded-card p-3.5 flex gap-3 min-w-0 min-h-0 overflow-hidden cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
     >
       <div className="relative z-[1] flex-1 min-w-0 flex flex-col">
-        <Kicker icon={night ? Moon : Sun}>날씨 · {cur ? cleanCityDisplayName(cur.name) : ''}</Kicker>
+        <Kicker icon={here ? LocateFixed : night ? Moon : Sun}>날씨 · {cur ? cleanCityDisplayName(cur.name) : ''}</Kicker>
         {w && meta && Icon ? (
           <>
             <span className="mt-1 flex items-center gap-2">
@@ -530,7 +536,7 @@ function WeatherTile({ onOpen }: { onOpen: () => void }) {
       </div>
       {/* The member's places: tap one and the tile becomes its weather */}
       <div className="relative z-[1] w-[34%] max-w-[150px] shrink-0 flex flex-col justify-end gap-1" role="group" aria-label="내 도시">
-        {cities.map(c => {
+        {cities.filter(c => c.nameEn !== CURRENT_LOCATION_EN).map(c => {
           const d = now[c.nameEn];
           const m = d ? getWeatherMeta(d.weatherCode, d.forecast?.[0]?.precipitationProb, d.temp) : null;
           const CIcon = m?.icon;
@@ -543,13 +549,28 @@ function WeatherTile({ onOpen }: { onOpen: () => void }) {
               onClick={(e) => { e.stopPropagation(); setPicked(c.nameEn); }}
               className={`h-[29px] px-2.5 rounded-full flex items-center gap-1.5 text-left cursor-pointer transition-colors duration-fast ${active ? 'bg-white/80 dark:bg-white/20 shadow-sm' : 'bg-white/35 dark:bg-white/[0.08] hover:bg-white/55 dark:hover:bg-white/[0.14]'}`}
             >
-              <span className={`flex-1 min-w-0 truncate text-[12px] ${active ? 'font-extrabold' : 'font-bold'}`}>{cleanCityDisplayName(c.name)}</span>
+              <span className={`flex-1 min-w-0 truncate text-[11.5px] ${active ? 'font-extrabold' : 'font-bold'}`}>{cleanCityDisplayName(c.name)}</span>
               {CIcon && <CIcon className={`w-3.5 h-3.5 shrink-0 ${m!.colorClass}`} aria-hidden />}
               <span className={`${mono} text-[11.5px] font-bold shrink-0`}>{d ? `${d.temp}°` : '—'}</span>
             </button>
           );
         })}
       </div>
+      {/* Here: the device's own place, an icon beside the arrow, apart from the member's cities; the first tap asks for location */}
+      <button
+        type="button"
+        aria-label="현재 위치"
+        aria-pressed={here}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (place) { setPicked(place.nameEn); return; }
+          const found = await locate();
+          if (found) setPicked(found.nameEn);
+        }}
+        className={`absolute top-3 right-[46px] z-[2] w-[26px] h-[26px] rounded-full grid place-items-center cursor-pointer transition-colors duration-fast ${here ? 'bg-white/85 dark:bg-white/25 shadow-sm' : 'bg-black/[0.08] dark:bg-white/10 hover:bg-black/[0.14]'}`}
+      >
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" aria-hidden />}
+      </button>
       <span className="absolute top-3 right-3 z-[2] w-[26px] h-[26px] rounded-full grid place-items-center bg-black/[0.08] dark:bg-white/10 pointer-events-none" aria-hidden><ArrowUpRight className="w-3.5 h-3.5" /></span>
     </div>
   );
@@ -597,7 +618,7 @@ function ClockTile({ nextCity, onOpen }: { nextCity?: string; onOpen: () => void
   const together = setup.multi && setup.selected.length > 1;
   const night = !together && !!first && zoneOf(first.timezone || 'UTC', now).night;
   return (
-    <Tile tint="bare" label="세계시간" onOpen={onOpen} className={`!p-0 ${clockGround(setup.style, night)}`}>
+    <Tile tint="bare" label="세계시간" onOpen={onOpen} className={`!p-0 tgl-clock ${clockGround(setup.style, night)}`} attrs={{ 'data-night': night ? '' : undefined }}>
       {together
         ? <MultiClock cities={setup.selected} base={base} style={setup.style} now={now} />
         : first && <SingleClock city={first} base={base} style={setup.style} now={now} />}

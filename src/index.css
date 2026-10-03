@@ -1469,3 +1469,8 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 @keyframes tglWxRain { to { background-position: -30px 30px; } }
 @keyframes tglWxSnow { to { background-position: 6px 34px, 15px 33px; } }
 @media (prefers-reduced-motion: reduce) { .tgl-wx::before { animation: none; } }
+
+/* Clock faces (components/home/bento/WorldClock): the colour behind the hands and the dial, so a hand has a halo of it */
+.tgl-clock { --clock-ground: #FFFDF9; }
+.dark .tgl-clock { --clock-ground: #1A1A17; }
+.tgl-clock[data-night], .dark .tgl-clock[data-night] { --clock-ground: #1B2438; }
