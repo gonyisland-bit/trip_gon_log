@@ -345,6 +345,8 @@ function App() {
         weatherCityName={globalWeatherCity?.name}
         weatherCityEn={globalWeatherCity?.nameEn}
         weatherTemp={globalWeatherData?.temp}
+        weatherLat={globalWeatherCity?.lat}
+        weatherLng={globalWeatherCity?.lng}
         precipitationProb={ambienceOverride?.precipitationProb ?? (globalWeatherData?.forecast?.[0]?.precipitationProb ?? 0)}
       />
     </Suspense>

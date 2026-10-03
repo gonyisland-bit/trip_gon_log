@@ -1475,18 +1475,37 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 .dark .tgl-clock { --clock-ground: #1A1A17; }
 .tgl-clock[data-night], .dark .tgl-clock[data-night] { --clock-ground: #1B2438; }
 
-/* The terminal window's motion (TerminalScene): a plane climbing beyond the glass, and the departure board's rows
-   flipping down like a split-flap board when they change */
-.tgl-term-plane { width: 9%; aspect-ratio: 60 / 38; top: 47%; left: -12%; opacity: 0.92; animation: tglTermTakeoff 26s cubic-bezier(.45, 0, .7, 1) infinite 4s; }
-@keyframes tglTermTakeoff {
-  0% { left: -12%; top: 47%; transform: rotate(0deg) scale(1); }
-  30% { left: 38%; top: 46%; transform: rotate(-4deg) scale(.92); }
-  48% { left: 78%; top: 30%; transform: rotate(-14deg) scale(.7); }
-  52%, 100% { left: 112%; top: 22%; transform: rotate(-16deg) scale(.6); }
+/* The terminal window's motion (TerminalScene, v1.3.8): clouds drifting and planes crossing the sky beyond the glass,
+   bears waddling across the floor, the departure board's rows flipping down like a split-flap board when they change.
+   Everything stops while the scene is off screen (.tgl-term-paused) or motion is reduced. */
+.tgl-term-cloud { animation: tglTermCloud linear infinite; will-change: transform; }
+@keyframes tglTermCloud { from { transform: translateX(-40cqw); } to { transform: translateX(110cqw); } }
+.tgl-term-climb { left: 0; top: 0; animation: tglTermClimb 24s cubic-bezier(.4, 0, .75, 1) infinite 3s; transform: translate(-30cqw, 52cqh); will-change: transform; }
+@keyframes tglTermClimb {
+  0% { transform: translate(-30cqw, 52cqh) rotate(0deg) scale(1); }
+  40% { transform: translate(40cqw, 40cqh) rotate(-9deg) scale(.86); }
+  62%, 100% { transform: translate(115cqw, 8cqh) rotate(-14deg) scale(.66); }
 }
+.tgl-term-cruise { left: 0; top: 0; animation: tglTermCruise 46s linear infinite 14s; transform: translate(110cqw, 16cqh); will-change: transform; }
+@keyframes tglTermCruise { 0% { transform: translate(110cqw, 16cqh); } 70%, 100% { transform: translate(-12cqw, 11cqh); } }
+.tgl-term-blink { animation: tglTermBlink 1.4s steps(2, jump-none) infinite; }
+@keyframes tglTermBlink { 0% { opacity: 1; } 100% { opacity: .15; } }
+.tgl-term-stars {
+  background-image: radial-gradient(circle, rgba(255,255,255,.9) 1px, transparent 1.6px), radial-gradient(circle, rgba(255,255,255,.6) .8px, transparent 1.3px);
+  background-size: 53px 41px, 31px 27px; background-position: 7px 5px, 19px 13px;
+}
+.tgl-term-lamps { background: radial-gradient(ellipse 9% 70% at 29.7% 0%, rgba(255,226,160,.38), transparent), radial-gradient(ellipse 9% 70% at 49.9% 0%, rgba(255,226,160,.38), transparent), radial-gradient(ellipse 9% 70% at 70.2% 0%, rgba(255,226,160,.38), transparent); }
+.tgl-term-waddle { animation: tglTermWaddle 620ms ease-in-out infinite; }
+@keyframes tglTermWaddle {
+  0%, 100% { transform: translateY(0) rotate(-1.6deg); }
+  25% { transform: translateY(-3.5%) rotate(0deg); }
+  50% { transform: translateY(0) rotate(1.6deg); }
+  75% { transform: translateY(-3.5%) rotate(0deg); }
+}
+.tgl-term-paused .tgl-term-cloud, .tgl-term-paused .tgl-term-climb, .tgl-term-paused .tgl-term-cruise, .tgl-term-paused .tgl-term-blink { animation-play-state: paused; }
 @keyframes tglBoardRow { from { transform: perspective(240px) rotateX(-88deg); opacity: .2; } to { transform: perspective(240px) rotateX(0); opacity: 1; } }
 .tgl-boardrow { transform-origin: 50% 0; animation: tglBoardRow 360ms cubic-bezier(.2, .8, .2, 1) both; }
 @media (prefers-reduced-motion: reduce) {
-  .tgl-boardrow { animation: none; }
-  .tgl-term-plane { display: none; }
+  .tgl-boardrow, .tgl-term-cloud, .tgl-term-cruise, .tgl-term-blink, .tgl-term-waddle { animation: none; }
+  .tgl-term-climb { display: none; }
 }

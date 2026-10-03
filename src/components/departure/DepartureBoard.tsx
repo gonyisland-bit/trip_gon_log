@@ -161,6 +161,9 @@ interface DepartureBoardProps {
   weatherCityName?: string;
   weatherCityEn?: string;
   weatherTemp?: number;
+  /** Where the weather city is, for the time of day beyond the lobby's glass */
+  weatherLat?: number;
+  weatherLng?: number;
   /** Which tab opens first */
   initialTab?: TerminalTab;
   trips?: Trip[];
@@ -176,7 +179,7 @@ export type TerminalTab = 'counter' | 'storage';
 
 export function DepartureBoard({
   onClose, onBoard, onPlan, initialTicketId, covered = false, isDarkMode = true,
-  weatherCode, precipitationProb = 0, weatherCityName, weatherCityEn, weatherTemp,
+  weatherCode, precipitationProb = 0, weatherCityName, weatherCityEn, weatherTemp, weatherLat, weatherLng,
   initialTab = 'counter', trips = [], plans = [], flightsByTrip = {}, staysByTrip = {}, transitByTrip = {}, onOpenBooking,
 }: DepartureBoardProps) {
   const [tab, setTab] = useState<TerminalTab>(initialTab);
@@ -449,8 +452,8 @@ export function DepartureBoard({
               )}
 
               {/* The lobby window keeps the picture's own proportions, so nothing of it is cut */}
-              <div className="relative w-full aspect-[1200/896] rounded-card overflow-hidden">
-                <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} tickets={tickets} activeId={ticket?.id} />
+              <div className="relative w-full aspect-[2000/1493] rounded-card overflow-hidden">
+                <TerminalScene isDarkMode={isDarkMode} weatherType={weatherType} intensity={weatherIntensity} lat={weatherLat} lng={weatherLng} tickets={tickets} activeId={ticket?.id} />
                 {skyNote && (
                   <div key={skyNote} role="status" className="tgl-rise absolute left-1/2 -translate-x-1/2 top-[14%] px-3 h-8 inline-flex items-center gap-2 rounded-full bg-[#0B0B0C]/80 text-white font-mono text-meta tracking-wider pointer-events-none whitespace-nowrap">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
