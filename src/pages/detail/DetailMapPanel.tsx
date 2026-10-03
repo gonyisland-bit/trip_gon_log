@@ -153,7 +153,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                 <button
                   type="button"
                   onClick={() => setIsRadarMinimized(false)}
-                  className={`absolute ${hasPlaylog ? 'bottom-[4.25rem]' : 'bottom-4'} left-4 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1 border border-black/20 dark:border-white/20 shadow-lg rounded-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer hover:border-red-500 transition-all`}
+                  className={`absolute ${hasPlaylog ? 'bottom-[4.25rem] max-md:bottom-[5.5rem]' : 'bottom-4 max-md:bottom-9'} left-4 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1 border border-black/20 dark:border-white/20 shadow-lg rounded-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer hover:border-red-500 transition-all`}
                   title="근접 레이더 위젯 열기"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
@@ -167,7 +167,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
 
             // 2. Expanded Mode: Ultra-Compact Minimal HUD
             return (
-              <div className={`absolute ${hasPlaylog ? 'bottom-[4.25rem]' : 'bottom-4'} left-4 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1.5 border border-black/20 dark:border-white/20 shadow-xl rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none max-w-[calc(100vw-32px)]`}>
+              <div className={`absolute ${hasPlaylog ? 'bottom-[4.25rem] max-md:bottom-[5.5rem]' : 'bottom-4 max-md:bottom-9'} left-4 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black px-2.5 py-1.5 border border-black/20 dark:border-white/20 shadow-xl rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none max-w-[calc(100vw-32px)]`}>
                 {/* Simple Radar Pulse Indicator */}
                 <div className="relative flex items-center justify-center shrink-0 w-3.5 h-3.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping absolute" />
@@ -268,7 +268,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                   }
                 }
               }}
-              className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden bg-surface/95 dark:bg-surface-dark/95 text-ink dark:text-ink-dark backdrop-blur-md shadow-[0_6px_20px_rgba(0,0,0,0.16)] ${
+              className={`absolute bottom-4 max-md:bottom-9 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden bg-surface/95 dark:bg-surface-dark/95 text-ink dark:text-ink-dark backdrop-blur-md shadow-[0_6px_20px_rgba(0,0,0,0.16)] ${
                 isCinematicMode
                   ? 'h-11 w-[calc(100%-1.5rem)] max-w-[440px] px-1.5 gap-1'
                   : 'h-10 w-auto pl-1 pr-4 gap-2 hover:scale-[1.03] active:scale-95 cursor-pointer'
@@ -312,7 +312,12 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                     {/* The spot, its place in the run and a progress bar that fills while it plays */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5 px-2">
                       <div className="flex items-center justify-between gap-2 min-w-0">
-                        <span className="text-[13px] font-extrabold tracking-tight truncate">{currentCinematicItem.place || '스팟'}</span>
+                        <span className="min-w-0 flex items-baseline gap-1.5">
+                          <span className="text-[13px] font-extrabold tracking-tight truncate">{currentCinematicItem.place || '스팟'}</span>
+                          <span className="font-mono text-micro font-bold text-black/50 dark:text-white/50 shrink-0 tabular-nums whitespace-nowrap">
+                            {currentCinematicItem.dateKey.slice(5).replace('-', '.')}{currentCinematicItem.time ? ` ${currentCinematicItem.time}` : ''}
+                          </span>
+                        </span>
                         <span className="font-mono text-micro font-bold text-black/50 dark:text-white/50 shrink-0 tabular-nums">
                           {cinematicIndex + 1}/{cinematicItems.length}
                         </span>
@@ -326,15 +331,22 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setCinematicSpeed(sp => sp === 3600 ? 1800 : (sp === 1800 ? 7200 : 3600))}
-                      className="tgl-press h-7 min-w-9 px-2 shrink-0 rounded-full bg-black/[0.06] dark:bg-white/10 font-mono text-meta font-bold cursor-pointer"
-                      title="재생 속도 (1X / 2X / 0.5X)"
-                      aria-label="재생 속도"
-                    >
-                      {cinematicSpeed === 1800 ? '2X' : (cinematicSpeed === 7200 ? '.5X' : '1X')}
-                    </button>
+                    {/* Pace: three steps side by side, the one in use filled */}
+                    <div role="radiogroup" aria-label="재생 속도" className="shrink-0 flex items-center h-7 p-0.5 rounded-full bg-black/[0.06] dark:bg-white/10">
+                      {([[7200, '.5'], [3600, '1'], [1800, '2']] as const).map(([ms, label]) => (
+                        <button
+                          key={ms}
+                          type="button"
+                          role="radio"
+                          aria-checked={cinematicSpeed === ms}
+                          aria-label={`${label === '.5' ? '0.5' : label}배속`}
+                          onClick={() => setCinematicSpeed(ms)}
+                          className={`h-6 min-w-6 px-1 rounded-full font-mono text-micro font-bold tabular-nums cursor-pointer ${cinematicSpeed === ms ? 'bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark' : 'text-black/55 dark:text-white/55'}`}
+                        >
+                          {label}x
+                        </button>
+                      ))}
+                    </div>
                     <button type="button" aria-label="종료 (Esc)" title="종료 (Esc)" className={ctl} onClick={() => setIsCinematicMode(false)}>
                       <CloseIcon className="w-4 h-4" aria-hidden />
                     </button>

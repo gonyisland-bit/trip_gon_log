@@ -82,6 +82,9 @@ export interface JourneyDetailPageProps {
   myName?: string;
 }
 
+/** A leg longer than this zooms the map out to show the way (MapArea) and gets extra time in the log */
+const LONG_LEG_METERS = 2500;
+
 export function useJourneyDetailState(props: JourneyDetailPageProps) {
   // Friends to pick as members on the journey page (v1.3.7); a picked friend sees the journey
   const { friends: myFriends } = useFriends(currentUid());
@@ -490,8 +493,9 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     if (prevSelectedDateRef.current !== selectedDate) {
       prevSelectedDateRef.current = selectedDate;
 
-      // When date changes while cinematic mode is active, reset cinematic index to the new date's first spot
-      if (isCinematicMode && cinematicItems.length > 0) {
+      // A date chip picked while the log plays starts that day's first spot. A date the player set itself (or that
+      // came with a spot picked in the list) already holds the spot, so it is left alone instead of jumping back
+      if (isCinematicMode && cinematicItems.length > 0 && currentCinematicItem?.dateKey !== selectedDate) {
         if (selectedDate === 'ALL') {
           setCinematicIndex(0);
         } else {
@@ -509,7 +513,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   }, [selectedDate, isCinematicMode, cinematicItems]);
 
   // Perfectly safe vertical-only scroll that never alters parent scrollLeft or flex container boundaries
-  const scrollToTimelineItemSafe = useCallback((itemId: number, align: 'center' | 'top' = 'center') => {
+  const scrollToTimelineItemSafe = useCallback((itemId: number, align: 'center' | 'top' = 'center', ifNeeded = false) => {
     const container = tabContentRef.current;
     if (!container) return;
     const el = itemRefs.current[itemId] || document.getElementById(`timeline-item-${itemId}`);
@@ -517,6 +521,8 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
     const containerRect = container.getBoundingClientRect();
     const elRect = el.getBoundingClientRect();
+    // Already in full view: no scroll, so the list does not twitch on every step
+    if (ifNeeded && elRect.top >= containerRect.top + 8 && elRect.bottom <= containerRect.bottom - 8) return;
     const relativeTop = elRect.top - containerRect.top + container.scrollTop;
 
     const targetTop = align === 'center'
@@ -537,9 +543,10 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
 
     // Smoothly scroll timeline item into view only in timeline tab
     if (activeTab === 'timeline') {
-      setTimeout(() => {
-        scrollToTimelineItemSafe(currentCinematicItem.id, 'center');
+      const t = setTimeout(() => {
+        scrollToTimelineItemSafe(currentCinematicItem.id, 'center', true);
       }, 150);
+      return () => clearTimeout(t);
     }
   }, [isCinematicMode, cinematicIndex, currentCinematicItem, activeTab, scrollToTimelineItemSafe]);
 
@@ -566,7 +573,13 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     }
 
     cinematicStartTimeRef.current = Date.now();
-    const delay = Math.max(100, cinematicRemainingRef.current);
+    // A long leg (the map zooms out to show the way) gets more time, so the next spot never starts mid-flight
+    const prevItem = cinematicItems[cinematicIndex - 1];
+    const curItem = cinematicItems[cinematicIndex];
+    const longLeg = cinematicRemainingRef.current === cinematicSpeed && prevItem && curItem
+      && typeof prevItem.lat === 'number' && typeof prevItem.lng === 'number' && typeof curItem.lat === 'number' && typeof curItem.lng === 'number'
+      && calculateDistanceInMeters(prevItem.lat, prevItem.lng, curItem.lat, curItem.lng) > LONG_LEG_METERS;
+    const delay = Math.max(100, cinematicRemainingRef.current + (longLeg ? Math.round(1400 * cinematicSpeed / 3600) : 0));
 
     cinematicTimerRef.current = setTimeout(() => {
       cinematicRemainingRef.current = cinematicSpeed;
@@ -576,7 +589,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     return () => {
       if (cinematicTimerRef.current) clearTimeout(cinematicTimerRef.current);
     };
-  }, [isCinematicMode, isCinematicPaused, cinematicIndex, cinematicItems.length, cinematicSpeed]);
+  }, [isCinematicMode, isCinematicPaused, cinematicIndex, cinematicItems, cinematicSpeed]);
 
   // Turn off cinematic mode when user edits or changes tab away from timeline or gallery
   useEffect(() => {
@@ -603,7 +616,13 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     }
   }, [expandedItemId, activeTab, isCinematicMode, scrollToTimelineItemSafe]);
 
+  // On a phone the log needs the map: it opens the map half, and folding the map away pauses the log
+  useEffect(() => {
+    if (mobileSheetSnap === 'expanded' && isCinematicModeRef.current && !isCinematicPausedRef.current) setIsCinematicPaused(true);
+  }, [mobileSheetSnap]);
+
   const handlePlayFromItem = (itemId: number) => {
+    setMobileSheetSnap('half');
     setActiveTab('timeline');
     const foundIdx = cinematicItems.findIndex(i => i.id === itemId);
     if (foundIdx !== -1) {
@@ -1900,6 +1919,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const handleStartPlaylog = () => {
     const items = cinematicItemsRef.current;
     if (items.length === 0) return;
+    setMobileSheetSnap('half');
     setActiveTab('timeline');
     const startIndex = getPlaylogStartIndex();
     setCinematicIndex(startIndex);
@@ -2248,9 +2268,20 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       targetId = Math.floor(id / 10);
     }
 
+    // While the log plays a tap moves the player to that spot (it never folds it); the player's own sync then expands
+    // and scrolls it once
+    if (isCinematicMode && cinematicItems.length > 0) {
+      const targetIdx = cinematicItems.findIndex(i => i.id === targetId);
+      if (targetIdx !== -1) {
+        cinematicRemainingRef.current = cinematicSpeed;
+        setCinematicIndex(targetIdx);
+        return;
+      }
+    }
+
     setExpandedItemId(prevId => prevId === targetId ? null : targetId);
 
-    // Sync cinematic player spot
+    // Keep the player's place in step, so starting the log goes on from here
     if (cinematicItems.length > 0) {
       const targetIdx = cinematicItems.findIndex(i => i.id === targetId);
       if (targetIdx !== -1) {
@@ -2258,7 +2289,8 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       }
     }
 
-    if (expandedItemId !== targetId && itemRefs.current[targetId]) {
+    // The timeline scrolls from its expanded-item effect; the other tabs scroll here
+    if (activeTab !== 'timeline' && expandedItemId !== targetId && itemRefs.current[targetId]) {
       setTimeout(() => {
         itemRefs.current[targetId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);

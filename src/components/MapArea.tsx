@@ -1172,11 +1172,19 @@ export function MapArea({
                 travelerMarkerRef.current.setLatLng([prevCoords.lat, prevCoords.lng]);
               }
 
-              const startTime = performance.now();
-              const animDuration = 1600 * ((cinematicSpeed || 3600) / 3600); // Equal baseline 1X speed for both walker and vehicles
+              // A long leg (another district or city) is shown whole: the camera steps back to fit both spots and the
+              // traveller crosses it, then the camera settles on the new spot. Panning street-level across it showed
+              // grey, unloaded tiles and jumped. The journey's log gives such a leg the extra time (LONG_LEG_METERS).
+              const longLeg = calculateDistanceInMeters(prevCoords.lat, prevCoords.lng, nextCoords.lat, nextCoords.lng) > 2500;
+              if (longLeg) {
+                map.fitBounds(L.latLngBounds([prevCoords.lat, prevCoords.lng], [nextCoords.lat, nextCoords.lng]), { padding: [56, 56], maxZoom: targetZoom, animate: true, duration: 0.5 });
+              }
+              const startTime = performance.now() + (longLeg ? 500 : 0);
+              const animDuration = (longLeg ? 2400 : 1600) * ((cinematicSpeed || 3600) / 3600); // Equal baseline 1X speed for both walker and vehicles
 
               // 예전 방식으로 완벽 복원: 지도의 줌 레벨을 일정하게 유지하며 카메라가 이동객체를 부드럽게 연속 추적
               const step = (now: number) => {
+                if (now < startTime) { travelerAnimRef.current = requestAnimationFrame(step); return; }
                 const elapsed = now - startTime;
                 const progress = Math.min(1, elapsed / animDuration);
                 // Smooth Swiss EaseInOutCubic (비단결 같은 가감속 곡선)
@@ -1191,8 +1199,8 @@ export function MapArea({
                   travelerMarkerRef.current.setLatLng([curLat, curLng]);
                 }
 
-                // 줌 레벨 변동 없이 부드러운 연속 카메라 중심 트래킹 (60~120fps 완벽 동기화)
-                map.panTo([curLat, curLng], { animate: false });
+                // 줌 레벨 변동 없이 부드러운 연속 카메라 중심 트래킹 (60~120fps 완벽 동기화). 먼 구간은 카메라가 두 지점을 다 보여 주므로 그대로 둠
+                if (!longLeg) map.panTo([curLat, curLng], { animate: false });
 
                 if (progress < 1) {
                   travelerAnimRef.current = requestAnimationFrame(step);
@@ -1208,7 +1216,8 @@ export function MapArea({
                     travelerMarkerRef.current.setIcon(standingIcon);
                     travelerMarkerRef.current.setLatLng([nextCoords.lat, nextCoords.lng]);
                   }
-                  map.panTo([nextCoords.lat, nextCoords.lng], { animate: false });
+                  if (longLeg) map.setView([nextCoords.lat, nextCoords.lng], targetZoom, { animate: true });
+                  else map.panTo([nextCoords.lat, nextCoords.lng], { animate: false });
                   travelerAnimRef.current = null;
                 }
               };
