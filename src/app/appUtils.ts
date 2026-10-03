@@ -89,9 +89,12 @@ export function getInitialNavigationState(): { view: string; tripId: number | nu
       return { view: 'detail', tripId: idParam ? Number(idParam) : null, isShare: false };
     }
 
-    const lastView = sessionStorage.getItem('lastView') || localStorage.getItem('lastView');
+    // Only a reload inside the same session returns to the page it was on. A fresh start of the app (a new tab,
+    // the installed app opened again) begins at home: the old device-wide copy used to bring back whatever page
+    // was open when the app was last closed (v1.3.8).
+    const lastView = sessionStorage.getItem('lastView');
     if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'calendar', 'detail', 'pocket'].includes(lastView)) {
-      const lastTripId = sessionStorage.getItem('lastTripId') || localStorage.getItem('lastTripId');
+      const lastTripId = sessionStorage.getItem('lastTripId');
       return {
         view: lastView === 'magazine' ? 'archive' : lastView,
         tripId: lastTripId ? Number(lastTripId) : null,

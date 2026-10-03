@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Info, Wrench, X } from 'lucide-react';
 import { EMPTY_NOTICE, noticeLive, subscribeNotice, type SiteNotice } from '../utils/notice';
 
-// The operator's site notice above every page (v1.3.7). Maintenance stays; info can be closed for
-// this session (it comes back when the message changes).
+// The operator's site notice above every page (v1.3.7). Maintenance stays; info can be closed, and
+// stays closed on this device until the operator changes the message (v1.3.8; it used to come back
+// with every new session).
 export function NoticeBanner() {
   const [n, setN] = useState<SiteNotice>(EMPTY_NOTICE);
-  const [closed, setClosed] = useState<string | null>(() => { try { return sessionStorage.getItem('tgl_notice_closed'); } catch { return null; } });
+  const [closed, setClosed] = useState<string | null>(() => { try { return localStorage.getItem('tgl_notice_closed'); } catch { return null; } });
   useEffect(() => subscribeNotice(setN), []);
   if (!noticeLive(n)) return null;
   const key = `${n.updatedAt || 0}`;
@@ -21,7 +22,7 @@ export function NoticeBanner() {
       {!maint && (
         <button
           type="button"
-          onClick={() => { setClosed(key); try { sessionStorage.setItem('tgl_notice_closed', key); } catch { /* session only */ } }}
+          onClick={() => { setClosed(key); try { localStorage.setItem('tgl_notice_closed', key); } catch { /* closed until the page reloads */ } }}
           aria-label="공지 닫기"
           className="w-7 h-7 rounded-full grid place-items-center shrink-0 hover:bg-black/10"
         >

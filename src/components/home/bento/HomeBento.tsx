@@ -18,10 +18,11 @@ import { cardCoverUrl } from '../../../utils/journeyThumbs';
 import { parseTripStartDate } from '../../../utils/tripPlanHelper';
 import { isTileOn, useHomeWidgets, type BentoTileId } from '../../../utils/homeWidgetPrefs';
 import { openJourneyFromCard, warmJourney } from '../../../utils/journeyOpen';
+import { TicketPass } from '../../ui/TicketPass';
 import { DotMap } from './DotMap';
 import { BentoSheet, type BentoCtx } from './BentoSheet';
 import {
-  describeJourney, journeyCities, journeyMonth, journeyPoints, journeyStats, monthCells, nextJourney, pickMemory, rangeLabel,
+  describeJourney, journeyCities, journeyMonth, journeyPoints, journeyStats, monthCells, nextJourney, nightsLabel, pickMemory, rangeLabel,
   type Journey,
 } from './bentoData';
 import type { DepartureTicket } from '../../departure/departureData';
@@ -31,7 +32,7 @@ import type { DepartureTicket } from '../../departure/departureData';
 // turns off closes up instead of leaving a hole. The journey tiles come first, the tools (weather, exchange rates,
 // world time) sit below their own line. Tapping a tile opens its detail sheet, which also carries the way into its hub.
 
-type Tint = 'peach' | 'butter' | 'coral' | 'sage' | 'mist' | 'lilac' | 'surface' | 'photo';
+type Tint = 'peach' | 'butter' | 'coral' | 'sage' | 'mist' | 'lilac' | 'surface' | 'photo' | 'ink';
 type Span = 'cube' | 'wide' | 'hero' | 'tall';
 
 const TINT: Record<Tint, string> = {
@@ -44,6 +45,8 @@ const TINT: Record<Tint, string> = {
   surface: 'bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark',
   // A picture fills the tile; white text sits on the shade over it
   photo: 'bg-mist-ink/40 text-white',
+  // The boarding pass ground, as on the journey board's flight tile
+  ink: 'bg-ink text-paper dark:bg-ink-dark dark:text-paper-dark',
 };
 const SPAN: Record<Span, string> = { cube: '', wide: 'col-span-2', hero: 'col-span-2 row-span-2', tall: 'row-span-2' };
 
@@ -192,19 +195,27 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
 
           {/* ── Next journey ── */}
           {on('dday') && (
-            <Tile tint="butter" label="예정 여정" onOpen={open('dday')}>
-              <Kicker icon={CalendarDays}>{next?.live ? '여행 중' : '예정'}</Kicker>
+            <Tile tint="butter" label="예정 여정" onOpen={open('dday')} className="justify-between">
+              <div className="flex flex-col gap-1.5">
+                <Kicker icon={CalendarDays}>{next?.live ? '여행 중' : '예정'}</Kicker>
+                {next ? (
+                  <span className={`${mono} text-[44px] font-extrabold tracking-[-0.04em] leading-[0.95]`}>{next.live ? `Day ${next.day}` : next.daysLeft === 0 ? 'D-DAY' : `D-${next.daysLeft}`}</span>
+                ) : (
+                  <span className="text-[17px] font-extrabold tracking-tight leading-snug">예정된 여정이 없어요</span>
+                )}
+              </div>
               {next ? (
-                <>
-                  <span className={`${mono} mt-auto text-[38px] font-extrabold tracking-[-0.03em] leading-none`}>{next.live ? `Day ${next.day}` : next.daysLeft === 0 ? 'D-DAY' : `D-${next.daysLeft}`}</span>
-                  <span className="text-[14px] font-extrabold tracking-tight leading-snug line-clamp-2 break-keep">{next.journey.title.replace(' (Plan)', '')}</span>
-                  <span className={`${mono} text-[11.5px] opacity-75 truncate`}>{rangeLabel(next.journey)}{next.live ? ` · ${next.total}일째 중` : ''}</span>
-                </>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[15px] font-extrabold tracking-tight leading-snug line-clamp-2 break-keep">{next.journey.title.replace(' (Plan)', '')}</span>
+                  <span className={`${mono} text-[11.5px] font-semibold opacity-75 truncate`}>{rangeLabel(next.journey)}{nightsLabel(next.journey) ? ` · ${nightsLabel(next.journey)}` : ''}</span>
+                  {!next.live && next.total > 0 && (
+                    <span className="h-1.5 rounded-full bg-black/10 dark:bg-white/15 overflow-hidden mt-0.5" aria-hidden>
+                      <i className="block h-full rounded-full bg-amber-700 dark:bg-amber-400" style={{ width: `${Math.max(6, Math.min(100, 100 - (next.daysLeft / 120) * 100))}%` }} />
+                    </span>
+                  )}
+                </div>
               ) : (
-                <>
-                  <span className="mt-auto text-[16px] font-extrabold tracking-tight leading-snug">예정된 여정이 없어요</span>
-                  <span className="text-[12px] opacity-75">다음 여행을 정해 보세요</span>
-                </>
+                <span className="text-[12px] opacity-75">다음 여행을 정해 보세요</span>
               )}
             </Tile>
           )}
@@ -315,46 +326,61 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
 
           {/* ── Friends ── */}
           {on('fri') && (
-            <Tile tint="lilac" label="친구" onOpen={open('fri')}>
-              <Kicker icon={Users}>친구</Kicker>
-              <span className="mt-auto text-[26px] font-extrabold tracking-tight leading-none">{friends.length}명</span>
-              <span className="text-[11.5px] opacity-80 leading-snug">{friends.length ? '함께 보는 여정과 포켓' : '초대하면 여정을 같이 봐요'}</span>
-              <span className="flex -space-x-2 mt-1.5 h-7">
-                {friends.slice(0, 4).map(f => <UserProfileAvatar key={f.uid} profile={f} size="sm" fallbackName={f.name} className="ring-2 ring-lilac dark:ring-lilac-dark" />)}
-                {friends.length > 4 && <span className="w-7 h-7 rounded-full grid place-items-center bg-black/10 dark:bg-white/15 text-[10px] font-bold ring-2 ring-lilac dark:ring-lilac-dark">+{friends.length - 4}</span>}
-                {friends.length === 0 && <span className="w-7 h-7 rounded-full grid place-items-center bg-black/10 dark:bg-white/15"><Plus className="w-3.5 h-3.5" aria-hidden /></span>}
+            <Tile tint="lilac" label="친구" onOpen={open('fri')} className="justify-between">
+              <div className="flex flex-col gap-1.5">
+                <Kicker icon={Users}>친구</Kicker>
+                <span className="text-[34px] font-extrabold tracking-[-0.03em] leading-none">{friends.length}명</span>
+                <span className="text-[12px] opacity-80 leading-snug break-keep">{friends.length ? '함께 보는 여정과 포켓' : '초대하면 여정을 같이 봐요'}</span>
+              </div>
+              <span className="flex -space-x-2.5 h-9">
+                {friends.slice(0, 4).map(f => <UserProfileAvatar key={f.uid} profile={f} size="md" fallbackName={f.name} className="ring-2 ring-lilac dark:ring-lilac-dark" />)}
+                {friends.length > 4 && <span className="w-9 h-9 rounded-full grid place-items-center bg-black/10 dark:bg-white/15 text-[11px] font-bold ring-2 ring-lilac dark:ring-lilac-dark">+{friends.length - 4}</span>}
+                {friends.length === 0 && <span className="w-9 h-9 rounded-full grid place-items-center bg-black/10 dark:bg-white/15"><Plus className="w-4 h-4" aria-hidden /></span>}
               </span>
             </Tile>
           )}
 
-          {/* ── Magazine ── */}
+          {/* ── Magazine: the words on the left, the latest cover standing on the right ── */}
           {on('mag') && (
-            <Tile tint="coral" label="매거진" onOpen={open('mag')}>
+            <Tile tint="coral" label="매거진" onOpen={open('mag')} className="justify-between">
               <Kicker icon={BookOpen}>매거진</Kicker>
               {published.length > 0 ? (
                 <>
-                  <span className="mt-auto text-[16px] font-extrabold tracking-tight leading-none">발행 {published.length}권</span>
-                  <span className="text-[11.5px] opacity-80 truncate">{published[0].title}</span>
                   {published[0].img && (
-                    <img src={cardCoverUrl(published[0])} alt="" loading="lazy" decoding="async" draggable={false} className="absolute right-3 bottom-3 w-[34%] aspect-[3/4] object-cover rounded-[8px] shadow-[0_6px_14px_rgba(0,0,0,0.25)] rotate-[5deg]" />
+                    <img src={cardCoverUrl(published[0])} alt="" loading="lazy" decoding="async" draggable={false} className="absolute right-3.5 bottom-3.5 w-[38%] aspect-[3/4] object-cover rounded-[8px] shadow-[0_6px_14px_rgba(0,0,0,0.25)] rotate-[4deg]" />
                   )}
+                  <div className={`flex flex-col gap-1 ${published[0].img ? 'w-[56%]' : ''}`}>
+                    <span className="text-[26px] font-extrabold tracking-tight leading-none">{published.length}권</span>
+                    <span className="text-[11.5px] font-semibold opacity-80 leading-snug line-clamp-3 break-keep">{published[0].title}</span>
+                  </div>
                 </>
               ) : (
-                <>
-                  <span className="mt-auto text-[15px] font-extrabold tracking-tight leading-snug">발행한 매거진이 없어요</span>
-                  <span className="text-[11.5px] opacity-80 leading-snug">다녀온 여정을 발행해 보세요</span>
-                </>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[16px] font-extrabold tracking-tight leading-snug break-keep">아직 발행한 매거진이 없어요</span>
+                  <span className="text-[11.5px] opacity-80 leading-snug break-keep">다녀온 여정을 발행해 보세요</span>
+                </div>
               )}
             </Tile>
           )}
 
           {/* ── Pocket ── */}
           {on('pocket') && (
-            <Tile tint="sage" label="포켓" onOpen={open('pocket')}>
-              <Kicker icon={Bookmark}>포켓</Kicker>
-              <span className={`${mono} mt-auto text-[32px] font-extrabold tracking-[-0.03em] leading-none`}>{pockets.length}곳</span>
-              <span className="text-[11.5px] opacity-80 leading-snug truncate">{pockets.length ? `최근 · ${[...pockets].sort((a, b) => b.createdAt - a.createdAt)[0].title}` : '가고 싶은 곳을 모아 둬요'}</span>
-              {pockets.some(p => p.isFavorite) && <span className="text-[11px] opacity-70">즐겨찾기 {pockets.filter(p => p.isFavorite).length}</span>}
+            <Tile tint="sage" label="포켓" onOpen={open('pocket')} className="justify-between">
+              <div className="flex flex-col gap-1.5">
+                <Kicker icon={Bookmark}>포켓</Kicker>
+                <span className={`${mono} text-[34px] font-extrabold tracking-[-0.03em] leading-none`}>{pockets.length}곳</span>
+              </div>
+              {pockets.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {[...pockets].sort((a, b) => b.createdAt - a.createdAt).slice(0, 2).map(p => (
+                    <span key={p.id} className="h-6 px-2.5 rounded-full bg-black/[0.08] dark:bg-white/10 text-[11.5px] font-bold inline-flex items-center gap-1 min-w-0">
+                      <span className="truncate">{p.title}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-[12px] opacity-80 leading-snug break-keep">가고 싶은 곳을 모아 둬요</span>
+              )}
             </Tile>
           )}
         </div>
@@ -394,35 +420,36 @@ function BentoSkeleton() {
   );
 }
 
+// The terminal's ticket on the journey board's boarding pass (ui/TicketPass): ICN to the first stop, the gate and the
+// flying time on the two ends, the dates and the days left under the tear line.
 function TerminalTile({ tickets, onOpen }: { tickets: DepartureTicket[] | null; onOpen: () => void }) {
   const t = tickets?.[0];
-  const [loaded, setLoaded] = useState<{ id: string; from: string; to: string; days: string } | null>(null);
+  const [loaded, setLoaded] = useState<{ id: string; to: string; status: string; range: string; hours: string } | null>(null);
   useEffect(() => {
     if (!t) return;
     let alive = true;
     Promise.all([import('../../../utils/bookingDeepLinks'), import('../../departure/departureData')]).then(([links, data]) => {
-      if (alive) setLoaded({ id: t.id, from: 'ICN', to: links.inferAirportCode(t.cityEn), days: data.ticketStatus(t).text });
+      if (alive) setLoaded({ id: t.id, to: links.inferAirportCode(t.cityEn), status: data.ticketStatus(t).text, range: data.ticketRange(t), hours: data.formatHours(t.hours) });
     }).catch(() => {});
     return () => { alive = false; };
   }, [t]);
-  const code = t && loaded?.id === t.id ? loaded : null;
+  const d = t && loaded?.id === t.id ? loaded : null;
   return (
-    <Tile tint="butter" label="공항 터미널" onOpen={onOpen}>
-      <Kicker icon={Ticket}>터미널</Kicker>
+    <Tile tint="ink" label="공항 터미널" onOpen={onOpen} className="gap-2">
       {t ? (
-        <>
-          <span className="mt-1 text-[15px] font-extrabold tracking-tight">티켓 {tickets!.length}장</span>
-          <div className="relative mt-auto rounded-[12px] bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark px-3 py-2 flex flex-col gap-0.5">
-            <i className="absolute top-1/2 -translate-y-1/2 -left-[5px] w-2.5 h-2.5 rounded-full bg-butter dark:bg-butter-dark" aria-hidden />
-            <i className="absolute top-1/2 -translate-y-1/2 -right-[5px] w-2.5 h-2.5 rounded-full bg-butter dark:bg-butter-dark" aria-hidden />
-            <span className="flex items-center gap-1.5 text-[17px] font-extrabold tracking-tight leading-none">{code?.from ?? 'ICN'}<ArrowRight className="w-3.5 h-3.5 text-black/40 dark:text-white/40" aria-hidden />{code?.to ?? '···'}</span>
-            <span className={`${mono} text-[10.5px] font-semibold opacity-70 truncate`}>GATE {t.gate} · {code?.days ?? ''}</span>
-          </div>
-        </>
+        <TicketPass
+          kicker={`${t.flightNo}${tickets!.length > 1 ? ` · ${tickets!.length}장` : ''}`}
+          from={{ code: 'ICN', time: d?.range.split(' ')[0] ?? '', note: `GATE ${t.gate}` }}
+          to={{ code: d?.to ?? '···', time: d?.hours ?? '', note: t.cityKo }}
+          foot={d?.range ?? ''}
+          footEnd={d?.status}
+          bleed="-mx-3.5"
+        />
       ) : (
         <>
-          <span className="mt-auto text-[15px] font-extrabold tracking-tight leading-snug">{tickets ? '발권한 티켓이 없어요' : ' '}</span>
-          {tickets && <span className="text-[11.5px] opacity-80">터미널에서 티켓을 발권해요</span>}
+          <Kicker icon={Ticket}>터미널</Kicker>
+          <span className="mt-auto text-[15px] font-extrabold tracking-tight leading-snug break-keep">{tickets ? '발권한 티켓이 없어요' : ' '}</span>
+          {tickets && <span className="text-[11.5px] opacity-70">터미널에서 티켓을 발권해요</span>}
         </>
       )}
     </Tile>
@@ -562,10 +589,14 @@ function TimeTile({ nextCity, onOpen }: { nextCity?: string; onOpen: () => void 
   }, []);
   const rows = useMemo(() => {
     const list: { city: CityWeatherConfig; ahead: boolean }[] = [{ city: main, ahead: false }];
-    const target = nextCity ? searchCities(nextCity, 1)[0] : undefined;
-    if (target && target.timezone && target.nameEn !== main.nameEn) list.push({ city: target, ahead: true });
-    favorites.forEach(f => { if (list.length < 4 && !list.some(r => r.city.nameEn === f.nameEn) && f.timezone) list.push({ city: f, ahead: false }); });
-    return list.slice(0, 4);
+    const add = (c: CityWeatherConfig | undefined, ahead = false) => {
+      if (c && c.timezone && list.length < 4 && !list.some(r => r.city.nameEn === c.nameEn)) list.push({ city: c, ahead });
+    };
+    add(nextCity ? searchCities(nextCity, 1)[0] : undefined, true);
+    favorites.forEach(f => add(f));
+    // Four rows always, so the tile is never mostly empty: the cities travellers ask the time of
+    ['TOKYO', 'PARIS', 'NEW YORK', 'LONDON'].forEach(n => add(searchCities(n, 1)[0]));
+    return list;
   }, [main, favorites, nextCity]);
   const fmt = (tz: string) => new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
   return (

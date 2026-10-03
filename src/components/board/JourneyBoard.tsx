@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { TicketTear } from '../ui/TicketTear';
+import { TicketPass } from '../ui/TicketPass';
 import type { FlightItem, Plan, StayItem, TimelineData, TimelineItem, TransitItem, Trip } from '../../types';
 import { Sheet } from '../Sheet';
 import { IconButton } from '../ui/IconButton';
@@ -87,37 +87,15 @@ function terminalLabel(term?: string) {
 
 /** A flight on the board (v1.3.8): where, when and which terminal come first; the seat only when it was written; the booking number lives in the detail */
 function FlightFace({ f, wide }: { f: BoardModel['flights'][number]; wide?: boolean }) {
-  const fromT = terminalLabel(f.fromTerminal);
-  const toT = terminalLabel(f.toTerminal);
-  const dep = timeLabel(f.fromTime);
-  const arr = timeLabel(f.toTime);
-  const date = f.at.date ? md(f.at.date) : NO_DATE;
   return (
-    <>
-      <span className={kicker}><Plane className="w-3.5 h-3.5 shrink-0" aria-hidden /><span className="truncate">{[f.title, f.flightNo].filter(Boolean).join(' · ') || '항공권'}</span></span>
-      <span className="flex items-end justify-between gap-2">
-        <span className="flex flex-col min-w-0">
-          <span className={`${wide ? 'text-[34px] sm:text-[40px]' : 'text-[26px]'} font-extrabold tracking-[-0.02em] leading-none`}>{f.fromCode || '—'}</span>
-          <span className="mt-1.5 font-mono text-[13px] font-semibold tabular-nums leading-none">{dep || '—'}</span>
-          {fromT && <span className="mt-1 font-mono text-micro font-bold tracking-wider opacity-60 leading-none">{fromT}</span>}
-        </span>
-        <span className="flex-1 min-w-3 flex items-center self-start mt-[0.9em] opacity-45" aria-hidden>
-          <span className="flex-1 h-0 border-t-[1.5px] border-dashed border-current" />
-          <Plane className="w-4 h-4 mx-1 shrink-0" />
-          <span className="flex-1 h-0 border-t-[1.5px] border-dashed border-current" />
-        </span>
-        <span className="flex flex-col items-end min-w-0">
-          <span className={`${wide ? 'text-[34px] sm:text-[40px]' : 'text-[26px]'} font-extrabold tracking-[-0.02em] leading-none`}>{f.toCode || '—'}</span>
-          <span className="mt-1.5 font-mono text-[13px] font-semibold tabular-nums leading-none">{arr || '—'}</span>
-          {toT && <span className="mt-1 font-mono text-micro font-bold tracking-wider opacity-60 leading-none">{toT}</span>}
-        </span>
-      </span>
-      <TicketTear className="-mx-4 !w-auto mt-auto" />
-      <span className="flex items-center justify-between gap-2 font-mono text-meta font-semibold tabular-nums opacity-85">
-        <span className="truncate">{date}</span>
-        {f.seat && <span className="shrink-0">좌석 {f.seat}</span>}
-      </span>
-    </>
+    <TicketPass
+      wide={wide}
+      kicker={[f.title, f.flightNo].filter(Boolean).join(' · ')}
+      from={{ code: f.fromCode, time: timeLabel(f.fromTime), note: terminalLabel(f.fromTerminal) }}
+      to={{ code: f.toCode, time: timeLabel(f.toTime), note: terminalLabel(f.toTerminal) }}
+      foot={f.at.date ? md(f.at.date) : NO_DATE}
+      footEnd={f.seat ? `좌석 ${f.seat}` : undefined}
+    />
   );
 }
 

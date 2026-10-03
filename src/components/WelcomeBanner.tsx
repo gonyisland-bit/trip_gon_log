@@ -6,9 +6,14 @@ import { loadUserPrefs, saveUserPref } from '../utils/userPrefs';
 
 // Welcome line for new members: shown under the site notice to accounts younger than the
 // operator's day count, until the member closes it. Closing is saved in the account's prefs, so
-// it stays closed on every device; a new message from the operator shows once more.
+// it stays closed on every device; a new message from the operator shows once more. It is also kept on
+// this device, so a slow or failed read of the prefs (offline, a new session) never brings it back.
 
 const DAY = 86400000;
+const localKey = (uid: string) => `tgl_welcome_seen_${uid}`;
+const readLocal = (uid: string): number | null => {
+  try { const v = localStorage.getItem(localKey(uid)); return v === null ? null : Number(v); } catch { return null; }
+};
 
 export function WelcomeBanner({ name }: { name: string }) {
   const [w, setW] = useState<WelcomeNotice | null>(null);
@@ -20,7 +25,13 @@ export function WelcomeBanner({ name }: { name: string }) {
     if (!uid) return;
     let alive = true;
     setSeen(undefined);
-    loadUserPrefs(uid).then(p => { if (alive) setSeen(p.welcomeSeen ?? null); });
+    loadUserPrefs(uid).then(p => {
+      if (!alive) return;
+      // Either place saying "closed" is enough; the larger version is the later close
+      const cloud = p.welcomeSeen ?? null;
+      const local = readLocal(uid);
+      setSeen(cloud === null ? local : local === null ? cloud : Math.max(cloud, local));
+    });
     return () => { alive = false; };
   }, [uid]);
 
@@ -32,6 +43,7 @@ export function WelcomeBanner({ name }: { name: string }) {
 
   const close = () => {
     setSeen(version);
+    try { localStorage.setItem(localKey(uid), String(version)); } catch { /* the account copy still holds */ }
     saveUserPref({ welcomeSeen: version });
   };
   const text = w.message.replace(/\{name\}/g, name || '여행자');

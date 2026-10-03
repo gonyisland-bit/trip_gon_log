@@ -1524,10 +1524,8 @@ export function useAppState() {
 
     try {
       sessionStorage.setItem('lastView', effectiveView);
-      localStorage.setItem('lastView', effectiveView);
       if (tripId || activeTripId) {
         sessionStorage.setItem('lastTripId', String(tripId || activeTripId));
-        localStorage.setItem('lastTripId', String(tripId || activeTripId));
       }
     } catch (_) {}
 
