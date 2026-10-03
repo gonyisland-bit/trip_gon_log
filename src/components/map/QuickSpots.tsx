@@ -15,9 +15,10 @@ export const QUICK_SPOT_ICON: Record<QuickSpotKind, LucideIcon> = {
 };
 
 /**
- * The quick spot launcher (v1.3.8): one pill that holds them all, so it fits any width and never covers the map's other
- * buttons. Folded it names what is on (up to three icons) and how many were found; open, a 4 × 2 panel switches the
- * seven kinds on and off (it stays open for several taps), opens the list and switches everything off.
+ * The quick spot launcher (v1.3.8 (4)): a 40px round button like the map's other controls, ink when something is on,
+ * with the number found in a small red badge. It opens a slim rail: the seven kinds and the list as round icons with a
+ * short name under each (one row, two on narrow screens), and a footer line to switch everything off. Taps keep it
+ * open, so several kinds can be switched in a row.
  */
 export function QuickSpotLauncher({ s, onOpenList, opens = 'up', className = '' }: { s: QuickSpotsState; onOpenList?: () => void; opens?: 'up' | 'down'; className?: string }) {
   const [open, setOpen] = useState(false);
@@ -34,31 +35,36 @@ export function QuickSpotLauncher({ s, onOpenList, opens = 'up', className = '' 
   const on = s.kinds.length > 0;
   const busy = s.loading.length > 0;
   const total = s.kinds.reduce((n, k) => n + (s.counts[k] ?? 0), 0);
+  const round = 'w-9 h-9 rounded-full grid place-items-center transition-colors duration-fast';
 
   const panel = open && (
     <div
       role="dialog"
       aria-label="퀵스팟 고르기"
-      className={`tgl-rise absolute left-0 ${opens === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} w-[min(320px,calc(100vw-24px))] rounded-card bg-surface dark:bg-surface-dark shadow-[0_10px_30px_rgba(0,0,0,0.18)] p-3 flex flex-col gap-2.5`}
+      className={`tgl-rise absolute left-0 ${opens === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} w-max max-w-[calc(100vw-24px)] rounded-card bg-surface dark:bg-surface-dark shadow-[0_10px_30px_rgba(0,0,0,0.18)] px-2.5 pt-2.5 pb-2 flex flex-col gap-1.5`}
     >
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-4 min-[400px]:grid-cols-8 gap-x-1 gap-y-1.5">
         {QUICK_SPOTS.map(({ kind, label }) => {
           const Icon = QUICK_SPOT_ICON[kind];
           const sel = s.kinds.includes(kind);
           const loading = s.loading.includes(kind);
+          const count = s.counts[kind];
           return (
             <button
               key={kind}
               type="button"
               aria-pressed={sel}
+              aria-label={sel && count !== undefined ? `${label} ${count}곳` : label}
               onClick={() => s.toggle(kind)}
-              className={`h-[68px] min-w-0 rounded-thumb flex flex-col items-center justify-center gap-1 text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${
-                sel ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark font-bold' : 'border border-black/10 dark:border-white/15 font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
-              }`}
+              className="tgl-press w-10 flex flex-col items-center gap-1 focus-visible:outline-none group"
             >
-              {loading ? <Loader2 className="w-[18px] h-[18px] animate-spin" aria-hidden /> : <Icon className="w-[18px] h-[18px]" aria-hidden />}
-              <span className="leading-none">{label}</span>
-              <span className={`font-mono text-[10px] leading-none tabular-nums ${sel && !loading ? 'opacity-70' : 'opacity-0'}`}>{s.counts[kind] ?? 0}</span>
+              <span className={`relative ${round} ${sel ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-black/[0.05] dark:bg-white/10 text-ink dark:text-ink-dark group-hover:bg-black/10 dark:group-hover:bg-white/15'} group-focus-visible:ring-2 group-focus-visible:ring-red-600`}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Icon className="w-4 h-4" aria-hidden />}
+                {sel && !loading && count !== undefined && (
+                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white font-mono text-[9px] font-bold leading-4 text-center tabular-nums">{count}</span>
+                )}
+              </span>
+              <span className={`text-[10.5px] leading-none whitespace-nowrap ${sel ? 'font-bold' : 'font-medium text-black/65 dark:text-white/65'}`}>{label}</span>
             </button>
           );
         })}
@@ -66,16 +72,15 @@ export function QuickSpotLauncher({ s, onOpenList, opens = 'up', className = '' 
           type="button"
           disabled={!on || !onOpenList}
           onClick={() => { setOpen(false); onOpenList?.(); }}
-          className="h-[68px] min-w-0 rounded-thumb flex flex-col items-center justify-center gap-1 text-[12px] font-medium border border-black/10 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-35 disabled:hover:bg-transparent"
+          className="tgl-press w-10 flex flex-col items-center gap-1 disabled:opacity-35 group"
         >
-          <List className="w-[18px] h-[18px]" aria-hidden />
-          <span className="leading-none">목록</span>
-          <span className="font-mono text-[10px] leading-none opacity-0">0</span>
+          <span className={`${round} bg-black/[0.05] dark:bg-white/10 group-hover:bg-black/10 dark:group-hover:bg-white/15`}><List className="w-4 h-4" aria-hidden /></span>
+          <span className="text-[10.5px] leading-none font-medium text-black/65 dark:text-white/65">목록</span>
         </button>
       </div>
-      <div className="flex items-center justify-between gap-2 px-1">
-        <span className="text-micro text-black/55 dark:text-white/55">세 가지까지 켤 수 있어요</span>
-        <button type="button" onClick={s.clearAll} disabled={!on} className="text-meta font-bold disabled:opacity-35">모두 끄기</button>
+      <div className="flex items-center justify-between gap-3 px-1 pt-0.5">
+        <span className="text-[10.5px] text-black/50 dark:text-white/50">세 가지까지</span>
+        <button type="button" onClick={s.clearAll} disabled={!on} className="text-[11px] font-bold disabled:opacity-35">모두 끄기</button>
       </div>
     </div>
   );
@@ -87,29 +92,16 @@ export function QuickSpotLauncher({ s, onOpenList, opens = 'up', className = '' 
         type="button"
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
-        aria-label={on ? `퀵스팟, ${s.kinds.map(k => QUICK_SPOT_META[k].label).join(' · ')} 켜짐` : '퀵스팟'}
-        className={`h-9 pl-3 pr-3.5 rounded-full inline-flex items-center gap-2 text-[13px] font-bold shadow-lg transition-colors ${
-          on ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface/95 dark:bg-surface-dark/95 text-ink dark:text-ink-dark'
+        aria-label={on ? `퀵스팟, ${s.kinds.map(k => QUICK_SPOT_META[k].label).join(' · ')} 켜짐, ${total}곳` : '퀵스팟'}
+        title="퀵스팟"
+        className={`tgl-press relative w-10 h-10 rounded-full grid place-items-center shadow-lg transition-colors ${
+          on || open ? 'bg-ink dark:bg-ink-dark text-surface dark:text-paper-dark' : 'bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark'
         }`}
       >
-        {busy ? (
-          <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-        ) : on ? (
-          <span className="inline-flex -space-x-1">
-            {s.kinds.map(k => {
-              const Icon = QUICK_SPOT_ICON[k];
-              return (
-                <span key={k} className="w-5 h-5 rounded-full grid place-items-center bg-surface dark:bg-paper-dark text-ink dark:text-ink-dark ring-2 ring-ink dark:ring-ink-dark">
-                  <Icon className="w-3 h-3" aria-hidden />
-                </span>
-              );
-            })}
-          </span>
-        ) : (
-          <MapPinned className="w-4 h-4" aria-hidden />
+        {busy ? <Loader2 className="w-[18px] h-[18px] animate-spin" aria-hidden /> : <MapPinned className="w-[18px] h-[18px]" aria-hidden />}
+        {on && !busy && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white font-mono text-[10px] font-bold leading-[18px] text-center tabular-nums shadow-sm">{total}</span>
         )}
-        퀵스팟
-        {on && !busy && <span className="font-mono text-meta tabular-nums opacity-70">{total}</span>}
       </button>
       {opens === 'down' && panel}
     </div>

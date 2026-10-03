@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { getPosition, locationProblem } from '../utils/location';
+import { notify } from '../utils/feedback';
 import { TRAVELLER_SIZE, travellerHtml } from '../art/bear/kit';
 import { Plus, Minus, Loader2, Menu, Lock, Unlock, Bookmark, Locate, Layers } from 'lucide-react';
 import { MAP_STYLES, MAP_STYLE_EVENT, MAP_STYLE_LABEL, MapStyle, applyMapStyle, isMapStyle, mapTileFor, readMapStyle } from '../utils/mapTiles';
@@ -8,16 +9,9 @@ import { getSavedPockets, calculateDistanceInMeters } from '../utils/pocketStora
 import { useQuickSpots } from './map/useQuickSpots';
 import { QuickSpotCard, QuickSpotLauncher, QuickSpotList } from './map/QuickSpots';
 
-const dayColors = [
-  '#dc2626', // Day 1: Red
-  '#2563eb', // Day 2: Blue
-  '#16a34a', // Day 3: Green
-  '#d97706', // Day 4: Orange/Amber
-  '#7c3aed', // Day 5: Purple
-  '#db2777', // Day 6: Pink
-  '#0891b2', // Day 7: Cyan
-  '#4b5563', // Day 8: Gray
-];
+// Day pins and lines (v1.3.8 (4)): ink, not eight random colours (spec 4.2: colour only where it means something).
+// Days are told apart by the numbers on the pins and the day filter; stays stay red, photos orange (film stamp).
+const DAY_INK = '#1B1B18';
 
 interface MapAreaProps {
   trip: Trip;
@@ -134,7 +128,6 @@ export function MapArea({
   const lastMapZoomRef = useRef<number | null>(null);
   const userLocationMarkerRef = useRef<any>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
-  const [locationToast, setLocationToast] = useState<{ show: boolean; message: string } | null>(null);
 
   const handleLocateUser = () => {
     // A tap: may ask for permission once (the app keeps the OS answer, the browser keeps the site's)
@@ -154,8 +147,7 @@ export function MapArea({
           const dist = calculateDistanceInMeters(userLat, userLng, refLat, refLng);
           // 50km 이상 떨어져 있으면 해당 지역에 없음
           if (dist > 50000) {
-            setLocationToast({ show: true, message: '해당 지역에 있지 않습니다' });
-            setTimeout(() => setLocationToast(null), 3000);
+            notify('해당 지역에 있지 않습니다');
             return;
           }
         }
@@ -209,8 +201,7 @@ export function MapArea({
       },
       (err) => {
         setIsLocating(false);
-        setLocationToast({ show: true, message: locationProblem(err) });
-        setTimeout(() => setLocationToast(null), 3500);
+        notify(locationProblem(err));
       },
     );
   };
@@ -824,13 +815,10 @@ export function MapArea({
         });
 
         const polys: any[] = [];
-        Object.entries(dayGroups).forEach(([dayStr, points]) => {
-          const day = Number(dayStr);
+        Object.values(dayGroups).forEach(points => {
           if (points.length > 1) {
-            const colorIndex = (day - 1) % dayColors.length;
-            const color = dayColors[colorIndex];
             const poly = L.polyline(points, {
-              color: color,
+              color: DAY_INK,
               weight: 2.5,
               dashArray: '6, 5',
               opacity: 0.75,
@@ -923,22 +911,15 @@ export function MapArea({
       if (isSummaryMode) {
         pinColor = '#d97706'; // Gold/Amber highlight for summary mode
       } else if (activeTab === 'transit') {
-        const tType = item.transitType || 'train';
-        if (tType === 'bus') {
-          pinColor = '#10b981'; // Green
-        } else if (tType === 'taxi' || tType === 'car') {
-          pinColor = '#f59e0b'; // Amber/Yellow
-        } else {
-          pinColor = '#4f46e5'; // Indigo/Blue
-        }
+        // Every kind of ride in ink, the open one red; the vehicle icon on the card names it (no green, amber, indigo)
+        pinColor = isActive ? '#DC2626' : DAY_INK;
       } else if (item.isPhoto) {
         pinColor = '#f97316';
       } else if (activeTab === 'stays') {
         pinColor = '#e11d48'; // Swiss Minimal Rose/Red for Stays
       } else {
-        const dayIndex = item.dayIndex || 0;
-        const colorIndex = (dayIndex ? dayIndex - 1 : 0) % dayColors.length;
-        pinColor = dayColors[colorIndex];
+        // Timeline stops in ink, the open one red (spec 4.2: red = current)
+        pinColor = isActive ? '#DC2626' : DAY_INK;
       }
 
       const isSelectedStay = activeTab === 'stays' && isActive;
@@ -1578,14 +1559,6 @@ export function MapArea({
               <QuickSpotList s={qs} onClose={() => setQsListOpen(false)} onPick={spot => { setQsListOpen(false); qs.setSelected(spot); mapRef.current?.panTo([spot.lat, spot.lng]); }} />
             ) : null}
           </div>
-        </div>
-      )}
-
-      {/* ── Location Alert Toast (Swiss Minimal Floating Pill) ── */}
-      {locationToast && locationToast.show && (
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 bg-black/90 dark:bg-white/90 text-white dark:text-black text-xs font-mono font-bold tracking-wide px-4 py-2 border border-red-500 shadow-2xl rounded-none animate-in fade-in slide-in-from-top-2 duration-150 flex items-center gap-2 select-none">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
-          <span>{locationToast.message}</span>
         </div>
       )}
 

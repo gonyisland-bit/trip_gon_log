@@ -74,7 +74,7 @@ export function UtilMode({ s, only }: { s: ManageHubState; only: 'ui' | 'map' | 
                     value={homeMarquee}
                     onChange={e => setHomeMarquee(e.target.value)}
                     placeholder="예: 2026 TRIP LOG · ALL RIGHTS RESERVED"
-                    className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
+                    className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-full focus:border-black dark:focus:border-white text-black dark:text-white"
                   />
                 </div>
 

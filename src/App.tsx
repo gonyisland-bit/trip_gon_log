@@ -580,7 +580,7 @@ function App() {
                         <button
                           type="button"
                           onClick={() => navigateTo('detail', t.id)}
-                          className="hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer font-bold px-2 py-0.5 rounded-none active:scale-95 inline-flex items-center gap-1.5"
+                          className="hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer font-bold px-2 py-0.5 rounded-full active:scale-95 inline-flex items-center gap-1.5"
                           title={`${t.title} 바로가기`}
                         >
                           <span className="text-black dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors">{t.title.toUpperCase()}</span>
@@ -596,7 +596,7 @@ function App() {
                         <button
                           type="button"
                           onClick={() => navigateTo('detail', t.id)}
-                          className="hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer font-bold px-2 py-0.5 rounded-none active:scale-95 inline-flex items-center gap-1.5"
+                          className="hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer font-bold px-2 py-0.5 rounded-full active:scale-95 inline-flex items-center gap-1.5"
                           title={`${t.title} 바로가기`}
                         >
                           <span className="text-black dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors">{t.title.toUpperCase()}</span>

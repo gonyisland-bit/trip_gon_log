@@ -18,6 +18,7 @@ import { EmptyScene } from '../scenes/EmptyScene';
 import { DepartureTicket, TicketStore, activeTicketOf, readCachedTickets, removeTicket, setActiveTicket, subscribeTickets, ticketStatus } from './departureData';
 import { Art } from '../../art/Art';
 import { CounterStage } from './CounterStage';
+import { done, thud } from '../../utils/haptics';
 
 // Airport terminal (spec 3.2): where a planned trip waits before it becomes a journey.
 // Tickets are issued from the New trip sheet. The counter holds one ticket at a time, shown on the
@@ -276,6 +277,7 @@ export function DepartureBoard({
     const ok = await confirmDialog(`'${ticket.plan.title}' 여정을 만들까요? 탑승한 티켓은 목록에서 사라집니다.`, { title: 'BOARDING', confirmLabel: '탑승' });
     if (!ok) return false;
     setBoarding(true);
+    thud();
     try {
       await onBoard(ticket);
     } catch {
@@ -285,6 +287,7 @@ export function DepartureBoard({
     }
     // The journey exists now: the ticket has been used
     await removeTicket(ticket.id).catch(() => {});
+    done();
     onClose();
     return true;
   };

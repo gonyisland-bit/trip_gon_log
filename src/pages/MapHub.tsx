@@ -168,6 +168,11 @@ export function MapHubPage(props: MapHubPageProps) {
     if (m === 'place') { setPlaceMade(true); if (selectedCountry) handleCloseCountry(); }
     try { localStorage.setItem(MODE_KEY, m); } catch { /* a view convenience */ }
   };
+  // Leaving the map (its drawer closed, another hub opened) puts the open country down, so the map comes back clean
+  useEffect(() => {
+    if (!hubVisible && (selectedCountry || isFlyingToCountry)) handleCloseCountry();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hubVisible]);
   useEffect(() => {
     document.documentElement.toggleAttribute('data-map-sheet', hubVisible && mode === 'world' && !!selectedCountry);
     return () => document.documentElement.removeAttribute('data-map-sheet');
@@ -229,26 +234,27 @@ export function MapHubPage(props: MapHubPageProps) {
           display: block !important;
           z-index: 1000;
         }
+        /* Pin names (v1.3.8 (4)): a soft pill on the surface colour instead of a black-ruled box */
         .swiss-pin-badge, .swiss-wishlist-badge {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.12em;
+          font-family: ui-monospace, 'IBM Plex Mono', Consolas, monospace;
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
-          color: #000000;
-          background-color: #FFFFFF;
-          border: 1px solid #000000;
-          padding: 1.5px 5px;
-          line-height: 1.25;
+          color: #1B1B18;
+          background-color: #FFFDF9;
+          border: 0;
+          padding: 2px 8px;
+          line-height: 1.35;
           display: inline-block;
-          box-shadow: none !important;
-          border-radius: 0 !important;
+          border-radius: 9999px !important;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 3px 10px rgba(0, 0, 0, 0.12) !important;
         }
         .dark .swiss-pin-badge,
         .dark .swiss-wishlist-badge {
-          color: #FFFFFF;
-          background-color: #000000;
-          border: 1px solid #FFFFFF;
+          color: #EDEBE5;
+          background-color: #1A1A17;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35) !important;
         }
         .map-hide-pin-labels .pin-label {
           display: none !important;

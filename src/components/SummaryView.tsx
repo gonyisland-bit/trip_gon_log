@@ -777,7 +777,7 @@ export function SummaryView({
                           <span className="font-bold">{s.dateRange || 'DATES TBD'}</span>
                           {s.confNo && <span className="text-red-600 dark:text-red-400 font-bold font-mono"># {s.confNo}</span>}
                           {s.address && (
-                            <div className="inline-flex items-start gap-1.5 bg-black/5 dark:bg-white/5 px-2 py-1 border border-black/10 dark:border-white/10 text-xs font-sans rounded-none w-full">
+                            <div className="inline-flex items-start gap-1.5 bg-black/5 dark:bg-white/5 px-2 py-1 border border-black/10 dark:border-white/10 text-xs font-sans rounded-thumb w-full">
                               <span className="break-all whitespace-normal font-medium flex-1">{s.address}</span>
                               <button
                                 type="button"
@@ -1067,7 +1067,7 @@ export function SummaryView({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#0E0E0E] max-w-2xl lg:max-w-3xl w-full h-[92vh] max-h-[94vh] flex flex-col shadow-2xl text-left border border-black/20 dark:border-white/20 animate-in zoom-in-95 duration-150 rounded-none overflow-hidden"
+            className="bg-white dark:bg-[#0E0E0E] max-w-2xl lg:max-w-3xl w-full h-[92vh] max-h-[94vh] flex flex-col shadow-2xl text-left border border-black/20 dark:border-white/20 animate-in zoom-in-95 duration-150 rounded-card overflow-hidden"
           >
             {/* Modal Header */}
             <div className="flex justify-between items-center px-4 sm:px-6 py-3.5 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">

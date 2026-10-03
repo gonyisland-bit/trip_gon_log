@@ -46,7 +46,7 @@ export function CardRow({ thumb, title, meta, trailing, onClick, current, classN
   );
   const cls = `w-full flex items-center gap-3 p-2.5 rounded-card bg-surface dark:bg-surface-dark ${current ? 'ring-[1.5px] ring-inset ring-red-600 dark:ring-red-500' : ''} ${className}`;
   return onClick ? (
-    <button type="button" onClick={onClick} className={`${cls} transition-colors duration-fast hover:bg-black/[0.02] dark:hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600`}>
+    <button type="button" onClick={onClick} className={`${cls} tgl-press hover:bg-black/[0.02] dark:hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600`}>
       {body}
     </button>
   ) : (

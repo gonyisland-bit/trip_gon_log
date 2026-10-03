@@ -1,5 +1,6 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
+import { tick } from '../../utils/haptics';
 
 // Pill chip (spec 4.4): icon + label filter or pick. Selected = ink fill.
 // `tone="season"` marks a recommended value (best season) with an emerald outline.
@@ -30,11 +31,11 @@ export function Chip({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={onClick ? (e) => { tick(); onClick(e); } : undefined}
       disabled={disabled}
       title={title}
       aria-pressed={selected}
-      className={`${h} inline-flex items-center gap-1.5 rounded-full border whitespace-nowrap shrink-0 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:opacity-40 disabled:cursor-not-allowed ${look} ${className}`}
+      className={`${h} tgl-press inline-flex items-center gap-1.5 rounded-full border whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:opacity-40 disabled:cursor-not-allowed ${look} ${className}`}
     >
       {Icon && <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden />}
       {children}

@@ -11,6 +11,8 @@ import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../../utils/w
 import { resolveMarkerOverlaps, clusterByPixel } from '../../utils/mapMarkerOverlap';
 import { getContinuousNightPolygon, getSubsolarPoint } from '../../utils/solarTerminator';
 import { notify } from '../../utils/feedback';
+import { inferAirportCode } from '../../utils/bookingDeepLinks';
+import { calculateDistanceInMeters } from '../../utils/pocketStorage';
 
 import { COUNTRIES_DATA, KNOWN_CITY_COORDS, CITY_KO_MAP, findCountryForGroup, COUNTRY_TIMEZONE_MAP, getCountryLiveTime, getOptimalCurrencyUnit, shiftGeoJsonCoordinates } from './mapData';
 import type { CountryInfo } from './mapData';
@@ -991,24 +993,12 @@ export function useMapHubState({
     const ctrlLat = midLat + perpLat;
     const ctrlLng = midLng + perpLng;
 
-    // The plane is made once; each frame only moves the marker and turns the inner element (no new HTML per frame)
-    const planeIcon = L.divIcon({
-      className: 'sleek-flight-plane-marker',
-      html: `<div class="tgl-flight-plane" style="width:40px;height:40px;will-change:transform">
-        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:40px;height:40px">
-          <path d="M24 2C22.6 2 21.5 3.5 21.5 5.5V17L6 26.5V30.5L21.5 25.5V37.5L16 41.5V44.5L24 42.5L32 44.5V41.5L26.5 37.5V25.5L42 30.5V26.5L26.5 17V5.5C26.5 3.5 25.4 2 24 2Z" fill="#FFFFFF" stroke="#1B1B18" stroke-width="1.4" stroke-linejoin="round" />
-          <ellipse cx="24" cy="7.5" rx="1.5" ry="2.6" fill="#1B1B18" />
-        </svg>
-      </div>`,
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-    });
-
-    // Session safety: a new flight cancels the one before
+    // v1.3.8 (4): the camera follows the plane again, as before, without the shake. The plane is not a map marker: it
+    // sits fixed in the middle of the map's box and only turns, while the map slides under it, so nothing is rounded
+    // to whole pixels frame by frame. A thin band on top names the route and shows how far along it is.
     flightSessionIdRef.current++;
     const currentSessionId = flightSessionIdRef.current;
 
-    // No dragging or wheel zoom in flight, and no bounds to bounce against
     try {
       map.setMaxBounds(null);
       map.dragging.disable();
@@ -1016,63 +1006,95 @@ export function useMapHubState({
     } catch (_) {}
 
     // The whole route, sampled once along its curve
-    const STEPS = 90;
-    const route: [number, number][] = [];
-    for (let i = 0; i <= STEPS; i++) {
-      const t = i / STEPS, inv = 1 - t;
-      route.push([
-        inv * inv * startLat + 2 * inv * t * ctrlLat + t * t * endLat,
-        inv * inv * startLng + 2 * inv * t * ctrlLng + t * t * effectiveEndLng,
-      ]);
-    }
+    const STEPS = 120;
+    const at = (t: number): [number, number] => {
+      const i = 1 - t;
+      return [i * i * startLat + 2 * i * t * ctrlLat + t * t * endLat, i * i * startLng + 2 * i * t * ctrlLng + t * t * effectiveEndLng];
+    };
+    const route: [number, number][] = Array.from({ length: STEPS + 1 }, (_, i) => at(i / STEPS));
 
-    // The camera frames the whole route first and then stays still, so no tile is fetched while the plane flies
+    // Farther away, higher up: long hauls cruise zoomed out so more of the way stays in view
     const isMobile = window.innerWidth < 640;
-    const routeBounds = L.latLngBounds(route);
-    const sheetPad = isMobile ? Math.round(window.innerHeight * 0.3) : 80;
-    map.flyToBounds(routeBounds, {
-      paddingTopLeft: [48, 96],
-      paddingBottomRight: [48, sheetPad],
-      maxZoom: 5,
-      duration: 0.7,
+    const cruiseZoom = Math.max(2.6, Math.min(isMobile ? 3.4 : 3.7, (isMobile ? 3.6 : 3.9) - dist / 90));
+
+    const km = Math.round(calculateDistanceInMeters(startLat, startLng, endLat, rawEndLng) / 1000);
+    const hours = Math.max(1, Math.round(km / 820 + 0.5));
+    const destCode = (inferAirportCode(targetCountry.cities?.[0] || targetCountry.name) || targetCountry.code).toUpperCase();
+
+    // The plane and the route band live in the map's box and leave with the flight's layer group
+    const overlay = document.createElement('div');
+    overlay.className = 'tgl-flight-overlay';
+    overlay.innerHTML = [
+      '<div class="tgl-flight-band" role="status">',
+      '<span class="tgl-flight-code">ICN</span>',
+      '<span class="tgl-flight-track"><span class="tgl-flight-fill"></span><span class="tgl-flight-dot"></span></span>',
+      `<span class="tgl-flight-code">${destCode}</span>`,
+      `<span class="tgl-flight-meta">${targetCountry.nameKo} · ${km.toLocaleString()}km · 약 ${hours}시간</span>`,
+      '</div>',
+      '<div class="tgl-flight-plane">',
+      '<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40" aria-hidden="true">',
+      '<path d="M24 2C22.6 2 21.5 3.5 21.5 5.5V17L6 26.5V30.5L21.5 25.5V37.5L16 41.5V44.5L24 42.5L32 44.5V41.5L26.5 37.5V25.5L42 30.5V26.5L26.5 17V5.5C26.5 3.5 25.4 2 24 2Z" fill="#FFFFFF" stroke="#1B1B18" stroke-width="1.4" stroke-linejoin="round" />',
+      '<ellipse cx="24" cy="7.5" rx="1.5" ry="2.6" fill="#1B1B18" />',
+      '</svg></div>',
+    ].join('');
+    const planeEl = overlay.querySelector('.tgl-flight-plane') as HTMLElement;
+    const fillEl = overlay.querySelector('.tgl-flight-fill') as HTMLElement;
+    const dotEl = overlay.querySelector('.tgl-flight-dot') as HTMLElement;
+    const OverlayLayer = L.Layer.extend({
+      onAdd(m: any) { m.getContainer().appendChild(overlay); return this; },
+      onRemove() { overlay.remove(); return this; },
     });
 
-    // The route is drawn whole and faint; the plane flies along it
-    const trailLine = L.polyline(route, { color: '#DC2626', weight: 2, opacity: 0, dashArray: '5, 7', lineCap: 'round', interactive: false }).addTo(map);
+    // Where it left from and where it is going stay marked the whole way
+    const endpoint = (lat: number, lng: number, code: string) => L.marker([lat, lng], {
+      icon: L.divIcon({ className: 'tgl-qs-icon', html: `<div class="tgl-flight-end"><i></i><span>${code}</span></div>`, iconSize: [12, 12], iconAnchor: [6, 6] }),
+      interactive: false, keyboard: false, zIndexOffset: 400000,
+    });
+    const flightGroup = L.layerGroup([endpoint(startLat, startLng, 'ICN'), endpoint(endLat, effectiveEndLng, destCode), new OverlayLayer()]).addTo(map);
+    flightPlaneMarkerRef.current = flightGroup;
+
+    const trailLine = L.polyline([route[0]], { color: '#DC2626', weight: 2, opacity: 0.75, dashArray: '5, 7', lineCap: 'round', interactive: false }).addTo(map);
     flightTrailPolylineRef.current = trailLine;
 
-    const planeMarker = L.marker([startLat, startLng], { icon: planeIcon, zIndexOffset: 500000, interactive: false }).addTo(map);
-    flightPlaneMarkerRef.current = planeMarker;
-    const planeEl = (): HTMLElement | null => planeMarker.getElement()?.querySelector('.tgl-flight-plane') ?? null;
+    map.setView([startLat, startLng], cruiseZoom, { animate: false });
 
-    const duration = Math.min(2600, Math.max(1800, dist * 22));
+    const duration = Math.min(3200, Math.max(2200, dist * 24));
     let startTime: number | null = null;
-
-    // EaseInOutCubic: gradual takeoff, cruise, gradual landing
+    let lastStep = -1;
+    let angle: number | null = null;
     const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
     const animateFlight = (timestamp: number) => {
       if (currentSessionId !== flightSessionIdRef.current) return;
-
       if (!startTime) startTime = timestamp;
       const rawProgress = Math.min(1, (timestamp - startTime) / duration);
       const ease = easeInOutCubic(rawProgress);
-      const inv = 1 - ease;
-      const curLat = inv * inv * startLat + 2 * inv * ease * ctrlLat + ease * ease * endLat;
-      const curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * effectiveEndLng;
+      const [curLat, curLng] = at(ease);
 
-      // Heading on screen: the tangent in projected pixels, so it matches the map's own north
-      const dLat = 2 * inv * (ctrlLat - startLat) + 2 * ease * (endLat - ctrlLat);
-      const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (effectiveEndLng - ctrlLng);
-      const p0 = map.latLngToLayerPoint([curLat, curLng]);
-      const p1 = map.latLngToLayerPoint([curLat + dLat * 0.01, curLng + dLng * 0.01]);
-      const angle = Math.atan2(p1.x - p0.x, -(p1.y - p0.y)) * 180 / Math.PI;
-      // Climb (0.8) → cruise (1.15) → descent (0.85)
-      const scale = 0.8 + Math.sin(ease * Math.PI) * 0.35;
+      // Heading on screen from points well behind and ahead on the curve, eased so it never twitches
+      const p0 = map.project(at(Math.max(0, ease - 0.04)), cruiseZoom);
+      const p1 = map.project(at(Math.min(1, ease + 0.04)), cruiseZoom);
+      const target = Math.atan2(p1.x - p0.x, -(p1.y - p0.y)) * 180 / Math.PI;
+      if (angle === null) angle = target;
+      else {
+        let d = target - angle;
+        while (d > 180) d -= 360;
+        while (d < -180) d += 360;
+        angle += d * 0.18;
+      }
+      const scale = 0.85 + Math.sin(ease * Math.PI) * 0.3;
+      planeEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg) scale(${scale})`;
+      fillEl.style.transform = `scaleX(${ease})`;
+      dotEl.style.left = `${ease * 100}%`;
 
-      planeMarker.setLatLng([curLat, curLng]);
-      const el = planeEl();
-      if (el) el.style.transform = `rotate(${angle}deg) scale(${scale})`;
+      map.setView([curLat, curLng], cruiseZoom, { animate: false });
+
+      // The trail grows along the precomputed route, a step at a time
+      const step = Math.floor(ease * STEPS);
+      if (step !== lastStep) {
+        lastStep = step;
+        trailLine.setLatLngs([...route.slice(0, step + 1), [curLat, curLng]]);
+      }
 
       if (rawProgress < 1) {
         flightAnimRef.current = requestAnimationFrame(animateFlight);
@@ -1080,18 +1102,14 @@ export function useMapHubState({
       }
       flightAnimRef.current = null;
 
-      // Touchdown: zoom into the country (on phones a little above centre, clear of the sheet)
-      let landingCoords: [number, number] = [targetCountry.center[0], effectiveEndLng];
-      let targetCenter: [number, number] = landingCoords;
+      // Touchdown: the plane fades, the map zooms into the country (on phones a little above centre, clear of the sheet)
+      overlay.classList.add('is-landing');
+      let targetCenter: [number, number] = [targetCountry.center[0], effectiveEndLng];
       if (isMobile) {
-        const targetPoint = map.project(landingCoords, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
+        const targetPoint = map.project(targetCenter, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
         targetCenter = [map.unproject(targetPoint, targetCountry.zoom).lat, map.unproject(targetPoint, targetCountry.zoom).lng];
       }
       map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.9 });
-      const planeNode = planeMarker.getElement();
-      if (planeNode) { planeNode.style.transition = 'opacity .5s'; planeNode.style.opacity = '0'; }
-      const trailNode = (trailLine as any)._path as SVGPathElement | undefined;
-      if (trailNode) { trailNode.style.transition = 'opacity .5s'; trailNode.style.opacity = '0'; }
 
       flightLandingTimeoutRef.current = setTimeout(() => {
         flightLandingTimeoutRef.current = null;
@@ -1115,17 +1133,12 @@ export function useMapHubState({
       }, 920);
     };
 
-    // Take off once the route is framed (or soon after, should the framing be cut short)
-    let launched = false;
-    const launch = () => {
-      if (launched || currentSessionId !== flightSessionIdRef.current) return;
-      launched = true;
-      map.off('moveend', launch);
-      trailLine.setStyle({ opacity: 0.7 });
+    // A breath on the runway while the tiles around Incheon settle, then take-off
+    flightPreTimeoutRef.current = setTimeout(() => {
+      flightPreTimeoutRef.current = null;
+      if (currentSessionId !== flightSessionIdRef.current) return;
       flightAnimRef.current = requestAnimationFrame(animateFlight);
-    };
-    map.once('moveend', launch);
-    flightPreTimeoutRef.current = setTimeout(launch, 900);
+    }, 260);
   };
 
   // Updates boundary highlight (exact GeoJSON polygon if available, or fallback circle) & pulse pin on map
@@ -1243,14 +1256,18 @@ export function useMapHubState({
   }, [selectedCountry, updateCountryHighlightAndPin]);
 
   // Country selection handler: highlights country area and flies airplane from Korea
+  const selectedCountryRef = useRef<CountryInfo | null>(null);
+  selectedCountryRef.current = selectedCountry;
+
   const handleSelectCountry = (country: CountryInfo) => {
     setIsSearchDropdownOpen(false);
 
     const map = mapRef.current;
     updateCountryHighlightAndPin(country);
 
-    // 대한민국이거나 비행기 애니메이션 OFF 상태인 경우 비행 없이 즉시 선택 및 착륙 이동
-    if (country.code === 'KR' || !isPlaneAnimEnabled) {
+    // 대한민국이거나 비행기 애니메이션 OFF 상태, 또는 다른 나라를 보고 있다가 옆 나라로 옮길 때는(v1.3.8 (4))
+    // 인천에서 다시 출발하지 않고 그 나라로 바로 이동
+    if (country.code === 'KR' || !isPlaneAnimEnabled || selectedCountryRef.current) {
       setSelectedCountry(country);
       setSearchQuery(country.name);
       if (map) {
@@ -1317,12 +1334,8 @@ export function useMapHubState({
         map.removeLayer(selectPinRef.current);
         selectPinRef.current = null;
       }
-      // Restore South Korea center view with layer sync
-      map.setView([36.0, 127.5], 3.2);
-      map.invalidateSize();
-      setTimeout(() => {
-        try { map.invalidateSize(); } catch (_) {}
-      }, 300);
+      // The view stays where it is (v1.3.8 (4): it used to jump back to Korea); bounds come back after any flight
+      try { map.setMaxBounds([[-62, -35], [82, 385]]); } catch (_) {}
     }
 
     setIsFlyingToCountry(false);
@@ -1351,9 +1364,20 @@ export function useMapHubState({
   }, [selectedCountry, isFlyingToCountry, selectedPinGroup, isWishlistModalOpen, isPlaceListModalOpen]);
 
   const handleSelectCountryRef = useRef(handleSelectCountry);
+  const handleCloseCountryRef = useRef(handleCloseCountry);
   useEffect(() => {
     handleSelectCountryRef.current = handleSelectCountry;
+    handleCloseCountryRef.current = handleCloseCountry;
   });
+
+  /** A tap on the map while a country is open (v1.3.8 (4)): the same country stays, another one opens in its place,
+   *  the sea or nowhere closes it. With nothing open, a tap on nowhere does nothing. */
+  const pickCountryFromTap = (country: CountryInfo | null) => {
+    const open = selectedCountryRef.current;
+    if (!country) { if (open) handleCloseCountryRef.current(); return; }
+    if (open && open.code === country.code) return;
+    handleSelectCountryRef.current(country);
+  };
 
   // Geocoder & distance based country selector for direct map clicks
   const matchCountryFromLatLng = (latlng: { lat: number; lng: number }) => {
@@ -1399,9 +1423,7 @@ export function useMapHubState({
         }
       }
 
-      if (closestCountry) {
-        handleSelectCountryRef.current(closestCountry);
-      }
+      pickCountryFromTap(closestCountry);
     };
 
     // 1. Try Google Reverse Geocoder for high-precision country matching
@@ -1422,7 +1444,7 @@ export function useMapHubState({
                   (result.formatted_address && c.cities.some(city => result.formatted_address.toUpperCase().includes(city)))
                 );
                 if (matched) {
-                  handleSelectCountryRef.current(matched);
+                  pickCountryFromTap(matched);
                   return;
                 }
               }
@@ -1634,7 +1656,7 @@ export function useMapHubState({
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${labelsOn ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+              <span class="swiss-pin-badge">
                 ${label}
               </span>
             </div>
@@ -1705,7 +1727,7 @@ export function useMapHubState({
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${showPinLabels && mapZoomLevel >= 3 ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+              <span class="swiss-pin-badge">
                 ${country.name}
               </span>
             </div>

@@ -12,11 +12,11 @@ export function DetailSkeleton() {
         <div className="min-h-[52px] sm:min-h-[58px] px-3 md:px-5 flex items-center gap-3 border-b border-black/15 dark:border-white/15 shrink-0">
           <div className="w-4 h-4 rounded-sm bg-black/10 dark:bg-white/10" />
           <div className="flex flex-col gap-1.5 flex-1">
-            <div className="w-40 sm:w-56 h-3.5 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse" />
-            <div className="w-24 sm:w-40 h-2.5 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse" />
+            <div className="w-40 sm:w-56 h-3.5 rounded-full bg-black/15 dark:bg-white/15 tgl-shimmer" />
+            <div className="w-24 sm:w-40 h-2.5 rounded-full bg-black/10 dark:bg-white/10 tgl-shimmer" />
           </div>
         </div>
-        <div className="flex-1 min-h-0 bg-neutral-100 dark:bg-[#111111] animate-pulse" />
+        <div className="flex-1 min-h-0 bg-neutral-100 dark:bg-[#111111] tgl-shimmer" />
       </div>
 
       {/* Tab sheet */}
@@ -32,12 +32,12 @@ export function DetailSkeleton() {
         <div className="flex flex-col">
           {[0, 1, 2, 3, 4].map(i => (
             <div key={i} className="flex items-center gap-4 px-4 md:px-6 py-5 border-b border-black/10 dark:border-white/10">
-              <div className="w-12 h-4 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse shrink-0" />
+              <div className="w-12 h-4 rounded-full bg-black/15 dark:bg-white/15 tgl-shimmer shrink-0" />
               <div className="flex flex-col gap-2 flex-1">
-                <div className="w-3/5 h-3.5 rounded-xs bg-black/15 dark:bg-white/15 animate-pulse" />
-                <div className="w-2/5 h-2.5 rounded-xs bg-black/10 dark:bg-white/10 animate-pulse" />
+                <div className="w-3/5 h-3.5 rounded-full bg-black/15 dark:bg-white/15 tgl-shimmer" />
+                <div className="w-2/5 h-2.5 rounded-full bg-black/10 dark:bg-white/10 tgl-shimmer" />
               </div>
-              <div className="w-16 h-16 bg-black/10 dark:bg-white/10 animate-pulse shrink-0" />
+              <div className="w-16 h-16 rounded-thumb bg-black/10 dark:bg-white/10 tgl-shimmer shrink-0" />
             </div>
           ))}
         </div>

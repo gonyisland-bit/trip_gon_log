@@ -7,7 +7,6 @@ import {
   ChevronRight,
   ZoomIn,
   ZoomOut,
-  RotateCcw,
   MessageSquare,
   MapPin,
   Volume2,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react';
 import { bgmPlayer, BgmTrack } from '../utils/audioHelper';
 import { lockBodyScroll } from '../utils/scrollLock';
+import { IconButton } from './ui/IconButton';
 
 
 export interface LightboxImageMeta {
@@ -644,107 +644,85 @@ export function Lightbox({
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* ── Top header controls ── */}
-      <div className="flex justify-between items-center px-4 py-3 md:px-6 md:py-4 text-white z-20 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 pointer-events-none">
-        <span className="text-meta md:text-xs uppercase tracking-widest font-bold opacity-50 pointer-events-auto">
+      {/* ── Top header controls (v1.3.8 (4): round glass buttons, Swiss Soft; no boxed English labels) ── */}
+      <div className="flex justify-between items-center px-3 py-3 md:px-6 md:py-4 text-white z-20 bg-gradient-to-b from-black/70 to-transparent absolute top-0 left-0 right-0 pointer-events-none" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}>
+        <span className="font-mono text-meta md:text-xs font-bold tabular-nums tracking-wider opacity-60 pointer-events-auto">
           {currentIndex + 1} / {images.length}
         </span>
 
-        <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
+        <div className="flex items-center gap-1.5 md:gap-2 pointer-events-auto">
           {onPlay && (
-            <>
-              <button
-                type="button"
-                onClick={() => onPlay(currentIndex)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-red-600 hover:bg-red-700 text-white text-micro font-bold tracking-wider transition-colors"
-                title="이 사진부터 슬라이드쇼"
-              >
-                <Play className="w-3 h-3 fill-current" aria-hidden />
-                슬라이드쇼
-              </button>
-              <div className="h-4 w-[1px] bg-white/20 mx-1" />
-            </>
+            <button
+              type="button"
+              onClick={() => onPlay(currentIndex)}
+              className="tgl-press flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-meta font-bold transition-colors"
+              title="이 사진부터 슬라이드쇼"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" aria-hidden />
+              슬라이드쇼
+            </button>
           )}
-          {/* Log toggle */}
-          <button
+          <IconButton
+            icon={MessageSquare}
+            label={showLog ? '설명 숨기기' : '설명 보기'}
+            tone="glass"
+            size="sm"
+            aria-pressed={showLog}
             onClick={() => setShowLog(v => !v)}
-            className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
-              showLog
-                ? 'bg-white/10 border-white/20 text-white font-extrabold'
-                : 'border-white/10 text-white/60 hover:text-white/70 hover:border-white/20'
-            }`}
-            title="Toggle log info"
-          >
-            <MessageSquare className="w-3 h-3" />
-            Log {showLog ? 'ON' : 'OFF'}
-          </button>
+            className={showLog ? '!bg-white/30' : '!bg-white/10 opacity-70'}
+          />
+          {/* Music (the magazine's viewer leaves the music to its slideshow) */}
+          {!onPlay && (
+            <IconButton
+              icon={isBgmPlaying ? Volume2 : VolumeX}
+              label={isBgmPlaying ? `배경음악 끄기 (${currentBgmTrack?.title || 'BGM'})` : '배경음악 켜기'}
+              tone="glass"
+              size="sm"
+              aria-pressed={isBgmPlaying}
+              onClick={() => bgmPlayer.toggle()}
+              className={isBgmPlaying ? '!bg-white/30' : '!bg-white/10 opacity-70'}
+            />
+          )}
 
-          {!onPlay && <div className="h-4 w-[1px] bg-white/20 mx-1" />}
-
-          {/* BGM Toggle in Normal Mode (the magazine's viewer leaves the music to its slideshow) */}
-          {!onPlay && <button
-            onClick={() => bgmPlayer.toggle()}
-            className={`flex items-center gap-1 px-2.5 py-1.5 text-micro font-extrabold uppercase tracking-widest border transition-all ${
-              isBgmPlaying
-                ? 'border-red-500/80 bg-red-500/10 text-red-400 font-extrabold'
-                : 'border-white/20 hover:bg-white/10 text-white/60 hover:text-white'
-            }`}
-            title={isBgmPlaying ? `배경음악 끄기 (${currentBgmTrack?.title || 'BGM'})` : '배경음악 켜기'}
-          >
-            {isBgmPlaying ? <Volume2 className="w-3 h-3 text-red-400 animate-pulse" /> : <VolumeX className="w-3 h-3 opacity-60" />}
-            BGM
-          </button>}
-
-          {/* Desktop Zoom controls */}
-          <div className="hidden sm:flex items-center gap-1">
-            <div className="h-4 w-[1px] bg-white/20 mx-1" />
-
+          {/* Desktop zoom */}
+          <div className="hidden sm:flex items-center gap-1 h-9 px-1 rounded-full bg-white/10">
             <button
               onClick={handleZoomOut}
               disabled={scale <= 0.5}
-              className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
-              title="Zoom Out (-)"
+              className="w-7 h-7 rounded-full grid place-items-center hover:bg-white/15 transition-colors disabled:opacity-30"
+              title="축소 (-)"
+              aria-label="축소"
             >
-              <ZoomOut className="w-4 h-4 md:w-5 md:h-5" />
+              <ZoomOut className="w-4 h-4" />
             </button>
-
-            <span className="text-meta md:text-xs font-mono font-bold w-10 text-center opacity-70">
-              {Math.round(scale * 100)}%
-            </span>
-
-            <button
-              onClick={handleZoomIn}
-              disabled={scale >= 4}
-              className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
-              title="Zoom In (+)"
-            >
-              <ZoomIn className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-
             <button
               onClick={resetZoom}
               disabled={scale === 1 && position.x === 0 && position.y === 0}
-              className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
-              title="Reset Zoom (*)"
+              className="font-mono text-micro font-bold w-10 h-7 rounded-full tabular-nums hover:bg-white/15 transition-colors disabled:hover:bg-transparent"
+              title="원래 크기 (*)"
             >
-              <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
+              {Math.round(scale * 100)}%
+            </button>
+            <button
+              onClick={handleZoomIn}
+              disabled={scale >= 4}
+              className="w-7 h-7 rounded-full grid place-items-center hover:bg-white/15 transition-colors disabled:opacity-30"
+              title="확대 (+)"
+              aria-label="확대"
+            >
+              <ZoomIn className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="h-4 w-[1px] bg-white/20 mx-1" />
-
-          {/* Exit/Close Button (Always visible & prominent on mobile) */}
-          <button
-            onClick={() => {
-              bgmPlayer.stop();
-              onClose();
-            }}
-            className="tap-target p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
-            title="나가기 / 닫기 (ESC)"
-            aria-label="Close Lightbox"
-          >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+          <IconButton
+            icon={X}
+            label="닫기"
+            tone="glass"
+            size="sm"
+            title="닫기 (ESC)"
+            onClick={() => { bgmPlayer.stop(); onClose(); }}
+            className="!bg-white/20"
+          />
         </div>
       </div>
       {/* Main image area */}

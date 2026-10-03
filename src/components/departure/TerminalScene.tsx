@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { WeatherParticleCanvas } from '../weather/WeatherParticleCanvas';
 import type { WeatherEffectType } from '../WeatherEffectLayer';
 import { inferAirportCode } from '../../utils/bookingDeepLinks';
-import { getSolarAltitude } from '../../utils/solarTerminator';
+import { skyPhase, type SkyPhase } from '../../utils/skyPhase';
 import { prefersReducedMotion } from '../../motion';
 import { daysUntil, ticketStatus, type DepartureTicket } from './departureData';
 
@@ -43,19 +43,7 @@ const STATUS_TONE = { amber: '#F5CE57', red: '#EE6B4F', ink: '#F2EFE6' } as cons
 
 // ─── Sky ────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-type Phase = 'night' | 'dawn' | 'day' | 'dusk';
-
-function skyPhase(lat: number | undefined, lng: number | undefined, now: Date): Phase {
-  if (lat === undefined || lng === undefined) {
-    const h = now.getHours();
-    return h < 5 || h >= 20 ? 'night' : h < 7 ? 'dawn' : h >= 18 ? 'dusk' : 'day';
-  }
-  const alt = getSolarAltitude(lat, lng, now);
-  if (alt < -7) return 'night';
-  if (alt > 7) return 'day';
-  // Low sun: rising or setting, by where it will be in ten minutes
-  return getSolarAltitude(lat, lng, new Date(now.getTime() + 600000)) > alt ? 'dawn' : 'dusk';
-}
+type Phase = SkyPhase;
 
 const SKY: Record<Phase, [string, string]> = {
   day: ['#8FCBEE', '#D4ECF9'],

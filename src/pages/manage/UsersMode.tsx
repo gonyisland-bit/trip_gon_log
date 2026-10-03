@@ -70,7 +70,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
               value={newAdminEmailInput}
               onChange={e => setNewAdminEmailInput(e.target.value)}
               placeholder="새 관리자 이메일 주소 입력 (가입 승인 메일 수신처)..."
-              className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+              className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-full focus:border-black dark:focus:border-white"
             />
           </div>
           <button

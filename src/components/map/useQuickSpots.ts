@@ -5,6 +5,7 @@ import {
 } from '../../utils/quickSpots';
 import { calculateDistanceInMeters } from '../../utils/pocketStorage';
 import { notify } from '../../utils/feedback';
+import { tick } from '../../utils/haptics';
 
 // Quick spots on a Leaflet map (v1.3.8): which kinds are on, what was found, the pins, the picked spot.
 //  - `anchor` given (the stay map): searches follow it, e.g. when another stay is picked
@@ -69,6 +70,7 @@ export function useQuickSpots({ map, anchor = null, initial = [], onKindsChange 
 
   /** Switch a kind on (searching for it) or off; switching on a fourth turns the oldest off */
   const toggle = useCallback((kind: QuickSpotKind) => {
+    tick();
     const on = kindsRef.current.includes(kind);
     if (on) {
       const next = kindsRef.current.filter(k => k !== kind);

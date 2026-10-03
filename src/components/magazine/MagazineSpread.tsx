@@ -102,28 +102,26 @@ export const MagazineSpread = memo(function MagazineSpread({ sections, activeId,
                 {!near ? null : cards.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
                     {cards.map((c, ci) => (
-                      <article key={c.key} onClick={() => onOpen(sec.id)} className="group flex flex-col justify-between cursor-pointer">
-                        <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                      <article key={c.key} onClick={() => onOpen(sec.id)} className="tgl-press group flex flex-col gap-2.5 cursor-pointer rounded-card bg-surface dark:bg-surface-dark p-2.5">
+                        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-thumb bg-black/5 dark:bg-white/5">
                           <img src={getEffectiveImageUrl(c.img)} alt={c.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none" />
-                          <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-micro font-bold px-1.5 py-0.5 uppercase tracking-widest">
+                          <span className="absolute top-2 left-2 h-6 px-2 inline-flex items-center rounded-full bg-black/55 text-white font-mono text-micro font-bold tabular-nums backdrop-blur-sm">
                             {String(ci + 1).padStart(2, '0')}
-                          </div>
+                          </span>
                         </div>
-                        <div className="pt-2.5 flex-1 flex flex-col justify-between">
-                          <div>
-                            <div className="text-meta font-mono font-bold uppercase tracking-[0.15em] text-red-600 dark:text-red-400 truncate">{c.place}</div>
-                            <h3 className="text-sm sm:text-base font-bold uppercase tracking-tight line-clamp-1 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors mt-0.5">{c.title}</h3>
-                          </div>
-                          <div className="pt-2 mt-2 flex items-center justify-between text-meta font-mono text-black/60 dark:text-white/60 border-t border-black/10 dark:border-white/10 tracking-wider">
+                        <div className="flex-1 flex flex-col gap-1 px-1.5 pb-1">
+                          <div className="text-micro font-mono font-bold uppercase tracking-widest text-black/55 dark:text-white/55 truncate">{c.place}</div>
+                          <h3 className="text-[15px] font-extrabold tracking-tight line-clamp-1 leading-snug">{c.title}</h3>
+                          <div className="mt-auto pt-1 flex items-center justify-between text-meta font-mono text-black/55 dark:text-white/55 tabular-nums">
                             <span>{c.date}</span>
-                            <span className="font-bold text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 group-hover:translate-x-0.5 transition-transform">VIEW →</span>
+                            <ArrowRight className="w-4 h-4 text-ink dark:text-ink-dark group-hover:translate-x-0.5 transition-transform" aria-hidden />
                           </div>
                         </div>
                       </article>
                     ))}
                   </div>
                 ) : (
-                  <div className="py-12 text-center text-xs font-mono text-black/60 dark:text-white/60 border border-dashed border-black/20 dark:border-white/20 p-6">
+                  <div className="py-12 text-center text-[13px] text-black/60 dark:text-white/60 rounded-card bg-surface dark:bg-surface-dark p-6">
                     이 이슈에는 미리 볼 사진이 없습니다.
                   </div>
                 )}
@@ -138,7 +136,7 @@ export const MagazineSpread = memo(function MagazineSpread({ sections, activeId,
           <button
             type="button"
             onClick={() => onOpen(active.id)}
-            className="tgl-press px-8 py-3.5 bg-ink text-surface dark:bg-ink-dark dark:text-paper-dark text-xs sm:text-sm font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 hover:text-white dark:hover:text-white transition-colors cursor-pointer flex items-center gap-2 group"
+            className="tgl-press btn btn-primary btn-lg group"
           >
             <span>{ctaLabel}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

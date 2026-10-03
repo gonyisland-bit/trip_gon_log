@@ -38,9 +38,10 @@ const PIN_PATHS = {
 };
 
 function pinHtml(kind: 'stay' | 'pocket' | 'found'): string {
-  const ink = kind !== 'pocket';
+  // Stays and saved spots are light discs with an ink ring, so the ink quick spot pins stay apart from them
+  const look = kind === 'found' ? '' : kind === 'stay' ? ' tgl-qs-pin-light' : ' tgl-qs-pin-light tgl-qs-pin-pocket';
   const size = kind === 'found' ? 34 : 30;
-  return `<div class="tgl-qs-pin${ink ? ' tgl-qs-pin-ink' : ''}" style="width:${size}px;height:${size}px">`
+  return `<div class="tgl-qs-pin${look}" style="width:${size}px;height:${size}px">`
     + `<svg viewBox="0 0 24 24" width="${kind === 'found' ? 17 : 15}" height="${kind === 'found' ? 17 : 15}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
     + PIN_PATHS[kind].map(d => `<path d="${d}"/>`).join('') + '</svg></div>';
 }
@@ -188,6 +189,9 @@ export function PlaceMap({ trips, plans, staysByTrip = {}, isDarkMode }: PlaceMa
   };
 
   const pickJourney = (f: Focus) => {
+    // Another journey: the searched place of the last one goes too
+    clearFound();
+    setQuery('');
     setFocusId(f.trip.id);
     setPickerOpen(false);
     qs.setSelected(null);

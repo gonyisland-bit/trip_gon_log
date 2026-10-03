@@ -933,7 +933,7 @@ export function ArchiveHubPage({
               {/* Group Body: List or Grid */}
               {!isCollapsed && (
                 cardViewMode === 'list' ? (
-                  <div className="flex flex-col gap-2 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-5 sm:py-8">
+                  <div className="tgl-cv flex flex-col gap-2 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-5 sm:py-8">
                     {group.items.map((trip, index) => {
                       const { year, month } = getYearAndMonth(trip.date);
                       const days = calculateDays(trip.date);
@@ -964,10 +964,10 @@ export function ArchiveHubPage({
                     })}
                   </div>
                 ) : (
-                  <div className={cardViewMode === 'wide'
+                  <div className={'tgl-cv ' + (cardViewMode === 'wide'
                     ? "grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-8 gap-y-10 sm:gap-y-14 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10"
                     : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6 gap-y-8 sm:gap-y-12 md:gap-y-14 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10"
-                  }>
+                  )}>
                     {group.items.map((trip, index) => {
                       const display = getTripCardDisplayData(trip, index);
                       return (

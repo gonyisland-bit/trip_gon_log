@@ -40,7 +40,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
             onClick={() => {
               executeWithGuard(() => navigateSafely(getReturnView()));
             }}
-            className="tap-target p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer rounded-none"
+            className="tap-target p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer rounded-full"
             title="돌아가기"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -51,7 +51,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
         </div>
 
         {/* Mode Switcher: Centered on desktop, scrollable on mobile */}
-        <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
+        <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-full shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
           <div className="flex items-center min-w-max md:min-w-0 pr-1 md:pr-0">
             {([
               // v1.3.7: shared surfaces and setup in SYSTEM, members in USERS; everything a member

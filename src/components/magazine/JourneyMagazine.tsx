@@ -83,6 +83,7 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
   // size, zoom, swipe to the others, and the slideshow from there; leaving that slideshow comes back to the viewer.
   const [reel, setReel] = useState<{ at: number; paused: boolean; fromViewer?: boolean } | null>(null);
   const [viewer, setViewer] = useState<number | null>(null);
+  const reelAt = React.useRef(0);
 
   useEffect(() => {
     const unlock = lockBodyScroll();
@@ -224,7 +225,8 @@ export function JourneyMagazine({ trip, photos, days, canPublish, published, onP
             shots={photos.map(p => ({ src: getEffectiveImageUrl(p.url), place: p.title, location: p.place, date: p.date }))}
             startIndex={reel.at}
             startPaused={reel.paused}
-            onClose={() => { if (reel.fromViewer) setViewer(reel.at); setReel(null); }}
+            onIndexChange={i => { reelAt.current = i; }}
+            onClose={() => { if (reel.fromViewer) setViewer(reelAt.current); setReel(null); }}
           />
         </Suspense>
       )}

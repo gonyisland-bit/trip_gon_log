@@ -55,10 +55,10 @@ export function HubSkeleton({ tint }: { tint: 'peach' | 'mist' | 'sage' | 'butte
   const bg = { peach: 'bg-peach/60 dark:bg-peach-dark', mist: 'bg-mist/70 dark:bg-mist-dark', sage: 'bg-sage/60 dark:bg-sage-dark', butter: 'bg-butter/50 dark:bg-butter-dark' }[tint];
   return (
     <div className="px-4 pt-3 flex flex-col gap-3 select-none" aria-busy="true" aria-label="Loading">
-      <div className={`h-32 rounded-card ${bg} animate-pulse`} />
-      <div className="h-11 rounded-full bg-black/[0.05] dark:bg-white/[0.07] animate-pulse" />
+      <div className={`h-32 rounded-card ${bg} tgl-shimmer`} />
+      <div className="h-11 rounded-full bg-black/[0.05] dark:bg-white/[0.07] tgl-shimmer" />
       <div className="grid grid-cols-2 gap-3">
-        {[0, 1, 2, 3].map(i => <div key={i} className="aspect-[4/5] rounded-card bg-black/[0.05] dark:bg-white/[0.07] animate-pulse" />)}
+        {[0, 1, 2, 3].map(i => <div key={i} className="aspect-[4/5] rounded-card bg-black/[0.05] dark:bg-white/[0.07] tgl-shimmer" />)}
       </div>
     </div>
   );

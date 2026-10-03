@@ -23,6 +23,7 @@ import { CURRENT_LOCATION_EN } from '../../../utils/userPrefs';
 import { ClockFace, useClockSetup, useNow } from './WorldClock';
 import { BentoSheet, type BentoCtx } from './BentoSheet';
 import { useWeatherPlaces } from './weatherPlaces';
+import { HomeSky } from './HomeSky';
 import {
   describeJourney, journeyMonth, journeyPoints, journeyStats, monthCells, focusPoints, focusTrip, focusKeyOf, upcomingTrips, pickMemory,
   type FocusTrip, type Journey,
@@ -153,7 +154,8 @@ export function HomeBento({ trips, plans, heroJourneys, heroSlide, onHeroSlide, 
   const about = hero ? describeJourney(hero) : { chip: '', meta: '' };
 
   return (
-    <section aria-label="홈" className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 pt-3 pb-4">
+    <section aria-label="홈" className="relative isolate w-full max-w-[1200px] mx-auto px-4 sm:px-6 pt-3 pb-4">
+      <HomeSky />
       <div className="tgl-bento">
         <div className="tgl-bento-grid">
           {/* ── Hero: the journey in the picture, a square so tall and wide covers both stay whole ── */}

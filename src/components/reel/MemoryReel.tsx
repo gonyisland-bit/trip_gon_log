@@ -39,6 +39,8 @@ interface MemoryReelProps {
   startIndex?: number;
   /** Opened from a tapped photo: starts still, whole photo in view, and plays when asked (the magazine's viewer) */
   startPaused?: boolean;
+  /** Told the shot on screen as it changes, so whoever opened the reel can return to it */
+  onIndexChange?: (index: number) => void;
 }
 
 const FADE_MS = 1100;
@@ -70,7 +72,7 @@ function isSameOrigin(url: string): boolean {
   }
 }
 
-export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose: onCloseNow, startIndex = 0, startPaused = false }: MemoryReelProps) {
+export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClose: onCloseNow, startIndex = 0, startPaused = false, onIndexChange }: MemoryReelProps) {
   useBackToClose(true, onCloseNow);
   // Closing from the reel's own controls fades out first; the back gesture closes at once
   const [leaving, setLeaving] = useState(false);
@@ -80,6 +82,9 @@ export function MemoryReel({ title, subtitle, location, dateLabel, shots, onClos
     window.setTimeout(onCloseNow, 220);
   }, [onCloseNow]);
   const [index, setIndex] = useState(() => Math.max(0, Math.min(shots.length - 1, startIndex)));
+  const indexCb = useRef(onIndexChange);
+  indexCb.current = onIndexChange;
+  useEffect(() => { indexCb.current?.(index); }, [index]);
   const [playing, setPlaying] = useState(!startPaused);
   // Sound is the member's own on / off (Settings → Slideshow). Off at the start loads no music until it is switched on.
   const [muted, setMuted] = useState(() => !getStoredBgmAutoplay());

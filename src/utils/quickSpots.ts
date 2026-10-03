@@ -181,14 +181,12 @@ export function directionsUrl(spot: QuickSpot): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}&destination_place_id=${encodeURIComponent(spot.id)}&travelmode=walking`;
 }
 
-/** The map pin: a round surface with the kind's icon; the selected one is red */
+/** The map pin: an ink disc with the kind's icon in white (it reads on light and busy maps alike); the picked one is red */
 export function quickSpotPinHtml(kind: QuickSpotKind, selected: boolean): string {
   const meta = QUICK_SPOT_META[kind];
   const size = selected ? 36 : 30;
   const icon = selected ? 18 : 15;
-  const bg = selected ? '#DC2626' : 'var(--qs-pin-bg, #FFFDF9)';
-  const fg = selected ? '#FFFFFF' : 'var(--qs-pin-fg, #1B1B18)';
-  return `<div class="tgl-qs-pin" style="width:${size}px;height:${size}px;background:${bg};color:${fg}">`
+  return `<div class="tgl-qs-pin${selected ? ' is-on' : ''}" style="width:${size}px;height:${size}px">`
     + `<svg viewBox="0 0 24 24" width="${icon}" height="${icon}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
     + meta.paths.map(d => `<path d="${d}"/>`).join('')
     + `</svg></div>`;

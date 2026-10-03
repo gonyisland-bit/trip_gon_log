@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { prefersReducedMotion } from '../../motion';
 import { useBackToClose } from '../../utils/overlayHistory';
 import { Home as HomeIcon, List, Plane, RotateCcw, Settings2, Sun, Tag, X } from 'lucide-react';
+import { tick } from '../../utils/haptics';
 
 // Map layers (v1.3 P5-6): one panel for what the map shows and what each mark
 // means. A popover on desktop, a bottom sheet on phones. With day and night on,
@@ -110,7 +111,7 @@ export function MapLayerPanel(p: MapLayerPanelProps) {
             <ul className="flex flex-col">
               {layers.map(l => (
                 <li key={l.key}>
-                  <button type="button" role="switch" aria-checked={l.on} onClick={l.onToggle} className="w-full flex items-center gap-3 px-4 h-11 text-left hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer">
+                  <button type="button" role="switch" aria-checked={l.on} onClick={() => { tick(); l.onToggle(); }} className="w-full flex items-center gap-3 px-4 h-11 text-left hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer">
                     <span className="w-5 grid place-items-center shrink-0 text-black/70 dark:text-white/70">{l.swatch}</span>
                     <span className={`flex-1 text-sm font-semibold ${l.on ? '' : 'text-black/55 dark:text-white/55'}`}>{l.label}</span>
                     <Switch on={l.on} />

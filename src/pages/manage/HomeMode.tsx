@@ -54,7 +54,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 placeholder="TRIP GON LOG"
-                className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
+                className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-full focus:border-black dark:focus:border-white text-black dark:text-white"
               />
             </div>
           </section>
@@ -118,7 +118,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                         inputEl.value = '';
                       }
                     }}
-                    className="flex-1 px-3 py-1.5 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                    className="flex-1 px-3 py-1.5 text-xs font-mono bg-surface dark:bg-surface-dark border border-black/20 dark:border-white/20 outline-none rounded-full focus:border-black dark:focus:border-white"
                   />
                   <span className="text-meta font-mono text-black/60 dark:text-white/60 shrink-0">
                     [ENTER로 추가]

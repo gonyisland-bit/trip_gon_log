@@ -387,7 +387,7 @@ export function MapTopBar({ s }: { s: MapHubState }) {
         {/* Real-time Clock & Day/Night Shade Toggle Pill Widget (Native App Pill Style) */}
         <div className="flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full bg-surface/95 dark:bg-surface-dark/95 shadow-lg z-10 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0 transition">
           {/* Live Indicator Pulse Dot */}
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
           
           {/* Time Display (Mobile: HH:mm, Desktop: HH:mm:ss KST) */}
           <div className="flex items-baseline gap-1 font-mono tracking-tight font-extrabold">

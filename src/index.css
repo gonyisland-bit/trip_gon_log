@@ -37,7 +37,7 @@
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full border border-transparent
       text-sm font-bold tracking-tight whitespace-nowrap select-none cursor-pointer
-      transition-colors duration-fast active:scale-[0.98]
+      transition-colors duration-fast
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-1
       disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100;
   }
@@ -1023,9 +1023,14 @@ input[type="range"]:focus-visible {
 }
 
 /* ── Interactive buttons (v1.3) ── */
-/* Press: a short squeeze that springs back */
-.tgl-press { transition: transform var(--motion-fast) var(--ease-standard); }
-.tgl-press:active { transform: scale(.97); }
+/* Press (v1.3.8 (4), one rule for every touch target: pills, round buttons, chips, segments, rows, cards):
+   a quick squeeze on press, a spring back on release; colours keep their short fade */
+.tgl-press, .btn {
+  transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease,
+    box-shadow 160ms ease, opacity 160ms ease, transform 420ms var(--ease-spring);
+}
+.tgl-press:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(.97); transition-duration: 80ms; }
+@media (prefers-reduced-motion: reduce) { .tgl-press, .btn { transition-property: color, background-color, border-color, box-shadow, opacity; } }
 /* Sweep: a red hairline that draws in under text on hover/focus */
 .tgl-sweep { position: relative; }
 .tgl-sweep::after {
@@ -1263,6 +1268,8 @@ input[type="datetime-local"] { min-width: 0; max-width: 100%; }
 .tgl-cv-card { content-visibility: auto; contain-intrinsic-size: auto 360px; }
 .tgl-cv-row { content-visibility: auto; contain-intrinsic-size: auto 120px; }
 .tgl-cv-month { content-visibility: auto; contain-intrinsic-size: auto 320px; }
+/* v1.3.8 (4): a whole year or city of journey cards in the journeys hub */
+.tgl-cv { content-visibility: auto; contain-intrinsic-size: auto 900px; }
 
 /* New trip: the boarding pass rises in while the trip saves, its plane crossing the route */
 .tgl-pass { animation: tglPassIn 520ms var(--ease-spring, cubic-bezier(.2, 1.4, .4, 1)) both; }
@@ -1368,18 +1375,78 @@ html[data-overlay] .tgl-tabbar, html[data-overlay] .tgl-totop, html[data-overlay
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:first-child { border-bottom-color: rgba(255, 255, 255, 0.1); }
 .dark .tgl-hub-map .leaflet-control-zoom.leaflet-bar a:hover { background: rgba(255, 255, 255, 0.08); }
 
+/* Home sky (v1.3.8 (4), home/bento/HomeSky): a faint glow behind the first row of cubes in the colour of the hour */
+.tgl-home-sky {
+  position: absolute; z-index: -1; left: -8px; right: -8px; top: -24px; height: 340px; pointer-events: none;
+  --sky: transparent; background: radial-gradient(90% 100% at 50% 0%, var(--sky), transparent 72%);
+  transition: background 1.2s ease;
+}
+.tgl-home-sky[data-phase=dawn] { --sky: rgba(246, 188, 156, 0.42); }
+.tgl-home-sky[data-phase=day] { --sky: rgba(176, 212, 236, 0.36); }
+.tgl-home-sky[data-phase=dusk] { --sky: rgba(240, 148, 112, 0.36); }
+.tgl-home-sky[data-phase=night] { --sky: rgba(44, 60, 120, 0.2); }
+.dark .tgl-home-sky[data-phase=dawn] { --sky: rgba(170, 100, 78, 0.26); }
+.dark .tgl-home-sky[data-phase=day] { --sky: rgba(70, 104, 136, 0.24); }
+.dark .tgl-home-sky[data-phase=dusk] { --sky: rgba(160, 82, 60, 0.28); }
+.dark .tgl-home-sky[data-phase=night] { --sky: rgba(72, 92, 176, 0.26); }
+
+/* Loading shapes (v1.3.8 (4)): a soft sheen passes over them instead of the whole shape blinking */
+.tgl-shimmer { position: relative; overflow: hidden; isolation: isolate; }
+.tgl-shimmer::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: tglShimmer 1.6s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+.dark .tgl-shimmer::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent); }
+@keyframes tglShimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .tgl-shimmer::after { animation: none; display: none; } }
+
+/* World map flight (v1.3.8 (4), useMapHubState.flyAirplaneToDestination): the plane fixed in the middle of the map while
+   the map slides under it, the route band (phones under the top controls, wider screens at the bottom), the two ends. */
+.tgl-flight-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 650; }
+.tgl-flight-plane {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); will-change: transform;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.32)); transition: opacity 500ms ease;
+}
+.tgl-flight-band {
+  position: absolute; left: 50%; top: 100px; transform: translateX(-50%); max-width: calc(100% - 24px);
+  display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 9999px;
+  background: #1B1B18; color: #FFFDF9; white-space: nowrap; overflow: hidden;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22); animation: tglFlightBand 320ms cubic-bezier(.2, .8, .2, 1) both;
+  transition: opacity 500ms ease;
+}
+@media (min-width: 640px) { .tgl-flight-band { top: auto; bottom: 28px; } }
+@keyframes tglFlightBand { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.tgl-flight-code { font-family: ui-monospace, 'IBM Plex Mono', Consolas, monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; }
+.tgl-flight-track { position: relative; flex: 0 0 72px; height: 2px; border-radius: 2px; background: rgba(255, 253, 249, 0.25); }
+.tgl-flight-fill { position: absolute; inset: 0; border-radius: 2px; background: #F87171; transform-origin: left center; transform: scaleX(0); }
+.tgl-flight-dot { position: absolute; top: 50%; left: 0; width: 7px; height: 7px; border-radius: 9999px; background: #FFFDF9; transform: translate(-50%, -50%); }
+.tgl-flight-meta { font-size: 12px; font-weight: 600; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tgl-flight-overlay.is-landing .tgl-flight-plane, .tgl-flight-overlay.is-landing .tgl-flight-band { opacity: 0; }
+.tgl-flight-end { position: relative; width: 12px; height: 12px; }
+.tgl-flight-end i { position: absolute; inset: 0; border-radius: 9999px; background: #DC2626; border: 2px solid #FFFFFF; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+.tgl-flight-end span {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); padding: 2px 7px; border-radius: 9999px;
+  background: #1B1B18; color: #FFFDF9; font: 700 10px/1.3 ui-monospace, 'IBM Plex Mono', Consolas, monospace; letter-spacing: 0.08em;
+}
+@media (prefers-reduced-motion: reduce) { .tgl-flight-band { animation: none; } }
+
 /* Place map and quick spots (v1.3.8): round pins that name their kind by icon, the member's own spot, name tips.
    Phones pinch to zoom, so the place map shows no zoom buttons there. */
 @media (max-width: 639px) { .tgl-place-map .leaflet-top.leaflet-right { display: none; } }
 .tgl-qs-icon { background: transparent !important; border: 0 !important; }
 .tgl-qs-pin {
-  --qs-pin-bg: #FFFDF9; --qs-pin-fg: #1B1B18;
+  --qs-pin-bg: #1B1B18; --qs-pin-fg: #FFFDF9; --qs-pin-ring: #FFFDF9;
   display: grid; place-items: center; border-radius: 9999px; background: var(--qs-pin-bg); color: var(--qs-pin-fg);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.16); transition: transform 150ms ease;
+  box-shadow: 0 0 0 2px var(--qs-pin-ring), 0 2px 8px rgba(0, 0, 0, 0.28); transition: transform 150ms ease;
 }
-.tgl-qs-pin-ink { --qs-pin-bg: #1B1B18; --qs-pin-fg: #FFFDF9; }
-.dark .tgl-qs-pin { --qs-pin-bg: #1A1A17; --qs-pin-fg: #EDEBE5; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 2px 6px rgba(0, 0, 0, 0.4); }
-.dark .tgl-qs-pin-ink { --qs-pin-bg: #EDEBE5; --qs-pin-fg: #11110F; }
+.tgl-qs-pin.is-on { --qs-pin-bg: #DC2626; --qs-pin-fg: #FFFFFF; }
+.tgl-qs-pin-light { --qs-pin-bg: #FFFDF9; --qs-pin-fg: #1B1B18; --qs-pin-ring: #1B1B18; }
+.tgl-qs-pin-pocket { --qs-pin-fg: #B45309; }
+.dark .tgl-qs-pin { --qs-pin-bg: #EDEBE5; --qs-pin-fg: #11110F; --qs-pin-ring: #11110F; box-shadow: 0 0 0 2px var(--qs-pin-ring), 0 2px 8px rgba(0, 0, 0, 0.5); }
+.dark .tgl-qs-pin.is-on { --qs-pin-bg: #EF4444; --qs-pin-fg: #FFFFFF; }
+.dark .tgl-qs-pin-light { --qs-pin-bg: #1A1A17; --qs-pin-fg: #EDEBE5; --qs-pin-ring: #EDEBE5; }
+.dark .tgl-qs-pin-pocket { --qs-pin-fg: #FBBF24; }
 .leaflet-marker-icon:hover .tgl-qs-pin { transform: scale(1.08); }
 .tgl-place-me { width: 22px; height: 22px; border-radius: 9999px; background: #DC2626; border: 3px solid #FFFFFF; box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.18), 0 2px 6px rgba(0, 0, 0, 0.25); }
 .leaflet-tooltip.tgl-place-tip { border: 0; border-radius: 9999px; padding: 3px 10px; font-weight: 700; font-size: 12px; background: #1B1B18; color: #FFFDF9; box-shadow: none; }

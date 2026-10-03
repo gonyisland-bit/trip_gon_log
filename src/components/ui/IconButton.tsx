@@ -30,7 +30,7 @@ export function IconButton({
       type={type}
       aria-label={label}
       title={rest.title ?? label}
-      className={`${SIZES[size]} ${TONES[tone]} tap-target inline-grid place-items-center rounded-full shrink-0 transition-colors duration-fast active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
+      className={`${SIZES[size]} ${TONES[tone]} tgl-press tap-target inline-grid place-items-center rounded-full shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
       {...rest}
     >
       <Icon className={ICONS[size]} aria-hidden />
